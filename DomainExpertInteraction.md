@@ -41,29 +41,52 @@ Property Owner - Oversees property, resolves escalated issues, enforces policies
 System Admin - User and property verification, payment monitoring, handling system-level issues
 
 ## Core Workflows
--Workflow 1
-    -Trigger/start condition: Tenant searches for accommodation
-    -Steps involved (in order):
-        1)Tenant applies filters such as location, transport access, budget, and room type.
-        2)System displays PGs based on distance and preferences.
-        3)Tenant views safety score and amenities.
-    -Outcome / End condition: Tenant shortlists or selects a PG
 
--Workflow 2
-    -Trigger/start condition: Tenant faces an issue with services
-    -Steps involved (in order):
-        1)Tenant raises a complaint.
-        2)Warden reviews and attempts resolution.
-        3)If unresolved, complaint is escalated to the owner.
-    -Outcome / End condition: Issue is resolved or closed
+### Workflow 1 — Search and Shortlist PG
 
--Workflow 3
-    -Trigger/start condition: Rent due date approaches
-    -Steps involved (in order):
-        1)Platform notifies tenant about payment deadline.
-        2)Tenant makes payment.
-        3)Late payment results in extra charges.
-    -Outcome / End condition: Rent collected or penalty applied.
+**Trigger / Start Condition:**  
+Tenant searches for accommodation.
+
+**Steps Involved (in order):**
+1. Tenant applies filters such as:
+   - Location
+   - Transport access
+   - Budget
+   - Room type
+2. System displays PGs based on distance and tenant preferences.
+3. Tenant views safety score and amenities of selected PGs.
+
+**Outcome / End Condition:**  
+Tenant shortlists or selects a PG.
+
+
+### Workflow 2 — Complaint and Resolution
+
+**Trigger / Start Condition:**  
+Tenant faces an issue with PG services.
+
+**Steps Involved (in order):**
+1. Tenant raises a complaint through the platform.
+2. Warden reviews the complaint and attempts resolution.
+3. If unresolved, the complaint is escalated to the owner.
+
+**Outcome / End Condition:**  
+Issue is resolved or officially closed.
+
+
+### Workflow 3 — Rent Payment Process
+
+**Trigger / Start Condition:**  
+Rent due date approaches.
+
+**Steps Involved (in order):**
+1. Platform notifies the tenant about the payment deadline.
+2. Tenant makes the rent payment.
+3. If payment is late, extra charges are applied automatically.
+
+**Outcome / End Condition:**  
+Rent is collected or penalty is applied.
+
 
 ## Rules, Constraints, and Exceptions
 Document rules that govern how the domain operates.
