@@ -1,0 +1,113 @@
+# Domain:Real Estate and Property Management
+# Problem Statement:Rental Property Management Platform
+# Last Updated:2026-01-28
+
+Tenant:
+  definition: >
+    An individual who rents and resides in a PG accommodation for a fixed or
+    recurring duration under agreed rental terms and house rules.
+  examples:
+    - A student renting a shared PG room near a college.
+    - A working professional renting a single-occupancy PG.
+  aliases:
+    - Resident
+    - Occupant
+
+
+Property:
+  definition: >
+    A registered PG accommodation consisting of rooms and facilities that can
+    be offered for residential stay.
+  examples:
+    - A boys’ PG with 20 rooms and shared dining facilities.
+    - A women-only PG located near an IT park.
+  aliases:
+    - PG
+    - Accommodation
+
+Room:
+  definition: >
+    A designated living space within a property that can be allocated to one or
+    more residents.
+  examples:
+    - A single-sharing room with an attached bathroom.
+    - A four-sharing room with common facilities.
+  aliases:
+    - Living Unit
+    - Room Unit
+
+Booking:
+  definition: >
+    A formal request made by a resident to reserve a room in a property for a
+    specified time period.
+  examples:
+    - A student booking a room starting from July 1st.
+    - A resident extending an existing booking for another month.
+  aliases:
+    - Reservation
+
+Payment:
+  definition: >
+    A monetary transaction made by a resident towards rent, deposit, or other
+    applicable charges for staying in a property.
+  examples:
+    - Monthly rent payment for a PG room.
+    - Security deposit paid during booking confirmation.
+  aliases:
+    - Transaction
+    - Rent Payment
+
+Property Policy:
+  definition: >
+    A set of rules and pricing conditions defined for a property that govern
+    resident behavior and financial obligations.
+  examples:
+    - Curfew rules and visitor restrictions.
+    - Monthly rent amount and security deposit terms.
+  aliases:
+    - House Rules
+    - Pricing Policy
+
+Complaint:
+  definition: >
+    A formal issue reported by a resident regarding facilities, services, or
+    living conditions within a property.
+  examples:
+    - Reporting a water supply issue.
+    - Filing a complaint about room maintenance.
+  aliases:
+    - Issue
+    - Grievance
+
+Verification:
+  definition: >
+    The process of confirming the authenticity and legitimacy of residents and
+    properties before allowing full platform access.
+  examples:
+    - Verifying a resident’s identity documents.
+    - Approving a property after document review.
+  aliases:
+    - Validation
+    - Approval
+
+Warden:
+  definition: >
+    A person responsible for the day-to-day supervision and operation of a
+    property and its residents.
+  examples:
+    - Approving room allocations.
+    - Addressing resident complaints.
+  aliases:
+    - Caretaker
+    - Supervisor
+
+Property Owner:
+  definition: >
+    An individual or organization that owns one or more properties and defines
+    their policies and pricing.
+  examples:
+    - An owner setting rent for multiple PGs.
+    - Assigning wardens to properties.
+  aliases:
+    - Owner
+    - PG Owner
