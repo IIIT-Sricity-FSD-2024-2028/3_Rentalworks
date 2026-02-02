@@ -28,7 +28,7 @@ The system supports the following primary actors:
 1. **PG Tenant**
 2. **Warden**
 3. **Property Owner**
-4. **System Administrator**
+4. **Admin**
 
 ---
 
@@ -103,9 +103,9 @@ Property owners oversee PG properties and configurations.
 
 ---
 
-###  System Administrator
+###  Admin
 
-System administrators ensure system reliability, security, and compliance.
+Admin ensure system reliability, security, and compliance.
 
 **Use Cases:**
 - User & Property Verification
