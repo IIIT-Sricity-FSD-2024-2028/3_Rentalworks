@@ -115,7 +115,7 @@ Admin ensure system reliability, security, and compliance.
 **Planned Features:**
 - Verify PG tenants, wardens, and property owners
 - Verify PG listings and safety details
-- Manage and validate Female Safety Score
+- Manage and validate Safety Score
 - Monitor system usage and payments
 - Handle disputes and system-level issues
 - Ensure platform security and data integrity
