@@ -41,7 +41,7 @@ Warden - Manages day-to-day operations, handles tenant issues, escalates problem
 
 Property Owner - Oversees property, resolves escalated issues, enforces policies
 
-System Admin - User and property verification, payment monitoring, handling system-level issues
+ Admin - User and property verification, payment monitoring, handling system-level issues
 
 ## Core Workflows
 
