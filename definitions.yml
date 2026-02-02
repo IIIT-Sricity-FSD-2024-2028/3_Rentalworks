@@ -101,6 +101,19 @@ Warden:
     - Caretaker
     - Supervisor
 
+ Admin:
+  definition: >
+    An authorized authority responsible for overseeing platform integrity,
+    verifying users and properties, monitoring transactions, and ensuring
+    smooth and secure operation of the PG Rental Management System.
+  examples:
+    - Verifying tenant and property owner documents before approval.
+    - Monitoring payment records and resolving system-level issues.
+  aliases:
+    - Platform Administrator
+    - System Supervisor
+
+
 Property Owner:
   definition: >
     An individual or organization that owns one or more properties and defines
