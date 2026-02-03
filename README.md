@@ -127,7 +127,7 @@ Admin ensure system reliability, security, and compliance.
 - Broker-free PG discovery
 - Verified PG listings and users
 - End-to-end PG lifecycle management
-- Female safety scoring for women’s PGs
+- Safety scoring for PGs
 - Real-time occupancy and complaint tracking
 - Transparent tenant–warden communication
 
