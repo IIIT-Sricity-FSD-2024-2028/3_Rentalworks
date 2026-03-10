@@ -257,4 +257,5 @@ CREATE TABLE notification (
     FOREIGN KEY (owner_id) REFERENCES owner(owner_id),
     FOREIGN KEY (warden_id) REFERENCES warden(warden_id),
     FOREIGN KEY (admin_id) REFERENCES admin(admin_id)
-); i want create table for in drawio i can manually do relations so, basically i need mermaid code
+
+);
