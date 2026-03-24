@@ -1,0 +1,145 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background: #dcd9b3;
+}
+
+/* NAVBAR */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #eee;
+  padding: 15px 40px;
+  border-radius: 40px;
+  margin: 20px;
+}
+
+.navbar nav a {
+  margin: 0 15px;
+  text-decoration: none;
+  color: black;
+}
+
+/* HERO */
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 60px;
+}
+
+.hero-text {
+  max-width: 50%;
+}
+
+.hero-text h1 {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+.hero-text button {
+  margin-top: 20px;
+  padding: 12px 25px;
+  border: none;
+  background: orange;
+  color: white;
+  border-radius: 25px;
+  cursor: pointer;
+}
+
+.hero-img img {
+  width: 350px;
+}
+
+/* EXPLORE */
+.explore {
+  padding: 40px;
+}
+
+.cards {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+}
+
+.card {
+  background: white;
+  padding: 15px;
+  border-radius: 15px;
+  min-width: 200px;
+}
+
+.card img {
+  width: 100%;
+  border-radius: 10px;
+}
+
+/* LISTINGS */
+.listings {
+  padding: 40px;
+}
+
+.listing-cards {
+  display: flex;
+  gap: 20px;
+}
+
+.listing {
+  background: white;
+  padding: 15px;
+  border-radius: 15px;
+}
+
+.listing img {
+  width: 100%;
+  border-radius: 10px;
+}
+
+/* FEATURES */
+.features {
+  padding: 60px;
+  background: #f2f2f2;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  margin-top: 30px;
+}
+
+.feature {
+  text-align: center;
+}
+
+/* FOOTER */
+.footer {
+  background: #ddd;
+  padding: 40px;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.footer textarea {
+  width: 250px;
+  height: 100px;
+  margin-top: 10px;
+}
+
+.footer button {
+  margin-top: 10px;
+  padding: 8px 15px;
+}
+
+.footer .copyright {
+  width: 100%;
+  text-align: center;
+  margin-top: 20px;
+}
