@@ -23,8 +23,8 @@ body {
 
 .navbar nav {
   display: flex;
-  align-items: center;
-  gap: 25px;   
+  gap: 30px;
+  margin: 0 auto;
 }
 
 
@@ -35,6 +35,14 @@ body {
   text-decoration: none;
   color: black;
   font-size: 16px;
+}
+
+.navbar .login {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  cursor: pointer;
 }
 
 
@@ -93,25 +101,24 @@ body {
 }
 
 .cards {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 20px;
-  overflow-x: auto;
 }
 
 .card {
-  background: white;
+  background: #eee;
   border-radius: 15px;
-  padding: 10px;
-  
-  width: 220px;        
-  flex: 0 0 auto;    
+  padding: 12px;
+  text-align: left;
+  transition: 0.3s;
 }
 
 .card img {
   width: 100%;
-  height: 150px;      
+  height: 140px;      
   object-fit: cover; 
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 /* LISTINGS */
@@ -120,7 +127,8 @@ body {
 }
 
 .listing-cards {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 20px;
 }
 
@@ -132,6 +140,8 @@ body {
 
 .listing img {
   width: 100%;
+  height: 150px;        
+  object-fit: cover;     
   border-radius: 10px;
 }
 
@@ -176,4 +186,109 @@ body {
   width: 100%;
   text-align: center;
   margin-top: 20px;
+}
+section {
+  margin-bottom: 40px;
+}
+
+h2 {
+  margin-bottom: 15px;
+}
+.card h3 {
+  margin-top: 8px;
+  font-size: 16px;
+}
+
+.card p {
+  font-size: 14px;
+  color: #555;
+}
+
+.card strong {
+  display: block;
+  margin-top: 5px;
+}
+
+.card .card-h3 {
+  color: #343333;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 10px;
+  padding-bottom: 13px;
+  font-size: 18px;
+}
+
+/* DETAILS */
+.card .card-p {
+  font-size: 13px;
+  color: #555;
+  margin-top: 6px;
+  padding-bottom: 9px;
+  font-size: 15px;
+}
+
+
+/* TITLE */
+.listing .title {
+  color: #ff6600;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 10px;
+  padding-bottom: 13px;
+  font-size: 18px;
+}
+
+/* DETAILS */
+.listing .details {
+  font-size: 13px;
+  color: #555;
+  margin-top: 6px;
+  padding-bottom: 9px;
+  font-size: 15px;
+}
+
+/* LOCATION */
+.listing .location {
+  font-size: 12px;
+  color: #888;
+  margin-top: 4px;
+  padding-bottom: 9px;
+  font-size: 15px;
+}
+
+/* PRICE ROW */
+.card .car {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+ 
+}
+
+/* PRICE */
+.price {
+  font-weight: bold;
+  font-size: 17px;
+  
+}
+
+/* VIEW INFO */
+.view {
+  color: #ff6600;
+  font-size: 14px;
+  cursor: pointer;
+}
+/* LOCATION FIX */
+.location {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #777;
+  margin-top: 6px;
+}
+
+.location img {
+  width: 14px;
+  height: 14px;
 }
