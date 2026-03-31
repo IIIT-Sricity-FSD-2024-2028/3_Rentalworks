@@ -1,0 +1,50 @@
+<!-- pages/view_tenants.html -->
+<section id="tenants-section" class="section active">
+  <div class="section-header">
+    <h2>Tenant Records</h2>
+    <p>View and manage all tenant information</p>
+  </div>
+
+  <div class="summary-cards">
+    <div class="summary-card">
+      <div class="s-label">Total Tenants</div>
+      <div class="s-value" id="tenant-total">—</div>
+    </div>
+    <div class="summary-card">
+      <div class="s-label">Payment Received</div>
+      <div class="s-value green" id="tenant-paid">—</div>
+    </div>
+    <div class="summary-card">
+      <div class="s-label">Payment Pending</div>
+      <div class="s-value red" id="tenant-pending">—</div>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <div class="table-header">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="tenant-search" placeholder="Search by name, room, or contact..." />
+      </div>
+      <select class="filter-select" id="tenant-status-filter">
+        <option value="all">All Status</option>
+        <option value="paid">Paid</option>
+        <option value="pending">Pending</option>
+      </select>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Tenant Name</th>
+          <th>Room Number</th>
+          <th>Contact Number</th>
+          <th>Check-in Date</th>
+          <th>Rent</th>
+          <th>Payment Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tenants-tbody"></tbody>
+    </table>
+  </div>
+</section>

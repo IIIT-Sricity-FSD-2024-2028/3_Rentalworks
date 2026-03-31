@@ -1,0 +1,108 @@
+<div class="page-content" style="max-width: 1000px;">
+    <button class="btn-back" onclick="Navigation.navigate('booking-details')">
+        <svg viewBox="0 0 24 24"><path d="M19 12H5M5 12l7 7M5 12l7-7"/></svg>
+        Back to Booking Details
+    </button>
+    <h2 style="font-size: 28px; font-weight: 800; margin-bottom: 8px;">Complete Your Booking</h2>
+    <p class="text-gray text-sm mb-32">Your booking request has been approved. Please complete the payment to confirm your room.</p>
+
+    <div class="grid-2" style="align-items: start;">
+        
+        <div class="modern-card" style="padding: 24px;">
+            <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 20px;">Payment Method</h3>
+
+            <div id="method-upi" class="pay-method-box active" onclick="BookingLogic.selectPayment('upi')">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                    <span style="color: #3b82f6; font-size: 20px;">📱</span>
+                    <div>
+                        <strong style="display: block; font-size: 14px; color: var(--text-dark);">UPI Payment</strong>
+                        <span style="font-size: 11px; color: var(--text-gray);">Google Pay, PhonePe, Paytm</span>
+                    </div>
+                </div>
+                <div id="form-upi" class="pay-form">
+                    <input type="text" id="upi-id" class="input-field" placeholder="Enter UPI ID (e.g., name@upi)" style="padding: 10px 14px; font-size: 13px;">
+                </div>
+            </div>
+
+            <div id="method-card" class="pay-method-box" onclick="BookingLogic.selectPayment('card')">
+                 <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="color: #3b82f6; font-size: 20px;">💳</span>
+                    <div>
+                        <strong style="display: block; font-size: 14px; color: var(--text-dark);">Credit / Debit Card</strong>
+                        <span style="font-size: 11px; color: var(--text-gray);">Visa, Mastercard, RuPay</span>
+                    </div>
+                </div>
+                <div id="form-card" class="pay-form hidden" style="margin-top: 16px;">
+                    <input type="text" id="card-num" class="input-field mb-8" placeholder="Card Number" style="padding: 10px 14px; font-size: 13px;">
+                    <div class="grid-2" style="gap: 8px;">
+                        <input type="text" id="card-exp" class="input-field" placeholder="MM/YY" style="padding: 10px 14px; font-size: 13px;">
+                        <input type="password" id="card-cvv" class="input-field" placeholder="CVV" style="padding: 10px 14px; font-size: 13px;">
+                    </div>
+                </div>
+            </div>
+
+            <div id="method-net" class="pay-method-box" onclick="BookingLogic.selectPayment('net')">
+                 <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="color: #3b82f6; font-size: 20px;">🏦</span>
+                    <div>
+                        <strong style="display: block; font-size: 14px; color: var(--text-dark);">Net Banking</strong>
+                        <span style="font-size: 11px; color: var(--text-gray);">Pay via your bank account</span>
+                    </div>
+                </div>
+                <div id="form-net" class="pay-form hidden" style="margin-top: 16px;">
+                    <select id="net-bank" class="input-field" style="padding: 10px 14px; font-size: 13px;">
+                        <option value="">Select your bank</option>
+                        <option value="sbi">State Bank of India</option>
+                        <option value="hdfc">HDFC Bank</option>
+                        <option value="icici">ICICI Bank</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="background: var(--success-light); border: 1px solid #86efac; color: var(--success); padding: 12px; border-radius: 8px; font-size: 11px; font-weight: 600; margin-top: 24px; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 14px;">🔒</span> Your payment is secured with encrypted payment processing.
+            </div>
+        </div>
+
+        <div class="modern-card" style="padding: 24px;">
+            <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 24px;">Booking Summary</h3>
+
+            <div class="mb-12"><span class="text-gray text-sm block">PG Name</span><strong id="pay-pg" class="text-sm">...</strong></div>
+            <div class="mb-12"><span class="text-gray text-sm block">Location</span><strong class="text-sm">Koramangala, Bangalore</strong></div>
+            <div class="mb-12"><span class="text-gray text-sm block">Room Type</span><strong id="pay-room" class="text-sm">...</strong></div>
+            <div class="mb-12"><span class="text-gray text-sm block">Selected Roommate</span><strong id="pay-rm" class="text-sm">...</strong></div>
+            <div class="mb-24"><span class="text-gray text-sm block">Move-in Date</span><strong id="pay-date" class="text-sm">...</strong></div>
+
+            <h4 style="font-size: 13px; font-weight: 800; margin-bottom: 12px;">Price Breakdown</h4>
+            <div class="flex-between mb-8 text-sm"><span class="text-gray">Monthly Rent</span><strong id="pay-rent">...</strong></div>
+            <div class="flex-between mb-8 text-sm"><span class="text-gray">Security Deposit</span><strong id="pay-deposit">...</strong></div>
+            <div class="flex-between mb-24 text-sm"><span class="text-gray">Platform Fee</span><strong>₹500</strong></div>
+
+            <div style="background: #eff6ff; padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <strong style="font-size: 15px;">Total Payable Now</strong>
+                <strong id="pay-total" style="font-size: 22px; color: #2563eb; font-weight: 800;">...</strong>
+            </div>
+
+            <button id="pay-btn" class="btn btn-full" style="background: #4ade80; color: white; padding: 16px; font-size: 16px; margin-bottom: 12px;" onclick="BookingLogic.processPayment()">Process Payment</button>
+            <p style="font-size: 10px; color: var(--text-gray); text-align: center; line-height: 1.5;">By completing this payment, you confirm your booking and agree to the PG's terms and conditions.</p>
+        </div>
+
+    </div>
+</div>
+
+<style>
+/* Specific CSS for the accordion layout */
+.pay-method-box {
+    border: 1px solid var(--border);
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: 0.2s;
+    background: var(--surface);
+}
+.pay-method-box.active {
+    border: 2px solid #3b82f6; /* Blue border */
+    background: #f8fafc;
+}
+</style>

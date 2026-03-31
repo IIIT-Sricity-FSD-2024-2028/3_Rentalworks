@@ -1,0 +1,100 @@
+<!-- pages/view_dashboard.html -->
+<section id="dashboard-section" class="section active">
+  <div class="section-header">
+    <h2>Warden Dashboard</h2>
+    <p>Overview of PG operations and tenant management</p>
+  </div>
+
+  <!-- KPI Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon blue">👥</div>
+      <div class="stat-label">Total Tenants</div>
+      <div class="stat-value" id="stat-total-tenants">—</div>
+      <div class="stat-sub">+0 this month</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green">🏠</div>
+      <div class="stat-label">Occupied Rooms</div>
+      <div class="stat-value" id="stat-occupied-rooms">—</div>
+      <div class="stat-sub">of total rooms</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon yellow">🏠</div>
+      <div class="stat-label">Vacant Rooms</div>
+      <div class="stat-value" id="stat-vacant-rooms">—</div>
+      <div class="stat-sub">Available</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon red">⏰</div>
+      <div class="stat-label">Active Complaints</div>
+      <div class="stat-value" id="stat-active-complaints">—</div>
+      <div class="stat-sub">2 urgent</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon orange">⚠️</div>
+      <div class="stat-label">Rule Violations</div>
+      <div class="stat-value" id="stat-violations">—</div>
+      <div class="stat-sub">2 this week</div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <h3>Complaints by Type</h3>
+      <div class="bar-chart" id="bar-chart-canvas"></div>
+      <div class="bar-legend">
+        <div class="bar-legend-dot"></div>
+        <span>Complaints</span>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>Room Status Distribution</h3>
+      <div class="pie-wrapper">
+        <svg id="pie-chart-svg" class="pie-chart-svg" width="140" height="140" viewBox="0 0 140 140"></svg>
+        <div id="pie-legend" class="pie-legend"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions">
+    <h3>Quick Actions</h3>
+    <div class="actions-grid">
+      <button class="action-btn" onclick="navigateTo('tenants')">
+        <span class="action-icon">👥</span>
+        <div class="action-text">
+          <strong>View Tenants</strong>
+          <span>Manage tenant records</span>
+        </div>
+      </button>
+      <button class="action-btn" onclick="navigateTo('violations')">
+        <span class="action-icon">⚠️</span>
+        <div class="action-text">
+          <strong>Report Violation</strong>
+          <span>Log rule violations</span>
+        </div>
+      </button>
+      <button class="action-btn" onclick="navigateTo('rooms')">
+        <span class="action-icon">✅</span>
+        <div class="action-text">
+          <strong>Update Room Status</strong>
+          <span>Manage room services</span>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Bottom Row -->
+  <div class="bottom-row">
+    <div class="bottom-card">
+      <h3>Recent Complaints</h3>
+      <div id="recent-complaints"></div>
+    </div>
+    <div class="bottom-card">
+      <h3>Recent Tenant Activity</h3>
+      <div id="recent-activity"></div>
+    </div>
+  </div>
+</section>

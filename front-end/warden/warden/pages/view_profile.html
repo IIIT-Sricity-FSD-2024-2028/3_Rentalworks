@@ -1,0 +1,69 @@
+<!-- pages/view_profile.html -->
+<section id="profile-section" class="section active">
+  <div class="section-header">
+    <h2>Profile</h2>
+    <p>Manage your account information</p>
+  </div>
+
+  <div class="profile-layout">
+    <!-- Left Card -->
+    <div class="profile-card">
+      <div class="profile-avatar" id="profile-avatar-letter">W</div>
+      <h3 id="profile-name">Warden</h3>
+      <p id="profile-email">warden@pgrentals.com</p>
+      <div class="profile-role-badge">Warden</div>
+      <div class="profile-meta">
+        <div class="profile-meta-row"><span>Property</span><span>Sunrise PG</span></div>
+        <div class="profile-meta-row"><span>Joined</span><span>1/15/2024</span></div>
+        <div class="profile-meta-row"><span>Status</span><span style="color:#16a34a">Active</span></div>
+      </div>
+    </div>
+
+    <!-- Right Form -->
+    <div class="profile-form-card">
+      <h3>Personal Information</h3>
+      <div class="form-grid">
+        <div class="form-field">
+          <label>Full Name</label>
+          <input type="text" id="profile-fullname" placeholder="Full Name" />
+        </div>
+        <div class="form-field">
+          <label>Email Address</label>
+          <input type="email" id="profile-email-input" placeholder="Email" />
+        </div>
+        <div class="form-field">
+          <label>Phone Number</label>
+          <input type="tel" id="profile-phone" placeholder="Phone" />
+        </div>
+        <div class="form-field">
+          <label>Property Assigned</label>
+          <input type="text" id="profile-property" placeholder="Property" readonly />
+        </div>
+        <div class="form-field full">
+          <label>Address</label>
+          <input type="text" id="profile-address" placeholder="123 Main Street, Mumbai" />
+        </div>
+      </div>
+      <button class="btn-save" onclick="saveProfile()">💾 Save Changes</button>
+    </div>
+  </div>
+
+  <!-- Security -->
+  <div class="security-card">
+    <h3>Security</h3>
+    <div class="security-row">
+      <div class="sec-info">
+        <strong>Password</strong>
+        <span>Last changed 30 days ago</span>
+      </div>
+      <button class="btn-change-password" onclick="showToast('info','Coming Soon','Password change will be available soon')">Change Password</button>
+    </div>
+    <div class="security-row">
+      <div class="sec-info">
+        <strong>Two-Factor Authentication</strong>
+        <span>Add an extra layer of security</span>
+      </div>
+      <button class="btn-enable-2fa" onclick="showToast('info','Coming Soon','2FA will be available soon')">Enable</button>
+    </div>
+  </div>
+</section>

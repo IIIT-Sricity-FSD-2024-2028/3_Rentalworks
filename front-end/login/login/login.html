@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PG Rental Hub - Login</title>
+    <link rel="stylesheet" href="login.css">
+</head>
+<body>
+    <div class="main-container">
+        
+        <!-- Navigation Back to Landing Page -->
+        <a href="../../rentalbros/html/index.html" style="position: absolute; top: 30px; left: 40px; text-decoration: none; color: #fff; background: rgba(0,0,0,0.4); padding: 10px 20px; border-radius: 30px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; backdrop-filter: blur(8px); transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" onmouseover="this.style.background='rgba(0,0,0,0.6)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.background='rgba(0,0,0,0.4)'; this.style.transform='none';">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            Home
+        </a>
+
+        <div class="top-header">
+            <div class="brand-logo">
+                <span class="brand-icon">🏢</span>
+                <span class="brand-name">RentBro</span>
+            </div>
+            <h1 class="brand-headline">Smart PG Management System</h1>
+        </div>
+
+        <div class="card-panel">
+            <div class="card-panel-inner">
+                
+                <button id="back-btn" class="back-btn" style="display: none;" onclick="goBack()">
+                    ← Back to Roles
+                </button>
+
+                <div id="role-selector" class="card role-card">
+                    <div class="role-layout">
+                        <div class="role-layout-text">
+                            <h2 class="card-title">Select Your Role</h2>
+                        </div>
+                        
+                        <div class="role-grid">
+                            <button class="role-btn" onclick="selectRole('admin')">
+                                <div class="role-initial">A</div>
+                                Admin
+                            </button>
+                            <button class="role-btn" onclick="selectRole('tenant')">
+                                <div class="role-initial">T</div>
+                                Tenant
+                            </button>
+                            <button class="role-btn" onclick="selectRole('guest')">
+                                <div class="role-initial">G</div>
+                                Guest
+                            </button>
+                            <button class="role-btn" onclick="selectRole('owner')">
+                                <div class="role-initial">O</div>
+                                Owner
+                            </button>
+                            <button class="role-btn" onclick="selectRole('warden')">
+                                <div class="role-initial">W</div>
+                                Warden
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="login-card-area" class="card login-card">
+                    <h2 id="login-role-title" class="card-title">Login</h2>
+                    <p id="login-role-sub" class="card-sub">Enter your credentials</p>
+
+                    <div id="login-banner" class="login-banner"></div>
+
+                    <form id="main-login-form">
+                        <div class="form-field">
+                            <label id="username-label">Username</label>
+                            <div class="inp-wrap">
+                                <span class="inp-ico">👤</span>
+                                <input type="text" id="login-username" placeholder="Enter your username">
+                            </div>
+                            <div class="login-err-msg" id="err-username"></div>
+                        </div>
+
+                        <div class="form-field">
+                            <label>Password</label>
+                            <div class="inp-wrap">
+                                <span class="inp-ico">🔒</span>
+                                <input type="password" id="login-password" placeholder="Enter your password">
+                                <span class="toggle-pw" onclick="togglePw('login-password', this)">👁️</span>
+                            </div>
+                            <div class="login-err-msg" id="err-password"></div>
+                        </div>
+
+                        <button type="submit" class="btn-login">Sign In</button>
+                    </form>
+
+                    <div id="guest-footer" class="card-footer" style="display: none;">
+                        New to PG Rental Hub? <a href="#" class="footer-link" onclick="showGuestSignup()">Create Guest Account</a>
+                    </div>
+                    <div id="owner-register-link" class="card-footer" style="display: none;">
+                        Want to list your PG? <a href="#" class="footer-link" onclick="showOwnerRegistration()">Register Property</a>
+                    </div>
+                </div>
+
+                <div id="guest-signup-area" class="signup-layout" style="display: none;">
+                    <div class="stepper-panel">
+                        <div class="stepper-brand">
+                            <div class="stepper-avatar">G</div>
+                            <div>
+                                <h3>Guest Signup</h3>
+                                <p>Quick & Easy</p>
+                            </div>
+                        </div>
+                        <h2 class="stepper-headline" id="signup-title">Personal Info</h2>
+                        <p class="stepper-sub" id="signup-subtitle">Step 1 of 3</p>
+                        
+                        <div class="steps-list">
+                            <div class="step-item active">
+                                <div class="step-circle">1</div>
+                                <div class="step-info"><strong>Personal</strong><span>Basic details</span></div>
+                            </div>
+                            <div class="step-item">
+                                <div class="step-circle">2</div>
+                                <div class="step-info"><strong>Address</strong><span>Location info</span></div>
+                            </div>
+                            <div class="step-item">
+                                <div class="step-circle">3</div>
+                                <div class="step-info"><strong>Security</strong><span>Set password</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card signup-card" id="signup-body">
+                        </div>
+                </div>
+
+                <div id="owner-reg-area" class="card owner-reg-card" style="display: none;">
+                    <h2 class="card-title">Register Property</h2>
+                    <p class="card-sub">Partner with us and list your PG</p>
+                    <div id="owner-reg-body">
+                        </div>
+                </div>
+
+                <div id="success-area" class="card success-card" style="display: none;">
+                    <div class="success-icon">✅</div>
+                    <h2 class="card-title" id="success-title">Success</h2>
+                    <p class="card-sub" id="success-message">Operation completed successfully.</p>
+                    <button class="btn-login" onclick="goBack()">Return to Login</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="mockData_login.js"></script>
+    <script src="login.js"></script>
+</body>
+</html>

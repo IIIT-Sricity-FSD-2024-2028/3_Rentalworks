@@ -1,0 +1,108 @@
+<!-- ================================
+  ANNOUNCEMENTS FRAGMENT
+  Loaded by: navigateTo('notifications')
+  Rendered by: notifications_admin.js
+================================= -->
+<section id="notifications-sec" class="section active">
+  <div class="sec-hdr">
+    <h2>Platform Announcements</h2>
+    <p>Broadcast system-wide updates to all users</p>
+  </div>
+
+  <div class="notif-layout">
+    <!-- Compose Panel -->
+    <div class="notif-compose">
+      <h3>📤 Create Announcement</h3>
+      <p>Compose and broadcast platform-level announcements</p>
+
+      <!-- Type buttons -->
+      <div class="notif-type-btns">
+        <button class="type-btn active" data-type="announcement">🔔 Announcement</button>
+        <button class="type-btn" data-type="alert">✉️ Alert</button>
+        <button class="type-btn" data-type="update">📤 Update</button>
+      </div>
+
+      <!-- Priority Level -->
+      <div class="notif-field">
+        <label>Priority Level</label>
+        <div class="priority-btns">
+          <button class="priority-btn active" data-priority="routine">🟢 Routine</button>
+          <button class="priority-btn" data-priority="important">🟡 Important</button>
+          <button class="priority-btn" data-priority="urgent">🔴 Urgent</button>
+        </div>
+      </div>
+
+      <!-- Target Audience -->
+      <div class="notif-field">
+        <label>Target Audience *</label>
+        <div class="cascading-targeting" style="display:flex;gap:10px">
+          <select id="target-role" style="padding:8px;border-radius:6px;border:1px solid #cbd5e1;flex:1;background:white;color:#1e293b">
+            <option value="all">Broadcast to All Users</option>
+            <option value="tenant">Tenants Only</option>
+            <option value="warden">Wardens Only</option>
+            <option value="owner">Owners Only</option>
+          </select>
+          <select id="target-pg" style="display:none;padding:8px;border-radius:6px;border:1px solid #cbd5e1;flex:1;background:white;color:#1e293b">
+            <option value="all">All Properties</option>
+          </select>
+          <select id="target-user" style="display:none;padding:8px;border-radius:6px;border:1px solid #cbd5e1;flex:1;background:white;color:#1e293b">
+            <option value="all">All Members in this PG</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="notif-field">
+        <label>Title *</label>
+        <input type="text" id="notif-title" placeholder="Enter announcement title..."/>
+      </div>
+      <div class="notif-field">
+        <label>Message *</label>
+        <textarea id="notif-message" placeholder="Enter announcement message..."></textarea>
+      </div>
+
+      <!-- Send + Schedule -->
+      <div style="display:flex;gap:8px;align-items:flex-start">
+        <button class="btn-send" style="flex:1" onclick="sendNotification()">📤 Send Now</button>
+        <div style="display:flex;flex-direction:column;gap:6px;flex:1">
+          <input type="datetime-local" id="notif-schedule-dt" style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:12px"/>
+          <button class="btn-schedule" onclick="scheduleNotification()">📅 Schedule Send</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Recipients + Stats -->
+    <div>
+      <div class="recipients-card">
+        <h4>Recipient Counts</h4>
+        <div class="recipient-item selected" data-recipient="all">
+          <div class="rec-left">👥 All Users</div>
+          <span class="rec-count" id="rec-all-count">–</span>
+        </div>
+        <div class="recipient-item" data-recipient="tenants">
+          <div class="rec-left">👤 All Tenants</div>
+          <span class="rec-count" id="rec-tenants-count" style="color:#16a34a">–</span>
+        </div>
+        <div class="recipient-item" data-recipient="owners">
+          <div class="rec-left">🏢 Property Owners</div>
+          <span class="rec-count" id="rec-owners-count" style="color:#7c3aed">–</span>
+        </div>
+        <div class="recipient-item" data-recipient="wardens">
+          <div class="rec-left">👮 Wardens</div>
+          <span class="rec-count" id="rec-wardens-count" style="color:#16a34a">–</span>
+        </div>
+      </div>
+
+      <div class="notif-stats-card">
+        <h4>Announcement Stats</h4>
+        <div class="ns-row"><span>Total Sent</span><strong id="ns-total-sent">–</strong></div>
+        <div class="ns-row"><span>Total Reach</span><strong id="ns-reach">–</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="notif-history">
+    <h3>Announcement History</h3>
+    <div id="notif-history-list"></div>
+  </div>
+</section>

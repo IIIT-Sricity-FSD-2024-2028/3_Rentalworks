@@ -1,0 +1,133 @@
+<!-- pages/view_complaints.html -->
+<section id="complaints-section" class="section active">
+
+  <!-- LIST VIEW -->
+  <div id="complaints-list-view">
+    <div class="section-header">
+      <h2>Complaint Management</h2>
+      <p>Review and manage tenant complaints</p>
+    </div>
+
+    <div class="complaint-stats">
+      <div class="stat-card">
+        <div class="complaint-stat-icon" style="background:#dbeafe">💬</div>
+        <div class="stat-label">Total Complaints</div>
+        <div class="stat-value" id="comp-total">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="complaint-stat-icon" style="background:#fee2e2">💬</div>
+        <div class="stat-label">Open</div>
+        <div class="stat-value" id="comp-open">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="complaint-stat-icon" style="background:#fef9c3">💬</div>
+        <div class="stat-label">In Progress</div>
+        <div class="stat-value" id="comp-inprogress">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="complaint-stat-icon" style="background:#dcfce7">💬</div>
+        <div class="stat-label">Resolved</div>
+        <div class="stat-value" id="comp-resolved">—</div>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <div class="table-header">
+        <select class="filter-select" id="complaint-status-filter">
+          <option value="all">All Status</option>
+          <option value="open">Open</option>
+          <option value="in_progress">In Progress</option>
+          <option value="resolved">Resolved</option>
+        </select>
+        <select class="filter-select" id="complaint-priority-filter">
+          <option value="all">All Priority</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Complaint ID</th>
+            <th>Tenant Name</th>
+            <th>Room</th>
+            <th>Complaint Type</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="complaints-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DETAIL VIEW -->
+  <div id="complaint-detail-view" style="display:none">
+    <div class="back-btn" onclick="backToComplaints()">← Back to Complaints</div>
+    <div class="section-header">
+      <h2>Complaint Details</h2>
+      <p>Complaint ID: <span id="detail-complaint-id"></span></p>
+    </div>
+
+    <div class="complaint-detail-layout">
+      <!-- Left -->
+      <div>
+        <div class="detail-card">
+          <h3>Complaint Information</h3>
+          <div class="detail-field"><label>Complaint Type</label><p id="detail-type"></p></div>
+          <div class="detail-field"><label>Description</label><p id="detail-description"></p></div>
+          <div class="status-row">
+            <div><label style="font-size:12px;color:#6b7280">Priority</label><p id="detail-priority" style="font-weight:700;font-size:14px"></p></div>
+            <div><label style="font-size:12px;color:#6b7280">Status</label><div id="detail-status"></div></div>
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <h3>Timeline of Updates</h3>
+          <div class="timeline" id="detail-timeline"></div>
+        </div>
+
+        <div class="detail-card remarks-section">
+          <h3>Add Remarks</h3>
+          <textarea id="detail-remark" placeholder="Add your remarks or observations..."></textarea>
+          <button class="btn-save" style="margin-top:12px" onclick="addRemark()">💾 Add Remark</button>
+        </div>
+      </div>
+
+      <!-- Right -->
+      <div>
+        <div class="tenant-detail-card">
+          <h4>Tenant Details</h4>
+          <div class="tenant-detail-row">
+            <span class="td-icon">👤</span>
+            <div class="td-info"><label>Name</label><strong id="detail-tenant-name"></strong></div>
+          </div>
+          <div class="tenant-detail-row">
+            <span class="td-icon">🏠</span>
+            <div class="td-info"><label>Room Number</label><strong id="detail-tenant-room"></strong></div>
+          </div>
+          <div class="tenant-detail-row">
+            <span class="td-icon">📅</span>
+            <div class="td-info"><label>Submitted Date</label><strong id="detail-tenant-date"></strong></div>
+          </div>
+        </div>
+
+        <div class="action-buttons-card">
+          <h4>Actions</h4>
+          <button class="action-btn-full btn-mark-progress" onclick="updateComplaintStatus('in_progress')">Mark In Progress</button>
+          <button class="action-btn-full btn-resolve" onclick="updateComplaintStatus('resolved')">Resolve Complaint</button>
+          <button class="action-btn-full btn-escalate-owner" onclick="escalateComplaint()">Escalate to Owner</button>
+        </div>
+
+        <div class="quick-tip-card">
+          <div class="qt-title">Quick Tip</div>
+          <p>High priority complaints should be addressed within 24 hours. Consider assigning to a vendor for faster resolution.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>

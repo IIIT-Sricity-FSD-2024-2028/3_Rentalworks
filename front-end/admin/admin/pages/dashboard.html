@@ -1,0 +1,119 @@
+<!-- ================================
+  DASHBOARD FRAGMENT
+  Loaded by: navigateTo('dashboard')
+  Rendered by: dashboard_admin.js
+================================= -->
+<section id="dashboard-sec" class="section active">
+  <div class="sec-hdr">
+    <h2>Dashboard Overview</h2>
+    <p>Monitor platform statistics and system health</p>
+  </div>
+
+  <!-- 6 KPI Cards -->
+  <div class="stats-row stats-row-6">
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-blue">👥</div><span class="stat-trend up">↑ Live</span></div>
+      <div class="stat-val" id="d-total-users">–</div>
+      <div class="stat-lbl">Total Users</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-purple">🏢</div><span class="stat-trend up">↑ Live</span></div>
+      <div class="stat-val" id="d-properties">–</div>
+      <div class="stat-lbl">Total PG Properties</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-green">📅</div></div>
+      <div class="stat-val" id="d-bookings">–</div>
+      <div class="stat-lbl">Active Bookings</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-yellow">⏳</div></div>
+      <div class="stat-val" id="d-complaints">–</div>
+      <div class="stat-lbl">Pending Bookings</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-green">💸</div><span class="stat-trend up">↑ 8.5%</span></div>
+      <div class="stat-val" id="d-gtv">–</div>
+      <div class="stat-lbl">Gross Transaction Value</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-purple">💰</div><span class="stat-trend up">10%</span></div>
+      <div class="stat-val" id="d-platform-rev">–</div>
+      <div class="stat-lbl">Platform Revenue</div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <h3>Revenue Overview</h3>
+      <p>Monthly revenue trends</p>
+      <div class="line-chart-wrap" id="revenue-chart"></div>
+      <div class="chart-labels">
+        <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>Booking Trends</h3>
+      <p>Monthly booking statistics</p>
+      <div class="chart-area" id="booking-chart"></div>
+      <div class="chart-labels">
+        <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Activity Feed + System Health -->
+  <div class="dashboard-bottom-row">
+    <div class="activity-card">
+      <div class="activity-hdr">
+        <span>〰️</span>
+        <div>
+          <h3>Recent Activity Feed</h3>
+          <p>Action · Person · Property · Time</p>
+        </div>
+      </div>
+      <div id="activity-feed"></div>
+    </div>
+    <div class="system-health-card">
+      <h3>System Health</h3>
+      <p>Live platform status</p>
+      <div id="system-health"></div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions-card">
+    <h3>Quick Actions</h3>
+    <div class="qa-grid">
+      <button class="qa-btn" onclick="navigateTo('properties')">
+        <span class="qa-icon">🏢</span>
+        <div>
+          <strong>Pending Approvals</strong>
+          <span><span id="qa-pending-props">0</span> properties waiting</span>
+        </div>
+      </button>
+      <button class="qa-btn" onclick="navigateTo('payments')">
+        <span class="qa-icon">💳</span>
+        <div>
+          <strong>Verify Payments</strong>
+          <span><span id="qa-pending-payments">0</span> pending verification</span>
+        </div>
+      </button>
+      <button class="qa-btn" onclick="navigateTo('bookings')">
+        <span class="qa-icon">📅</span>
+        <div>
+          <strong>Confirm Bookings</strong>
+          <span><span id="qa-pending-bookings">0</span> bookings pending</span>
+        </div>
+      </button>
+      <button class="qa-btn" onclick="navigateTo('users')">
+        <span class="qa-icon">👥</span>
+        <div>
+          <strong>Manage Users</strong>
+          <span>Add, edit or suspend accounts</span>
+        </div>
+      </button>
+    </div>
+  </div>
+</section>

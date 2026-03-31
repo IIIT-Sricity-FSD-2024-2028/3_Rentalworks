@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RentBro- Admin Portal</title>
+  <link rel="stylesheet" href="styles_admin.css" />
+</head>
+
+<body>
+
+  <!-- ================================ DASHBOARD SHELL ================================ -->
+  <div id="dashboard-page" style="display:flex;min-height:100vh">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sb-brand">
+        <span class="b-ico">🏢</span>
+        <div>
+          <h3>RentBro</h3>
+          <span>Admin Portal</span>
+        </div>
+      </div>
+      <nav class="sb-nav">
+        <div class="nav-item active" data-sec="dashboard"><span class="n-ico">🗂️</span> Dashboard</div>
+        <div class="nav-item" data-sec="users"><span class="n-ico">👥</span> User Management</div>
+        <div class="nav-item" data-sec="properties"><span class="n-ico">🏢</span> PG Properties</div>
+        <div class="nav-item" data-sec="bookings"><span class="n-ico">📅</span> Bookings</div>
+        <div class="nav-item" data-sec="payments"><span class="n-ico">💳</span> Payments</div>
+        <div class="nav-item" data-sec="notifications"><span class="n-ico">🔔</span> Announcements</div>
+      </nav>
+    </aside>
+
+    <!-- MAIN WRAPPER -->
+    <div class="main-wrap">
+
+      <!-- NAVBAR -->
+      <header class="navbar">
+        <div class="nb-left">
+          <h4 id="nb-name">Welcome back, Admin</h4>
+          <p id="nb-email">admin@pgrentals.com</p>
+        </div>
+        <div class="nb-right">
+          <div class="nb-icon" onclick="navigateTo('notifications')">🔔<span class="nb-dot"></span></div>
+          <div class="nb-icon" id="gear-btn" title="Settings & Profile">⚙️</div>
+          <button class="btn-logout" id="logout-btn">↪ Logout</button>
+        </div>
+      </header>
+
+      <!-- DYNAMIC CONTENT INJECTED HERE -->
+      <main id="main-content-target" class="content">
+        <!-- Fragment HTML files are loaded here by main_admin.js -->
+      </main>
+
+    </div>
+  </div>
+
+  <!-- ================================ PROFILE MODAL ================================ -->
+  <div class="modal-overlay" id="profile-modal-overlay">
+    <div class="modal" style="width:520px;max-height:90vh;overflow-y:auto">
+      <div class="modal-hdr">
+        <h3>⚙️ Profile &amp; Settings</h3>
+        <span class="modal-close" onclick="closeProfileModal()">✕</span>
+      </div>
+      <div class="profile-section">
+        <div class="profile-avatar-wrap">
+          <div class="profile-avatar-circle">A</div>
+          <div>
+            <strong style="font-size:15px">Admin</strong>
+            <div style="font-size:12px;color:#94a3b8">admin@pgrentals.com</div>
+            <span class="badge badge-admin" style="margin-top:4px;display:inline-flex">Super Administrator</span>
+          </div>
+        </div>
+        <div class="profile-meta-grid">
+          <div class="profile-meta-item"><span>Role</span><strong>Super Admin</strong></div>
+          <div class="profile-meta-item"><span>Last Login</span><strong>Today at 10:45 AM</strong></div>
+          <div class="profile-meta-item"><span>Browser</span><strong>Chrome, Windows</strong></div>
+          <div class="profile-meta-item"><span>Status</span><strong style="color:#16a34a">Active</strong></div>
+        </div>
+      </div>
+      <div class="profile-section">
+        <h4 class="profile-section-title">🔐 Security Settings</h4>
+        <div class="modal-field">
+          <label>Current Password</label>
+          <input type="password" id="pm-curr-pass" placeholder="Enter current password" />
+        </div>
+        <div class="modal-field">
+          <label>New Password</label>
+          <input type="password" id="pm-new-pass" placeholder="Min 6 characters" />
+        </div>
+        <div class="modal-field">
+          <label>Confirm New Password</label>
+          <input type="password" id="pm-conf-pass" placeholder="Repeat new password" />
+        </div>
+        <button class="btn-confirm-blue" style="width:100%;padding:10px" onclick="updatePassword()">Update
+          Password</button>
+      </div>
+      <div class="profile-section">
+        <h4 class="profile-section-title">🛡️ System Security</h4>
+        <div class="twofa-row">
+          <div>
+            <strong style="font-size:13px">Two-Factor Authentication (2FA)</strong>
+            <div style="font-size:12px;color:#94a3b8;margin-top:2px">Add an extra layer of security</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="twofa-toggle" onchange="toggle2FA()" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="profile-section" style="border-bottom:none">
+        <h4 class="profile-section-title">📋 Session History</h4>
+        <div class="session-item">
+          <div class="session-dot active-dot"></div>
+          <div>
+            <strong style="font-size:12px">Current Session</strong>
+            <div style="font-size:11px;color:#94a3b8">Today at 10:45 AM · Chrome · Windows · 192.168.1.1</div>
+          </div>
+          <span class="badge badge-active" style="font-size:10px">Active</span>
+        </div>
+        <div class="session-item">
+          <div class="session-dot"></div>
+          <div>
+            <strong style="font-size:12px">Previous Session</strong>
+            <div style="font-size:11px;color:#94a3b8">Yesterday at 6:30 PM · Chrome · Windows</div>
+          </div>
+          <span style="font-size:11px;color:#94a3b8">Ended</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================ MAIN MODAL ================================ -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-hdr">
+        <h3 id="modal-title">Modal</h3>
+        <span class="modal-close" id="modal-close-btn">✕</span>
+      </div>
+      <p id="modal-subtitle" style="font-size:12px;color:#94a3b8;margin-bottom:14px"></p>
+      <div id="modal-body"></div>
+      <div class="modal-foot" id="modal-foot"></div>
+    </div>
+  </div>
+
+  <!-- ================================ TOAST ================================ -->
+  <div class="toast" id="toast">
+    <span class="t-ico">✅</span>
+    <div class="t-text"><strong>Title</strong><span>Message</span></div>
+  </div>
+
+  <!-- ================================ SCRIPTS ================================ -->
+  <script src="mockData_admin.js"></script>
+  <script src="js/main_admin.js"></script>
+  <script src="js/auth_admin.js"></script>
+  <script src="js/dashboard_admin.js"></script>
+  <script src="js/users_admin.js"></script>
+  <script src="js/properties_admin.js"></script>
+  <script src="js/bookings_admin.js"></script>
+  <script src="js/payments_admin.js"></script>
+  <script src="js/notifications_admin.js"></script>
+  <script src="js/profile_admin.js"></script>
+
+</body>
+
+</html>

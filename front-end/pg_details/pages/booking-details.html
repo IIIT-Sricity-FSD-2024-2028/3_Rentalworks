@@ -1,0 +1,57 @@
+<div class="page-content" style="max-width: 1000px;">
+    <button class="btn-back" onclick="Navigation.navigate('pending')">
+        <svg viewBox="0 0 24 24"><path d="M19 12H5M5 12l7 7M5 12l7-7"/></svg>
+        Back to Pending Requests
+    </button>
+    <h2 style="font-size: 28px; font-weight: 800; margin-bottom: 24px;">Booking Details</h2>
+    
+    <div style="display: grid; grid-template-columns: 1.8fr 1fr; gap: 30px;">
+        <div>
+            <img src="https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=1000" style="width: 100%; height: 250px; object-fit: cover; border-radius: var(--radius); margin-bottom: 24px;">
+            
+            <div class="modern-card mb-24">
+                <div class="flex-between mb-16">
+                    <h3 class="dyn-pg-name h1" style="font-size: 22px;">&nbsp;</h3>
+                    <div style="text-align: right;">
+                        <span class="text-gray text-sm block">Booking ID</span>
+                        <strong class="dyn-booking-id" style="font-size: 15px; font-family: monospace;">&nbsp;</strong>
+                    </div>
+                </div>
+                <p class="dyn-location text-gray text-sm">📍 Koramangala, Bangalore</p>
+                <hr style="border: none; border-top: 1px solid var(--border); margin: 16px 0;">
+                <div class="grid-2">
+                    <div><span class="text-gray text-sm block">Room Type</span><strong class="dyn-room">&nbsp;</strong></div>
+                    <div><span class="text-gray text-sm block">Move-in Date</span><strong class="dyn-date">&nbsp;</strong></div>
+                </div>
+            </div>
+
+            <div class="modern-card mb-24">
+                <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 16px;">Selected Roommate</h3>
+                <div id="details-rm-box"></div>
+                <div style="margin-top: 16px; padding: 12px; background: #eff6ff; color: #1e3a8a; border-radius: 8px; font-size: 12px; font-weight: 600;">🔒 Contact details unlocked after payment.</div>
+            </div>
+        </div>
+
+        <div>
+            <div class="modern-card" style="position: sticky; top: 100px;">
+                <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 20px;">Booking Summary</h3>
+                
+                <div class="mb-12"><span class="text-gray text-sm block">PG</span><strong class="dyn-pg-name text-sm">&nbsp;</strong></div>
+                <div class="mb-12"><span class="text-gray text-sm block">Room Type</span><strong class="dyn-room text-sm">&nbsp;</strong></div>
+                <div class="mb-24"><span class="text-gray text-sm block">Selected Roommate</span><strong id="details-rm-name" class="text-sm">&nbsp;</strong></div>
+                
+                <div class="flex-between mb-12 text-sm"><span class="text-gray">Monthly Rent</span><strong class="dyn-rent">&nbsp;</strong></div>
+                <div class="flex-between mb-24 text-sm"><span class="text-gray">Security Deposit</span><strong class="dyn-deposit">&nbsp;</strong></div>
+                
+                <hr style="border: none; border-top: 1px solid var(--border); margin: 16px 0;">
+                
+                <div class="flex-between mb-24">
+                    <span style="font-size: 16px; font-weight: 800;">Estimated Total</span>
+                    <strong class="dyn-total" style="font-size: 18px; color: var(--text-dark);">&nbsp;</strong>
+                </div>
+                
+                <div id="booking-details-status"></div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,52 @@
+<!-- ================================
+  USER MANAGEMENT FRAGMENT
+  Loaded by: navigateTo('users')
+  Rendered by: users_admin.js
+================================= -->
+<section id="users-sec" class="section active">
+  <div class="sec-hdr">
+    <h2>User Management</h2>
+    <p>Manage all users across the platform</p>
+  </div>
+
+  <!-- Dynamic KPI Cards -->
+  <div class="user-summary">
+    <div class="u-sum-card"><div class="u-sum-label">Total Users</div><div class="u-sum-val" id="u-total">–</div></div>
+    <div class="u-sum-card"><div class="u-sum-label">Active Tenants</div><div class="u-sum-val blue" id="u-tenants">–</div></div>
+    <div class="u-sum-card"><div class="u-sum-label">Property Owners</div><div class="u-sum-val purple" id="u-owners">–</div></div>
+    <div class="u-sum-card"><div class="u-sum-label">Total Wardens</div><div class="u-sum-val green" id="u-wardens">–</div></div>
+    <div class="u-sum-card"><div class="u-sum-label">Admins</div><div class="u-sum-val red" id="u-admins">1</div></div>
+  </div>
+
+  <!-- Table -->
+  <div class="tbl-wrap">
+    <div class="tbl-hdr">
+      <div class="search-wrap">
+        <span class="s-ico">🔍</span>
+        <input type="text" id="user-search" placeholder="Search by name, email, or phone..."/>
+      </div>
+      <select class="sel" id="user-role-filter">
+        <option value="all">All Roles</option>
+        <option value="tenant">Tenant</option>
+        <option value="owner">Owner</option>
+        <option value="warden">Warden</option>
+      </select>
+      <select class="sel" id="user-status-filter">
+        <option value="all">All Status</option>
+        <option value="active">Active</option>
+        <option value="suspended">Suspended</option>
+      </select>
+      <button class="btn-add" onclick="addUser()">+ Add User</button>
+    </div>
+    <table class="data-tbl">
+      <thead>
+        <tr>
+          <th>Name</th><th>Email</th><th>Phone</th><th>Role</th>
+          <th>PG Property</th><th>Status</th><th>Join Date</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="users-tbody"></tbody>
+    </table>
+    <div class="tbl-footer" id="users-count">Showing 0 users</div>
+  </div>
+</section>

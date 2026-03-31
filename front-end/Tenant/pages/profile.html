@@ -1,0 +1,61 @@
+<div id="page-profile" class="page active">
+  <div class="page-content">
+    <div class="page-header"><h1>Profile</h1><p>Manage your account information</p></div>
+    <div class="grid-2">
+      <div class="profile-card">
+        <div class="profile-avatar">R</div>
+        <div class="profile-name">Rahul Sharma</div>
+        <div class="profile-email">rahul.sharma@email.com</div>
+        <span class="profile-badge">Tenant</span>
+        <div class="profile-stats">
+          <div class="profile-stat"><div class="profile-stat-label">Room Number</div><div class="profile-stat-value">A-204</div></div>
+          <div class="profile-stat"><div class="profile-stat-label">Property</div><div class="profile-stat-value">Sunrise PG</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="section-card mb-16">
+          <div class="section-header"><span class="section-title">Personal Information</span></div>
+          <div class="section-body">
+            <div class="form-group"><label>Full Name</label><input type="text" id="profile-name" value="Rahul Sharma" /></div>
+            <div class="form-group"><label>Email Address</label><input type="email" value="rahul.sharma@email.com" readonly style="background:var(--bg-main)" /></div>
+            <div class="form-group"><label>Phone Number</label><input type="tel" id="profile-phone" value="+91 98765 43210" /></div>
+            <div class="form-group"><label>Property Assigned</label><input type="text" value="Sunrise PG Residency" readonly style="background:var(--bg-main)" /></div>
+            <div class="form-group"><label>Address</label><textarea id="profile-address" style="min-height:70px">A-204, Sunrise PG Residency, Andheri West, Mumbai</textarea></div>
+            <button class="btn btn-primary" onclick="TenantLogic.saveProfile()">💾 Save Changes</button>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-header"><span class="section-title">Security</span></div>
+          <div class="section-body">
+            <div class="security-item">
+              <div style="display:flex;align-items:center"><div class="security-icon" style="background:var(--primary-bg)">🔑</div><div class="security-info"><div class="security-title">Password</div><div class="security-sub">Last changed 30 days ago</div></div></div>
+              <button class="btn btn-outline btn-sm" onclick="Navigation.navigate('change-password')">Change Password</button>
+            </div>
+            <div class="security-item">
+              <div style="display:flex;align-items:center"><div class="security-icon" style="background:#f0fdf4">🔒</div><div class="security-info"><div class="security-title">Two-Factor Authentication</div><div class="security-sub">Add an extra layer of security</div></div></div>
+              <button id="btn-2fa" class="btn btn-primary btn-sm" onclick="TenantLogic.toggle2FA()">Enable</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-change-password" class="page">
+  <div class="page-content" style="max-width:500px; margin: 0 auto;">
+    <button class="btn btn-ghost btn-sm mb-16" onclick="Navigation.navigate('profile')">← Back to Profile</button>
+    <div class="section-card">
+      <div class="section-header"><span class="section-title">Change Password</span></div>
+      <div class="section-body">
+        <div class="form-group"><label>Current Password</label><input type="password" id="current-password" placeholder="Enter current password" /></div>
+        <div class="form-group"><label>New Password</label><input type="password" id="new-password" placeholder="Enter new password (min 6 chars)" /></div>
+        <div class="form-group"><label>Confirm New Password</label><input type="password" id="confirm-password" placeholder="Type new password again" /></div>
+        <div style="margin-top: 20px;">
+          <button class="btn btn-primary btn-full" onclick="TenantLogic.submitPasswordChange()">Update Password</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

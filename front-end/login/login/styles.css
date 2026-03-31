@@ -1,0 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+body, button, input, select, textarea { font-family: 'Inter', sans-serif !important; font-size: 14px !important; }
+

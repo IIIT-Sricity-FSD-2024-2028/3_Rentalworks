@@ -1,0 +1,244 @@
+<div id="page-payments" class="page active">
+  <div class="page-content">
+    <div class="page-header"><h1>Payments</h1><p>Manage your rent and utility payments</p></div>
+    <div class="grid-4 mb-20">
+      <div class="stat-card"><div class="stat-label">Total Pending <span>🕐</span></div><div class="stat-value" id="stat-total-pending" style="color:var(--warning)">₹0</div></div>
+      <div class="stat-card"><div class="stat-label">Paid this Month <span>✅</span></div><div class="stat-value" id="stat-paid-month" style="color:var(--success)">₹0</div></div>
+      <div class="stat-card"><div class="stat-label">Monthly Rent <span>₹</span></div><div class="stat-value">₹12,000</div></div>
+      <div class="stat-card"><div class="stat-label">Next Due Date <span>📅</span></div><div class="stat-value" style="font-size:16px">Mar 10, 2026</div></div>
+    </div>
+
+    <div class="section-card mb-20">
+      <div class="section-header"><span class="section-title">Upcoming Payments</span></div>
+      <div class="section-body" id="upcoming-payments-list"></div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-header"><span class="section-title">Payment History</span></div>
+      <div class="section-body" style="overflow-x:auto">
+        <table class="payment-table">
+          <thead><tr><th>Type</th><th>Amount</th><th>Date</th><th>Method</th><th>Status</th></tr></thead>
+          <tbody id="payment-history-list"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-pay-methods" class="page">
+  <div class="page-content">
+    <button class="btn btn-ghost btn-sm mb-16" onclick="Navigation.navigate('payments')">← Cancel Payment</button>
+    <div class="payment-flow-layout">
+      <div>
+        <div class="section-card mb-16">
+          <div class="section-header"><span class="section-title">Select Payment Method</span></div>
+          <div class="section-body">
+            <div class="grid-3 mb-16">
+              <div class="payment-method-card active" data-method="upi" onclick="TenantLogic.selectPaymentMethod('upi')"><div class="payment-method-icon">📱</div><div class="payment-method-name">UPI</div></div>
+              <div class="payment-method-card" data-method="card" onclick="TenantLogic.selectPaymentMethod('card')"><div class="payment-method-icon">💳</div><div class="payment-method-name">Card</div></div>
+              <div class="payment-method-card" data-method="netbanking" onclick="TenantLogic.selectPaymentMethod('netbanking')"><div class="payment-method-icon">🏦</div><div class="payment-method-name">Net Banking</div></div>
+            </div>
+            <div id="panel-upi" class="payment-panel"><button class="btn btn-primary btn-full" onclick="Navigation.navigate('pay-upi')">Continue with UPI</button></div>
+            <div id="panel-card" class="payment-panel hidden"><button class="btn btn-primary btn-full" onclick="Navigation.navigate('pay-card')">Continue with Card</button></div>
+            <div id="panel-netbanking" class="payment-panel hidden"><button class="btn btn-primary btn-full" onclick="Navigation.navigate('pay-netbanking')">Continue with Net Banking</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="payment-details-card">
+        <h3 class="card-title mb-16">Payment Details</h3>
+        <div class="payment-detail-row"><span class="pd-label">Payment Type</span><span class="pd-value dyn-pay-type">...</span></div>
+        <div class="payment-detail-row"><span class="pd-label">Due Date</span><span class="pd-value dyn-pay-due">...</span></div>
+        <div class="payment-detail-row"><span class="pd-label">Processing Fee</span><span class="pd-value" style="color:var(--success)">₹0</span></div>
+        <div class="payment-total"><span class="pt-label">Total Amount</span><span class="pt-value dyn-pay-amount">₹0</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-pay-upi" class="page">
+  <div class="page-content">
+    <button class="btn btn-ghost btn-sm mb-16" onclick="Navigation.navigate('pay-methods')">← Back to Methods</button>
+    <div class="payment-flow-layout">
+      <div class="section-card mb-16" style="flex:1">
+        <div class="section-header">
+          <div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px">📱</span><div><div class="section-title">UPI Payment</div><div class="text-sm text-muted">Enter your UPI ID or scan to pay</div></div></div>
+        </div>
+        <div class="section-body">
+          <div class="form-group">
+            <label>Your UPI ID</label>
+            <input type="text" placeholder="yourname@upi" id="upi-id" />
+          </div>
+          
+          <p class="font-bold text-sm mb-12">Popular UPI Apps</p>
+          <div class="grid-2 mb-16" style="gap: 10px;">
+            <div class="btn btn-outline btn-sm" style="display:flex; gap:8px; justify-content:center;" onclick="document.getElementById('upi-id').value='user@googlepay'">🟦 Google Pay</div>
+            <div class="btn btn-outline btn-sm" style="display:flex; gap:8px; justify-content:center;" onclick="document.getElementById('upi-id').value='user@ybl'">🟣 PhonePe</div>
+            <div class="btn btn-outline btn-sm" style="display:flex; gap:8px; justify-content:center;" onclick="document.getElementById('upi-id').value='user@paytm'">🟦 Paytm</div>
+            <div class="btn btn-outline btn-sm" style="display:flex; gap:8px; justify-content:center;" onclick="document.getElementById('upi-id').value='user@apl'">🟠 Amazon Pay</div>
+          </div>
+          
+          <button class="btn btn-primary btn-full mb-16" onclick="TenantLogic.processPayment('upi')"><span class="dyn-pay-btn-text">Pay</span></button>
+          
+          <div style="text-align:center; position:relative; margin: 20px 0;">
+            <hr style="border-color: var(--border); margin:0;">
+            <span style="background:var(--bg-main); padding:0 10px; position:absolute; top:-10px; left:50%; transform:translateX(-50%); font-size:12px; color:var(--text-muted);">OR</span>
+          </div>
+          
+          <div style="text-align:center; padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1;">
+            <div style="font-size: 60px; line-height: 1;">📱</div>
+            <p class="font-bold mt-8 mb-8">Scan QR Code</p>
+            <p class="text-sm text-muted">Open any UPI app and scan this to pay directly.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="payment-details-card">
+        <h3 class="card-title mb-16">Payment Details</h3>
+        <div class="payment-detail-row"><span class="pd-label">Payment Type</span><span class="pd-value dyn-pay-type">...</span></div>
+        <div class="payment-detail-row"><span class="pd-label">Due Date</span><span class="pd-value dyn-pay-due">...</span></div>
+        <div class="payment-detail-row"><span class="pd-label">Method</span><span class="pd-value">📱 UPI</span></div>
+        <div class="payment-detail-row"><span class="pd-label">Processing Fee</span><span class="pd-value" style="color:var(--success)">₹0</span></div>
+        <div class="payment-total"><span class="pt-label">Total Amount</span><span class="pt-value dyn-pay-amount">₹0</span></div>
+        <div class="secure-badge mt-16">✅ Secure & Encrypted Connection</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-pay-card" class="page">
+  <div class="page-content">
+    <button class="btn btn-ghost btn-sm mb-16" onclick="Navigation.navigate('pay-methods')">← Back</button>
+    <div class="payment-flow-layout">
+      <div class="section-card mb-16" style="flex:1">
+        <div class="section-header"><div class="section-title">Card Payment</div></div>
+        <div class="section-body">
+          
+          <div class="card-visual mb-16" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div class="card-logo" style="font-size: 24px; text-align: right; margin-bottom: 10px;">💳</div>
+            <div class="card-visual-chip" style="background: gold; width: 40px; height: 30px; border-radius: 4px; margin-bottom: 15px;"></div>
+            <div class="card-visual-number" id="card-display-num" style="font-size: 20px; letter-spacing: 2px; margin-bottom: 20px; font-family: monospace;">•••• •••• •••• ••••</div>
+            <div class="card-visual-bottom" style="display: flex; justify-content: space-between; text-transform: uppercase; font-size: 12px; opacity: 0.8;">
+              <div><div class="card-visual-label">Card Holder</div><div class="card-visual-value" id="card-display-name">YOUR NAME</div></div>
+              <div><div class="card-visual-label">Expires</div><div class="card-visual-value" id="card-display-exp">MM/YY</div></div>
+            </div>
+          </div>
+
+          <div class="form-group"><label>Card Number</label><input type="text" id="card-num" placeholder="1234 5678 9012 3456" maxlength="19" oninput="this.value=this.value.replace(/[^0-9]/g,'').replace(/(.{4})/g,'$1 ').trim();document.getElementById('card-display-num').textContent=this.value||'•••• •••• •••• ••••'" /></div>
+          <div class="form-group"><label>Card Holder Name</label><input type="text" id="card-name" placeholder="JOHN DOE" oninput="document.getElementById('card-display-name').textContent=this.value.toUpperCase()||'YOUR NAME'" /></div>
+          <div class="grid-2">
+            <div class="form-group"><label>Expiry Date</label><input type="text" id="card-exp" placeholder="MM/YY" maxlength="5" oninput="this.value=this.value.replace(/[^0-9/]/g,'');document.getElementById('card-display-exp').textContent=this.value||'MM/YY'" /></div>
+            <div class="form-group"><label>CVV</label><input type="password" id="card-cvv" placeholder="123" maxlength="3" /></div>
+          </div>
+          
+          <button class="btn btn-primary btn-full mt-16" onclick="TenantLogic.processPayment('card')"><span class="dyn-pay-btn-text">Pay</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-pay-netbanking" class="page">
+  <div class="page-content">
+    <button class="btn btn-ghost btn-sm mb-16" onclick="Navigation.navigate('pay-methods')">← Back to Methods</button>
+    <div class="payment-flow-layout">
+      <div class="section-card mb-16" style="flex:1">
+        <div class="section-header">
+          <div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px">🏦</span><div><div class="section-title">Net Banking</div><div class="text-sm text-muted">Select your bank to proceed</div></div></div>
+        </div>
+        <div class="section-body">
+          <input type="text" placeholder="🔍 Search for your bank..." style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 16px;" />
+         
+          <p class="font-bold text-sm mb-12">Popular Banks</p>
+          <div class="grid-2 mb-16" style="gap: 10px;">
+            <div class="btn btn-outline btn-sm bank-btn" onclick="TenantLogic.selectBank(this, 'SBI')">🏦 State Bank of India</div>
+            <div class="btn btn-outline btn-sm bank-btn" onclick="TenantLogic.selectBank(this, 'HDFC')">🏦 HDFC Bank</div>
+            <div class="btn btn-outline btn-sm bank-btn" onclick="TenantLogic.selectBank(this, 'ICICI')">🏦 ICICI Bank</div>
+            <div class="btn btn-outline btn-sm bank-btn" onclick="TenantLogic.selectBank(this, 'Axis')">🏦 Axis Bank</div>
+          </div>
+          <button class="btn btn-primary btn-full mt-16" onclick="Navigation.navigate('pay-netbanking-login')">Proceed to Bank Login</button>
+        </div>
+      </div>
+      <div class="payment-details-card">
+        <h3 class="card-title mb-16">Payment Details</h3>
+        <div class="payment-detail-row"><span class="pd-label">Payment Type</span><span class="pd-value dyn-pay-type">...</span></div>
+        <div class="payment-detail-row"><span class="pd-label">Due Date</span><span class="pd-value dyn-pay-due">...</span></div>
+        <div class="payment-detail-row"><span class="pd-label">Method</span><span class="pd-value">🏦 Net Banking</span></div>
+        <div class="payment-detail-row"><span class="pd-label">Processing Fee</span><span class="pd-value" style="color:var(--success)">₹0</span></div>
+        <div class="payment-total"><span class="pt-label">Total Amount</span><span class="pt-value dyn-pay-amount">₹0</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-pay-netbanking-login" class="page">
+  <div class="page-content">
+    <button class="btn btn-ghost btn-sm mb-16" onclick="Navigation.navigate('pay-netbanking')">← Back to Banks</button>
+    <div class="payment-flow-layout">
+      <div class="section-card mb-16" style="flex:1">
+        <div class="section-header">
+          <div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px">🏦</span><div><div class="section-title">Internet Banking</div><div class="text-sm text-muted">Login to your bank account to authorize</div></div></div>
+        </div>
+        <div class="section-body">
+          <div class="status-banner success mb-16" style="padding:12px;">
+            <span>🔒</span><div><div style="font-weight:bold; font-size:13px;">Secure Session</div><div style="font-size:12px;">Your actual credentials are not stored during this demo.</div></div>
+          </div>
+          
+          <div class="form-group"><label>Bank User ID / CRN</label><input type="text" id="nb-userid" placeholder="Enter ID" /></div>
+          <div class="form-group"><label>Password</label><input type="password" id="nb-pass" placeholder="Password" /></div>
+          
+          <button class="btn btn-primary btn-full mt-16" onclick="TenantLogic.processPayment('netbanking')"><span class="dyn-pay-btn-text">Pay</span></button>
+        </div>
+      </div>
+      <div class="payment-details-card">
+        <h3 class="card-title mb-16">Payment Details</h3>
+        <div class="payment-detail-row"><span class="pd-label">Payment Type</span><span class="pd-value dyn-pay-type">...</span></div>
+        <div class="payment-detail-row"><span class="pd-label">Due Date</span><span class="pd-value dyn-pay-due">...</span></div>
+        <div class="payment-detail-row"><span class="pd-label">Method</span><span class="pd-value">🏦 Net Banking</span></div>
+        <div class="payment-detail-row"><span class="pd-label">Processing Fee</span><span class="pd-value" style="color:var(--success)">₹0</span></div>
+        <div class="payment-total"><span class="pt-label">Total Amount</span><span class="pt-value dyn-pay-amount">₹0</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-pay-success" class="page">
+  <div class="page-content" style="max-width:600px;margin:0 auto;">
+    
+    <div class="success-banner" style="background:#f0fdf4; border:1px solid #bbf7d0; text-align:center; padding: 40px; border-radius:12px; margin-bottom:20px;">
+      <div class="success-icon" style="font-size: 48px; background:#22c55e; color:white; width:80px; height:80px; line-height:80px; border-radius:50%; margin: 0 auto 16px;">✓</div>
+      <div class="success-title" style="font-size: 24px; font-weight:bold; color:#166534;">Payment Successful!</div>
+      <div style="font-size: 32px; font-weight:bold; color:var(--text-primary); margin-top: 10px;" id="success-amount-text">₹0</div>
+    </div>
+    
+    <div class="section-card mb-20">
+      <div class="section-header"><span class="section-title">Transaction Details</span></div>
+      <div class="section-body">
+        <div class="payment-detail-row" style="padding: 12px 0; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between;">
+          <span style="color:var(--text-muted);"># Transaction ID</span><strong id="success-txn-text">...</strong>
+        </div>
+        <div class="payment-detail-row" style="padding: 12px 0; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between;">
+          <span style="color:var(--text-muted);">Payment Type</span><strong id="success-type-text">...</strong>
+        </div>
+        <div class="payment-detail-row" style="padding: 12px 0; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between;">
+          <span style="color:var(--text-muted);">Payment Method</span><strong id="success-method-text">...</strong>
+        </div>
+        <div class="payment-detail-row" style="padding: 12px 0; border-bottom: 1px solid var(--border); display:flex; justify-content:space-between;">
+          <span style="color:var(--text-muted);">Date & Time</span><strong id="success-date-text">...</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card mb-20">
+      <div class="section-header"><span class="section-title">Payment Breakdown</span></div>
+      <div class="section-body">
+        <div class="payment-detail-row" style="display:flex; justify-content:space-between; margin-bottom:10px;"><span class="pd-label">Base Amount</span><span class="pd-value dyn-success-total">₹0</span></div>
+        <div class="payment-detail-row" style="display:flex; justify-content:space-between; margin-bottom:10px;"><span class="pd-label">Processing Fee</span><span class="pd-value" style="color:var(--success)">₹0</span></div>
+        <div class="payment-total" style="display:flex; justify-content:space-between; border-top: 2px solid var(--border); padding-top: 10px; margin-top: 10px; font-weight:bold; font-size:16px;">
+          <span class="pt-label">Total Paid</span><span class="pt-value dyn-success-total">₹0</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-full mt-16" onclick="Navigation.navigate('payments')" style="font-size:16px; padding:14px;">🏠 View Updated History</button>
+  </div>
+</div>

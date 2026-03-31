@@ -1,0 +1,95 @@
+<div class="page-content" style="max-width: 700px; padding-top: 20px;">
+    <button class="btn-back" onclick="Navigation.navigate('pending')">
+        <svg viewBox="0 0 24 24"><path d="M19 12H5M5 12l7 7M5 12l7-7"/></svg>
+        Back to Requests
+    </button>
+    <div style="text-align: center; margin-bottom: 32px;">
+        <div style="width: 64px; height: 64px; background: var(--success-light); border: 2px solid var(--success); color: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 16px;">✓</div>
+        <h2 style="font-size: 28px; font-weight: 800; margin-bottom: 8px;">Booking Confirmed!</h2>
+        <p class="text-gray text-sm">Your payment was successful and your room is now secured.</p>
+    </div>
+
+        <!-- Top Header -->
+        <div class="flex-between mb-16" style="border-bottom: 1px dashed var(--border); padding-bottom: 16px;">
+            <div>
+                <span class="text-gray text-sm block">Booking ID</span>
+                <strong id="conf-id" style="font-size: 16px;">&nbsp;</strong>
+            </div>
+            <div style="text-align: right;">
+                <span class="text-gray text-sm block">Transaction ID</span>
+                <strong id="conf-txn" style="font-size: 16px; font-family: monospace;">&nbsp;</strong>
+            </div>
+        </div>
+        
+        <!-- User & PG Info Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+            <!-- PG Details -->
+            <div>
+                <span class="text-gray text-sm block mb-8" style="font-weight: 700;">PG Information</span>
+                <strong id="conf-pg" style="font-size: 15px; display: block; margin-bottom: 4px;">&nbsp;</strong>
+                <span class="text-gray" style="font-size: 13px; display: block; margin-bottom: 4px;">📍 <span id="conf-pg-loc">&nbsp;</span></span>
+                <span class="text-gray" style="font-size: 13px; display: block;">Move-in: <strong id="conf-date" style="color: var(--text-dark);">&nbsp;</strong></span>
+                <span class="text-gray" style="font-size: 13px; display: block;">Room Type: <strong id="conf-room" style="color: var(--text-dark);">&nbsp;</strong></span>
+            </div>
+            
+            <!-- Renter Details -->
+            <div>
+                <span class="text-gray text-sm block mb-8" style="font-weight: 700;">Renter Details</span>
+                <strong id="conf-user-name" style="font-size: 15px; display: block; margin-bottom: 4px;">&nbsp;</strong>
+                <span class="text-gray" style="font-size: 13px; display: block; margin-bottom: 4px;">✉️ <span id="conf-user-email">&nbsp;</span></span>
+                <span class="text-gray" style="font-size: 13px; display: block; margin-bottom: 4px;">📞 <span id="conf-user-phone">&nbsp;</span></span>
+            </div>
+        </div>
+
+        <!-- Payment Breakdown -->
+        <div style="background: var(--bg-main); padding: 16px; border-radius: 8px;">
+            <strong style="display: block; font-size: 13px; margin-bottom: 12px; color: var(--text-gray);">Payment Breakdown</strong>
+            
+            <div class="flex-between mb-8">
+                <span style="font-size: 14px; color: var(--text-dark);">Monthly Rent</span>
+                <strong id="conf-rent" style="font-size: 14px;">&nbsp;</strong>
+            </div>
+            
+            <div class="flex-between mb-8">
+                <span style="font-size: 14px; color: var(--text-dark);">Security Deposit</span>
+                <strong id="conf-deposit" style="font-size: 14px;">&nbsp;</strong>
+            </div>
+            
+            <div class="flex-between mb-16">
+                <span style="font-size: 14px; color: var(--text-dark);">Platform Fee</span>
+                <strong style="font-size: 14px;">₹500</strong>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid var(--border); margin: 12px 0;">
+            
+            <div class="flex-between">
+                <span style="font-size: 16px; font-weight: 800;">Total Amount Paid</span>
+                <strong id="conf-total" style="font-size: 18px; color: var(--success);">&nbsp;</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="modern-card mb-24" style="padding: 24px; border: 1px solid var(--primary-light);">
+        <div class="flex-between">
+            <h3 style="font-size: 16px; font-weight: 800;">Roommate Contact Details</h3>
+            <span style="background: var(--success-light); color: var(--success); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase;">🔓 Unlocked</span>
+        </div>
+        <div id="conf-rm-box"></div>
+        <div style="background: #eff6ff; color: #1e3a8a; padding: 12px; border-radius: 8px; font-size: 12px; margin-top: 16px; font-weight: 600;">
+            Tip: Reach out to your roommate before moving in to coordinate!
+        </div>
+    </div>
+
+    <div class="modern-card mb-24" style="padding: 24px;">
+        <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 16px;">Contact Owner</h3>
+        <div class="grid-2" style="gap: 16px;">
+            <div><span class="text-gray text-sm block">Owner Name</span><strong class="text-sm">Mr. Suresh Kumar</strong></div>
+            <div><span class="text-gray text-sm block">Phone</span><strong class="text-primary text-sm">+91 98765 11111</strong></div>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 16px;">
+        <button class="btn btn-primary" style="flex: 1;" onclick="Navigation.navigate('landing')">Back to Home</button>
+        <button class="btn btn-outline" style="flex: 1;" onclick="UI.showToast('Downloading Receipt PDF...', 'info')">Download Receipt</button>
+    </div>
+</div>

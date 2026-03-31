@@ -1,0 +1,62 @@
+<div id="page-issues" class="page">
+  <div class="page-content">
+    <div class="page-header page-header-row">
+      <div><h1>Issues</h1><p>Track and manage all reported issues</p></div>
+      <button class="btn btn-primary" onclick="Navigation.navigate('report-issue')">+ Report New Issue</button>
+    </div>
+    <div class="stats-grid mb-20">
+      <div class="stat-card"><div class="stat-label">Total Issues <span class="stat-icon">ℹ️</span></div><div class="stat-value" id="iss-total">0</div></div>
+      <div class="stat-card"><div class="stat-label">Open <span class="stat-icon">🔴</span></div><div class="stat-value" id="iss-open" style="color:var(--danger)">0</div></div>
+      <div class="stat-card"><div class="stat-label">In Progress <span class="stat-icon">🕐</span></div><div class="stat-value" id="iss-inprog" style="color:var(--warning)">0</div></div>
+      <div class="stat-card"><div class="stat-label">Resolved <span class="stat-icon">✅</span></div><div class="stat-value" id="iss-resolved" style="color:var(--success)">0</div></div>
+    </div>
+    <div class="section-card">
+      <div class="section-header"><span class="section-title">All Issues</span></div>
+      <div class="section-body" id="issues-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="page-report-issue" class="page">
+  <div class="page-content">
+    <div class="page-header page-header-row">
+      <div>
+        <button class="btn btn-ghost btn-sm mb-12" onclick="Navigation.navigate('issues')">← Back to Issues</button>
+        <h1>Report New Issue</h1>
+      </div>
+    </div>
+    <div class="section-card mb-16">
+      <div class="section-header"><span class="section-title">Select Issue Category *</span></div>
+      <div class="section-body">
+        <div class="category-grid">
+          <div class="category-item" onclick="TenantLogic.selectCategory(this,'Plumbing')"><div class="cat-icon">💧</div><div class="cat-name">Plumbing</div></div>
+          <div class="category-item" onclick="TenantLogic.selectCategory(this,'Electrical')"><div class="cat-icon">⚡</div><div class="cat-name">Electrical</div></div>
+          <div class="category-item" onclick="TenantLogic.selectCategory(this,'Appliances')"><div class="cat-icon">🔌</div><div class="cat-name">Appliances</div></div>
+          <div class="category-item" onclick="TenantLogic.selectCategory(this,'Internet/WiFi')"><div class="cat-icon">📶</div><div class="cat-name">Internet/WiFi</div></div>
+          <div class="category-item" onclick="TenantLogic.selectCategory(this,'Maintenance')"><div class="cat-icon">🔩</div><div class="cat-name">Maintenance</div></div>
+          <div class="category-item" onclick="TenantLogic.selectCategory(this,'Other')"><div class="cat-icon">📱</div><div class="cat-name">Other</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="section-card mb-16">
+      <div class="section-header"><span class="section-title">Select Priority *</span></div>
+      <div class="section-body">
+        <div class="priority-option" onclick="TenantLogic.selectPriority(this,'low')"><div><div class="p-name">Low Priority</div></div><div class="priority-radio"></div></div>
+        <div class="priority-option selected medium" onclick="TenantLogic.selectPriority(this,'medium')"><div><div class="p-name" style="color:var(--warning)">Medium Priority</div></div><div class="priority-radio"></div></div>
+        <div class="priority-option" onclick="TenantLogic.selectPriority(this,'high')"><div><div class="p-name">High Priority</div></div><div class="priority-radio"></div></div>
+      </div>
+    </div>
+    <div class="section-card mb-16">
+      <div class="section-header"><span class="section-title">Issue Details</span></div>
+      <div class="section-body">
+        <div class="form-group"><label>Issue Title *</label><input type="text" id="issue-title" placeholder="Brief title of the issue" /></div>
+        <div class="form-group"><label>Location *</label><input type="text" id="issue-location" placeholder="Room number or area" /></div>
+        <div class="form-group"><label>Detailed Description *</label><textarea id="issue-desc" placeholder="Describe the issue..."></textarea></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:20px;">
+      <button class="btn btn-ghost" style="flex:1" onclick="Navigation.navigate('issues')">Cancel</button>
+      <button class="btn btn-primary" style="flex:2" onclick="TenantLogic.submitIssue()"><span class="btn-text">Submit Issue</span></button>
+    </div>
+  </div>
+</div>

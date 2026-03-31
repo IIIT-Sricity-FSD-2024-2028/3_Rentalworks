@@ -1,0 +1,49 @@
+<div id="page-services" class="page active">
+  <div class="page-content">
+    <div class="page-header"><h1>Services</h1><p>Available amenities and services</p></div>
+    
+    <div class="grid-3 mb-20">
+      <div class="stat-card"><div class="stat-label">Available Services <span>🔧</span></div><div class="stat-value">4</div></div>
+      <div class="stat-card"><div class="stat-label">Active Requests <span>🕐</span></div><div class="stat-value" id="dash-pending-services-count" style="color:var(--info)">0</div></div>
+      <div class="stat-card"><div class="stat-label">Completed <span>✅</span></div><div class="stat-value" style="color:var(--success)">1</div></div>
+    </div>
+    
+    <div class="section-card mb-20">
+      <div class="section-header"><span class="section-title">My Active Requests</span></div>
+      <div class="section-body" id="active-services-list">
+        <div style="text-align:center; color:var(--text-muted); padding: 10px;">No active service requests.</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="service-card">
+        <div class="service-header"><span class="service-header-icon">👕</span><div><div class="service-header-title">Laundry</div><span class="service-available-badge">Available</span></div></div>
+        <div class="service-body">
+          <div class="service-price-bar"><span class="service-price-label">Price:</span><span class="service-price-value">₹50 per kg</span></div>
+          <button class="btn btn-primary btn-full" onclick="TenantLogic.openServiceModal('laundry')">View &amp; Use Service</button>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="service-header"><span class="service-header-icon">🚗</span><div><div class="service-header-title">Parking</div><span class="service-available-badge">Available</span></div></div>
+        <div class="service-body">
+          <div class="service-price-bar"><span class="service-price-label">Price:</span><span class="service-price-value">₹500/month</span></div>
+          <button class="btn btn-primary btn-full" onclick="TenantLogic.openServiceModal('parking')">View &amp; Use Service</button>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="service-header"><span class="service-header-icon">🎮</span><div><div class="service-header-title">Indoor Games</div><span class="service-available-badge">Available</span></div></div>
+        <div class="service-body">
+          <div class="service-price-bar"><span class="service-price-label">Price:</span><span class="service-price-value">Included in rent</span></div>
+          <button class="btn btn-primary btn-full" onclick="TenantLogic.openServiceModal('games')">View &amp; Use Service</button>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="service-header"><span class="service-header-icon">☕</span><div><div class="service-header-title">Pantry</div><span class="service-available-badge">Available</span></div></div>
+        <div class="service-body">
+          <div class="service-price-bar"><span class="service-price-label">Price:</span><span class="service-price-value">Included in rent</span></div>
+          <button class="btn btn-primary btn-full" onclick="TenantLogic.openServiceModal('pantry')">View &amp; Use Service</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

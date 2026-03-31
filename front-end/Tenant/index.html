@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RentBro – Tenant Portal</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+
+  <div id="toast-container" class="toast-container"></div>
+  <div id="loader" class="loader hidden">
+    <div class="spinner"></div>
+  </div>
+
+  <div class="app-layout">
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">🏢</div>
+        <div class="logo-info">
+          <div class="logo-name">RentBro</div>
+          <div class="logo-role">Tenant Portal</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a class="nav-item" data-page="dashboard" data-role="all" onclick="Navigation.navigate('dashboard')">
+          <span class="nav-icon">⊞</span> Dashboard
+        </a>
+        <a class="nav-item" data-page="issues" data-role="tenant,warden" onclick="Navigation.navigate('issues')">
+          <span class="nav-icon">⚠</span> Issues
+        </a>
+        <a class="nav-item" data-page="notifications" data-role="all" onclick="Navigation.navigate('notifications')">
+          <span class="nav-icon">🔔</span> Notifications
+          <span class="nav-badge notif-count" id="notif-nav-badge">3</span>
+        </a>
+        <a class="nav-item" data-page="complaints" data-role="tenant" onclick="Navigation.navigate('complaints')">
+          <span class="nav-icon">💬</span> Complaints
+        </a>
+        <a class="nav-item" data-page="services" data-role="tenant" onclick="Navigation.navigate('services')">
+          <span class="nav-icon">🔧</span> Services
+        </a>
+        <a class="nav-item" data-page="payments" data-role="tenant" onclick="Navigation.navigate('payments')">
+          <span class="nav-icon">💳</span> Payments
+        </a>
+        <a class="nav-item" data-page="profile" data-role="all" onclick="Navigation.navigate('profile')">
+          <span class="nav-icon">👤</span> Profile
+        </a>
+      </nav>
+
+    </aside>
+
+    <div class="main-content">
+
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="greeting">Welcome back, Tenant</div>
+          <div class="email">tenant@pgrentals.com</div>
+        </div>
+        <div class="topbar-actions">
+          <button class="topbar-btn" onclick="Navigation.navigate('notifications')" title="Notifications">
+            🔔
+            <span class="notif-dot notif-count"></span>
+          </button>
+          <button class="topbar-btn" onclick="Navigation.navigate('profile')" title="Profile">👤</button>
+          <button class="logout-btn" onclick="Auth.logout()">↪ Logout</button>
+        </div>
+      </header>
+
+      <div id="dynamic-page-container"></div>
+
+    </div>
+  </div>
+  <div class="modal-overlay" id="service-info-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-icon" id="modal-service-icon">👕</div>
+        <div>
+          <div class="modal-title" id="modal-service-name">Service</div>
+          <div class="modal-sub">Check Timing &amp; Availability</div>
+        </div>
+        <button class="modal-close" onclick="UI.closeModal('service-info-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="status-banner success mb-16"><span>✅</span>
+          <div>
+            <div class="status-banner-title">Service is Available</div>
+            <div class="status-banner-sub">You can use this service now</div>
+          </div>
+        </div>
+        <div class="status-banner" style="background:#f0f7ff;border:1px solid #bfdbfe;color:#1e40af;margin-bottom:10px">
+          <span>🕐</span>
+          <div>
+            <div class="status-banner-title">Timing</div>
+            <div class="status-banner-sub" id="modal-service-timing"></div>
+          </div>
+        </div>
+        <div class="status-banner" style="background:#f0f7ff;border:1px solid #bfdbfe;color:#1e40af;margin-bottom:14px">
+          <span>ℹ️</span>
+          <div>
+            <div class="status-banner-title">Location</div>
+            <div class="status-banner-sub" id="modal-service-location"></div>
+          </div>
+        </div>
+        <div class="service-price-bar"><span class="service-price-label">Price:</span><span class="service-price-value"
+            id="modal-service-price"></span></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="UI.closeModal('service-info-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="TenantLogic.openRequestModal()">Request Service Access</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="service-request-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-icon" id="modal-request-icon">👕</div>
+        <div>
+          <div class="modal-title">Request Service Access</div>
+          <div class="modal-sub" id="modal-request-service-name"></div>
+        </div>
+        <button class="modal-close" onclick="UI.closeModal('service-request-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group"><label>When would you like to use this service?</label><input type="datetime-local"
+            id="service-request-date" /></div>
+        <div class="status-banner info mb-16"><span>ℹ️</span>
+          <div>
+            <div class="status-banner-title">Service Hours</div>
+            <div class="status-banner-sub" id="modal-service-hours">Check availability above</div>
+          </div>
+        </div>
+        <div class="form-group"><label>Additional Notes (Optional)</label><textarea id="service-request-notes"
+            placeholder="Any special requirements or notes..."></textarea></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="UI.closeModal('service-request-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="TenantLogic.submitServiceRequest()">Submit Request</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="complaint-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-icon">💬</div>
+        <div>
+          <div class="modal-title">File New Complaint</div>
+          <div class="modal-sub">Report an issue to management</div>
+        </div>
+        <button class="modal-close" onclick="UI.closeModal('complaint-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group"><label>Complaint Title <span style="color:var(--danger)">*</span></label><input
+            type="text" id="complaint-title" placeholder="Brief title of your complaint" /></div>
+        <div class="form-group"><label>Priority</label>
+          <select id="complaint-priority">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Description <span style="color:var(--danger)">*</span></label><textarea
+            id="complaint-desc" placeholder="Describe your complaint in detail..."></textarea></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="UI.closeModal('complaint-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="TenantLogic.submitComplaint()">Submit Complaint</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/core/state.js"></script>
+  <script src="js/core/auth.js"></script>
+  <script src="js/features/ui.js"></script>
+  <script src="js/features/navigation.js"></script>
+  <script src="js/features/tenant.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+
+</html>

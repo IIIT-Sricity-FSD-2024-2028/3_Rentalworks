@@ -1,0 +1,75 @@
+<!-- ================================
+  PAYMENTS FRAGMENT
+  Loaded by: navigateTo('payments')
+  Rendered by: payments_admin.js
+================================= -->
+<section id="payments-sec" class="section active">
+  <div class="sec-hdr">
+    <h2>Payment Ledger</h2>
+    <p>Verified transactions, platform revenue and refund management</p>
+  </div>
+
+  <!-- KPI Cards: GTV, Platform Revenue, Pending, Transactions -->
+  <div class="pay-summary">
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-green">💸</div><span class="stat-trend up">↑ 8.5%</span></div>
+      <div class="stat-val" id="pay-gtv">–</div>
+      <div class="stat-lbl">Gross Volume (GTV)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-purple">💰</div><span class="stat-trend up">10% commission</span></div>
+      <div class="stat-val" id="pay-platform-rev">–</div>
+      <div class="stat-lbl">Platform Revenue</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-yellow">⏳</div></div>
+      <div class="stat-val" style="color:#d97706" id="pay-pending-amt">–</div>
+      <div class="stat-lbl">Pending Verification</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-blue">🔢</div></div>
+      <div class="stat-val" id="pay-transactions">–</div>
+      <div class="stat-lbl">Verified Transactions</div>
+    </div>
+  </div>
+
+  <!-- Charts: Revenue Trend + Top Earning Properties -->
+  <div class="pay-charts">
+    <div class="chart-card">
+      <h3>Revenue Trends</h3>
+      <p>6-month platform revenue overview</p>
+      <div class="line-chart-wrap" id="pay-rev-chart"></div>
+      <div class="chart-labels">
+        <span>Oct</span><span>Nov</span><span>Dec</span><span>Jan</span><span>Feb</span><span>Mar</span>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>Top Earning Properties</h3>
+      <p>Highest commission-generating PGs</p>
+      <div id="top-properties-chart" style="padding:8px 0"></div>
+    </div>
+  </div>
+
+  <!-- Ledger Table — verified only, with clearance column -->
+  <div class="tbl-wrap">
+    <div class="tbl-hdr">
+      <div class="search-wrap">
+        <span class="s-ico">🔍</span>
+        <input type="text" id="pay-search" placeholder="Search by tenant, property, or transaction ID..."/>
+      </div>
+      <span style="font-size:12px;color:#16a34a;font-weight:600;padding:6px 10px;background:#dcfce7;border-radius:6px">
+        ✓ Showing verified transactions only
+      </span>
+    </div>
+    <table class="data-tbl">
+      <thead>
+        <tr>
+          <th>Tenant</th><th>Property</th><th>Room</th><th>Amount</th>
+          <th>Method</th><th>Transaction ID</th><th>Paid Date</th>
+          <th>Status</th><th>Clearance</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="payments-tbody"></tbody>
+    </table>
+  </div>
+</section>

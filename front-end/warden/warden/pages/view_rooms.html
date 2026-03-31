@@ -1,0 +1,58 @@
+<!-- pages/view_rooms.html -->
+<section id="rooms-section" class="section active">
+  <div class="section-header">
+    <h2>Room Service Status</h2>
+    <p>Manage room maintenance and service status</p>
+  </div>
+
+  <div class="room-stats">
+    <div class="stat-card">
+      <div class="stat-icon blue">🛏️</div>
+      <div class="stat-label">Total Rooms</div>
+      <div class="stat-value" id="room-total">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green">✅</div>
+      <div class="stat-label">Ready for Occupancy</div>
+      <div class="stat-value" id="room-ready">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon red">🔧</div>
+      <div class="stat-label">Under Maintenance</div>
+      <div class="stat-value" id="room-maintenance">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon blue">✨</div>
+      <div class="stat-label">Cleaned</div>
+      <div class="stat-value" id="room-cleaned">—</div>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <label>Filter by Status:</label>
+    <select class="filter-select" id="room-filter">
+      <option value="all">All Status</option>
+      <option value="vacant">Vacant</option>
+      <option value="occupied">Occupied</option>
+      <option value="ready">Ready</option>
+      <option value="under_maintenance">Under Maintenance</option>
+      <option value="cleaned">Cleaned</option>
+    </select>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Room Number</th>
+          <th>Room Type</th>
+          <th>Occupancy Status</th>
+          <th>Maintenance Status</th>
+          <th>Last Updated</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="rooms-tbody"></tbody>
+    </table>
+  </div>
+</section>

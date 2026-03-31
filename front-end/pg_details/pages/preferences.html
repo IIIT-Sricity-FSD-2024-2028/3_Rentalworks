@@ -1,0 +1,78 @@
+<div class="page-content" style="max-width: 800px;">
+    <div style="display: flex; align-items: center; gap: 24px; margin-bottom: 32px;">
+        <button class="btn-back" onclick="Navigation.navigate('roommate-intro')">
+            <svg viewBox="0 0 24 24"><path d="M19 12H5M5 12l7 7M5 12l7-7"/></svg>
+            Back
+        </button>
+        <div>
+            <h2 style="font-size: 20px; font-weight: 800; margin: 0;">Smart Roommate Matching</h2>
+            <p style="color: var(--text-gray); font-size: 13px; margin: 0;">Find compatible roommates with AI-powered matching</p>
+        </div>
+    </div>
+
+    <div class="modern-card" style="padding: 40px;">
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 40px;">
+            <span style="font-size: 13px; font-weight: 700; color: var(--primary);">Step 1 of 3</span>
+            <div style="flex: 1; height: 6px; background: var(--border); border-radius: 4px; overflow: hidden;">
+                <div style="width: 33%; height: 100%; background: var(--primary);"></div>
+            </div>
+            <span style="font-size: 13px; color: var(--text-gray);">Tell us your preferences</span>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 40px;">
+            <div style="width: 64px; height: 64px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; margin: 0 auto 16px;">👥</div>
+            <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 8px;">Your Roommate Preferences</h2>
+            <p style="color: var(--text-gray); font-size: 14px;">Help us find the perfect match for you</p>
+        </div>
+
+        <div style="margin-bottom: 24px;">
+            <label style="font-weight: 800; display: block; margin-bottom: 12px; font-size: 14px;">Sleep Schedule Preference *</label>
+            <div class="grid-2" style="gap: 12px;">
+                <div class="radio-box p-sleep selected" onclick="RoommateLogic.selectRadio(this, 'p-sleep')">Early Bird (10 PM - 6 AM)</div>
+                <div class="radio-box p-sleep" onclick="RoommateLogic.selectRadio(this, 'p-sleep')">Night Owl (12 AM - 8 AM)</div>
+                <div class="radio-box p-sleep" onclick="RoommateLogic.selectRadio(this, 'p-sleep')">Flexible</div>
+                <div class="radio-box p-sleep" onclick="RoommateLogic.selectRadio(this, 'p-sleep')">Very Late (2 AM - 10 AM)</div>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 24px;">
+            <label style="font-weight: 800; display: block; margin-bottom: 12px; font-size: 14px;">Cleanliness Level *</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                <div class="radio-box p-clean" onclick="RoommateLogic.selectRadio(this, 'p-clean')">Very Clean</div>
+                <div class="radio-box p-clean selected" onclick="RoommateLogic.selectRadio(this, 'p-clean')">Moderately Clean</div>
+                <div class="radio-box p-clean" onclick="RoommateLogic.selectRadio(this, 'p-clean')">Relaxed</div>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 24px;">
+            <label style="font-weight: 800; display: block; margin-bottom: 12px; font-size: 14px;">Smoking & Drinking Preference *</label>
+            <div class="grid-2" style="gap: 12px;">
+                <div class="radio-box p-smoke selected" onclick="RoommateLogic.selectRadio(this, 'p-smoke')">Non-Smoker, Non-Drinker</div>
+                <div class="radio-box p-smoke" onclick="RoommateLogic.selectRadio(this, 'p-smoke')">Non-Smoker, Occasional Drinker</div>
+                <div class="radio-box p-smoke" onclick="RoommateLogic.selectRadio(this, 'p-smoke')">Non-Smoker, Social Drinker</div>
+                <div class="radio-box p-smoke" onclick="RoommateLogic.selectRadio(this, 'p-smoke')">Okay with Both</div>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 32px;">
+            <label style="font-weight: 800; display: block; margin-bottom: 12px; font-size: 14px;">Food Preference *</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                <div class="radio-box p-food" onclick="RoommateLogic.selectRadio(this, 'p-food')">Vegetarian</div>
+                <div class="radio-box p-food selected" onclick="RoommateLogic.selectRadio(this, 'p-food')">Non-Vegetarian</div>
+                <div class="radio-box p-food" onclick="RoommateLogic.selectRadio(this, 'p-food')">Vegan</div>
+            </div>
+        </div>
+
+        <button class="btn btn-primary btn-full" style="padding: 18px; font-size: 16px;" onclick="Navigation.navigate('matches')">Find My Matches</button>
+    </div>
+</div>
+
+<style>
+/* Dynamic selection style for this page */
+.radio-box.selected {
+    border-color: var(--primary) !important;
+    background: var(--primary-light) !important;
+    color: var(--primary-hover) !important;
+    font-weight: 700;
+}
+</style>

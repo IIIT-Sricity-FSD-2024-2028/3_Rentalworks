@@ -1,0 +1,48 @@
+<!-- ================================
+  BOOKINGS FRAGMENT
+  Loaded by: navigateTo('bookings')
+  Rendered by: bookings_admin.js
+================================= -->
+<section id="bookings-sec" class="section active">
+  <div class="sec-hdr">
+    <h2>Booking Management</h2>
+    <p>Monitor and manage tenant bookings and lifecycle actions</p>
+  </div>
+
+  <!-- KPI Cards: Total, Active, Pending, Overdue, Cancelled -->
+  <div class="booking-summary">
+    <div class="u-sum-card"><div class="u-sum-label">Total Bookings</div><div class="u-sum-val" id="bk-total">–</div></div>
+    <div class="u-sum-card"><div class="u-sum-label">Active</div><div class="u-sum-val green" id="bk-active">–</div></div>
+    <div class="u-sum-card"><div class="u-sum-label">Pending</div><div class="u-sum-val" style="color:#d97706" id="bk-pending">–</div></div>
+    <div class="u-sum-card"><div class="u-sum-label">Overdue</div><div class="u-sum-val red" id="bk-overdue">–</div></div>
+    <div class="u-sum-card"><div class="u-sum-label">Cancelled</div><div class="u-sum-val red" id="bk-cancelled">–</div></div>
+  </div>
+
+  <!-- Table -->
+  <div class="tbl-wrap">
+    <div class="tbl-hdr">
+      <div class="search-wrap">
+        <span class="s-ico">🔍</span>
+        <input type="text" id="booking-search" placeholder="Search by tenant, property, or room..."/>
+      </div>
+      <select class="sel" id="booking-status-filter">
+        <option value="all">All Status</option>
+        <option value="active">Active</option>
+        <option value="pending">Pending</option>
+        <option value="overdue">Overdue</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+    </div>
+    <table class="data-tbl">
+      <thead>
+        <tr>
+          <th>Tenant</th><th>Property</th><th>Room</th>
+          <th>Check-in</th><th>Duration</th><th>Rent</th>
+          <th>Status</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="bookings-tbody"></tbody>
+    </table>
+    <div class="tbl-footer" id="bookings-count">Showing 0 bookings</div>
+  </div>
+</section>

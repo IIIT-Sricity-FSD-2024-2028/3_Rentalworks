@@ -1,0 +1,198 @@
+{
+  "properties": [
+    {
+      "id": "prop_001",
+      "name": "Sunrise PG",
+      "address": "12, Anna Nagar",
+      "city": "Chennai",
+      "state": "Tamil Nadu",
+      "pincode": "600040",
+      "type": "Mixed",
+      "totalCapacity": 40,
+      "totalRooms": 20,
+      "occupiedRooms": 17,
+      "monthlyRent": 8500,
+      "amenities": ["WiFi", "AC", "Laundry", "Mess"],
+      "status": "Active",
+      "addedDate": "2024-01-15"
+    },
+    {
+      "id": "prop_002",
+      "name": "Green Valley Residency",
+      "address": "45, T Nagar",
+      "city": "Chennai",
+      "state": "Tamil Nadu",
+      "pincode": "600017",
+      "type": "Female",
+      "totalCapacity": 30,
+      "totalRooms": 15,
+      "occupiedRooms": 12,
+      "monthlyRent": 7500,
+      "amenities": ["WiFi", "Mess", "Security"],
+      "status": "Active",
+      "addedDate": "2024-02-20"
+    },
+    {
+      "id": "prop_003",
+      "name": "BlueSky Boys Hostel",
+      "address": "78, Velachery",
+      "city": "Chennai",
+      "state": "Tamil Nadu",
+      "pincode": "600042",
+      "type": "Male",
+      "totalCapacity": 50,
+      "totalRooms": 25,
+      "occupiedRooms": 18,
+      "monthlyRent": 6500,
+      "amenities": ["WiFi", "Gym", "Parking", "Power Backup"],
+      "status": "Active",
+      "addedDate": "2024-03-10"
+    },
+    {
+      "id": "prop_004",
+      "name": "Comfort Inn PG",
+      "address": "23, Adyar",
+      "city": "Chennai",
+      "state": "Tamil Nadu",
+      "pincode": "600020",
+      "type": "Mixed",
+      "totalCapacity": 20,
+      "totalRooms": 10,
+      "occupiedRooms": 4,
+      "monthlyRent": 9000,
+      "amenities": ["WiFi", "AC", "Mess"],
+      "status": "Inactive",
+      "addedDate": "2024-04-05"
+    }
+  ],
+  "issues": [
+    {
+      "id": "issue_001",
+      "propertyId": "prop_001",
+      "propertyName": "Sunrise PG",
+      "title": "Water leakage in Room 3",
+      "description": "There is a water leakage from the roof in Room 3 which is causing inconvenience to tenants.",
+      "category": "Maintenance",
+      "priority": "High",
+      "status": "Open",
+      "reportedBy": "Rahul Sharma",
+      "reportedDate": "2025-03-20"
+    },
+    {
+      "id": "issue_002",
+      "propertyId": "prop_002",
+      "propertyName": "Green Valley Residency",
+      "title": "WiFi not working in Block B",
+      "description": "The WiFi router in Block B stopped working since yesterday morning.",
+      "category": "Internet",
+      "priority": "Medium",
+      "status": "In Progress",
+      "reportedBy": "Priya Nair",
+      "reportedDate": "2025-03-22"
+    },
+    {
+      "id": "issue_003",
+      "propertyId": "prop_003",
+      "propertyName": "BlueSky Boys Hostel",
+      "title": "AC not cooling in Room 7",
+      "description": "The air conditioner in Room 7 is running but not cooling properly.",
+      "category": "Appliance",
+      "priority": "Medium",
+      "status": "Open",
+      "reportedBy": "Arjun Kumar",
+      "reportedDate": "2025-03-23"
+    },
+    {
+      "id": "issue_004",
+      "propertyId": "prop_001",
+      "propertyName": "Sunrise PG",
+      "title": "Lift malfunction",
+      "description": "The elevator has been stuck on the 2nd floor since morning.",
+      "category": "Maintenance",
+      "priority": "High",
+      "status": "Resolved",
+      "reportedBy": "Meena R",
+      "reportedDate": "2025-03-18"
+    },
+    {
+      "id": "issue_005",
+      "propertyId": "prop_004",
+      "propertyName": "Comfort Inn PG",
+      "title": "Garbage not collected",
+      "description": "Garbage has not been collected for the past 3 days in the common area.",
+      "category": "Housekeeping",
+      "priority": "Low",
+      "status": "Open",
+      "reportedBy": "Kiran Bose",
+      "reportedDate": "2025-03-25"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif_001",
+      "title": "Rent Due Reminder",
+      "message": "Rent collection for April 2025 starts in 3 days. Notify your tenants.",
+      "type": "reminder",
+      "read": false,
+      "date": "2025-03-25"
+    },
+    {
+      "id": "notif_002",
+      "title": "New Issue Reported",
+      "message": "A new maintenance issue has been reported at Sunrise PG - Room 3.",
+      "type": "alert",
+      "read": false,
+      "date": "2025-03-24"
+    },
+    {
+      "id": "notif_003",
+      "title": "Issue Resolved",
+      "message": "The lift malfunction at Sunrise PG has been successfully resolved.",
+      "type": "success",
+      "read": true,
+      "date": "2025-03-23"
+    },
+    {
+      "id": "notif_004",
+      "title": "Occupancy Drop Alert",
+      "message": "Comfort Inn PG occupancy dropped to 40%. Consider reviewing your pricing.",
+      "type": "warning",
+      "read": false,
+      "date": "2025-03-22"
+    },
+    {
+      "id": "notif_005",
+      "title": "Profile Updated",
+      "message": "Your profile information has been updated successfully.",
+      "type": "success",
+      "read": true,
+      "date": "2025-03-20"
+    }
+  ],
+  "policy": {
+    "noticePeriod": 30,
+    "securityDeposit": 2,
+    "rentDueDay": 5,
+    "lateFee": 500,
+    "guestPolicy": "allowed",
+    "guestHours": "09:00-21:00",
+    "smokingAllowed": false,
+    "petsAllowed": false,
+    "maintenanceWindow": "09:00-18:00",
+    "rentIncrease": 10,
+    "rentIncreaseFrequency": "yearly",
+    "autoRenew": true,
+    "leaseTermMonths": 11
+  },
+  "profile": {
+    "name": "Ramesh Iyer",
+    "email": "ramesh.iyer@email.com",
+    "phone": "+91 98765 43210",
+    "company": "Iyer Properties Pvt Ltd",
+    "city": "Chennai",
+    "state": "Tamil Nadu",
+    "pincode": "600001",
+    "bio": "Experienced PG owner with 10+ years in the rental business.",
+    "avatar": null
+  }
+}

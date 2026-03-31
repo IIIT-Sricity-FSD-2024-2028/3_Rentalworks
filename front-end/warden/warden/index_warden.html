@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RentBro - Warden Portal</title>
+  <link rel="stylesheet" href="styles_warden.css" />
+</head>
+
+<body>
+
+  <!-- Login centralized. -->
+  <!-- ================================
+  DASHBOARD SHELL
+================================= -->
+  <div id="dashboard-page" style="display:none">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-icon">🏢</span>
+        <div class="brand-text">
+          <h3>RentBro</h3>
+          <span>Warden Portal</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-item active" data-section="dashboard">
+          <span class="nav-icon">🗂️</span> Dashboard
+        </div>
+        <div class="nav-item" data-section="tenants">
+          <span class="nav-icon">👥</span> Tenant Records
+        </div>
+        <div class="nav-item" data-section="rooms">
+          <span class="nav-icon">🏠</span> Room Services
+        </div>
+        <div class="nav-item" data-section="violations">
+          <span class="nav-icon">⚠️</span> Rule Violations
+        </div>
+        <div class="nav-item" data-section="complaints">
+          <span class="nav-icon">💬</span> Complaints
+        </div>
+        <div class="nav-item" data-section="notifications">
+          <span class="nav-icon">🔔</span> Notifications
+        </div>
+        <div class="nav-item" data-section="profile">
+          <span class="nav-icon">👤</span> Profile
+        </div>
+      </nav>
+    </aside>
+
+    <!-- MAIN WRAPPER -->
+    <div class="main-wrapper">
+
+      <!-- NAVBAR -->
+      <header class="navbar">
+        <div class="navbar-left">
+          <h4 id="navbar-user-name">Welcome back, Warden</h4>
+          <p id="navbar-user-email">warden@pgrentals.com</p>
+        </div>
+        <div class="navbar-right">
+          <div class="nav-icon-btn" onclick="navigateTo('notifications')">
+            🔔
+            <span class="notif-badge" id="notif-badge"></span>
+          </div>
+          <div class="nav-icon-btn" onclick="navigateTo('profile')">👤</div>
+          <button class="btn-logout" id="logout-btn">↪ Logout</button>
+        </div>
+      </header>
+
+      <!-- ✅ SINGLE CONTENT TARGET — all page fragments load here -->
+      <main class="content-area">
+        <div id="main-content-target">
+          <!-- fragments from pages/*.html are injected here by navigateTo() -->
+        </div>
+      </main>
+
+    </div>
+  </div>
+
+  <!-- ================================
+  MODAL  (global — stays in shell)
+================================= -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-title">Modal Title</h3>
+        <span class="modal-close" id="modal-close">✕</span>
+      </div>
+      <div id="modal-body"></div>
+      <div class="modal-footer">
+        <button class="btn-cancel" id="modal-cancel">Cancel</button>
+        <button class="btn-confirm" id="modal-confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================
+  TOAST  (global — stays in shell)
+================================= -->
+  <div class="toast" id="toast">
+    <span class="toast-icon">✅</span>
+    <div class="toast-text">
+      <strong>Title</strong>
+      <span>Message</span>
+    </div>
+  </div>
+
+  <!-- Scripts — order matters -->
+  <script src="mockData_warden.js"></script>
+  <script src="js/main_warden.js"></script>
+  <script src="js/auth_warden.js"></script>
+  <script src="js/dashboard_warden.js"></script>
+  <script src="js/tenants_warden.js"></script>
+  <script src="js/rooms_warden.js"></script>
+  <script src="js/violations_warden.js"></script>
+  <script src="js/complaints_warden.js"></script>
+  <script src="js/notifications_warden.js"></script>
+  <script src="js/profile_warden.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,30 @@
+<!-- pages/view_notifications.html -->
+<section id="notifications-section" class="section active">
+  <div class="section-header">
+    <h2>Notifications</h2>
+    <p>You have <span id="notif-unread-count">—</span> unread notifications</p>
+  </div>
+
+  <div class="notif-summary">
+    <div class="summary-card">
+      <div class="s-label">Total</div>
+      <div class="s-value" id="notif-total">—</div>
+    </div>
+    <div class="summary-card">
+      <div class="s-label">Unread</div>
+      <div class="s-value" style="color:#f5a623" id="notif-unread">—</div>
+    </div>
+    <div class="summary-card">
+      <div class="s-label">Read</div>
+      <div class="s-value green" id="notif-read">—</div>
+    </div>
+  </div>
+
+  <div class="notif-list">
+    <div class="notif-list-header">
+      <h3>All Notifications</h3>
+      <button class="btn-mark-all" onclick="markAllAsRead()">✅ Mark all as read</button>
+    </div>
+    <div id="notifications-list"></div>
+  </div>
+</section>

@@ -1,0 +1,67 @@
+<!-- pages/view_violations.html -->
+<section id="violations-section" class="section active">
+  <div class="section-header">
+    <h2>Rule Violations Monitoring</h2>
+    <p>Track and manage tenant rule violations</p>
+  </div>
+
+  <div class="violation-stats">
+    <div class="stat-card">
+      <div class="stat-icon orange">⚠️</div>
+      <div class="stat-label">Total Violations</div>
+      <div class="stat-value" id="viol-total">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon red">⚠️</div>
+      <div class="stat-label">High Severity</div>
+      <div class="stat-value" id="viol-high">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon yellow">⚠️</div>
+      <div class="stat-label">Medium Severity</div>
+      <div class="stat-value" id="viol-medium">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green">⚠️</div>
+      <div class="stat-label">Low Severity</div>
+      <div class="stat-value" id="viol-low">—</div>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <label>Filter by Severity:</label>
+    <select class="filter-select" id="violation-filter">
+      <option value="all">All Severity</option>
+      <option value="high">High</option>
+      <option value="medium">Medium</option>
+      <option value="low">Low</option>
+    </select>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Tenant Name</th>
+          <th>Room Number</th>
+          <th>Violation Type</th>
+          <th>Severity</th>
+          <th>Warning Count</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="violations-tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="violation-policy">
+    <div class="policy-header">⚠️ Violation Policy</div>
+    <ul>
+      <li>1st Warning: Verbal warning and notification</li>
+      <li>2nd Warning: Written warning sent to tenant</li>
+      <li>3rd Warning: Escalated to property owner for action</li>
+      <li>Severe violations may result in immediate escalation</li>
+    </ul>
+  </div>
+</section>

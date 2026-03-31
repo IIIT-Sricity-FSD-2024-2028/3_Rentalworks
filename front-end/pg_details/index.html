@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sunrise PG Residency | Smart Co-Living</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div id="toast-container" class="toast-container"></div>
+    <div id="loader" class="hidden loader-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <nav class="modern-nav navbar" id="navbar">
+        <div class="nav-inner nav-container">
+            <div class="brand nav-logo" onclick="Navigation.navigate('landing'); scrollToTop()">
+                <span>🏠</span> Sunrise PG Residency
+            </div>
+
+            <ul class="nav-links" id="nav-links">
+                <li><a href="#About" onclick="closeMenu()">About</a></li>
+                <li><a href="#Amenities" onclick="closeMenu()">Amenities</a></li>
+                <li><a href="#Rooms" onclick="closeMenu()">Rooms</a></li>
+                <li><a href="#Furnishings" onclick="closeMenu()">Furnishings</a></li>
+                <li><a href="#Details" onclick="closeMenu()">Details</a></li>
+                <li><a href="#Reviews" onclick="closeMenu()">Reviews</a></li>
+                <li><a href="#FAQs" onclick="closeMenu()">FAQs</a></li>
+                <li><a href="#Terms" onclick="closeMenu()">Terms</a></li>
+                <li><a href="#Contact" onclick="closeMenu()">Contact Owner</a></li>
+            </ul>
+
+            <div class="nav-right">
+                <div id="nav-user-menu" class="hidden" style="position: relative;">
+                    <div class="avatar-circle user-avatar" id="user-btn"
+                        onclick="UI.toggleDropdown('profile-dropdown')">
+                        <img src="https://ui-avatars.com/api/?name=User&background=ca8a04&color=fff" id="nav-avatar"
+                            alt="User">
+                    </div>
+
+                    <div class="dropdown-menu user-dropdown hidden" id="profile-dropdown">
+                        <div class="drop-header">
+                            <strong id="drop-name" class="user-name">User</strong>
+                            <span id="drop-email" class="user-email">email@example.com</span>
+                        </div>
+                        <div class="drop-links">
+                            <a onclick="Navigation.navigate('pending'); UI.toggleDropdown('profile-dropdown')">📋 PG
+                                Request Pending List</a>
+                            <a onclick="Navigation.navigate('transactions'); UI.toggleDropdown('profile-dropdown')">💳
+                                Transactions</a>
+                            <a onclick="Navigation.navigate('edit-profile'); UI.toggleDropdown('profile-dropdown')">👤
+                                Edit Profile</a>
+                            <hr>
+                            <a onclick="Auth.logout()" class="text-danger">🚪 Logout</a>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-outline" style="margin-right: 12px; border: 1px solid var(--border); background: transparent;" onclick="window.location.href='../rentalbros/html/listing.html'">← Back to Listings</button>
+                <button id="nav-login-btn" class="btn btn-primary" onclick="Navigation.navigate('login')">Sign
+                    In</button>
+
+                <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Menu">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main id="dynamic-page-container"></main>
+
+    <script src="js/core/state.js"></script>
+    <script src="js/core/auth.js"></script>
+    <script src="js/features/ui.js"></script>
+    <script src="js/features/navigation.js"></script>
+    <script src="js/features/roommate.js"></script>
+    <script src="js/features/booking.js"></script>
+    <script src="js/app.js"></script>
+
+    <script>
+        function toggleMenu() {
+            const nav = document.getElementById('nav-links');
+            nav.classList.toggle('active');
+        }
+        function closeMenu() {
+            const nav = document.getElementById('nav-links');
+            nav.classList.remove('active');
+        }
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Dissolve navbar at top → rounded pill on scroll
+        (function () {
+            const navbar = document.getElementById('navbar');
+            function onScroll() {
+                if (window.scrollY > 60) {
+                    navbar.classList.add('nav-scrolled');
+                } else {
+                    navbar.classList.remove('nav-scrolled');
+                }
+            }
+            window.addEventListener('scroll', onScroll, { passive: true });
+            onScroll(); // run once on load
+        })();
+    </script>
+</body>
+
+</html>
