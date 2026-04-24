@@ -1,0 +1,1483 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "AppController_getHello",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "App"
+        ]
+      }
+    },
+    "/users/login": {
+      "post": {
+        "operationId": "UsersController_login",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Login user",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users": {
+      "post": {
+        "operationId": "UsersController_create",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create new user",
+        "tags": [
+          "users"
+        ]
+      },
+      "get": {
+        "operationId": "UsersController_findAll",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get all users",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "operationId": "UsersController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get a user by ID",
+        "tags": [
+          "users"
+        ]
+      },
+      "put": {
+        "operationId": "UsersController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Update a user",
+        "tags": [
+          "users"
+        ]
+      },
+      "delete": {
+        "operationId": "UsersController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Delete a user",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/properties": {
+      "get": {
+        "operationId": "PropertiesController_findAll",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get all properties",
+        "tags": [
+          "properties"
+        ]
+      },
+      "post": {
+        "operationId": "PropertiesController_create",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePropertyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create new property",
+        "tags": [
+          "properties"
+        ]
+      }
+    },
+    "/properties/{id}": {
+      "get": {
+        "operationId": "PropertiesController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get property by id",
+        "tags": [
+          "properties"
+        ]
+      },
+      "put": {
+        "operationId": "PropertiesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePropertyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Update property",
+        "tags": [
+          "properties"
+        ]
+      },
+      "delete": {
+        "operationId": "PropertiesController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Delete property",
+        "tags": [
+          "properties"
+        ]
+      }
+    },
+    "/bookings": {
+      "get": {
+        "operationId": "BookingsController_findAll",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get all bookings",
+        "tags": [
+          "bookings"
+        ]
+      },
+      "post": {
+        "operationId": "BookingsController_create",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBookingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create new booking",
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/bookings/{id}": {
+      "get": {
+        "operationId": "BookingsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get booking by ID",
+        "tags": [
+          "bookings"
+        ]
+      },
+      "put": {
+        "operationId": "BookingsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBookingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Update booking status/room",
+        "tags": [
+          "bookings"
+        ]
+      },
+      "delete": {
+        "operationId": "BookingsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Cancel/Delete booking",
+        "tags": [
+          "bookings"
+        ]
+      }
+    },
+    "/payments": {
+      "get": {
+        "operationId": "PaymentsController_findAll",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get all payments",
+        "tags": [
+          "payments"
+        ]
+      },
+      "post": {
+        "operationId": "PaymentsController_create",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Submit new payment",
+        "tags": [
+          "payments"
+        ]
+      }
+    },
+    "/payments/{id}": {
+      "get": {
+        "operationId": "PaymentsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get payment by ID",
+        "tags": [
+          "payments"
+        ]
+      },
+      "put": {
+        "operationId": "PaymentsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Update payment status",
+        "tags": [
+          "payments"
+        ]
+      },
+      "delete": {
+        "operationId": "PaymentsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Delete payment record",
+        "tags": [
+          "payments"
+        ]
+      }
+    },
+    "/complaints": {
+      "get": {
+        "operationId": "ComplaintsController_findAll",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get all complaints",
+        "tags": [
+          "complaints"
+        ]
+      },
+      "post": {
+        "operationId": "ComplaintsController_create",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateComplaintDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Submit new complaint",
+        "tags": [
+          "complaints"
+        ]
+      }
+    },
+    "/complaints/{id}": {
+      "get": {
+        "operationId": "ComplaintsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get complaint by ID",
+        "tags": [
+          "complaints"
+        ]
+      },
+      "put": {
+        "operationId": "ComplaintsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateComplaintDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Update complaint status",
+        "tags": [
+          "complaints"
+        ]
+      },
+      "delete": {
+        "operationId": "ComplaintsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Delete complaint",
+        "tags": [
+          "complaints"
+        ]
+      }
+    },
+    "/notifications": {
+      "get": {
+        "operationId": "NotificationsController_findAll",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get all notifications",
+        "tags": [
+          "notifications"
+        ]
+      },
+      "post": {
+        "operationId": "NotificationsController_create",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNotificationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create new notification",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/notifications/{id}": {
+      "get": {
+        "operationId": "NotificationsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get notification by ID",
+        "tags": [
+          "notifications"
+        ]
+      },
+      "put": {
+        "operationId": "NotificationsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNotificationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Update a notification",
+        "tags": [
+          "notifications"
+        ]
+      },
+      "delete": {
+        "operationId": "NotificationsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Delete a notification",
+        "tags": [
+          "notifications"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "PG Rental Management API",
+    "description": "The PG Rental Management System using in-memory structures",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "schemas": {
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ]
+      },
+      "CreateUserDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "phone",
+          "role",
+          "username",
+          "password"
+        ]
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        }
+      },
+      "CreatePropertyDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "rentMin": {
+            "type": "number"
+          },
+          "rentMax": {
+            "type": "number"
+          },
+          "rooms": {
+            "type": "string"
+          },
+          "amenities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "location",
+          "owner",
+          "rentMin",
+          "rentMax",
+          "rooms",
+          "amenities"
+        ]
+      },
+      "UpdatePropertyDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "docsVerified": {
+            "type": "boolean"
+          },
+          "inspectionPassed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CreateBookingDto": {
+        "type": "object",
+        "properties": {
+          "tenant": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          },
+          "room": {
+            "type": "string"
+          },
+          "checkIn": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "string"
+          },
+          "rent": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "tenant",
+          "phone",
+          "property",
+          "room",
+          "checkIn",
+          "duration",
+          "rent"
+        ]
+      },
+      "UpdateBookingDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "room": {
+            "type": "string"
+          }
+        }
+      },
+      "CreatePaymentDto": {
+        "type": "object",
+        "properties": {
+          "tenant": {
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          },
+          "room": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "method": {
+            "type": "string"
+          },
+          "transactionId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tenant",
+          "property",
+          "room",
+          "amount",
+          "method",
+          "transactionId"
+        ]
+      },
+      "UpdatePaymentDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "clearance": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateComplaintDto": {
+        "type": "object",
+        "properties": {
+          "tenant": {
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tenant",
+          "property",
+          "description"
+        ]
+      },
+      "UpdateComplaintDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "resolution": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateNotificationDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "string"
+          },
+          "recipients": {
+            "type": "number"
+          },
+          "by": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "message",
+          "type",
+          "priority",
+          "recipients",
+          "by"
+        ]
+      },
+      "UpdateNotificationDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

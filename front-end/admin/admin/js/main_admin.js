@@ -29,12 +29,17 @@ const FRAGMENT_MAP = {
 };
 
 // ===== INIT =====
-document.addEventListener('DOMContentLoaded', () => {
-  users        = JSON.parse(localStorage.getItem('admin_users'))      || deepClone(ADMIN_DATA.users);
-  properties   = JSON.parse(localStorage.getItem('admin_properties')) || deepClone(ADMIN_DATA.properties);
-  bookings     = JSON.parse(localStorage.getItem('admin_bookings'))   || deepClone(ADMIN_DATA.bookings);
-  payments     = JSON.parse(localStorage.getItem('admin_payments'))   || deepClone(ADMIN_DATA.payments);
-  notifHistory = JSON.parse(localStorage.getItem('admin_notifs'))     || deepClone(ADMIN_DATA.notificationHistory);
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const headers = { 'x-role': 'admin' };
+    users        = await fetch('http://localhost:3000/api/users', { headers }).then(r=>r.json());
+    properties   = await fetch('http://localhost:3000/api/properties', { headers }).then(r=>r.json());
+    bookings     = await fetch('http://localhost:3000/api/bookings', { headers }).then(r=>r.json());
+    payments     = await fetch('http://localhost:3000/api/payments', { headers }).then(r=>r.json());
+    notifHistory = await fetch('http://localhost:3000/api/notifications', { headers }).then(r=>r.json());
+  } catch(e) {
+    console.error('API Error:', e);
+  }
 
   checkAuth();
   setupLogout();
