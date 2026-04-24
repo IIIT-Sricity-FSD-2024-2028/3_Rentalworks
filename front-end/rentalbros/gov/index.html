@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PG Rental Hub – Smart PG Management System</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- ===================== LOGIN PAGE ===================== -->
+  <div id="page-login" class="page active">
+    <div class="login-wrapper">
+      <div class="login-left">
+        <div class="login-brand">
+          <span class="brand-icon">🏢</span>
+          <span class="brand-name">PG Rental Hub</span>
+        </div>
+        <h1 class="login-headline">Smart PG<br /><span class="accent">Management System</span></h1>
+        <p class="login-sub">Connecting Property Owners, Tenants, and Staff Seamlessly</p>
+        <div class="login-badges">
+          <span>🔒 Secure Access</span>
+          <span>📞 24/7 Support</span>
+          <span>⚡ Fast &amp; Reliable</span>
+        </div>
+      </div>
+      <div class="login-right">
+        <div class="login-card">
+          <h2>Guest Login</h2>
+          <div class="form-group">
+            <label>Email / Phone No</label>
+            <div class="input-wrap">
+              <span class="input-icon">✉️</span>
+              <input type="text" id="login-email" placeholder="your.email@example.com" />
+            </div>
+            <span class="field-error" id="err-email"></span>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <div class="input-wrap">
+              <span class="input-icon">🔒</span>
+              <input type="password" id="login-pass" placeholder="Enter your password" />
+              <button class="toggle-pass" onclick="togglePassword()" type="button">👁</button>
+            </div>
+            <span class="field-error" id="err-pass"></span>
+          </div>
+          <button class="btn-login" onclick="handleLogin()">Login</button>
+          <p class="signup-text">Don't have an account? <a href="#" onclick="handleLogin()" class="accent-link">Sign Up as Guest</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== MAIN SITE (PG LISTING) ===================== -->
+  <div id="page-main" class="page">
+
+    <!-- NAVBAR -->
+    <nav class="navbar" id="navbar">
+      <div class="nav-container">
+        <a href="#" class="nav-logo" onclick="scrollToTop()">Sunrise PG Residency</a>
+        <ul class="nav-links" id="nav-links">
+          <li><a href="#about" onclick="closeMenu()">About</a></li>
+          <li><a href="#amenities" onclick="closeMenu()">Amenities</a></li>
+          <li><a href="#rooms" onclick="closeMenu()">Room Types</a></li>
+          <li><a href="#furnishings" onclick="closeMenu()">Furnishings</a></li>
+          <li><a href="#details" onclick="closeMenu()">Details</a></li>
+          <li><a href="#reviews" onclick="closeMenu()">Reviews</a></li>
+          <li><a href="#faqs" onclick="closeMenu()">FAQs</a></li>
+          <li><a href="#terms" onclick="closeMenu()">Terms</a></li>
+          <li><a href="#contact" onclick="closeMenu()">Contact Owner</a></li>
+        </ul>
+        <div class="nav-right">
+          <div class="user-avatar" id="user-btn" onclick="toggleUserMenu()">
+            <img src="https://i.pravatar.cc/36?img=12" alt="User" />
+          </div>
+          <div class="user-dropdown" id="user-dropdown">
+            <p class="user-name">Sahul Sharma</p>
+            <p class="user-email">sahul@example.com</p>
+            <hr />
+            <a href="#" onclick="showPendingRequests()">PG Request Pending List</a>
+            <a href="#" onclick="handleLogout()">Logout</a>
+          </div>
+          <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Menu">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero" id="hero">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <div class="hero-badge">📍 Koramangala, Bangalore</div>
+        <h1 class="hero-title">Sunrise PG Residency</h1>
+        <div class="hero-rating">⭐ 4.5 <span>(1,394 reviews)</span></div>
+        <p class="hero-sub">Premium paying guest accommodation in the heart of Koramangala</p>
+        <button class="btn-primary hero-cta" onclick="document.getElementById('rooms').scrollIntoView({behavior:'smooth'})">View Rooms</button>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="section about-section" id="about">
+      <div class="container">
+        <h2 class="section-title">About</h2>
+        <p class="about-text">Welcome to Sunrise Valley PG, a premium paying guest accommodation located in the heart of Koramangala, one of Bangalore's most vibrant neighbourhoods. Our property offers comfortable living spaces designed for working professionals and students who value convenience, community, and quality.</p>
+        <p class="about-text">With modern amenities, excellent connectivity to IT hubs, and a friendly environment, Green Valley PG provides the perfect balance between privacy and community living. Our fully furnished rooms and comprehensive facilities ensure you feel at home from day one.</p>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-value accent">50+</span>
+            <span class="stat-label">Residents</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value accent">24/7</span>
+            <span class="stat-label">Security</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value accent">100%</span>
+            <span class="stat-label">Power Backup</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value accent">5+</span>
+            <span class="stat-label">Years Established</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AMENITIES -->
+    <section class="section amenities-section" id="amenities">
+      <div class="container">
+        <h2 class="section-title">Amenities</h2>
+        <div class="amenities-grid">
+          <div class="amenity-card"><span class="amenity-icon wifi-icon">📶</span><div><strong>High-Speed WiFi</strong><p>100 Mbps broadband</p></div></div>
+          <div class="amenity-card"><span class="amenity-icon park-icon">🅿️</span><div><strong>Parking</strong><p>Two-wheeler &amp; car parking</p></div></div>
+          <div class="amenity-card"><span class="amenity-icon meal-icon">🍽️</span><div><strong>Meals</strong><p>Breakfast, lunch &amp; dinner</p></div></div>
+          <div class="amenity-card"><span class="amenity-icon laundry-icon">👕</span><div><strong>Laundry</strong><p>Weekly laundry service</p></div></div>
+          <div class="amenity-card"><span class="amenity-icon ac-icon">❄️</span><div><strong>AC Rooms</strong><p>Air-conditioned rooms</p></div></div>
+          <div class="amenity-card"><span class="amenity-icon sec-icon">🛡️</span><div><strong>24/7 Security</strong><p>CCTV &amp; security guard</p></div></div>
+          <div class="amenity-card"><span class="amenity-icon power-icon">⚡</span><div><strong>Power Backup</strong><p>Full power backup</p></div></div>
+          <div class="amenity-card"><span class="amenity-icon water-icon">💧</span><div><strong>Water Supply</strong><p>24/7 water supply</p></div></div>
+          <div class="amenity-card"><span class="amenity-icon common-icon">🏠</span><div><strong>Common Area</strong><p>TV lounge &amp; recreation</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AVAILABLE ROOMS -->
+    <section class="section rooms-section" id="rooms">
+      <div class="container">
+        <h2 class="section-title">Available Rooms</h2>
+        <div class="rooms-grid">
+          <!-- Single Room -->
+          <div class="room-card unavailable">
+            <div class="room-img-wrap">
+              <img src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80" alt="Single Room" />
+            </div>
+            <div class="room-info">
+              <h3>Single Room</h3>
+              <p class="room-price unavailable-price">₹12,000<span>/month</span></p>
+              <p class="room-feature">🚿 Attached Bathroom</p>
+              <button class="btn-room btn-unavailable" disabled>Not Available</button>
+            </div>
+          </div>
+          <!-- Double Sharing -->
+          <div class="room-card available featured">
+            <div class="room-img-wrap">
+              <img src="https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=400&q=80" alt="Double Sharing" />
+            </div>
+            <div class="room-info">
+              <h3>Double Sharing</h3>
+              <p class="room-price">₹8,500<span>/month</span></p>
+              <p class="room-feature">🚿 Common Bathroom</p>
+              <button class="btn-room btn-book" onclick="startRoommateMatching('double')">Book Now</button>
+            </div>
+          </div>
+          <!-- Triple Sharing -->
+          <div class="room-card unavailable">
+            <div class="room-img-wrap">
+              <img src="https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&q=80" alt="Triple Sharing" />
+            </div>
+            <div class="room-info">
+              <h3>Triple Sharing</h3>
+              <p class="room-price unavailable-price">₹6,500<span>/month</span></p>
+              <p class="room-feature">🚿 Common Bathroom</p>
+              <button class="btn-room btn-unavailable" disabled>Not Available</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FURNISHINGS -->
+    <section class="section furnishings-section" id="furnishings">
+      <div class="container">
+        <h2 class="section-title">Furnishings</h2>
+        <div class="furnishings-grid">
+          <div class="furnish-item"><span class="check">✓</span> Bed with mattress</div>
+          <div class="furnish-item"><span class="check">✓</span> Study table &amp; chair</div>
+          <div class="furnish-item"><span class="check">✓</span> Wardrobe with mirror</div>
+          <div class="furnish-item"><span class="check">✓</span> Window with curtains</div>
+          <div class="furnish-item"><span class="check">✓</span> Fan &amp; lighting</div>
+          <div class="furnish-item"><span class="check">✓</span> Bedside table</div>
+          <div class="furnish-item"><span class="check">✓</span> Waste bin</div>
+          <div class="furnish-item"><span class="check">✓</span> Storage shelves</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DETAILS -->
+    <section class="section details-section" id="details">
+      <div class="container">
+        <h2 class="section-title">Details</h2>
+        <div class="details-grid">
+          <div class="details-card">
+            <h3>Property Information</h3>
+            <table class="details-table">
+              <tr><td>Property Type</td><td><strong>Paying Guest</strong></td></tr>
+              <tr><td>Total Rooms</td><td><strong>24 Rooms</strong></td></tr>
+              <tr><td>Suitable For</td><td><strong>Men &amp; Women</strong></td></tr>
+              <tr><td>Available From</td><td><strong>Immediate</strong></td></tr>
+            </table>
+          </div>
+          <div class="details-card">
+            <h3>Location Highlights</h3>
+            <table class="details-table">
+              <tr><td>Metro Station</td><td><strong>1.2 km</strong></td></tr>
+              <tr><td>Hospital</td><td><strong>600 m</strong></td></tr>
+              <tr><td>Shopping Mall</td><td><strong>500 m</strong></td></tr>
+              <tr><td>IT Parks</td><td><strong>2–5 km</strong></td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REVIEWS -->
+    <section class="section reviews-section" id="reviews">
+      <div class="container">
+        <h2 class="section-title">Reviews</h2>
+        <div class="reviews-grid">
+          <div class="review-card">
+            <div class="review-header">
+              <strong>Priya Sharma</strong>
+              <span class="review-date">March 2026</span>
+            </div>
+            <div class="stars">⭐⭐⭐⭐⭐</div>
+            <p>Excellent PG with all modern amenities. The food is great and the staff is very helpful. Highly recommended for working professionals!</p>
+          </div>
+          <div class="review-card">
+            <div class="review-header">
+              <strong>Rahul Verma</strong>
+              <span class="review-date">February 2026</span>
+            </div>
+            <div class="stars">⭐⭐⭐⭐⭐</div>
+            <p>Been staying here for 6 months now. Great location, clean rooms, and good internet speed. Perfect for IT professionals.</p>
+          </div>
+          <div class="review-card">
+            <div class="review-header">
+              <strong>Sneha Patel</strong>
+              <span class="review-date">January 2026</span>
+            </div>
+            <div class="stars">⭐⭐⭐⭐</div>
+            <p>Good PG overall. Rooms are spacious and well maintained. Only suggestion would be to improve the common area facilities.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQS -->
+    <section class="section faq-section" id="faqs">
+      <div class="container">
+        <h2 class="section-title">FAQs</h2>
+        <div class="faq-list" id="faq-list">
+          <div class="faq-item">
+            <button class="faq-question" onclick="toggleFaq(this)">
+              What is the notice period for vacating?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>The notice period is 1 month. You need to inform us at least 30 days before vacating.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question" onclick="toggleFaq(this)">
+              Is food included in the rent?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Yes, all three meals (breakfast, lunch, and dinner) are included in the monthly rent.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question" onclick="toggleFaq(this)">
+              What are the visiting hours?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Visitors are allowed between 10 AM to 8 PM. No overnight guests are permitted.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question" onclick="toggleFaq(this)">
+              Is there a curfew time?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>The main gate closes at 11 PM. Late entry requires prior permission from the management.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question" onclick="toggleFaq(this)">
+              What documents are required?
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Valid ID proof, passport-size photos, and employment/student ID are required at the time of admission.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TERMS -->
+    <section class="section terms-section" id="terms">
+      <div class="container">
+        <h2 class="section-title">Terms &amp; Conditions</h2>
+        <div class="terms-list">
+          <div class="terms-item"><span class="terms-check">✓</span> Advance payment of 2 months rent (including security deposit) is required at the time of booking.</div>
+          <div class="terms-item"><span class="terms-check">✓</span> Security deposit is refundable upon check-out, subject to no damages.</div>
+          <div class="terms-item"><span class="terms-check">✓</span> Electricity charges (if any) will be charged separately based on actual consumption.</div>
+          <div class="terms-item terms-item--cross"><span class="terms-x">✗</span> Smoking, alcohol, and drugs are strictly prohibited on the premises.</div>
+          <div class="terms-item terms-item--cross"><span class="terms-x">✗</span> No illegal activities or behavior that disturbs other residents will be tolerated.</div>
+          <div class="terms-item"><span class="terms-check">✓</span> Residents are responsible for maintaining cleanliness in their rooms and common areas.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT OWNER -->
+    <section class="section contact-section" id="contact">
+      <div class="container">
+        <h2 class="section-title">Contact Owner</h2>
+        <div class="contact-grid">
+          <div class="contact-form-wrap">
+            <h3>Get In Touch</h3>
+            <div class="form-group">
+              <label>Your Name</label>
+              <input type="text" id="c-name" placeholder="Enter your name" />
+              <span class="field-error" id="err-c-name"></span>
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="c-email" placeholder="Enter your email" />
+              <span class="field-error" id="err-c-email"></span>
+            </div>
+            <div class="form-group">
+              <label>Phone</label>
+              <input type="tel" id="c-phone" placeholder="Enter your phone number" />
+              <span class="field-error" id="err-c-phone"></span>
+            </div>
+            <div class="form-group">
+              <label>Message</label>
+              <textarea id="c-message" rows="4" placeholder="Write your message..."></textarea>
+              <span class="field-error" id="err-c-message"></span>
+            </div>
+            <button class="btn-primary btn-send" onclick="submitContactForm()">Send Message</button>
+            <div class="form-success" id="form-success">✅ Message sent successfully!</div>
+          </div>
+          <div class="contact-info-wrap">
+            <h3>Contact Information</h3>
+            <div class="contact-detail"><span>👤</span><div><small>Owner Name</small><p>Mr. Suresh Kumar</p></div></div>
+            <div class="contact-detail"><span>📞</span><div><small>Phone</small><p class="accent">+91 98765 11111</p></div></div>
+            <div class="contact-detail"><span>✉️</span><div><small>Email</small><p class="accent">greenvalleypg@gmail.com</p></div></div>
+            <div class="contact-detail"><span>📍</span><div><small>Address</small><p>123, Green Valley Apartments, 5th Block, Koramangala, Bangalore – 560034</p></div></div>
+            <div class="contact-detail"><span>🕐</span><div><small>Office Hours</small><p>Monday–Saturday: 9:00 AM – 7:00 PM<br />Sunday: 10:00 AM – 4:00 PM</p></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="footer-inner">
+        <p>© 2026 Sunrise Valley PG. All rights reserved.</p>
+      </div>
+    </footer>
+
+  </div><!-- end page-main -->
+
+  <!-- ===================== ROOMMATE MATCHING PAGES ===================== -->
+
+  <!-- Roommate Match Intro -->
+  <div id="page-roommate-intro" class="page modal-page">
+    <div class="modal-backdrop" onclick="goBack('page-main')"></div>
+    <div class="modal-card">
+      <button class="back-btn" onclick="goBack('page-main')">← Back</button>
+      <div class="modal-icon orange">🏠</div>
+      <h2>Smart Roommate Matching</h2>
+      <p class="modal-sub">Find compatible roommates with AI-powered matching</p>
+      <div class="match-option selected-option" onclick="showPreferences()">
+        <span class="match-opt-icon">✨</span>
+        <div>
+          <strong>Yes, Find My Match</strong>
+          <p>Get matched with compatible roommates based on your preferences and lifestyle</p>
+        </div>
+      </div>
+      <div class="match-option" onclick="skipMatching()">
+        <span class="match-opt-icon grey">✕</span>
+        <div>
+          <strong>No, Skip Matching</strong>
+          <p>Proceed with booking without roommate matching</p>
+        </div>
+      </div>
+      <p class="modal-note">You can always change this preference later in your account settings</p>
+    </div>
+  </div>
+
+  <!-- Roommate Preferences -->
+  <div id="page-preferences" class="page">
+    <div class="pref-header">
+      <button class="back-btn inline" onclick="goBack('page-roommate-intro')">← Back</button>
+      <div>
+        <h2>Smart Roommate Matching</h2>
+        <p>Find compatible roommates with AI-powered matching</p>
+      </div>
+    </div>
+    <div class="pref-body">
+      <div class="pref-card">
+        <div class="step-bar">
+          <span class="step-label accent">Step 1 of 3</span>
+          <div class="progress-track"><div class="progress-fill" style="width:33%"></div></div>
+          <span class="step-hint">Tell us your preferences</span>
+        </div>
+        <div class="pref-icon-wrap"><span class="pref-icon">👥</span></div>
+        <h2 class="pref-title">Your Roommate Preferences</h2>
+        <p class="pref-sub">Help us find the perfect match for you</p>
+
+        <div class="pref-field">
+          <label>Sleep Schedule Preference *</label>
+          <div class="pref-options-grid">
+            <button class="pref-opt active" data-group="sleep" onclick="selectPref(this)">Early Bird (10 PM – 6 AM)</button>
+            <button class="pref-opt" data-group="sleep" onclick="selectPref(this)">Night Owl (12 AM – 8 AM)</button>
+            <button class="pref-opt" data-group="sleep" onclick="selectPref(this)">Flexible</button>
+            <button class="pref-opt" data-group="sleep" onclick="selectPref(this)">Very Late (2 AM – 10 AM)</button>
+          </div>
+        </div>
+        <div class="pref-field">
+          <label>Cleanliness Level *</label>
+          <div class="pref-options-grid three-col">
+            <button class="pref-opt" data-group="clean" onclick="selectPref(this)">Very Clean</button>
+            <button class="pref-opt active" data-group="clean" onclick="selectPref(this)">Moderately Clean</button>
+            <button class="pref-opt" data-group="clean" onclick="selectPref(this)">Relaxed</button>
+          </div>
+        </div>
+        <div class="pref-field">
+          <label>Smoking &amp; Drinking Preference *</label>
+          <div class="pref-options-grid">
+            <button class="pref-opt active" data-group="smoke" onclick="selectPref(this)">Non-Smoker, Non-Drinker</button>
+            <button class="pref-opt" data-group="smoke" onclick="selectPref(this)">Non-Smoker, Occasional Drinker</button>
+            <button class="pref-opt" data-group="smoke" onclick="selectPref(this)">Non-Smoker, Social Drinker</button>
+            <button class="pref-opt" data-group="smoke" onclick="selectPref(this)">Okay with Both</button>
+          </div>
+        </div>
+        <div class="pref-field">
+          <label>Food Preference *</label>
+          <div class="pref-options-grid three-col">
+            <button class="pref-opt" data-group="food" onclick="selectPref(this)">Vegetarian</button>
+            <button class="pref-opt active" data-group="food" onclick="selectPref(this)">Non-Vegetarian</button>
+            <button class="pref-opt" data-group="food" onclick="selectPref(this)">Vegan</button>
+          </div>
+        </div>
+        <div class="pref-field">
+          <label>Your Interests (Select multiple)</label>
+          <div class="interests-row">
+            <button class="interest-opt" onclick="toggleInterest(this)">🎵 Music</button>
+            <button class="interest-opt" onclick="toggleInterest(this)">📖 Reading</button>
+            <button class="interest-opt active" onclick="toggleInterest(this)">🎮 Gaming</button>
+            <button class="interest-opt" onclick="toggleInterest(this)">☕ Cooking</button>
+            <button class="interest-opt" onclick="toggleInterest(this)">🏃 Sports</button>
+          </div>
+        </div>
+        <button class="btn-primary full-width" onclick="showMatches()">Find My Matches</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Match Cards (Swipe-style) -->
+  <div id="page-matches" class="page">
+    <div class="pref-header">
+      <button class="back-btn inline" onclick="goBack('page-preferences')">← Back</button>
+      <div>
+        <h2>Smart Roommate Matching</h2>
+        <p>Find compatible roommates with AI-powered matching</p>
+      </div>
+    </div>
+    <div class="pref-body">
+      <div class="match-context-bar">
+        <div><strong>Room Type: Double Sharing</strong><br /><small class="accent">You can select up to 1 roommate</small></div>
+        <span class="match-count" id="match-count">0 / 1 selected</span>
+      </div>
+
+      <!-- Profile 1: Rahul -->
+      <div class="match-card-wrap" id="profile-1">
+        <div class="step-bar">
+          <span class="step-label accent">Step 2 of 3</span>
+          <div class="progress-track"><div class="progress-fill" style="width:66%"></div></div>
+          <span class="step-hint">Profile 1 of 2</span>
+        </div>
+        <div class="profile-card">
+          <div class="profile-img-wrap">
+            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&q=80" alt="Rahul Sharma" />
+            <span class="match-badge green">💚 95% Match</span>
+          </div>
+          <div class="profile-body">
+            <h3>Rahul Sharma, 24</h3>
+            <p class="profile-job">🏢 Software Engineer</p>
+            <p class="profile-bio">Working professional, looking for a clean and quiet space. Love coding and reading in my free time.</p>
+            <div class="profile-tags">
+              <span class="tag orange">Reading</span><span class="tag orange">Gaming</span><span class="tag orange">Cooking</span>
+            </div>
+            <div class="profile-details-grid">
+              <div class="pd-item"><small>Sleep Schedule</small><strong>Early Bird (10 PM – 6 AM)</strong></div>
+              <div class="pd-item"><small>Cleanliness</small><strong>Very Clean</strong></div>
+              <div class="pd-item"><small>Lifestyle</small><strong>Non-Smoker, Occasional Drinker</strong></div>
+              <div class="pd-item"><small>Food</small><strong>Vegetarian</strong></div>
+            </div>
+            <div class="profile-actions">
+              <button class="btn-skip" onclick="skipProfile(1)">✕ Skip</button>
+              <button class="btn-connect" onclick="connectProfile(1)">💚 Connect</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile 2: Arjun -->
+      <div class="match-card-wrap hidden" id="profile-2">
+        <div class="step-bar">
+          <span class="step-label accent">Step 2 of 3</span>
+          <div class="progress-track"><div class="progress-fill" style="width:66%"></div></div>
+          <span class="step-hint">Profile 2 of 2</span>
+        </div>
+        <div class="profile-card">
+          <div class="profile-img-wrap">
+            <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=80" alt="Arjun Reddy" />
+            <span class="match-badge green">💚 85% Match</span>
+          </div>
+          <div class="profile-body">
+            <h3>Arjun Reddy, 25</h3>
+            <p class="profile-job">🏢 Data Analyst</p>
+            <p class="profile-bio">Love to cook and share meals. Enjoy weekend gaming sessions and watching sports.</p>
+            <div class="profile-tags">
+              <span class="tag orange">Cooking</span><span class="tag orange">Gaming</span><span class="tag orange">Sports</span>
+            </div>
+            <div class="profile-details-grid">
+              <div class="pd-item"><small>Sleep Schedule</small><strong>Flexible (11 PM – 7 AM)</strong></div>
+              <div class="pd-item"><small>Cleanliness</small><strong>Clean</strong></div>
+              <div class="pd-item"><small>Lifestyle</small><strong>Non-Smoker, Occasional Drinker</strong></div>
+              <div class="pd-item"><small>Food</small><strong>Non-Vegetarian</strong></div>
+            </div>
+            <div class="profile-actions">
+              <button class="btn-skip" onclick="skipProfile(2)">✕ Skip</button>
+              <button class="btn-connect" onclick="connectProfile(2)">💚 Connect</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Selected Roommate Review (Step 3) -->
+  <div id="page-selected" class="page">
+    <div class="pref-header">
+      <button class="back-btn inline" onclick="goBack('page-matches')">← Back</button>
+      <div>
+        <h2>Smart Roommate Matching</h2>
+        <p>Find compatible roommates with AI-powered matching</p>
+      </div>
+    </div>
+    <div class="pref-body">
+      <div class="pref-card center-card">
+        <div class="step-bar">
+          <span class="step-label accent">Step 3 of 3</span>
+          <div class="progress-track"><div class="progress-fill" style="width:100%"></div></div>
+          <span class="step-hint">Review your matches</span>
+        </div>
+        <div class="success-icon">✅</div>
+        <h2>Great! You've Selected 1 Roommate</h2>
+        <p class="modal-sub">Review your matches and proceed to booking</p>
+        <div class="selected-roommate-card" id="selected-roommate-display">
+          <!-- filled by JS -->
+        </div>
+        <div class="two-btn-row">
+          <button class="btn-outline" onclick="goBack('page-matches')">View More Profiles</button>
+          <button class="btn-primary" onclick="showBookingReview()">Proceed to Booking</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Review Booking Request -->
+  <div id="page-booking-review" class="page">
+    <nav class="sub-nav">
+      <div class="nav-container">
+        <div class="subnav-brand">
+          <span class="subnav-logo">🏢</span>
+          <span class="subnav-name">StayMate</span>
+        </div>
+        <div class="user-avatar small">
+          <img src="https://i.pravatar.cc/32?img=12" alt="User" />
+        </div>
+      </div>
+    </nav>
+    <div class="booking-review-body">
+      <div class="br-left">
+        <h2>Review Your Booking Request</h2>
+        <p class="br-sub">Please review your PG and roommate details before sending the request. Your request will be verified by our admin before payment.</p>
+        <div class="br-pg-card">
+          <img src="https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=700&q=80" alt="Room" class="br-pg-img" />
+          <button class="wishlist-btn">🤍</button>
+          <div class="br-pg-info">
+            <h3>Sunrise PG Residency <span class="br-price">₹12,000<small>/month</small></span></h3>
+            <p>📍 Koramangala, Bangalore</p>
+            <div class="br-rating">⭐ 4.5 (124 reviews)</div>
+            <div class="br-details-row">
+              <div><small>Room Type</small><strong>Double Sharing</strong></div>
+              <div><small>Move-in Date</small><strong>20 March 2026</strong></div>
+              <div><small>Gender</small><strong>Boys</strong></div>
+              <div><small>Available Rooms</small><strong>5 rooms</strong></div>
+            </div>
+          </div>
+        </div>
+        <div class="br-amenities">
+          <h4>Amenities &amp; Facilities</h4>
+          <div class="br-amen-grid">
+            <span>📶 High-Speed WiFi</span>
+            <span>🅿️ Parking</span>
+            <span>🍽️ 3 Meals Daily</span>
+            <span>🏋️ Gym</span>
+            <span>👕 Laundry</span>
+          </div>
+        </div>
+        <div class="br-roommate-section">
+          <div class="br-rm-header">
+            <h4>Selected Roommate</h4>
+            <span class="match-badge-sm green">95% Match</span>
+          </div>
+          <div class="br-rm-card" id="br-roommate-card">
+            <!-- Filled by JS -->
+          </div>
+          <div class="privacy-note">🔒 Contact details will be shared only after booking confirmation.</div>
+        </div>
+      </div>
+      <div class="br-right">
+        <div class="booking-summary-card">
+          <h3>Booking Summary</h3>
+          <div class="bs-field"><small>PG</small><strong>Sunrise PG Residency</strong></div>
+          <div class="bs-field"><small>Location</small><strong>Koramangala, Bangalore</strong></div>
+          <div class="bs-field"><small>Room Type</small><strong>Double Sharing</strong></div>
+          <div class="bs-field" id="bs-roommate-name"><small>Selected Roommate</small><strong>Rahul Sharma</strong></div>
+          <hr />
+          <div class="bs-price-row"><span>Monthly Rent</span><span>₹12,000</span></div>
+          <div class="bs-price-row"><span>Security Deposit</span><span>₹5,000</span></div>
+          <div class="payment-status-badge">
+            <span class="status-dot orange"></span>
+            <div><small>Payment Status</small><strong>Pending Admin Approval</strong></div>
+          </div>
+          <div class="booking-process">
+            <h5>Booking Process</h5>
+            <div class="process-step active"><span class="step-num">1</span> Request Submitted</div>
+            <div class="process-step"><span class="step-num">2</span> Admin Verification</div>
+            <div class="process-step"><span class="step-num">3</span> Approval</div>
+            <div class="process-step"><span class="step-num">4</span> Payment</div>
+            <div class="process-step"><span class="step-num">5</span> Booking Confirmed</div>
+          </div>
+          <p class="process-note">Your booking request will be reviewed by our admin to confirm room availability and roommate selection. Once approved, you will be notified to proceed with payment.</p>
+          <button class="btn-primary full-width" onclick="sendBookingRequest()">Send Booking Request</button>
+          <button class="btn-outline full-width mt-8" onclick="goBack('page-selected')">← Back to PG Details</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Booking Request Sent Success -->
+  <div id="page-request-sent" class="page modal-page">
+    <div class="modal-card success-modal">
+      <div class="success-icon big">✅</div>
+      <h2>Booking Request Sent Successfully 🎉</h2>
+      <p class="modal-sub">Your booking request has been sent to the PG owner. They will review your request and contact you soon.</p>
+      <button class="btn-primary full-width" onclick="showPendingRequests()">View My Requests</button>
+      <button class="btn-outline full-width mt-8" onclick="showPage('page-main')">Back to Listings</button>
+    </div>
+  </div>
+
+  <!-- Pending PG Requests -->
+  <div id="page-pending" class="page">
+    <div class="pending-header">
+      <button class="back-link" onclick="showPage('page-main')">← Back to Home</button>
+      <div class="user-avatar small">
+        <img src="https://i.pravatar.cc/32?img=15" alt="User" />
+      </div>
+    </div>
+    <div class="container">
+      <h2 class="page-heading">Pending PG Requests</h2>
+      <div class="pending-grid">
+        <div class="pending-card" onclick="showBookingDetails('approved')">
+          <div class="pending-img-wrap">
+            <img src="https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=400&q=80" alt="Sunrise PG" />
+            <span class="pending-badge approved">Approved</span>
+          </div>
+          <h3>Sunrise PG Residency</h3>
+          <p>📍 Koramangala, Bangalore</p>
+          <div class="pending-rating">⭐ 4.5 (124 reviews)</div>
+          <div class="pending-info-row"><span>Room Type:</span><strong>Double Sharing</strong></div>
+          <div class="pending-info-row"><span>Monthly Rent:</span><strong class="accent">₹12,000</strong></div>
+          <div class="pending-info-row"><span>Roommate:</span><strong>Rahul Sharma</strong></div>
+          <div class="pending-info-row"><span>Move-in Date:</span><strong>20 March 2026</strong></div>
+          <button class="btn-approved full-width">Approved</button>
+        </div>
+        <div class="pending-card" onclick="showBookingDetails('pending')">
+          <div class="pending-img-wrap">
+            <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&q=80" alt="Green Valley PG" />
+            <span class="pending-badge pending">Pending</span>
+          </div>
+          <h3>Green Valley PG</h3>
+          <p>📍 Indiranagar, Bangalore</p>
+          <div class="pending-rating">⭐ 4.7 (89 reviews)</div>
+          <div class="pending-info-row"><span>Room Type:</span><strong>Triple Sharing</strong></div>
+          <div class="pending-info-row"><span>Monthly Rent:</span><strong class="accent">₹8,500</strong></div>
+          <div class="pending-info-row"><span>Roommate:</span><strong>Priya Sharma</strong></div>
+          <div class="pending-info-row"><span>Move-in Date:</span><strong>25 March 2026</strong></div>
+          <p class="pending-admin-text">● Pending Admin Approval</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Booking Details -->
+  <div id="page-booking-details" class="page">
+    <div class="pending-header">
+      <button class="back-link" onclick="showPage('page-pending')">← Back to Pending Requests</button>
+      <div class="user-avatar small">
+        <img src="https://i.pravatar.cc/32?img=12" alt="User" />
+      </div>
+    </div>
+    <div class="booking-details-body">
+      <div class="bd-left">
+        <h2>Booking Details</h2>
+        <img src="https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=700&q=80" alt="Room" class="bd-img" />
+        <div class="bd-pg-info">
+          <h3>Sunrise PG Residency</h3>
+          <div class="bd-inline-row">
+            <span>📍 Koramangala, Bangalore</span>
+            <span>⭐ 4.5 (124 reviews)</span>
+          </div>
+          <div class="br-details-row">
+            <div><small>Room Type</small><strong>Double Sharing</strong></div>
+            <div><small>Move-in Date</small><strong>20 March 2026</strong></div>
+            <div><small>Gender</small><strong>Boys</strong></div>
+            <div><small>Available Rooms</small><strong>5 rooms</strong></div>
+          </div>
+        </div>
+        <div class="br-amenities">
+          <h4>Amenities &amp; Facilities</h4>
+          <div class="br-amen-grid">
+            <span>📶 High-Speed WiFi</span>
+            <span>🅿️ Parking</span>
+            <span>🍽️ 3 Meals Daily</span>
+            <span>🏋️ Gym</span>
+            <span>👕 Laundry</span>
+          </div>
+        </div>
+        <div class="br-roommate-section">
+          <div class="br-rm-header">
+            <h4>Selected Roommate</h4>
+            <span class="match-badge-sm green">95% Match</span>
+          </div>
+          <div class="br-rm-card">
+            <div class="mini-avatar">
+              <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&q=80" alt="Rahul" />
+            </div>
+            <div>
+              <strong>Rahul Sharma</strong> <small>24</small><br />
+              <small>Software Engineer</small><br />
+              <p>Working professional, looking for a clean and quiet space. Love coding and reading in my free time.</p>
+              <div class="profile-tags">
+                <span class="tag grey">Reading</span><span class="tag grey">Gaming</span><span class="tag grey">Cooking</span>
+              </div>
+            </div>
+          </div>
+          <div class="privacy-note">🔒 Contact details will be shared only after booking confirmation.</div>
+        </div>
+      </div>
+      <div class="br-right">
+        <div class="booking-summary-card" id="booking-summary-approved">
+          <h3>Booking Summary</h3>
+          <div class="bs-field"><small>PG</small><strong>Sunrise PG Residency</strong></div>
+          <div class="bs-field"><small>Location</small><strong>Koramangala, Bangalore</strong></div>
+          <div class="bs-field"><small>Room Type</small><strong>Double Sharing</strong></div>
+          <div class="bs-field"><small>Selected Roommate</small><strong>Rahul Sharma</strong></div>
+          <hr />
+          <div class="bs-price-row"><span>Monthly Rent</span><span>₹12,000</span></div>
+          <div class="bs-price-row"><span>Security Deposit</span><span>₹5,000</span></div>
+          <div class="payment-status-badge green-badge">
+            <span>✓ Admin Approved</span>
+          </div>
+          <div class="booking-process">
+            <h5>Booking Process</h5>
+            <div class="process-step done"><span class="step-num green">✓</span> Request Submitted</div>
+            <div class="process-step done"><span class="step-num green">✓</span> Admin Verification</div>
+            <div class="process-step done"><span class="step-num green">✓</span> Approval</div>
+            <div class="process-step active"><span class="step-num blue">4</span> <strong>Payment</strong></div>
+            <div class="process-step"><span class="step-num">5</span> Booking Confirmed</div>
+          </div>
+          <div class="approved-note">
+            <span class="green">✅ Booking Request Approved</span>
+            <p>Your booking request has been successfully approved by the admin. You can now proceed with the payment to confirm your booking and secure the room.</p>
+            <p class="small-note">Once the payment is completed, your booking will be confirmed and roommate contact details will be unlocked.</p>
+          </div>
+          <button class="btn-primary full-width" onclick="showPaymentPage()">Proceed to Payment</button>
+          <button class="btn-outline full-width mt-8" onclick="showPage('page-pending')">← Back to PG Details</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Page -->
+  <div id="page-payment" class="page">
+    <nav class="sub-nav white-nav">
+      <div class="nav-container">
+        <a class="nav-logo small-logo" href="#" onclick="showPage('page-booking-details')">PG Rental</a>
+        <div class="user-avatar small">
+          <img src="https://i.pravatar.cc/32?img=12" alt="User" />
+        </div>
+      </div>
+    </nav>
+    <div class="payment-body">
+      <button class="back-link inline-back" onclick="showPage('page-booking-details')">← Back to Booking Details</button>
+      <h2>Complete Your Booking</h2>
+      <p class="br-sub">Your booking request has been approved. Please complete the payment to confirm your room.</p>
+      <div class="payment-grid">
+        <div class="payment-methods">
+          <h3>Payment Method</h3>
+          <div class="pay-option" id="pay-upi" onclick="selectPayment('upi')">
+            <div class="pay-header"><span class="pay-icon">📱</span><strong>UPI Payment</strong></div>
+            <p class="pay-desc">Google Pay, PhonePe, Paytm</p>
+            <div class="pay-form hidden" id="form-upi">
+              <input type="text" placeholder="Enter UPI ID (e.g., name@upi)" />
+            </div>
+          </div>
+          <div class="pay-option" id="pay-card" onclick="selectPayment('card')">
+            <div class="pay-header"><span class="pay-icon">💳</span><strong>Credit / Debit Card</strong></div>
+            <p class="pay-desc">Visa, Mastercard, RuPay</p>
+            <div class="pay-form hidden" id="form-card">
+              <input type="text" placeholder="Card Number" />
+              <input type="text" placeholder="Cardholder Name" />
+              <div class="card-row">
+                <input type="text" placeholder="MM/YY" />
+                <input type="text" placeholder="CVV" />
+              </div>
+            </div>
+          </div>
+          <div class="pay-option" id="pay-net" onclick="selectPayment('net')">
+            <div class="pay-header"><span class="pay-icon">🏦</span><strong>Net Banking</strong></div>
+            <p class="pay-desc">Pay via your bank account</p>
+            <div class="pay-form hidden" id="form-net">
+              <input type="text" placeholder="Select your bank" />
+            </div>
+          </div>
+          <div class="secure-note">🔒 🛡️ Your payment is secured with encrypted payment processing.</div>
+        </div>
+        <div class="payment-summary-right">
+          <h3>Booking Summary</h3>
+          <div class="bs-field"><small>PG Name</small><strong>Sunrise PG Residency</strong></div>
+          <div class="bs-field"><small>Location</small><strong>Koramangala, Bangalore</strong></div>
+          <div class="bs-field"><small>Room Type</small><strong>Double Sharing</strong></div>
+          <div class="bs-field"><small>Selected Roommate</small><strong>Rahul K.</strong></div>
+          <div class="bs-field"><small>Move-in Date</small><strong>20 March 2026</strong></div>
+          <hr />
+          <h4>Price Breakdown</h4>
+          <div class="bs-price-row"><span>Monthly Rent</span><span>₹8,500</span></div>
+          <div class="bs-price-row"><span>Security Deposit</span><span>₹3,500</span></div>
+          <div class="bs-price-row"><span>Platform Fee</span><span>₹500</span></div>
+          <div class="total-row"><span><strong>Total Payable Now</strong></span><span class="total-amount">₹12,500</span></div>
+          <button class="btn-pay full-width" id="pay-btn" onclick="processPayment()">Pay ₹12,500</button>
+          <p class="pay-terms">By completing this payment, you confirm your booking and agree to the PG's terms and conditions.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Booking Confirmed -->
+  <div id="page-confirmed" class="page">
+    <nav class="sub-nav white-nav">
+      <div class="nav-container">
+        <a class="nav-logo small-logo">PG Rental</a>
+        <div class="user-avatar small">
+          <img src="https://i.pravatar.cc/32?img=12" alt="User" />
+        </div>
+      </div>
+    </nav>
+    <div class="confirmed-body">
+      <div class="confirmed-card">
+        <div class="confirmed-icon">✅</div>
+        <h2>Booking Confirmed!</h2>
+        <p>Your payment has been successful and your room is now confirmed.</p>
+        <div class="confirmed-details">
+          <div class="cd-row">
+            <div><small>Booking ID</small><strong>BK2026030912345</strong></div>
+            <span class="status-chip green">Confirmed</span>
+          </div>
+          <hr />
+          <div class="cd-grid">
+            <div><small>PG Name</small><strong>Sunrise PG Residency</strong></div>
+            <div><small>Room Type</small><strong>Double Sharing</strong></div>
+            <div><small>Move-in Date</small><strong>20 March 2026</strong></div>
+            <div><small>Amount Paid</small><strong class="accent">₹17,500</strong></div>
+          </div>
+        </div>
+        <div class="roommate-contact-card">
+          <div class="rc-header"><h4>Roommate Contact Details</h4><span class="unlocked-badge">Unlocked</span></div>
+          <div class="rc-profile">
+            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=60&q=80" alt="Rahul" />
+            <div>
+              <strong>Rahul Sharma</strong><br />
+              <small>24 years, Software Engineer</small><br />
+              <p>📞 <a href="tel:+919876543210" class="accent">+91 98765 43210</a></p>
+              <p>✉️ <a href="mailto:rahul.sharma@example.com" class="accent">rahul.sharma@example.com</a></p>
+            </div>
+          </div>
+          <div class="tip-note">💡 <strong>Tip:</strong> Reach out to your roommate before moving in to coordinate and get to know each other better!</div>
+        </div>
+        <div class="owner-contact-card">
+          <h4>Contact Owner</h4>
+          <div class="contact-detail"><span>👤</span><div><small>Owner Name</small><p>Mr. Suresh Kumar</p></div></div>
+          <div class="contact-detail"><span>📞</span><div><small>Phone</small><p class="accent">+91 98765 11111</p></div></div>
+          <div class="contact-detail"><span>✉️</span><div><small>Email</small><p class="accent">owner@sunrisepg.com</p></div></div>
+          <div class="contact-detail"><span>📍</span><div><small>Address</small><p>123, 5th Cross, Koramangala 4th Block, Bangalore – 560034</p></div></div>
+        </div>
+        <div class="confirmed-actions">
+          <button class="btn-outline blue-btn" onclick="showPage('page-pending')">👁 View Booking</button>
+          <button class="btn-outline" onclick="downloadReceipt()">⬇️ Download Receipt</button>
+          <button class="btn-primary" onclick="showPage('page-main')">🏠 Back to Home</button>
+        </div>
+        <div class="next-steps">
+          <h4>Next Steps</h4>
+          <div class="ns-item"><span class="ns-num">1</span> Contact your roommate to coordinate move-in details</div>
+          <div class="ns-item"><span class="ns-num">2</span> Reach out to the PG owner for check-in instructions</div>
+          <div class="ns-item"><span class="ns-num">3</span> Prepare necessary documents (ID proof, photos, etc.)</div>
+          <div class="ns-item"><span class="ns-num">4</span> Move in on 20 March 2026 and enjoy your new home!</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

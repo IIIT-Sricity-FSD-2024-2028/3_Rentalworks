@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PG Listings — Find Your Perfect Stay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../css/listing.css">
+</head>
+
+<body>
+
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <a href="index.html" class="back-link">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M19 12H5M12 19l-7-7 7-7" />
+      </svg>
+      Back
+    </a>
+
+    <div class="header-inner">
+      <h1 class="header-title">Find Your <span>Perfect PG</span></h1>
+
+      <!-- SEARCH -->
+      <div class="search-container">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2">
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.35-4.35" />
+        </svg>
+        <input type="text" id="searchInput"
+          placeholder='Search PGs by location or name... e.g. "Anna Nagar" or "Elite PG in Chennai"'>
+        <button id="searchBtn">Search</button>
+      </div>
+
+      <!-- CITY FILTER PILLS -->
+      <div class="city-filters">
+        <button class="city-btn active" data-city="All">All</button>
+        <button class="city-btn" data-city="Chennai">Chennai</button>
+        <button class="city-btn" data-city="Bangalore">Bangalore</button>
+        <button class="city-btn" data-city="Mumbai">Mumbai</button>
+        <button class="city-btn" data-city="Pune">Pune</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========== FILTER OVERLAY ========== -->
+  <div id="filterOverlay"></div>
+
+  <!-- ========== FILTER PANEL ========== -->
+  <aside id="filterPanel" class="filter-panel" role="dialog" aria-label="Filters">
+    <div class="filter-box">
+
+      <div class="filter-header">
+        <h3>Filters &amp; Sort</h3>
+        <button id="closeFilter" aria-label="Close filters">✕</button>
+      </div>
+
+      <!-- SORT BY -->
+      <div class="filter-section">
+        <h4>Sort By</h4>
+        <label><input type="radio" name="sort" value="low"> Price Low → High</label>
+        <label><input type="radio" name="sort" value="high"> Price High → Low</label>
+        <label><input type="radio" name="sort" value="rating"> Highest Rated</label>
+      </div>
+
+      <!-- PRICE RANGE -->
+      <div class="filter-section">
+        <h4>Price Range</h4>
+        <label><input type="radio" name="price" value="0-5000"> ₹0 – ₹5,000</label>
+        <label><input type="radio" name="price" value="5000-8000"> ₹5,000 – ₹8,000</label>
+        <label><input type="radio" name="price" value="8000-99999"> ₹8,000+</label>
+      </div>
+
+      <!-- ROOM TYPE -->
+      <div class="filter-section">
+        <h4>Room Type</h4>
+        <label><input type="checkbox" name="room" value="single"> Single Sharing</label>
+        <label><input type="checkbox" name="room" value="double"> Double Sharing</label>
+        <label><input type="checkbox" name="room" value="triple"> Triple Sharing</label>
+        <label><input type="checkbox" name="room" value="private"> Private Room</label>
+      </div>
+
+      <!-- GENDER PREFERENCE -->
+      <div class="filter-section">
+        <h4>Gender Preference</h4>
+        <label><input type="checkbox" name="gender" value="boys"> Boys PG</label>
+        <label><input type="checkbox" name="gender" value="girls"> Girls PG</label>
+        <label><input type="checkbox" name="gender" value="unisex"> Unisex PG</label>
+      </div>
+
+      <!-- FOOD -->
+      <div class="filter-section">
+        <h4>Food Availability</h4>
+        <label><input type="checkbox" name="food" value="food"> With Food</label>
+        <label><input type="checkbox" name="food" value="nofood"> Without Food</label>
+        <label><input type="checkbox" name="food" value="vegonly"> Veg Only</label>
+        <label><input type="checkbox" name="food" value="vegnonveg"> Veg + Non-Veg</label>
+      </div>
+
+      <!-- AMENITIES -->
+      <div class="filter-section">
+        <h4>Amenities</h4>
+        <label><input type="checkbox" name="amenity" value="wifi"> WiFi</label>
+        <label><input type="checkbox" name="amenity" value="ac"> AC</label>
+        <label><input type="checkbox" name="amenity" value="parking"> Parking</label>
+        <label><input type="checkbox" name="amenity" value="attached-bathroom"> Attached Bathroom</label>
+        <label><input type="checkbox" name="amenity" value="laundry"> Laundry</label>
+        <label><input type="checkbox" name="amenity" value="housekeeping"> Housekeeping</label>
+        <label><input type="checkbox" name="amenity" value="gym"> Gym</label>
+        <label><input type="checkbox" name="amenity" value="cctv"> CCTV Security</label>
+        <label><input type="checkbox" name="amenity" value="geyser"> Geyser</label>
+      </div>
+
+      <!-- DISTANCE -->
+      <div class="filter-section">
+        <h4>Distance</h4>
+        <label><input type="radio" name="distance" value="0.5"> Within 500m</label>
+        <label><input type="radio" name="distance" value="1"> Within 1 km</label>
+        <label><input type="radio" name="distance" value="3"> Within 3 km</label>
+      </div>
+
+      <!-- DEPOSIT / ADVANCE -->
+      <div class="filter-section">
+        <h4>Deposit / Advance</h4>
+        <label><input type="radio" name="deposit" value="none"> No Deposit</label>
+        <label><input type="radio" name="deposit" value="low"> Low </label>
+      </div>
+
+      <!-- RATINGS -->
+      <div class="filter-section">
+        <h4>Ratings</h4>
+        <label><input type="radio" name="rating" value="4.5"> 4.5 &amp; above</label>
+        <label><input type="radio" name="rating" value="4"> 4 &amp; above</label>
+        <label><input type="radio" name="rating" value="3"> 3 &amp; above</label>
+      </div>
+
+      <!-- ACTION BUTTONS -->
+      <div class="filter-actions">
+        <button id="applyFilter">Apply Filters</button>
+        <button id="clearFilter">Clear Filters</button>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- ========== MAIN CONTENT ========== -->
+  <main class="main-content">
+
+    <!-- TOP BAR -->
+    <div class="content-header">
+      <div>
+        <h2>Available PGs</h2>
+        <p id="resultCount" class="result-count">13 properties found</p>
+      </div>
+      <button class="filter-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="4" y1="6" x2="20" y2="6" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+          <line x1="11" y1="18" x2="13" y2="18" />
+        </svg>
+        Filters &amp; Sort
+      </button>
+    </div>
+
+    <!-- ACTIVE FILTERS CHIPS -->
+    <div id="activeFiltersBar" class="active-filters-bar" style="display:none;">
+      <span class="chips-label">Active:</span>
+      <div id="activeChips" class="chips-container"></div>
+    </div>
+
+    <!-- LISTINGS GRID -->
+    <div class="listings-grid" id="listingsGrid">
+
+      <!-- CARD 1 -->
+      <div class="listing-card" style="cursor: pointer;"
+        onclick="window.location.href='../../pg_details/index.html'" data-price="15000" data-rating="4.8"
+        data-room="single" data-food="food" data-foodtype="vegnonveg" data-gender="unisex" data-distance="1"
+        data-amenities="wifi,ac,cctv,laundry">
+        <div class="image-box">
+          <img src="https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80" alt="Sunrise PG Residency"
+            loading="lazy">
+          <span class="badge badge-rating">⭐ 4.8</span>
+        </div>
+        <div class="listing-content">
+          <h3>Sunrise PG Residency</h3>
+          <p class="location">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+            </svg>
+            Koramangala, Bangalore
+          </p>
+          <div class="price">₹15,000 <span>/month</span></div>
+          <div class="features">
+            <span class="tag">🛏 Double Sharing</span>
+            <span class="tag">🍽 With Food</span>
+            <span class="tag">📶 WiFi</span>
+            <span class="tag">❄️ AC</span>
+          </div>
+          <p class="note">Close to IT parks &amp; metro</p>
+          <button class="view-btn">View Details</button>
+        </div>
+      </div>
+
+      <!-- CARD 2 -->
+      <div class="listing-card" data-price="7500" data-rating="4.5" data-room="double" data-food="food"
+        data-foodtype="vegnonveg" data-gender="boys" data-distance="0.5" data-amenities="wifi,ac,geyser">
+        <div class="image-box">
+          <img src="https://images.unsplash.com/photo-1540518614846-7eded433c457?w=600&q=80" alt="Sri Sai Boys PG"
+            loading="lazy">
+          <span class="badge badge-rating">⭐ 4.5</span>
+        </div>
+        <div class="listing-content">
+          <h3>Sri Sai Boys PG</h3>
+          <p class="location">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+            </svg>
+            Anna Nagar, Chennai
+          </p>
+          <div class="price">₹7,500 <span>/month</span></div>
+          <div class="features">
+            <span class="tag">🛏 Double Sharing</span>
+            <span class="tag">🍽 Veg + Non-Veg</span>
+            <span class="tag">📶 WiFi</span>
+          </div>
+          <p class="note">500m from University</p>
+          <button class="view-btn">View Details</button>
+        </div>
+      </div>
+
+      <!-- CARD 3 -->
+      <div class="listing-card" data-price="8500" data-rating="4.7" data-room="triple" data-food="food"
+        data-foodtype="vegonly" data-gender="girls" data-distance="1" data-amenities="wifi,ac,cctv">
+        <div class="image-box">
+          <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&q=80" alt="Lakshmi Girls PG"
+            loading="lazy">
+          <span class="badge badge-rating">⭐ 4.7</span>
+        </div>
+        <div class="listing-content">
+          <h3>Lakshmi Girls PG</h3>
+          <p class="location">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+            </svg>
+            Velachery, Chennai
+          </p>
+          <div class="price">₹8,500 <span>/month</span></div>
+          <div class="features">
+            <span class="tag">🛏 Triple Sharing</span>
+            <span class="tag">🌿 Veg Only</span>
+            <span class="tag">📶 WiFi</span>
+            <span class="tag">❄️ AC</span>
+          </div>
+          <p class="note">Near Phoenix Mall</p>
+          <button class="view-btn">View Details</button>
+        </div>
+      </div>
+
+      <!-- CARD 4 -->
+      <div class="listing-card" data-price="12000" data-rating="4.4" data-room="single" data-food="food"
+        data-foodtype="vegnonveg" data-gender="unisex" data-distance="1" data-amenities="wifi,ac,gym,laundry">
+        <div class="image-box">
+          <img src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80" alt="Green Nest Co-Living"
+            loading="lazy">
+          <span class="badge badge-rating">⭐ 4.4</span>
+        </div>
+        <div class="listing-content">
+          <h3>Green Nest Co-Living</h3>
+          <p class="location">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+            </svg>
+            Koramangala, Bangalore
+          </p>
+          <div class="price">₹12,000 <span>/month</span></div>
+          <div class="features">
+            <span class="tag">🛏 Single Sharing</span>
+            <span class="tag">🍽 With Food</span>
+            <span class="tag">🏋️ Gym</span>
+          </div>
+          <p class="note">Near shopping malls &amp; metro</p>
+          <button class="view-btn">View Details</button>
+        </div>
+      </div>
+
+      <!-- CARD 5 -->
+      <div class="listing-card" data-price="6500" data-rating="4.2" data-room="double" data-food="nofood"
+        data-foodtype="nofood" data-gender="unisex" data-distance="1" data-amenities="wifi">
+        <div class="image-box">
+          <img src="../public/room_images/6h.webp" alt="Comfort Stay PG" loading="lazy">
+          <span class="badge badge-rating">⭐ 4.2</span>
+        </div>
+        <div class="listing-content">
+          <h3>Comfort Stay PG</h3>
+          <p class="location">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+            </svg>
+            T. Nagar, Chennai
+          </p>
+          <div class="price">₹6,500 <span>/month</span></div>
+          <div class="features">
+            <span class="tag">🛏 Double Sharing</span>
+            <span class="tag">🚫 No Food</span>
+            <span class="tag">📶 WiFi</span>
+          </div>
+          <p class="note">5 mins from Pondy Bazaar</p>
+          <button class="view-btn">View Details</button>
+        </div>
+      </div>
+
+      <!-- CARD 6 -->
+      <div class="listing-card" data-price="9500" data-rating="4.6" data-room="single" data-food="food"
+        data-foodtype="vegnonveg" data-gender="boys" data-distance="1" data-amenities="wifi,ac,parking">
+        <div class="image-box">
+          <img src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=600&q=80" alt="Royal Boys Hostel"
+            loading="lazy">
+          <span class="badge badge-rating">⭐ 4.6</span>
+        </div>
+        <div class="listing-content">
+          <h3>Royal Boys Hostel</h3>
+          <p class="location">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+            </svg>
+            BTM Layout, Bangalore
+          </p>
+          <div class="price">₹9,500 <span>/month</span></div>
+          <div class="features">
+            <span class="tag">🛏 Single Sharing</span>
+            <span class="tag">🍽 Veg + Non-Veg</span>
+            <span class="tag">🅿️ Parking</span>
+          </div>
+          <p class="note">Near bus stand &amp; metro</p>
+          <button class="view-btn">View Details</button>
+        </div>
+      </div>
+
+      <!-- CARD 7 -->
+      <div class="listing-card" data-price="10500" data-rating="4.4" data-room="triple" data-food="food"
+        data-foodtype="vegonly" data-gender="girls" data-distance="1" data-amenities="wifi,ac,cctv,housekeeping">
+        <div class="image-box">
+          <img src="https://images.unsplash.com/photo-1560185893-a55cbc8c57e8?w=600&q=80" alt="Sunshine Girls PG"
+            loading="lazy">
+          <span class="badge badge-rating">⭐ 4.4</span>
+        </div>
+        <div class="listing-content">
+          <h3>Sunshine Girls PG</h3>
+          <p class="location">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+            </svg>
+            Porur, Chennai
+          </p>
+          <div class="price">₹10,500 <span>/month</span></div>
+          <div class="features">
+            <span class="tag">🛏 Triple Sharing</span>
+            <span class="tag">🌿 Veg Only</span>
+            <span class="tag">🏠 Housekeeping</span>
+          </div>
+          <p class="note">3 km from IT Corridor</p>
+          <button class="view-btn">View Details</button>
+        </div>
+      </div>
+
+      <!-- CARD 8 -->
+      <div class="listing-card" data-price="11000" data-rating="4.9" data-room="single" data-food="nofood"
+        data-foodtype="nofood" data-gender="unisex" data-distance="0.5"
+        data-amenities="wifi,ac,gym,laundry,attached-bathroom">
+        <div class="image-box">
+          <img src="https://images.unsplash.com/photo-1556020685-ae41abfc9365?w=600&q=80" alt="Modern Living PG"
+            loading="lazy">
+          <span class="badge badge-rating">⭐ 4.9</span>
+        </div>
+        <div class="listing-content">
+          <h3>Modern Living PG</h3>
+          <p class="location">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+            </svg>
+            Andheri, Mumbai
+          </p>
+          <div class="price">₹11,000 <span>/month</span></div>
+          <div class="features">
+            <span class="tag">🛏 Single Sharing</span>
+            <span class="tag">🚫 Without Food</span>
+            <span class="tag">🏋️ Gym</span>
+            <span class="tag">❄️ AC</span>
+          </div>
+          <p class="note">Premium locality, fully furnished</p>
+          <button class="view-btn">View Details</button>
+        </div>
+      </div>
+
+      <!-- CARD 9 -->
+      <div class="listing-card" data-price="5500" data-rating="4.1" data-room="triple" data-food="food"
+        data-foodtype="vegnonveg" data-gender="boys" data-distance="1" data-amenities="wifi,cctv">
+        <div class="image-box">
+          <img src="https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=600&q=80" alt="Venkateswara Boys PG"
+            loading="lazy">
+          <span class="badge badge-rating">⭐ 4.1</span>
+        </div>
+        <div class="listing-content">
+          <h3>Venkateswara Boys PG</h3>
+          <p class="location">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+            </svg>
+            Porur, Chennai
+          </p>
+          <div class="price">₹5,500 <span>/month</span></div>
+          <div class="features">
+            <span class="tag">🛏 Four Sharing</span>
+            <span class="tag">🍽 Veg + Non-Veg</span>
+            <span class="tag">📹 CCTV</span>
+          </div>
+          <p class="note">Near IT Parks &amp; bus stop</p>
+          <button class="view-btn">View Details</button>
+        </div>
+      </div>
+
+      <!-- CARD 10 -->
+      <div class="listing-card" data-price="13500" data-rating="4.5" data-room="private" data-food="food"
+        data-foodtype="vegnonveg" data-gender="unisex" data-distance="1" data-amenities="wifi,ac,gym,laundry,parking">
+        <div class="image-box">
+          <img src="https://images.unsplash.com/photo-1502672023488-70e25813eb80?w=600&q=80"
+            alt="Premium Co-Living Space" loading="lazy">
+          <span class="badge badge-rating">⭐ 4.5</span>
+        </div>
+        <div class="listing-content">
+          <h3>Premium Co-Living Space</h3>
+          <p class="location">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+            </svg>
+            Indiranagar, Bangalore
+          </p>
+          <div class="price">₹13,500 <span>/month</span></div>
+          <div class="features">
+            <span class="tag">🛏 Private Room</span>
+            <span class="tag">🍽 With Food</span>
+            <span class="tag">🏋️ Gym</span>
+            <span class="tag">🅿️ Parking</span>
+          </div>
+          <p class="note">500m from IT corridor/offices</p>
+          <button class="view-btn">View Details</button>
+        </div>
+      </div>
+
+      <!-- CARD 11 -->
+      <div class="listing-card" data-price="7000" data-rating="4.3" data-room="double" data-food="food"
+        data-foodtype="vegonly" data-gender="girls" data-distance="1" data-amenities="wifi,geyser,housekeeping">
+        <div class="image-box">
+          <img src="https://images.unsplash.com/photo-1484154218962-a197022b5858?w=600&q=80" alt="Meenakshi Girls PG"
+            loading="lazy">
+          <span class="badge badge-rating">⭐ 4.3</span>
+        </div>
+        <div class="listing-content">
+          <h3>Meenakshi Girls PG</h3>
+          <p class="location">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+            </svg>
+            Guindy, Chennai
+          </p>
+          <div class="price">₹7,000 <span>/month</span></div>
+          <div class="features">
+            <span class="tag">🛏 Double Sharing</span>
+            <span class="tag">🌿 Veg Only</span>
+            <span class="tag">🚿 Geyser</span>
+          </div>
+          <p class="note">Close to Anna University gates</p>
+          <button class="view-btn">View Details</button>
+        </div>
+      </div>
+
+      <!-- CARD 12 -->
+      <div class="listing-card" data-price="8000" data-rating="4.5" data-room="triple" data-food="nofood"
+        data-foodtype="nofood" data-gender="boys" data-distance="3" data-amenities="wifi,ac,cctv,parking">
+        <div class="image-box">
+          <img src="https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=600&q=80" alt="Elite Boys PG"
+            loading="lazy">
+          <span class="badge badge-rating">⭐ 4.5</span>
+        </div>
+        <div class="listing-content">
+          <h3>Elite Boys PG</h3>
+          <p class="location">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+            </svg>
+            Marathahalli, Bangalore
+          </p>
+          <div class="price">₹8,000 <span>/month</span></div>
+          <div class="features">
+            <span class="tag">🛏 Triple Sharing</span>
+            <span class="tag">🚫 Without Food</span>
+            <span class="tag">❄️ AC</span>
+          </div>
+          <p class="note">3km from Outer Ring Road bridge</p>
+          <button class="view-btn">View Details</button>
+        </div>
+      </div>
+
+      <!-- CARD 13 -->
+      <div class="listing-card" data-price="4500" data-rating="3.7" data-room="triple" data-food="food"
+        data-foodtype="vegnonveg" data-gender="boys" data-distance="1" data-amenities="wifi">
+        <div class="image-box">
+          <img src="https://images.unsplash.com/photo-1598928506311-c55ded91a20c?w=600&q=80" alt="Balaji Mens Hostel"
+            loading="lazy">
+          <span class="badge badge-rating">⭐ 3.7</span>
+        </div>
+        <div class="listing-content">
+          <h3>Balaji Mens Hostel</h3>
+          <p class="location">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+            </svg>
+            Velachery, Chennai
+          </p>
+          <div class="price">₹4,500 <span>/month</span></div>
+          <div class="features">
+            <span class="tag">🛏 Four Sharing</span>
+            <span class="tag">🍽 Veg + Non-Veg</span>
+            <span class="tag">📶 WiFi</span>
+          </div>
+          <p class="note">Budget-friendly near TASMAC</p>
+          <button class="view-btn">View Details</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div id="emptyState" class="empty-state" style="display:none;">
+      <div class="empty-icon">🏠</div>
+      <h3>No PGs found</h3>
+      <p>Try adjusting your search or filters.</p>
+      <button id="resetAll">Clear All Filters</button>
+    </div>
+
+  </main>
+
+  <script src="../js/listing.js"></script>
+</body>
+
+</html>

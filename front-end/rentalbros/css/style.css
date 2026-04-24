@@ -1,0 +1,459 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background: #dcd9b3;
+}
+
+/* NAVBAR */
+.navbar {
+  position: sticky;
+  top: 10px; /* keeps your rounded style */
+  z-index: 1000;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #eee;
+  padding: 20px 60px;
+  border-radius: 40px;
+  margin: 10px 20px;
+}
+
+
+.navbar nav {
+  display: flex;
+  gap: 45px;
+  margin: 0 auto;
+}
+
+
+.navbar nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: black;
+  font-size: 16px;
+}
+
+.navbar .login {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.navbar nav a.active {
+  color: #f4a825;
+}
+
+
+.icon {
+  width: 18px;
+  height: 18px;
+}
+/* HERO */
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 60px;
+}
+
+.hero-text {
+  max-width: 100%;
+  font-size: 25px;
+  padding-left: 100px;
+  
+}
+
+.hero-text ul {
+  list-style: none;
+  padding: 0;
+  padding-top: 25px;
+}
+
+.hero-text h1 {
+  font-size: 50px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+}
+
+.hero-text button {
+  margin-top: 20px;
+  padding: 20px 40px;
+  font-size: 20px;
+  border: none;
+  background: #f4a825;
+  color: white;
+  border-radius: 30px;
+  cursor: pointer;
+  box-shadow: inset 0 4px 6px rgba(0,0,0,0.2);
+}
+
+.hero-img {
+  overflow: hidden;
+}
+
+.hero-img img {
+  width: 100%;
+  height: 800px;      
+  object-fit: cover;
+}
+
+/* EXPLORE */
+.explore {
+  padding: 40px;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.card {
+  background: #eee;
+  border-radius: 15px;
+  padding: 12px;
+  text-align: left;
+  transition: 0.3s;
+}
+
+.card img {
+  width: 100%;
+  height: 140px;      
+  object-fit: cover; 
+  border-radius: 12px;
+}
+
+/* LISTINGS */
+.listings {
+  padding: 40px;
+}
+
+.listing-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.listing {
+  background: white;
+  padding: 15px;
+  border-radius: 15px;
+}
+
+.listing img {
+  width: 100%;
+  height: 150px;        
+  object-fit: cover;     
+  border-radius: 10px;
+}
+
+/* FEATURES */
+.features {
+  padding: 60px;
+  background: #f2f2f2;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  margin-top: 30px;
+}
+
+.feature {
+  text-align: center;
+}
+
+/* FOOTER */
+.footer {
+  background: #ddd;
+  padding: 40px;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.footer textarea {
+  width: 250px;
+  height: 100px;
+  margin-top: 10px;
+}
+
+.footer button {
+  margin-top: 10px;
+  padding: 8px 15px;
+}
+
+.footer .copyright {
+  width: 100%;
+  text-align: center;
+  margin-top: 20px;
+}
+section {
+  margin-bottom: 40px;
+}
+
+h2 {
+  margin-bottom: 15px;
+}
+.card h3 {
+  margin-top: 8px;
+  font-size: 16px;
+}
+
+.card p {
+  font-size: 14px;
+  color: #555;
+}
+
+.card strong {
+  display: block;
+  margin-top: 5px;
+}
+
+.card .card-h3 {
+  color: #343333;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 10px;
+  padding-bottom: 13px;
+  font-size: 18px;
+}
+
+/* DETAILS */
+.card .card-p {
+  font-size: 13px;
+  color: #555;
+  margin-top: 6px;
+  padding-bottom: 9px;
+  font-size: 15px;
+}
+
+
+/* TITLE */
+.listing .title {
+  color: #ff6600;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 10px;
+  padding-bottom: 13px;
+  font-size: 18px;
+}
+
+/* DETAILS */
+.listing .details {
+  font-size: 13px;
+  color: #555;
+  margin-top: 6px;
+  padding-bottom: 9px;
+  font-size: 15px;
+}
+
+/* LOCATION */
+.listing .location {
+  font-size: 12px;
+  color: #888;
+  margin-top: 4px;
+  padding-bottom: 9px;
+  font-size: 15px;
+}
+
+/* PRICE ROW */
+.card .car {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+ 
+}
+
+/* PRICE */
+.price {
+  font-weight: bold;
+  font-size: 17px;
+  
+}
+
+/* VIEW INFO */
+.view {
+  color: #ff6600;
+  font-size: 14px;
+  cursor: pointer;
+}
+/* LOCATION FIX */
+.location {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #777;
+  margin-top: 6px;
+}
+
+.location img {
+  width: 14px;
+  height: 14px;
+}
+/* FEATURES SECTION */
+.features {
+  padding: 80px 60px;
+  background: #f5f2ea;
+  text-align: center;
+}
+
+/* HEADING */
+.features h2 {
+  font-size: 32px;
+  margin-bottom: 50px;
+  font-weight: 600;
+}
+
+/* GRID */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 60px 40px;
+}
+
+/* EACH FEATURE */
+.feature {
+  text-align: center;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+/* ICON CIRCLE */
+.icon-box {
+  width: 60px;
+  height: 60px;
+  background: #f59e0b;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 15px;
+}
+
+/* ICON SIZE */
+.icon-box img {
+  width: 26px;
+  height: 26px;
+}
+
+/* TITLE */
+.feature h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* DESCRIPTION */
+.feature p {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.6;
+}
+
+/* FOOTER MAIN */
+.footer {
+  background: #e5e5e5;
+  padding: 60px;
+}
+
+/* CONTAINER */
+.footer-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 40px;
+}
+
+/* HEADINGS */
+.footer h4 {
+  font-size: 16px;
+  margin-bottom: 15px;
+}
+
+/* LEFT TEXT */
+.footer-left p {
+  margin: 6px 0;
+  color: #666;
+  cursor: pointer;
+}
+
+.footer-small p {
+  font-size: 12px;
+  margin-top: 10px;
+}
+
+/* CENTER */
+.footer-center p {
+  color: #666;
+  margin: 6px 0;
+}
+
+/* SOCIAL ICONS */
+.social-icons {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.social-icons img {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+/* RIGHT SIDE */
+.footer-right textarea {
+  width: 260px;
+  height: 120px;
+  border-radius: 12px;
+  border: 1px solid #f4a825;
+  padding: 10px;
+  margin-top: 10px;
+  outline: none;
+  resize: none;
+}
+
+.footer-right button {
+  display: block;
+  margin-top: 15px;
+  padding: 8px 18px;
+  border: none;
+  background: #f4a825;
+  color: black;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* COPYRIGHT */
+.footer .copyright {
+  text-align: center;
+  margin-top: 40px;
+  color: #666;
+  font-size: 14px;
+}
+
+/* HERO IMAGE ANIMATION */
+
+
+
+
+#houseImg {
+  width: 100%;
+  height: 800px;
+  object-fit: cover;
+  position: relative;
+  z-index: 10;
+}
+

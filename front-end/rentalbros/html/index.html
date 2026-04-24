@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PG Finder</title>
+  <link rel="stylesheet" href="../css/style.css">
+  
+</head>
+<body>
+  
+<div id="fadeOverlay"></div>
+<!-- NAVBAR -->
+<header class="navbar">
+  <div class="logo">🏢</div>
+  <nav>
+    <a href="#home"><img src="../public/icons/home.svg" class="icon">Home</a>
+    <a href="#about"><img src="../public/icons/info.svg" class="icon">About</a>
+    <a href="#feature"><img src="../public/icons/sparkles.svg" class="icon">Feature</a>
+    <a href="#contact"><img src="../public/icons/mail.svg" class="icon">Contact</a>
+  </nav>
+  <div class="login" style="cursor: pointer;" onclick="window.location.href='../../login/login/login.html'"><img src="../public/icons/user.svg" class="icon" >Log-in / Register</div>
+</header>
+
+<!-- HERO SECTION -->
+<section id="home" class="hero">
+
+  <center>
+    <div class="hero-text">
+      <h1>Discover Your Next Home</h1>
+      <p>Browse safe, affordable, and comfortable PG accommodation</p>
+      <ul>
+        <li>Secure and trusted platform</li>
+        <li>300+ listed properties</li>
+        <li>Fully secured</li>
+      </ul>
+      <button id="exploreBtn">Explore Properties</button>
+    </div>
+  </center>
+
+  <div class="hero-img">
+    <img src="../public/room_images/house.png" id="houseImg" alt="house">
+  </div>
+
+</section>
+
+<!-- EXPLORE -->
+<section id="about" class="explore">
+  <h2>Explore:</h2>
+  <div class="cards">
+
+    <div class="card pg-card-sunrise" style="cursor: pointer;" onclick="window.location.href='../../pg_details/index.html'">
+      <img src="../public/room_images/1h.jpg" />
+      <h3 class="card-h3">Sunrise PG Residency</h3>
+      <p class="card-p">Single/Double Sharing</p>
+      <strong>Rs. 15,000</strong>
+    </div>
+
+    <div class="card">
+      <img src="../public/room_images/2h.webp" />
+      <h3 class="card-h3">Boys PG</h3>
+      <p class="card-p">Single Room</p>
+      <strong>Rs. 14,000</strong>
+    </div>
+
+    <div class="card">
+      <img src="../public/room_images/3h.jpg" />
+      <h3 class="card-h3">Urban Apartments</h3>
+      <p class="card-p">Private Room</p>
+      <strong>Rs. 14,000</strong>
+    </div>
+
+    <div class="card">
+      <img src="../public/room_images/4h.webp" />
+      <h3 class="card-h3">Girls PG</h3>
+      <p class="card-p">Triple Sharing</p>
+      <strong>Rs. 19,000</strong>
+    </div>
+
+    <div class="card">
+      <img src="../public/room_images/5h.webp" />
+      <h3 class="card-h3">Budget PG</h3>
+      <p class="card-p">Double Sharing</p>
+      <strong>Rs. 13,000</strong>
+    </div>
+
+  </div>
+</section>
+
+<!-- NEW LISTINGS -->
+<section class="listings">
+  <h2>New Listings:</h2>
+
+  <div class="listing-cards">
+
+    <!-- CARD 1 -->
+    <div class="listing">
+      <img src="../public/room_images/6h.webp" />
+
+      <h3 class="title">Luxury PG : Koramangala</h3>
+
+      <div class="details" style="display:flex; flex-wrap:wrap; gap:6px; margin:10px 0;">
+        <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">Attached Kitchen</span>
+        <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">2 Bathrooms</span>
+        <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">Fully-furnished</span>
+        <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">WiFi</span>
+      </div>
+      <p class="location"><img src="../public/icons/locationPin.svg" class="icon"> Near Hospital, Restaurants, Shopping Mall, Metro Station</p>
+
+      <div class="price-row">
+        <span class="price">Rs. 22,000/month</span>
+      </div>
+    </div>
+
+    <!-- CARD 2 -->
+    <div class="listing">
+      <img src="../public/room_images/7h.webp" />
+
+      <h3 class="title">Student Flat : Near University</h3>
+
+      <div class="details" style="display:flex; flex-wrap:wrap; gap:6px; margin:10px 0;">
+        <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">Shared Kitchen</span>
+        <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">2 Bathrooms</span>
+        <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">Semi-furnished</span>
+        <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">WiFi</span>
+      </div>
+      <p class="location"> <img src="../public/icons/locationPin.svg" class="icon">Near Hospital, Restaurants, Shopping Mall, Metro Station</p>
+
+      <div class="price-row">
+        <span class="price">Rs. 12,000/month</span>
+      </div>
+    </div>
+
+    <!-- CARD 3 -->
+    <div class="listing">
+      <img src="../public/room_images/8h.jpg" />
+
+      <h3 class="title">Working Professionals PG : BTM Layout</h3>
+
+      <div class="details" style="display:flex; flex-wrap:wrap; gap:6px; margin:10px 0;">
+        <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">Shared Kitchen</span>
+        <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">3 Bathrooms</span>
+        <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">Fully-furnished</span>
+        <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">WiFi</span>
+      </div>
+      <p class="location"> <img src="../public/icons/locationPin.svg" class="icon">Near Hospital, Restaurants, Shopping Mall, Metro Station</p>
+
+      <div class="price-row">
+        <span class="price">Rs. 28,000/month</span>
+      </div>
+    </div>
+
+    <!-- CARD 4 -->
+    <div class="listing">
+      <img src="../public/room_images/9h.webp" />
+
+      <h3 class="title">Premium Flat : Indiranagar</h3>
+
+      <div class="details" style="display:flex; flex-wrap:wrap; gap:6px; margin:10px 0;">
+        <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">Common Kitchen</span>
+        <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">2 Bathrooms</span>
+        <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">Fully-furnished</span>
+        <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">WiFi</span>
+      </div>
+      <p class="location"><img src="../public/icons/locationPin.svg" class="icon">Near Hospital, Restaurants, Shopping Mall, Metro Station</p>
+
+      <div class="price-row">
+        <span class="price">Rs. 22,000/month</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section id="feature" class="features">
+  <h2>Our Key Features</h2>
+
+  <div class="feature-grid">
+
+    <div class="feature">
+      <div class="icon-box">
+        <img src="../public/icons/verified-pg-listings.svg" alt="">
+      </div>
+      <h3>Verified PG Listings</h3>
+      <p>
+        Browse a wide range of verified PG accommodations listed by trusted property owners.
+        Our platform ensures every listing is reliable, helping users find safe and comfortable living spaces.
+      </p>
+    </div>
+
+    <div class="feature">
+      <div class="icon-box">
+        <img src="../public/icons/smart-search-&-filters.svg" alt="">
+      </div>
+      <h3>Smart Search & Filters</h3>
+      <p>
+        Quickly discover PG accommodations using smart search and filtering options.
+        Refine results based on location, price, amenities, and preferences.
+      </p>
+    </div>
+
+    <div class="feature">
+      <div class="icon-box">
+        <img src="../public/icons/detailed-property-information.svg" alt="">
+      </div>
+      <h3>Detailed Property Info</h3>
+      <p>
+        Access complete property details including rent, facilities, room types,
+        images, and location for better decision-making.
+      </p>
+    </div>
+
+    <div class="feature">
+      <div class="icon-box">
+        <img src="../public/icons/reviews-&-ratings.svg" alt="">
+      </div>
+      <h3>Reviews & Ratings</h3>
+      <p>
+        View real user reviews and ratings to understand quality,
+        safety, and comfort before choosing a PG.
+      </p>
+    </div>
+
+    <div class="feature">
+      <div class="icon-box">
+        <img src="../public/icons/direct-owner-communication.svg" alt="">
+      </div>
+      <h3>Direct Owner Communication</h3>
+      <p>
+        Connect directly with property owners to ask questions,
+        clarify details, and schedule visits easily.
+      </p>
+    </div>
+
+    <div class="feature">
+      <div class="icon-box">
+        <img src="../public/icons/easy-property-listing.svg" alt="">
+      </div>
+      <h3>Easy Property Listing</h3>
+      <p>
+        Owners can list properties easily with details, images,
+        and pricing to reach more potential tenants.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+<footer id="contact" class="footer">
+
+  <div class="footer-container">
+
+    <!-- LEFT -->
+    <div class="footer-left">
+      <h4>Support</h4>
+      <p>Blogs</p>
+      <p>Plans</p>
+      <p>About</p>
+      <p>Pricing</p>
+      <p>Contact</p>
+
+      <div class="footer-small">
+        <p>Privacy Policy</p>
+        <p>Terms & Conditions</p>
+      </div>
+    </div>
+
+    <!-- CENTER -->
+    <div class="footer-center">
+      <h4>24/7 Customer Support</h4>
+      <p>summasollu.com</p>
+      <p>91-9234567810</p>
+
+      <div class="social-icons">
+        <img src="../public/icons/facebook.svg">
+        <img src="../public/icons/instagram.svg">
+        <img src="../public/icons/youtube.svg">
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="footer-right">
+      <h4>Need help?</h4>
+
+      <textarea id="helpMsg" placeholder="Type your message here..."></textarea>
+
+      <button id="helpSubmitBtn">Submit</button>
+    </div>
+
+  </div>
+
+  <p class="copyright">
+    @2026RentBro. All Rights Reserved
+  </p>
+
+</footer>
+<script src="../js/script.js"></script>
+
+</body>
+</html>
