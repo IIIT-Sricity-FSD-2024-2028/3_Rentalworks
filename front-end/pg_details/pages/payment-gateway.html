@@ -11,51 +11,85 @@
         <div class="modern-card" style="padding: 24px;">
             <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 20px;">Payment Method</h3>
 
-            <div id="method-upi" class="pay-method-box active" onclick="BookingLogic.selectPayment('upi')">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-                    <span style="color: #3b82f6; font-size: 20px;">📱</span>
-                    <div>
-                        <strong style="display: block; font-size: 14px; color: var(--text-dark);">UPI Payment</strong>
-                        <span style="font-size: 11px; color: var(--text-gray);">Google Pay, PhonePe, Paytm</span>
-                    </div>
+            <div class="grid-3 mb-16" style="gap: 12px; margin-bottom: 24px; display: grid; grid-template-columns: repeat(3, 1fr);">
+              <div id="method-upi" class="pay-method-box active" style="text-align:center; padding: 16px; display:flex; flex-direction:column; align-items:center; justify-content:center;" onclick="BookingLogic.selectPayment('upi')">
+                 <div style="font-size: 28px; margin-bottom: 8px;">📱</div>
+                 <strong style="font-size: 13px;">UPI</strong>
+              </div>
+              <div id="method-card" class="pay-method-box" style="text-align:center; padding: 16px; display:flex; flex-direction:column; align-items:center; justify-content:center;" onclick="BookingLogic.selectPayment('card')">
+                 <div style="font-size: 28px; margin-bottom: 8px;">💳</div>
+                 <strong style="font-size: 13px;">Card</strong>
+              </div>
+              <div id="method-net" class="pay-method-box" style="text-align:center; padding: 16px; display:flex; flex-direction:column; align-items:center; justify-content:center;" onclick="BookingLogic.selectPayment('net')">
+                 <div style="font-size: 28px; margin-bottom: 8px;">🏦</div>
+                 <strong style="font-size: 13px;">Net Banking</strong>
+              </div>
+            </div>
+
+            <div id="form-upi" class="pay-form">
+                <label style="font-size:12px; font-weight:700; display:block; margin-bottom:8px;">Your UPI ID</label>
+                <input type="text" id="upi-id" class="input-field mb-8" placeholder="yourname@upi" style="padding: 12px 14px; font-size: 14px; width:100%; box-sizing:border-box;">
+                
+                <p style="font-size:12px; font-weight:700; margin-top:16px; margin-bottom:12px;">Popular UPI Apps</p>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                   <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;" onclick="document.getElementById('upi-id').value='user@googlepay'">🟦 Google Pay</div>
+                   <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;" onclick="document.getElementById('upi-id').value='user@ybl'">🟣 PhonePe</div>
+                   <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;" onclick="document.getElementById('upi-id').value='user@paytm'">🟦 Paytm</div>
                 </div>
-                <div id="form-upi" class="pay-form">
-                    <input type="text" id="upi-id" class="input-field" placeholder="Enter UPI ID (e.g., name@upi)" style="padding: 10px 14px; font-size: 13px;">
+                
+                <div style="text-align:center; position:relative; margin: 20px 0;">
+                  <hr style="border-color: var(--border); margin:0;">
+                  <span style="background:var(--surface); padding:0 10px; position:absolute; top:-10px; left:50%; transform:translateX(-50%); font-size:12px; color:var(--text-gray);">OR</span>
+                </div>
+                
+                <div style="text-align:center; padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1;">
+                  <div style="font-size: 40px; line-height: 1;">📱</div>
+                  <p style="font-size: 13px; font-weight: 800; margin-top: 8px; margin-bottom: 4px;">Scan QR Code</p>
+                  <p style="font-size: 11px; color: var(--text-gray);">Open any UPI app and scan this to pay directly.</p>
                 </div>
             </div>
 
-            <div id="method-card" class="pay-method-box" onclick="BookingLogic.selectPayment('card')">
-                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <span style="color: #3b82f6; font-size: 20px;">💳</span>
-                    <div>
-                        <strong style="display: block; font-size: 14px; color: var(--text-dark);">Credit / Debit Card</strong>
-                        <span style="font-size: 11px; color: var(--text-gray);">Visa, Mastercard, RuPay</span>
+            <div id="form-card" class="pay-form hidden">
+                <div class="card-visual mb-16" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom:20px;">
+                    <div class="card-logo" style="font-size: 24px; text-align: right; margin-bottom: 10px;">💳</div>
+                    <div class="card-visual-chip" style="background: gold; width: 40px; height: 30px; border-radius: 4px; margin-bottom: 15px;"></div>
+                    <div class="card-visual-number" id="card-display-num" style="font-size: 20px; letter-spacing: 2px; margin-bottom: 20px; font-family: monospace;">•••• •••• •••• ••••</div>
+                    <div class="card-visual-bottom" style="display: flex; justify-content: space-between; text-transform: uppercase; font-size: 12px; opacity: 0.8;">
+                      <div><div class="card-visual-label" style="font-size:9px; margin-bottom:2px;">Card Holder</div><div class="card-visual-value" id="card-display-name">YOUR NAME</div></div>
+                      <div><div class="card-visual-label" style="font-size:9px; margin-bottom:2px;">Expires</div><div class="card-visual-value" id="card-display-exp">MM/YY</div></div>
                     </div>
                 </div>
-                <div id="form-card" class="pay-form hidden" style="margin-top: 16px;">
-                    <input type="text" id="card-num" class="input-field mb-8" placeholder="Card Number" style="padding: 10px 14px; font-size: 13px;">
-                    <div class="grid-2" style="gap: 8px;">
-                        <input type="text" id="card-exp" class="input-field" placeholder="MM/YY" style="padding: 10px 14px; font-size: 13px;">
-                        <input type="password" id="card-cvv" class="input-field" placeholder="CVV" style="padding: 10px 14px; font-size: 13px;">
+
+                <div class="grid-1" style="gap:12px; margin-bottom:12px;">
+                    <div>
+                        <label style="font-size:12px; font-weight:700; display:block; margin-bottom:4px;">Card Number</label>
+                        <input type="text" id="card-num" class="input-field" placeholder="1234 5678 9012 3456" maxlength="19" oninput="this.value=this.value.replace(/[^0-9]/g,'').replace(/(.{4})/g,'$1 ').trim();document.getElementById('card-display-num').textContent=this.value||'•••• •••• •••• ••••'" style="padding: 12px 14px; font-size: 14px; width:100%; box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="font-size:12px; font-weight:700; display:block; margin-bottom:4px;">Card Holder Name</label>
+                        <input type="text" id="card-name" class="input-field" placeholder="JOHN DOE" oninput="document.getElementById('card-display-name').textContent=this.value.toUpperCase()||'YOUR NAME'" style="padding: 12px 14px; font-size: 14px; width:100%; box-sizing:border-box;">
+                    </div>
+                </div>
+                <div class="grid-2" style="gap: 12px;">
+                    <div>
+                        <label style="font-size:12px; font-weight:700; display:block; margin-bottom:4px;">Expiry Date</label>
+                        <input type="text" id="card-exp" class="input-field" placeholder="MM/YY" maxlength="5" oninput="this.value=this.value.replace(/[^0-9/]/g,'');document.getElementById('card-display-exp').textContent=this.value||'MM/YY'" style="padding: 12px 14px; font-size: 14px; width:100%; box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="font-size:12px; font-weight:700; display:block; margin-bottom:4px;">CVV</label>
+                        <input type="password" id="card-cvv" class="input-field" placeholder="123" maxlength="3" style="padding: 12px 14px; font-size: 14px; width:100%; box-sizing:border-box;">
                     </div>
                 </div>
             </div>
 
-            <div id="method-net" class="pay-method-box" onclick="BookingLogic.selectPayment('net')">
-                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <span style="color: #3b82f6; font-size: 20px;">🏦</span>
-                    <div>
-                        <strong style="display: block; font-size: 14px; color: var(--text-dark);">Net Banking</strong>
-                        <span style="font-size: 11px; color: var(--text-gray);">Pay via your bank account</span>
-                    </div>
-                </div>
-                <div id="form-net" class="pay-form hidden" style="margin-top: 16px;">
-                    <select id="net-bank" class="input-field" style="padding: 10px 14px; font-size: 13px;">
-                        <option value="">Select your bank</option>
-                        <option value="sbi">State Bank of India</option>
-                        <option value="hdfc">HDFC Bank</option>
-                        <option value="icici">ICICI Bank</option>
-                    </select>
+            <div id="form-net" class="pay-form hidden">
+                <input type="text" placeholder="🔍 Search for your bank..." style="width: 100%; padding: 12px 14px; font-size: 14px; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 16px; box-sizing:border-box;" />
+                <p style="font-size:12px; font-weight:700; margin-bottom:12px;">Popular Banks</p>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;">🏦 State Bank of India</div>
+                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;">🏦 HDFC Bank</div>
+                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;">🏦 ICICI Bank</div>
+                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;">🏦 Axis Bank</div>
                 </div>
             </div>
 

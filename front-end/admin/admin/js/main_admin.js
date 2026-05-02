@@ -31,11 +31,24 @@ const FRAGMENT_MAP = {
 async function fetchData() {
   try {
     const headers = { 'x-role': 'admin' };
-    users        = await fetch('http://localhost:3000/api/users', { headers }).then(r=>r.json());
-    properties   = await fetch('http://localhost:3000/api/properties', { headers }).then(r=>r.json());
-    bookings     = await fetch('http://localhost:3000/api/bookings', { headers }).then(r=>r.json());
-    payments     = await fetch('http://localhost:3000/api/payments', { headers }).then(r=>r.json());
-    notifHistory = await fetch('http://localhost:3000/api/notifications', { headers }).then(r=>r.json());
+    
+    // Helper function to safely fetch and ensure array response
+    const fetchArray = async (url) => {
+      try {
+        const res = await fetch(url, { headers });
+        if (!res.ok) return [];
+        const data = await res.json();
+        return Array.isArray(data) ? data : [];
+      } catch {
+        return [];
+      }
+    };
+
+    users        = await fetchArray('http://localhost:3000/users');
+    properties   = await fetchArray('http://localhost:3000/properties');
+    bookings     = await fetchArray('http://localhost:3000/bookings');
+    payments     = await fetchArray('http://localhost:3000/payments');
+    notifHistory = await fetchArray('http://localhost:3000/notifications');
   } catch(e) {
     console.error('API Error:', e);
   }

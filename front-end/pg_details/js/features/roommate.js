@@ -3,14 +3,21 @@ const RoommateLogic = {
     render() {
         const container = document.getElementById('match-display');
         if (!container) return;
-        const rm = State.data.roommates[State.data.currentRmIndex];
+        
+        // Use filtered roommates if available, otherwise fallback to all
+        const roommatesToUse = State.data.filteredRm || State.data.roommates;
+        if (!roommatesToUse || roommatesToUse.length === 0) {
+            container.innerHTML = `<div style="padding:40px; text-align:center;">No matching roommates found based on your preferences.</div>`;
+            return;
+        }
+
+        const rm = roommatesToUse[State.data.currentRmIndex || 0];
         const tags = rm.tags.map((t, i) => `<span class="rm-tag ${i%2!==0?'alt':''}">${t}</span>`).join('');
         
         container.innerHTML = `
             <div class="match-card">
                 <div style="position:relative;">
                     <img src="${rm.img}" class="rm-img">
-                    <div style="position:absolute; top:20px; right:20px; background:var(--success); color:white; padding:6px 16px; border-radius:20px; font-weight:800;">${rm.match}% Match</div>
                 </div>
                 <div>
                     <h2 style="font-size:32px; font-weight:800;">${rm.name}, ${rm.age}</h2>
@@ -27,20 +34,45 @@ const RoommateLogic = {
     
     // 2. Cycle to next roommate
     next() {
-        State.data.currentRmIndex = (State.data.currentRmIndex + 1) % State.data.roommates.length;
+        const roommatesToUse = State.data.filteredRm || State.data.roommates;
+        if (!roommatesToUse || roommatesToUse.length === 0) return;
+        State.data.currentRmIndex = ((State.data.currentRmIndex || 0) + 1) % roommatesToUse.length;
         this.render();
     },
     
     // 3. Select a roommate and proceed
     select(id) {
-        State.data.selectedRm = State.data.roommates.find(r => r.id === id);
+        const roommatesToUse = State.data.filteredRm || State.data.roommates;
+        State.data.selectedRm = roommatesToUse.find(r => r.id === id);
         State.save();
         Navigation.navigate('booking-review');
     },
 
-    // 4. NEW: Handle radio button clicks in Preferences
+    // 4. Handle radio button clicks in Preferences
     selectRadio(element, groupClass) {
         document.querySelectorAll('.' + groupClass).forEach(el => el.classList.remove('selected'));
         element.classList.add('selected');
+    },
+
+    // 5. NEW: Filter roommates based on preferences and start matching
+    startMatching() {
+        const sleepEl = document.querySelector('.p-sleep.selected');
+        let filtered = State.data.roommates;
+
+        if (sleepEl) {
+            const sleepPref = sleepEl.textContent.toLowerCase();
+            if (sleepPref.includes('late')) {
+                // Filter out early risers
+                filtered = filtered.filter(rm => !rm.bio.toLowerCase().includes('early') && !rm.tags.some(t => t.toLowerCase().includes('early')));
+            } else if (sleepPref.includes('early')) {
+                // Filter out late/night owls
+                filtered = filtered.filter(rm => !rm.bio.toLowerCase().includes('late') && !rm.bio.toLowerCase().includes('night owl') && !rm.tags.some(t => t.toLowerCase().includes('night')));
+            }
+        }
+
+        // Save filtered list to state, fallback to all if filtering removed everyone
+        State.data.filteredRm = filtered.length > 0 ? filtered : State.data.roommates;
+        State.data.currentRmIndex = 0;
+        Navigation.navigate('matches');
     }
 };

@@ -71,36 +71,47 @@
         </div>
 
         <div>
-            <div class="modern-card" style="position: sticky; top: 100px; padding: 24px;">
-                <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 20px;">Booking Summary</h3>
+            <div class="modern-card sticky" style="top: 24px; padding: 24px;">
+                <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 24px;">Booking Summary</h3>
                 
-                <div style="margin-bottom: 12px;">
-                    <span style="display: block; font-size: 12px; color: var(--text-gray);">PG</span>
-                    <strong style="font-size: 14px;">Sunrise PG Residency</strong>
+                <div class="mb-16">
+                    <span class="text-gray text-sm block">PG</span>
+                    <strong id="br-pg" style="font-size: 15px;">Sunrise PG Residency</strong>
                 </div>
-                <div style="margin-bottom: 12px;">
-                    <span style="display: block; font-size: 12px; color: var(--text-gray);">Location</span>
-                    <strong style="font-size: 14px;">Koramangala, Bangalore</strong>
+
+                <div class="mb-16">
+                    <span class="text-gray text-sm block">Location</span>
+                    <strong id="br-loc" style="font-size: 15px;">Koramangala, Bangalore</strong>
                 </div>
-                <div style="margin-bottom: 12px;">
-                    <span style="display: block; font-size: 12px; color: var(--text-gray);">Room Type</span>
-                    <strong style="font-size: 14px;">Double Sharing</strong>
+
+                <div class="mb-16">
+                    <span class="text-gray text-sm block">Room Type</span>
+                    <strong id="br-room" style="font-size: 15px;">Double Sharing</strong>
                 </div>
-                <div style="margin-bottom: 24px;">
-                    <span style="display: block; font-size: 12px; color: var(--text-gray);">Selected Roommate</span>
-                    <strong style="font-size: 14px;" id="summary-rm-name">Loading...</strong>
+
+                <div class="mb-24 pb-24" style="border-bottom: 1px solid var(--border);">
+                    <span class="text-gray text-sm block">Selected Roommate</span>
+                    <strong id="br-roommate" style="font-size: 15px;">None</strong>
                 </div>
-                
-                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13px;">
-                    <span style="color: var(--text-gray);">Monthly Rent</span><strong>₹12,000</strong>
+
+                <div class="flex-between mb-16">
+                    <span class="text-gray">Monthly Rent</span>
+                    <strong style="font-size: 16px;">₹10,000</strong>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 24px; font-size: 13px;">
-                    <span style="color: var(--text-gray);">Security Deposit</span><strong>₹5,000</strong>
+
+                <div class="flex-between mb-24 pb-24" style="border-bottom: 1px solid var(--border);">
+                    <span class="text-gray">Security Deposit</span>
+                    <strong style="font-size: 16px;">₹5,000</strong>
                 </div>
-                
-                <div style="background: var(--primary-light); border: 1px solid var(--primary); border-radius: 8px; padding: 12px; margin-bottom: 24px;">
-                    <span style="display: block; font-size: 11px; font-weight: 700; color: var(--primary-hover); margin-bottom: 4px;">Payment Status</span>
-                    <strong style="font-size: 13px; color: var(--primary-hover);">Pending Admin Approval</strong>
+
+                <div class="flex-between mb-24">
+                    <span style="font-weight: 800; font-size: 18px;">Estimated Total</span>
+                    <strong style="font-size: 22px; font-weight: 800;">₹15,000</strong>
+                </div>
+
+                <div class="modern-card" style="background: var(--warning-light); border-color: var(--warning); padding: 16px; margin-bottom: 24px;">
+                    <span class="text-warning text-sm block mb-4">Payment Status</span>
+                    <strong class="text-warning">Pending Admin Approval</strong>
                 </div>
 
                 <div style="margin-bottom: 24px;">

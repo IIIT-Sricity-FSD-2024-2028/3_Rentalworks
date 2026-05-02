@@ -44,12 +44,12 @@ function renderUsers(search = '', roleF = 'all', statusF = 'all') {
         <td style="font-size:12px">${u.joinDate}</td>
         <td>
           <div class="act-icons">
-            <button class="ico-btn" onclick="viewUser(${u.id})" title="View">👁️</button>
-            <button class="ico-btn" onclick="editUser(${u.id})" title="Edit">✏️</button>
-            <button class="ico-btn warn" onclick="toggleSuspend(${u.id})" title="${u.status === 'suspended' ? 'Activate' : 'Suspend'}">
+            <button class="ico-btn" onclick="viewUser('${u.id}')" title="View">👁️</button>
+            <button class="ico-btn" onclick="editUser('${u.id}')" title="Edit">✏️</button>
+            <button class="ico-btn warn" onclick="toggleSuspend('${u.id}')" title="${u.status === 'suspended' ? 'Activate' : 'Suspend'}">
               ${u.status === 'suspended' ? '✅' : '🚫'}
             </button>
-            <button class="ico-btn danger" onclick="deleteUser(${u.id})" title="Delete">🗑️</button>
+            <button class="ico-btn danger" onclick="deleteUser('${u.id}')" title="Delete">🗑️</button>
           </div>
         </td>
       </tr>
@@ -62,7 +62,7 @@ function renderUsers(search = '', roleF = 'all', statusF = 'all') {
 
 // ===== VIEW USER =====
 function viewUser(id) {
-  const u = users.find(x => x.id === id);
+  const u = users.find(x => x.id.toString() === id.toString());
   if (!u) return;
   showInfoModal('👤 User Details', u.email,
     `<div style="display:grid;gap:10px;font-size:13px">
@@ -113,7 +113,7 @@ function addUser() {
 
 // ===== EDIT USER =====
 function editUser(id) {
-  const u = users.find(x => x.id === id);
+  const u = users.find(x => x.id.toString() === id.toString());
   if (!u) return;
   const propOptions = properties.map(p => ({ value: p.name, label: p.name }));
   showFormModal('Edit User', 'Update user details', [
@@ -143,7 +143,7 @@ function editUser(id) {
 
 // ===== TOGGLE SUSPEND =====
 function toggleSuspend(id) {
-  const u = users.find(x => x.id === id);
+  const u = users.find(x => x.id.toString() === id.toString());
   if (!u) return;
   u.status = u.status === 'suspended' ? 'active' : 'suspended';
   saveData(); renderUsers();
@@ -152,10 +152,20 @@ function toggleSuspend(id) {
 
 // ===== DELETE USER =====
 function deleteUser(id) {
-  const u = users.find(x => x.id === id);
+  const u = users.find(x => x.id.toString() === id.toString());
   if (!u) return;
   pendingAction = () => {
-    users = users.filter(x => x.id !== id);
+    users = users.filter(x => x.id.toString() !== id.toString());
+    
+    // Also remove from local storage sources so syncUsers doesn't revive them
+    let regG = JSON.parse(localStorage.getItem('registered_guests') || '[]');
+    regG = regG.filter(g => g.email !== u.email && g.id !== u.id);
+    localStorage.setItem('registered_guests', JSON.stringify(regG));
+
+    let regO = JSON.parse(localStorage.getItem('registered_owners') || '[]');
+    regO = regO.filter(o => o.email !== u.email && o.id !== u.id);
+    localStorage.setItem('registered_owners', JSON.stringify(regO));
+
     saveData(); renderUsers(); closeModal();
     showToast('success', 'User Deleted', u.name + ' removed from system');
   };
