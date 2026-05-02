@@ -28,8 +28,7 @@ const FRAGMENT_MAP = {
   notifications: 'pages/notifications.html'
 };
 
-// ===== INIT =====
-document.addEventListener('DOMContentLoaded', async () => {
+async function fetchData() {
   try {
     const headers = { 'x-role': 'admin' };
     users        = await fetch('http://localhost:3000/api/users', { headers }).then(r=>r.json());
@@ -41,17 +40,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('API Error:', e);
   }
 
+  syncOwnerProperties();
+  syncUsers();
+
+  // Re-render currently active section to reflect real-time stats
+  const activeNav = document.querySelector('.nav-item.active');
+  if (activeNav && activeNav.dataset.sec) {
+    renderSection(activeNav.dataset.sec);
+  }
+}
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', async () => {
+  await fetchData();
+
   checkAuth();
   setupLogout();
   setupNav();
   setupModalEvents();
   setupGearIcon();
   
-  // Sync Owner's newly added properties
-  syncOwnerProperties();
+  // Set up polling for real-time stats
+  setInterval(fetchData, 5000);
 
   // Cross-actor live notifications listener
   window.addEventListener('storage', (e) => {
+    // If relevant storage changes, refresh data immediately to keep stats real-time
+    if (['registered_owners', 'registered_guests', 'pg_manager_data_storage', 'cross_notifications'].includes(e.key)) {
+      fetchData();
+    }
+
     if (e.key === 'cross_notifications') {
       const notifs = JSON.parse(e.newValue || '[]');
       if (notifs.length === 0) return;
@@ -297,7 +315,45 @@ function syncOwnerProperties() {
 
     if (hasNew) {
       saveData();
-      if (currentSection === 'properties') renderProperties();
+      // The section will be re-rendered by fetchData()
     }
   } catch(e) { console.error('Error syncing owner properties:', e); }
+}
+
+// ===== USER DATA SYNC =====
+function syncUsers() {
+  try {
+    let pendingSources = [];
+
+    const regGuests = JSON.parse(localStorage.getItem('registered_guests'));
+    if (regGuests && Array.isArray(regGuests)) pendingSources = pendingSources.concat(regGuests);
+
+    const regOwners = JSON.parse(localStorage.getItem('registered_owners'));
+    if (regOwners && Array.isArray(regOwners)) pendingSources = pendingSources.concat(regOwners);
+
+    if (pendingSources.length === 0) return;
+
+    let hasNew = false;
+    pendingSources.forEach(u => {
+      const exists = users.find(existing => existing.email === u.email || existing.id === u.id);
+      if (!exists) {
+        hasNew = true;
+        users.push({
+          id: u.id || Date.now(),
+          name: u.name || 'Unknown',
+          email: u.email || '',
+          phone: u.phone || '',
+          role: u.role || (u.propertyName ? 'owner' : 'guest'),
+          property: u.propertyName || '',
+          status: u.status || 'active',
+          joinDate: u.registeredOn || new Date().toISOString().split('T')[0],
+          username: u.username || u.email
+        });
+      }
+    });
+
+    if (hasNew) {
+      saveData();
+    }
+  } catch(e) { console.error('Error syncing users:', e); }
 }

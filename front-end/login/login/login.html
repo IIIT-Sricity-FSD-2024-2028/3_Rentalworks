@@ -140,10 +140,19 @@
                 </div>
 
                 <div id="success-area" class="card success-card" style="display: none;">
-                    <div class="success-icon">✅</div>
+                    <div class="success-icon-wrap">
+                        <svg class="success-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </div>
                     <h2 class="card-title" id="success-title">Success</h2>
                     <p class="card-sub" id="success-message">Operation completed successfully.</p>
-                    <button class="btn-login" onclick="goBack()">Return to Login</button>
+                    <button class="btn-login" onclick="goBack()" id="success-btn">Return to Login</button>
+                    
+                    <div class="redirect-loader" id="redirect-loader" style="display:none;">
+                       <div class="spinner"></div>
+                       <span>Taking you to your dashboard...</span>
+                    </div>
                 </div>
 
             </div>

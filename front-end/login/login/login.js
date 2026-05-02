@@ -11,6 +11,18 @@ let currentRole   = null;
 let guestStep     = 1;
 let guestFormData = {};
 
+// ===== MOCK DATA FALLBACK =====
+if (typeof LOGIN_MOCK === 'undefined') {
+  var LOGIN_MOCK = {
+    credentials: {
+      admin: [{ username: 'admin', password: 'password123', name: 'Admin' }],
+      warden: [], owner: [], tenant: [], guest: []
+    },
+    registeredGuests: [],
+    registeredOwners: []
+  };
+}
+
 // Load registered users from localStorage (persisted sign-ups)
 let registeredGuests = JSON.parse(localStorage.getItem('registered_guests')) || (typeof LOGIN_MOCK !== 'undefined' ? [...LOGIN_MOCK.registeredGuests] : []);
 let registeredOwners = JSON.parse(localStorage.getItem('registered_owners')) || (typeof LOGIN_MOCK !== 'undefined' ? [...LOGIN_MOCK.registeredOwners] : []);
@@ -27,6 +39,7 @@ function goBack() {
   hide('owner-reg-area');
   show('role-selector', 'flex');
   document.getElementById('back-btn').style.display = 'none';
+  document.querySelector('.card-panel-inner').style.maxWidth = '480px';
   currentRole = null;
   guestStep   = 1;
 }
@@ -39,6 +52,7 @@ function showRoleSelector() {
   hide('success-area');
   show('role-selector', 'flex');
   document.getElementById('back-btn').style.display = 'none';
+  document.querySelector('.card-panel-inner').style.maxWidth = '480px';
 }
 
 function selectRole(role) {
@@ -251,6 +265,7 @@ function showGuestSignup() {
   hide('login-card-area');
   hide('owner-reg-area');
   show('guest-signup-area', 'flex');
+  document.querySelector('.card-panel-inner').style.maxWidth = '950px';
   guestStep     = 1;
   guestFormData = {};
   renderGuestStep();
@@ -271,99 +286,125 @@ function renderGuestStep() {
     if (title)    title.textContent    = 'Personal Information';
     if (subtitle) subtitle.textContent = 'Step 1 of 3';
     body.innerHTML = `
-      <div class="reg-field">
-        <label>Full Name *</label>
-        <div class="reg-inp-wrap">
-          <span class="reg-ico">👤</span>
-          <input type="text" id="g-name" placeholder="Enter your full name" value="${guestFormData.name || ''}"/>
+      <div class="step-animated">
+        <div style="text-align:center; margin-bottom: 28px;">
+           <div style="font-size: 42px; margin-bottom:12px; filter: drop-shadow(0 4px 6px rgba(59, 130, 246, 0.2));">👋</div>
+           <h3 style="font-size: 20px; font-weight:800; color:var(--text); margin-bottom:8px;">Welcome! Let's get to know you</h3>
+           <p style="color:var(--muted); font-size:14px; line-height:1.5; padding: 0 10px;">Please provide your basic details so we can set up your profile.</p>
         </div>
-        <div class="reg-err" id="err-g-name"></div>
-      </div>
-      <div class="reg-field">
-        <label>Email Address *</label>
-        <div class="reg-inp-wrap">
-          <span class="reg-ico">✉️</span>
-          <input type="email" id="g-email" placeholder="your.email@example.com" value="${guestFormData.email || ''}"/>
+        <div class="owner-reg-grid" style="gap: 20px; margin-bottom: 24px;">
+          <div class="reg-field full" style="margin-bottom: 0;">
+            <label>Full Name *</label>
+            <div class="reg-inp-wrap">
+              <span class="reg-ico">👤</span>
+              <input type="text" id="g-name" placeholder="Enter your full name" value="${guestFormData.name || ''}"/>
+            </div>
+            <div class="reg-err" id="err-g-name"></div>
+          </div>
+          <div class="reg-field" style="margin-bottom: 0;">
+            <label>Email Address *</label>
+            <div class="reg-inp-wrap">
+              <span class="reg-ico">✉️</span>
+              <input type="email" id="g-email" placeholder="your.email@example.com" value="${guestFormData.email || ''}"/>
+            </div>
+            <div class="reg-err" id="err-g-email"></div>
+          </div>
+          <div class="reg-field" style="margin-bottom: 0;">
+            <label>Phone Number *</label>
+            <div class="reg-inp-wrap">
+              <span class="reg-ico">📞</span>
+              <input type="tel" id="g-phone" placeholder="+91 98765 43210" value="${guestFormData.phone || ''}"/>
+            </div>
+            <div class="reg-err" id="err-g-phone"></div>
+          </div>
         </div>
-        <div class="reg-err" id="err-g-email"></div>
-      </div>
-      <div class="reg-field">
-        <label>Phone Number *</label>
-        <div class="reg-inp-wrap">
-          <span class="reg-ico">📞</span>
-          <input type="tel" id="g-phone" placeholder="+91 98765 43210" value="${guestFormData.phone || ''}"/>
+        <div class="reg-actions">
+          <button class="btn-next" onclick="guestNext()">Next Step →</button>
         </div>
-        <div class="reg-err" id="err-g-phone"></div>
+        <p class="reg-login-link">Already have an account? <a href="#" onclick="showGuestLogin()">Sign in</a></p>
       </div>
-      <div class="reg-actions">
-        <button class="btn-next" onclick="guestNext()">Next Step →</button>
-      </div>
-      <p class="reg-login-link">Already have an account? <a href="#" onclick="showGuestLogin()">Sign in</a></p>
     `;
 
   } else if (guestStep === 2) {
     if (title)    title.textContent    = 'Address Details';
     if (subtitle) subtitle.textContent = 'Step 2 of 3';
     body.innerHTML = `
-      <div class="reg-field">
-        <label>Date of Birth *</label>
-        <div class="reg-inp-wrap">
-          <span class="reg-ico">📅</span>
-          <input type="date" id="g-dob" value="${guestFormData.dob || ''}"/>
+      <div class="step-animated">
+        <div style="text-align:center; margin-bottom: 28px;">
+           <div style="font-size: 42px; margin-bottom:12px; filter: drop-shadow(0 4px 6px rgba(245, 158, 11, 0.2));">🌍</div>
+           <h3 style="font-size: 20px; font-weight:800; color:var(--text); margin-bottom:8px;">Where are you from?</h3>
+           <p style="color:var(--muted); font-size:14px; line-height:1.5; padding: 0 10px;">Help us tailor your experience by providing your location details.</p>
         </div>
-        <div class="reg-err" id="err-g-dob"></div>
-      </div>
-      <div class="reg-field">
-        <label>Current Address *</label>
-        <div class="reg-inp-wrap">
-          <span class="reg-ico">📍</span>
-          <textarea id="g-address" placeholder="Enter your current address" rows="3">${guestFormData.address || ''}</textarea>
+        <div class="owner-reg-grid" style="gap: 20px; margin-bottom: 24px;">
+          <div class="reg-field" style="margin-bottom: 0;">
+            <label>Date of Birth *</label>
+            <div class="reg-inp-wrap">
+              <span class="reg-ico">📅</span>
+              <input type="date" id="g-dob" value="${guestFormData.dob || ''}"/>
+            </div>
+            <div class="reg-err" id="err-g-dob"></div>
+          </div>
+          <div class="reg-field" style="margin-bottom: 0;">
+            <label>City *</label>
+            <div class="reg-inp-wrap">
+              <span class="reg-ico">🏙️</span>
+              <input type="text" id="g-city" placeholder="Enter your city" value="${guestFormData.city || ''}"/>
+            </div>
+            <div class="reg-err" id="err-g-city"></div>
+          </div>
+          <div class="reg-field full" style="margin-bottom: 0;">
+            <label>Current Address *</label>
+            <div class="reg-inp-wrap">
+              <span class="reg-ico">📍</span>
+              <textarea id="g-address" placeholder="Enter your current address" rows="2">${guestFormData.address || ''}</textarea>
+            </div>
+            <div class="reg-err" id="err-g-address"></div>
+          </div>
         </div>
-        <div class="reg-err" id="err-g-address"></div>
-      </div>
-      <div class="reg-field">
-        <label>City *</label>
-        <div class="reg-inp-wrap">
-          <span class="reg-ico">🏙️</span>
-          <input type="text" id="g-city" placeholder="Enter your city" value="${guestFormData.city || ''}"/>
+        <div class="reg-actions two-btn">
+          <button class="btn-prev" onclick="guestPrev()">← Previous</button>
+          <button class="btn-next flex-1" onclick="guestNext()">Next Step →</button>
         </div>
-        <div class="reg-err" id="err-g-city"></div>
+        <p class="reg-login-link">Already have an account? <a href="#" onclick="showGuestLogin()">Sign in</a></p>
       </div>
-      <div class="reg-actions two-btn">
-        <button class="btn-prev" onclick="guestPrev()">← Previous</button>
-        <button class="btn-next flex-1" onclick="guestNext()">Next Step →</button>
-      </div>
-      <p class="reg-login-link">Already have an account? <a href="#" onclick="showGuestLogin()">Sign in</a></p>
     `;
 
   } else if (guestStep === 3) {
     if (title)    title.textContent    = 'Secure Your Account';
     if (subtitle) subtitle.textContent = 'Step 3 of 3';
     body.innerHTML = `
-      <div class="reg-field">
-        <label>Password *</label>
-        <div class="reg-inp-wrap">
-          <span class="reg-ico">🔒</span>
-          <input type="password" id="g-password" placeholder="Create a strong password"/>
-          <span class="toggle-reg-pw" onclick="togglePw('g-password', this)">👁️</span>
+      <div class="step-animated">
+        <div style="text-align:center; margin-bottom: 28px;">
+           <div style="font-size: 42px; margin-bottom:12px; filter: drop-shadow(0 4px 6px rgba(16, 185, 129, 0.2));">🛡️</div>
+           <p style="color:var(--muted); font-size:14px; line-height:1.5; padding: 0 10px;">Create a strong password to protect your bookings and personal information.</p>
         </div>
-        <small style="color:var(--muted);font-size:12px;margin-top:5px;display:block">Use at least 8 characters with letters and numbers</small>
-        <div class="reg-err" id="err-g-password"></div>
-      </div>
-      <div class="reg-field">
-        <label>Confirm Password *</label>
-        <div class="reg-inp-wrap">
-          <span class="reg-ico">🔒</span>
-          <input type="password" id="g-confirm" placeholder="Re-enter your password"/>
-          <span class="toggle-reg-pw" onclick="togglePw('g-confirm', this)">👁️</span>
+        <div class="reg-field">
+          <label>Password *</label>
+          <div class="reg-inp-wrap">
+            <span class="reg-ico">🔒</span>
+            <input type="password" id="g-password" placeholder="Create a strong password" oninput="checkPwStrength(this.value)"/>
+            <span class="toggle-reg-pw" onclick="togglePw('g-password', this)">👁️</span>
+          </div>
+          <div class="pw-strength-bar" style="height:4px; background:#e2e8f0; margin-top:8px; border-radius:2px; overflow:hidden;">
+              <div id="pw-fill" style="height:100%; width:0%; transition:all 0.3s; background:var(--red);"></div>
+          </div>
+          <small id="pw-hint" style="color:var(--muted);font-size:12px;margin-top:5px;display:block">Use at least 8 characters with letters and numbers</small>
+          <div class="reg-err" id="err-g-password"></div>
         </div>
-        <div class="reg-err" id="err-g-confirm"></div>
+        <div class="reg-field">
+          <label>Confirm Password *</label>
+          <div class="reg-inp-wrap">
+            <span class="reg-ico">🔒</span>
+            <input type="password" id="g-confirm" placeholder="Re-enter your password"/>
+            <span class="toggle-reg-pw" onclick="togglePw('g-confirm', this)">👁️</span>
+          </div>
+          <div class="reg-err" id="err-g-confirm"></div>
+        </div>
+        <div class="reg-actions two-btn">
+          <button class="btn-prev" onclick="guestPrev()">← Previous</button>
+          <button class="btn-next flex-1" onclick="submitGuestRegistration()">Create Account</button>
+        </div>
       </div>
-      <div class="reg-actions two-btn">
-        <button class="btn-prev" onclick="guestPrev()">← Previous</button>
-        <button class="btn-next flex-1" onclick="submitGuestRegistration()">Create Account</button>
-      </div>
-      <p class="reg-login-link">Already have an account? <a href="#" onclick="showGuestLogin()">Sign in</a></p>
     `;
   }
 }
@@ -378,11 +419,19 @@ function guestNext() {
     let valid = true;
 
     if (!name)  { showRegErr('err-g-name',  'Full name is required'); valid = false; }
-    if (!email || !email.endsWith('@email.com')) {
-      showRegErr('err-g-email', 'Email must end with @email.com'); valid = false;
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showRegErr('err-g-email', 'Enter a valid email address'); valid = false;
     }
     if (!phone || !/^\+?[\d\s\-]{10,}$/.test(phone)) {
       showRegErr('err-g-phone', 'Enter a valid phone number (min 10 digits)'); valid = false;
+    }
+    // Duplicate email/phone check
+    if (valid) {
+      const emailTaken = registeredGuests.find(g => g.email === email) ||
+        LOGIN_MOCK.credentials.guest?.find(g => g.email === email);
+      const phoneTaken = registeredGuests.find(g => g.phone === phone);
+      if (emailTaken) { showRegErr('err-g-email', 'An account with this email already exists'); valid = false; }
+      if (phoneTaken) { showRegErr('err-g-phone', 'This phone number is already registered'); valid = false; }
     }
     if (!valid) return;
 
@@ -424,9 +473,12 @@ function submitGuestRegistration() {
   if (!password || password.length < 8) {
     showRegErr('err-g-password', 'Password must be at least 8 characters'); valid = false;
   }
-  if (password !== confirm) {
+  if (password && confirm && password !== confirm) {
     showRegErr('err-g-confirm', 'Passwords do not match'); valid = false;
+  } else if (password && !confirm) {
+    showRegErr('err-g-confirm', 'Please confirm your password'); valid = false;
   }
+  
   if (!valid) return;
 
   // Check if email already exists
@@ -462,8 +514,13 @@ function submitGuestRegistration() {
     role:  'guest'
   }));
 
-  // Redirect straight to guest booking page — no success screen, no waiting
-  window.location.href = '../guest/guest.html';
+  // Show success then redirect to guest booking page
+  showSuccessScreen(
+    'Account Created! 🎉',
+    `Welcome to RentBro, ${newGuest.name}! Your account has been set up securely.`,
+    true
+  );
+  setTimeout(() => routeUser('guest'), 2800);
 }
 
 // ===== OWNER REGISTRATION =====
@@ -471,6 +528,7 @@ function showOwnerRegistration() {
   hide('login-card-area');
   hide('guest-signup-area');
   show('owner-reg-area', 'block');
+  document.querySelector('.card-panel-inner').style.maxWidth = '800px';
   renderOwnerRegForm();
 }
 
@@ -652,8 +710,8 @@ function submitOwnerRegistration() {
   let valid = true;
 
   if (!name)     { showRegErr('err-o-name',     'Full name is required');            valid = false; }
-  if (!email || !email.endsWith('@email.com')) {
-    showRegErr('err-o-email', 'Email must end with @email.com'); valid = false;
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showRegErr('err-o-email', 'Enter a valid email address'); valid = false;
   }
   if (!phone || !/^\+?[\d\s\-]{10,}$/.test(phone)) {
     showRegErr('err-o-phone', 'Enter a valid phone number'); valid = false;
@@ -719,15 +777,31 @@ function submitOwnerRegistration() {
 }
 
 // ===== SUCCESS SCREEN =====
-function showSuccessScreen(title, message) {
+function showSuccessScreen(title, message, isRedirect = false) {
   hide('login-card-area');
   hide('guest-signup-area');
   hide('owner-reg-area');
   hide('role-selector');
   show('success-area', 'flex');
+  document.querySelector('.card-panel-inner').style.maxWidth = '480px';
+  
+  // Re-trigger CSS animation
+  const card = document.getElementById('success-area');
+  card.classList.remove('show-animated');
+  void card.offsetWidth; // trigger reflow
+  card.classList.add('show-animated');
+
   document.getElementById('success-title').textContent   = title;
   document.getElementById('success-message').textContent = message;
   document.getElementById('back-btn').style.display      = 'none';
+
+  if (isRedirect) {
+    document.getElementById('success-btn').style.display = 'none';
+    document.getElementById('redirect-loader').style.display = 'flex';
+  } else {
+    document.getElementById('success-btn').style.display = 'block';
+    document.getElementById('redirect-loader').style.display = 'none';
+  }
 }
 
 // ===== UTILS =====
@@ -748,7 +822,13 @@ function showErr(id, msg) {
 
 function showRegErr(id, msg) {
   const el = document.getElementById(id);
-  if (el) { el.textContent = msg; el.style.display = 'block'; }
+  if (el) { 
+    el.textContent = msg; 
+    el.style.display = 'block'; 
+    const inputId = id.replace('err-', '');
+    const inputEl = document.getElementById(inputId);
+    if (inputEl) inputEl.classList.add('input-error');
+  }
 }
 
 function clearLoginErrors() {
@@ -763,6 +843,40 @@ function clearRegErrors() {
     e.textContent = '';
     e.style.display = 'none';
   });
+  document.querySelectorAll('.input-error').forEach(e => e.classList.remove('input-error'));
+}
+
+function checkPwStrength(val) {
+  const fill = document.getElementById('pw-fill');
+  const hint = document.getElementById('pw-hint');
+  if (!fill || !hint) return;
+  
+  let strength = 0;
+  if (val.length >= 8) strength++;
+  if (/[A-Z]/.test(val) && /[a-z]/.test(val)) strength++;
+  if (/\d/.test(val)) strength++;
+  if (/[^A-Za-z0-9]/.test(val)) strength++;
+  
+  if (val.length === 0) {
+    fill.style.width = '0%';
+    hint.textContent = 'Use at least 8 characters with letters and numbers';
+    hint.style.color = 'var(--muted)';
+  } else if (strength <= 1) {
+    fill.style.width = '33%';
+    fill.style.background = 'var(--red)';
+    hint.textContent = 'Weak password';
+    hint.style.color = 'var(--red)';
+  } else if (strength === 2 || strength === 3) {
+    fill.style.width = '66%';
+    fill.style.background = '#eab308';
+    hint.textContent = 'Medium password';
+    hint.style.color = '#ca8a04';
+  } else {
+    fill.style.width = '100%';
+    fill.style.background = 'var(--green)';
+    hint.textContent = 'Strong password';
+    hint.style.color = 'var(--green)';
+  }
 }
 
 function showLoginBanner(msg, type) {
