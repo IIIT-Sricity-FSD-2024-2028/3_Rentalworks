@@ -12,8 +12,8 @@ let guestStep     = 1;
 let guestFormData = {};
 
 // Load registered users from localStorage (persisted sign-ups)
-let registeredGuests = JSON.parse(localStorage.getItem('registered_guests')) || [...LOGIN_MOCK.registeredGuests];
-let registeredOwners = JSON.parse(localStorage.getItem('registered_owners')) || [...LOGIN_MOCK.registeredOwners];
+let registeredGuests = JSON.parse(localStorage.getItem('registered_guests')) || (typeof LOGIN_MOCK !== 'undefined' ? [...LOGIN_MOCK.registeredGuests] : []);
+let registeredOwners = JSON.parse(localStorage.getItem('registered_owners')) || (typeof LOGIN_MOCK !== 'undefined' ? [...LOGIN_MOCK.registeredOwners] : []);
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
@@ -97,7 +97,7 @@ function showLoginForm(role) {
   }
 }
 
-function handleLogin(role) {
+async function handleLogin(role) {
   const usernameInput = document.getElementById('login-username');
   const passwordInput = document.getElementById('login-password');
 
@@ -125,24 +125,56 @@ function handleLogin(role) {
   }
   if (!valid) return;
 
-  // Check mock credentials
-  const credList = LOGIN_MOCK.credentials[role] || [];
-  const match = credList.find(c => (c.username === username || c.email === username) && c.password === password);
-
-  // Also check registered guests/owners in localStorage
-  let registeredMatch = null;
-  if (role === 'guest') {
-    registeredMatch = registeredGuests.find(
-      g => (g.email === username || g.phone === username) && g.password === password
-    );
-  }
-  if (role === 'owner') {
-    registeredMatch = registeredOwners.find(
-      o => o.email === username && o.password === password
-    );
+  const submitBtn = document.querySelector('.btn-login');
+  if (submitBtn) {
+    submitBtn.textContent = 'Logging in...';
+    submitBtn.disabled = true;
   }
 
-  const user = match || registeredMatch;
+  let user = null;
+
+  try {
+    // Check registered guests/owners in localStorage
+    let registeredMatch = null;
+    if (role === 'guest') {
+      registeredMatch = registeredGuests.find(
+        g => (g.email === username || g.phone === username) && g.password === password
+      );
+    }
+    if (role === 'owner') {
+      registeredMatch = registeredOwners.find(
+        o => o.email === username && o.password === password
+      );
+    }
+
+    // Check mock credentials if available
+    let match = null;
+    if (typeof LOGIN_MOCK !== 'undefined' && LOGIN_MOCK.credentials[role]) {
+      const credList = LOGIN_MOCK.credentials[role] || [];
+      match = credList.find(c => (c.username === username || c.email === username) && c.password === password);
+    }
+
+    user = match || registeredMatch;
+
+    // If not found locally, call backend API
+    if (!user && role !== 'guest') {
+      const response = await fetch('http://localhost:3000/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      if (response.ok) {
+        user = await response.json();
+      }
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+  } finally {
+    if (submitBtn) {
+      submitBtn.textContent = 'Sign In';
+      submitBtn.disabled = false;
+    }
+  }
 
   if (user) {
     // Only owners need pending check — guests are auto-active
@@ -400,7 +432,7 @@ function submitGuestRegistration() {
   // Check if email already exists
   const emailExists =
     registeredGuests.find(g => g.email === guestFormData.email) ||
-    LOGIN_MOCK.credentials.guest?.find(g => g.email === guestFormData.email);
+    (typeof LOGIN_MOCK !== 'undefined' && LOGIN_MOCK.credentials.guest?.find(g => g.email === guestFormData.email));
   if (emailExists) {
     showRegErr('err-g-password', 'An account with this email already exists');
     return;
