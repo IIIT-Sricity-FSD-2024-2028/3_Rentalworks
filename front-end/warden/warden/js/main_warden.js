@@ -3,6 +3,18 @@
 //  Handles: Init, Navigation (fetch-based), Modal, Toast, Utils
 // ===================================================
 
+// ===== MOCK DATA FALLBACK =====
+if (typeof MOCK_DATA === 'undefined') {
+  var MOCK_DATA = {
+    warden: { name: 'Warden', email: 'warden@pgrentals.com', phone: '+91 00000 00000', property: 'Default Property' },
+    tenants: [],
+    rooms: [],
+    violations: [],
+    complaints: [],
+    notifications: []
+  };
+}
+
 // ===== GLOBAL STATE =====
 let currentSection     = 'dashboard';
 let currentComplaintId = null;

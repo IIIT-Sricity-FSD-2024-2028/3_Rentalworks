@@ -204,6 +204,7 @@ async function handleLogin(role) {
     sessionStorage.setItem('pg_user', JSON.stringify({
       name:     user.name,
       email:    user.email,
+      phone:    user.phone || '',
       role:     role,
       property: user.property || '',
       room:     user.room     || ''
@@ -511,6 +512,7 @@ function submitGuestRegistration() {
   sessionStorage.setItem('pg_user', JSON.stringify({
     name:  newGuest.name,
     email: newGuest.email,
+    phone: newGuest.phone,
     role:  'guest'
   }));
 

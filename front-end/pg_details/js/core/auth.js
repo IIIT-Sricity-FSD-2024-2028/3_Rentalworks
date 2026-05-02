@@ -5,7 +5,12 @@ const Auth = {
         if (pgUserStr) {
             try {
                 const pgUser = JSON.parse(pgUserStr);
-                State.data.currentUser = { name: pgUser.username || 'Guest User', email: pgUser.username + '@example.com', role: pgUser.role || 'guest' };
+                State.data.currentUser = { 
+                    name: pgUser.name || 'Guest User', 
+                    email: pgUser.email || 'N/A', 
+                    phone: pgUser.phone || 'N/A', 
+                    role: pgUser.role || 'guest' 
+                };
             } catch (e) {}
         } else {
             State.data.currentUser = null;

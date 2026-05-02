@@ -25,8 +25,18 @@ const State = {
         transactions: []
     },
     init() {
+        let userKey = 'guest';
+        const pgUserStr = sessionStorage.getItem('pg_user');
+        if (pgUserStr) {
+            try {
+                const pgUser = JSON.parse(pgUserStr);
+                userKey = pgUser.username || pgUser.email || 'guest';
+            } catch (e) {}
+        }
+        this.storageKey = 'sunrise_pg_state_' + userKey;
+
         // Read directly from the newly established centralized state namespace
-        const saved = localStorage.getItem('sunrise_pg_state');
+        const saved = localStorage.getItem(this.storageKey);
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
@@ -39,5 +49,5 @@ const State = {
             } catch(e){}
         }
     },
-    save() { localStorage.setItem('sunrise_pg_state', JSON.stringify(this.data)); }
+    save() { localStorage.setItem(this.storageKey || 'sunrise_pg_state_guest', JSON.stringify(this.data)); }
 };

@@ -6,43 +6,49 @@
 
 function syncSunriseBookings() {
   try {
-    const sunriseStateStr = localStorage.getItem('sunrise_pg_state');
-    if (!sunriseStateStr) return;
-    const sunriseState = JSON.parse(sunriseStateStr);
-    const guestBookings = sunriseState.bookings || [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sunrise_pg_state_')) {
+        const sunriseStateStr = localStorage.getItem(key);
+        if (!sunriseStateStr) continue;
+        const sunriseState = JSON.parse(sunriseStateStr);
+        const guestBookings = sunriseState.bookings || [];
 
-    guestBookings.forEach(gbk => {
-      // Find if we already mapped this booking into admin bookings array
-      const existingIdx = bookings.findIndex(b => b.id.toString() === gbk.id.toString() || b.id === gbk.id);
-      
-      const tenantName = gbk.user?.name || "Guest Viewer";
-      const tenantEmail = gbk.user?.email || "N/A";
-      const tenantPhone = gbk.user?.phone || tenantEmail;
+        guestBookings.forEach(gbk => {
+          // Find if we already mapped this booking into admin bookings array
+          const existingIdx = bookings.findIndex(b => b.id.toString() === gbk.id.toString() || b.id === gbk.id);
+          
+          const tenantName = gbk.user?.name || gbk.user || "Guest Viewer";
+          const tenantEmail = gbk.user?.email || "N/A";
+          const tenantPhone = gbk.user?.phone || tenantEmail;
 
-      const adminBkPayload = {
-        id: gbk.id, // String or Num
-        tenant: tenantName,
-        phone: tenantPhone, 
-        property: gbk.pg || 'Sunrise PG',
-        room: gbk.room || 'Single',
-        checkIn: gbk.date || '-',
-        duration: gbk.duration || '11 Months',
-        rent: gbk.rent || 0,
-        status: gbk.status === 'confirmed' ? 'active' : (gbk.status === 'approved' ? 'active' : gbk.status), // Admins map approved->active
-        _isSunrise: true // Custom flag to identify cross-platform record
-      };
+          const adminBkPayload = {
+            id: gbk.id, // String or Num
+            tenant: tenantName,
+            phone: tenantPhone, 
+            property: gbk.pg || 'Sunrise PG',
+            room: gbk.room || 'Single',
+            checkIn: gbk.date || '-',
+            duration: gbk.duration || '11 Months',
+            rent: gbk.rent || 0,
+            status: gbk.status === 'confirmed' ? 'paid' : (gbk.status === 'approved' ? 'active' : gbk.status), // Admins map approved->active
+            _isSunrise: true, // Custom flag to identify cross-platform record
+            _sunriseKey: key // Remember which state key this came from for approvals
+          };
 
-      if (existingIdx > -1) {
-        // Only update status if it changed from guest side (e.g., cancelled by user)
-        if (gbk.status === 'confirmed' && bookings[existingIdx].status === 'active') {
-          // Already active, do nothing
-        } else if (gbk.status !== 'approved' && gbk.status !== 'confirmed') {
-           bookings[existingIdx].status = adminBkPayload.status;
-        }
-      } else {
-        bookings.unshift(adminBkPayload);
+          if (existingIdx > -1) {
+            // Only update status if it changed from guest side (e.g., cancelled by user)
+            if (gbk.status === 'confirmed' && bookings[existingIdx].status === 'active') {
+              // Already active, do nothing
+            } else if (gbk.status !== 'approved' && gbk.status !== 'confirmed') {
+               bookings[existingIdx].status = adminBkPayload.status;
+            }
+          } else {
+            bookings.unshift(adminBkPayload);
+          }
+        });
       }
-    });
+    }
     saveData();
   } catch (e) {
     console.error("Failed to sync Sunrise PG bookings", e);
@@ -56,16 +62,14 @@ function renderBookings(search = '', statusF = 'all') {
   // Dynamic KPIs — no Completed in active view
   const stats = {
     total:    bookings.length,
-    active:   bookings.filter(b => b.status === 'active').length,
+    active:   bookings.filter(b => b.status === 'active' || b.status === 'paid').length,
     pending:  bookings.filter(b => b.status === 'pending').length,
-    overdue:  bookings.filter(b => b.status === 'overdue').length,
     cancelled:bookings.filter(b => b.status === 'cancelled').length
   };
 
   setTxt('bk-total',     stats.total);
   setTxt('bk-active',    stats.active);
   setTxt('bk-pending',   stats.pending);
-  setTxt('bk-overdue',   stats.overdue);
   setTxt('bk-cancelled', stats.cancelled);
 
   let filtered = bookings.filter(b => {
@@ -106,8 +110,8 @@ function renderBookings(search = '', statusF = 'all') {
 function getBookingStatusLabel(status) {
   const labels = {
     active:    'Active',
+    paid:      'Paid',
     pending:   'Pending',
-    overdue:   '⚠ Overdue',
     cancelled: 'Cancelled',
     completed: 'Completed'
   };
@@ -121,16 +125,10 @@ function getBookingActions(b) {
       <button class="ico-btn danger" onclick="rejectBooking('${b.id}')" title="Reject">❌</button>
     </div>`;
 
-  if (b.status === 'active') return `
+  if (b.status === 'active' || b.status === 'paid') return `
     <div class="act-icons">
       <button class="ico-btn" onclick="viewBooking('${b.id}')" title="View Details">👁️</button>
       <button class="ico-btn danger" onclick="forceTerminate('${b.id}')" title="Force Terminate">🔴</button>
-    </div>`;
-
-  if (b.status === 'overdue') return `
-    <div class="act-icons">
-      <button class="ico-btn warn" onclick="alertTenant('${b.id}')" title="Alert Tenant">📢</button>
-      <button class="ico-btn" onclick="notifyOwner('${b.id}')" title="Notify Owner">🏢</button>
     </div>`;
 
   if (b.status === 'cancelled') return `
@@ -167,15 +165,15 @@ function approveBooking(id) {
   saveData();
 
   // Cross-platform sync to Sunrise PG Guest Dashboard
-  if (b._isSunrise) {
+  if (b._isSunrise && b._sunriseKey) {
     try {
-      const sunriseStr = localStorage.getItem('sunrise_pg_state');
+      const sunriseStr = localStorage.getItem(b._sunriseKey);
       if (sunriseStr) {
         const sState = JSON.parse(sunriseStr);
         const sBk = sState.bookings.find(bk => bk.id.toString() === id.toString());
         if (sBk) {
           sBk.status = 'approved'; // Sunrise specific status waiting for payment
-          localStorage.setItem('sunrise_pg_state', JSON.stringify(sState));
+          localStorage.setItem(b._sunriseKey, JSON.stringify(sState));
         }
       }
     } catch(e){}
@@ -193,15 +191,15 @@ function rejectBooking(id) {
     b.status = 'cancelled';
     saveData(); 
     
-    if (b._isSunrise) {
+    if (b._isSunrise && b._sunriseKey) {
       try {
-        const sunriseStr = localStorage.getItem('sunrise_pg_state');
+        const sunriseStr = localStorage.getItem(b._sunriseKey);
         if (sunriseStr) {
           const sState = JSON.parse(sunriseStr);
           const sBk = sState.bookings.find(bk => bk.id.toString() === id.toString());
           if (sBk) {
             sBk.status = 'cancelled';
-            localStorage.setItem('sunrise_pg_state', JSON.stringify(sState));
+            localStorage.setItem(b._sunriseKey, JSON.stringify(sState));
           }
         }
       } catch(e){}
