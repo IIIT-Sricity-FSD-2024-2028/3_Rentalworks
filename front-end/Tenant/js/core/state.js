@@ -9,7 +9,7 @@ const State = {
     lastPayment: null,
     
     profile: { 
-      name: 'Rahul Sharma', 
+      name: 'Amit Sharma', 
       phone: '+91 98765 43210', 
       address: 'A-204, Sunrise PG Residency, Andheri West, Mumbai',
       twoFactorEnabled: false
@@ -50,9 +50,36 @@ const State = {
   init() {
     const saved = localStorage.getItem('pgRentalState');
     if (saved) this.data = { ...this.data, ...JSON.parse(saved) };
+
+    // Set dynamic profile from logged in user
+    const sessionStr = sessionStorage.getItem('pg_user');
+    if (sessionStr) {
+      try {
+        const user = JSON.parse(sessionStr);
+        this.data.profile.name = user.name || this.data.profile.name;
+        this.data.profile.phone = user.phone || this.data.profile.phone;
+        this.data.profile.email = user.email || this.data.profile.email;
+      } catch(e) {}
+    }
+
+    // Load global states
+    const globalCmp = localStorage.getItem('global_complaints');
+    if (globalCmp) this.data.complaints = JSON.parse(globalCmp);
+    else localStorage.setItem('global_complaints', JSON.stringify(this.data.complaints));
+
+    const globalIss = localStorage.getItem('global_issues');
+    if (globalIss) this.data.issues = JSON.parse(globalIss);
+    else localStorage.setItem('global_issues', JSON.stringify(this.data.issues));
+
+    const globalSrv = localStorage.getItem('global_services');
+    if (globalSrv) this.data.serviceRequests = JSON.parse(globalSrv);
+    else localStorage.setItem('global_services', JSON.stringify(this.data.serviceRequests));
   },
   save() {
     localStorage.setItem('pgRentalState', JSON.stringify(this.data));
+    localStorage.setItem('global_complaints', JSON.stringify(this.data.complaints));
+    localStorage.setItem('global_issues', JSON.stringify(this.data.issues));
+    localStorage.setItem('global_services', JSON.stringify(this.data.serviceRequests));
   },
   update(key, value) {
     this.data[key] = value;

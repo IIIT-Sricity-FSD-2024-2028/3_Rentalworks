@@ -26,11 +26,14 @@
         <span class="search-icon">🔍</span>
         <input type="text" id="tenant-search" placeholder="Search by name, room, or contact..." />
       </div>
-      <select class="filter-select" id="tenant-status-filter">
-        <option value="all">All Status</option>
-        <option value="paid">Paid</option>
-        <option value="pending">Pending</option>
-      </select>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <select class="filter-select" id="tenant-status-filter">
+          <option value="all">All Status</option>
+          <option value="paid">Paid</option>
+          <option value="pending">Pending</option>
+        </select>
+        <button class="btn-login" style="width: auto; padding: 6px 16px; margin: 0; background: var(--primary);" onclick="addTenant()">+ Add Tenant</button>
+      </div>
     </div>
     <table class="data-table">
       <thead>

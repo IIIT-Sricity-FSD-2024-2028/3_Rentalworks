@@ -44,7 +44,34 @@ window.addEventListener('storage', (e) => {
     const latest = notifs[notifs.length - 1];
     if (latest.targetRole === 'owner' || latest.targetRole === 'all') {
       showToast(latest.title + ': ' + latest.message, 'warning', 5000);
+      
+      const data = getData();
+      if (data) {
+        if (!data.notifications) data.notifications = [];
+        if (!data.notifications.find(n => n.id === latest.id)) {
+            data.notifications.unshift({
+              id: latest.id,
+              type: latest.type || 'info',
+              title: latest.title,
+              desc: latest.message,
+              time: 'Just now',
+              read: false
+            });
+            updateData(data);
+        }
+      }
+      
       loadSidebarBadges(); // Refresh badges
+      if (typeof loadNotifications === 'function' && window.location.pathname.includes('notifications.html')) {
+        loadNotifications();
+      }
+    }
+  }
+
+  if (e.key === 'global_issues') {
+    if (typeof loadIssues === 'function') {
+      loadIssues();
+      loadSidebarBadges();
     }
   }
 });

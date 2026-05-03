@@ -51,7 +51,7 @@ function getStatusLabel(status) {
 // ----- Detail View -----
 function viewComplaintDetail(id) {
   currentComplaintId = id;
-  const complaint = complaints.find(c => c.id === id);
+  const complaint = complaints.find(c => String(c.id) === String(id));
   if (!complaint) return;
 
   document.getElementById('complaints-list-view').style.display   = 'none';
@@ -100,7 +100,7 @@ function backToComplaints() {
 
 function updateComplaintStatus(newStatus) {
   if (!currentComplaintId) return;
-  const complaint = complaints.find(c => c.id === currentComplaintId);
+  const complaint = complaints.find(c => String(c.id) === String(currentComplaintId));
   if (!complaint) return;
 
   complaint.status = newStatus;
@@ -125,7 +125,7 @@ function addRemark() {
   }
   if (!currentComplaintId) return;
 
-  const complaint = complaints.find(c => c.id === currentComplaintId);
+  const complaint = complaints.find(c => String(c.id) === String(currentComplaintId));
   if (!complaint) return;
 
   complaint.timeline = complaint.timeline || [];
@@ -143,7 +143,7 @@ function addRemark() {
 
 function escalateComplaint() {
   if (!currentComplaintId) return;
-  const complaint = complaints.find(c => c.id === currentComplaintId);
+  const complaint = complaints.find(c => String(c.id) === String(currentComplaintId));
   if (!complaint) return;
 
   complaint.timeline = complaint.timeline || [];

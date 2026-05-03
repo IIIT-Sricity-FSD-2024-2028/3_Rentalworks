@@ -28,16 +28,19 @@
     </div>
   </div>
 
-  <div class="filter-bar">
-    <label>Filter by Status:</label>
-    <select class="filter-select" id="room-filter">
-      <option value="all">All Status</option>
-      <option value="vacant">Vacant</option>
-      <option value="occupied">Occupied</option>
-      <option value="ready">Ready</option>
-      <option value="under_maintenance">Under Maintenance</option>
-      <option value="cleaned">Cleaned</option>
-    </select>
+  <div class="filter-bar" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <label>Filter by Status:</label>
+      <select class="filter-select" id="room-filter">
+        <option value="all">All Status</option>
+        <option value="vacant">Vacant</option>
+        <option value="occupied">Occupied</option>
+        <option value="ready">Ready</option>
+        <option value="under_maintenance">Under Maintenance</option>
+        <option value="cleaned">Cleaned</option>
+      </select>
+    </div>
+    <button class="btn-login" style="width: auto; padding: 6px 16px; margin: 0; background: var(--primary);" onclick="openAddRoomModal()">+ Add Room</button>
   </div>
 
   <div class="table-wrapper">

@@ -27,5 +27,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof UI !== 'undefined') UI.showToast('🔔 ' + latest.title + ': ' + latest.message, 'info');
       }
     }
+    
+    // Auto-refresh data if warden or owner updates complaints/issues/services
+    if (['global_complaints', 'global_issues', 'global_services'].includes(e.key)) {
+      State.init();
+      const cp = State.data.currentPage;
+      if (cp === 'dashboard') TenantLogic.updateDashboardStats();
+      if (cp === 'complaints') TenantLogic.renderComplaints();
+      if (cp === 'issues') TenantLogic.renderIssues();
+      if (cp === 'services') TenantLogic.renderServices();
+    }
   });
 });

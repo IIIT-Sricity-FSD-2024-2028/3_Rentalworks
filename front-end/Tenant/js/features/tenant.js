@@ -20,10 +20,25 @@ const TenantLogic = {
     if (!title || !desc) return UI.showToast('Please fill all fields', 'error');
 
     State.data.complaints.unshift({
-      id: Date.now(), title, desc, priority, status: 'open', created: new Date().toLocaleDateString()
+      id: Date.now(), title, desc, priority, status: 'open', created: new Date().toLocaleDateString(),
+      tenantName: State.data.profile.name, room: State.data.profile.room || 'A-204'
     });
     State.save();
     
+    // Push notification to Warden
+    let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
+    crossNotifs.push({
+      id: Date.now(),
+      title: 'New Complaint',
+      message: `Tenant reported a complaint: ${title}.`,
+      type: 'warning',
+      priority: priority,
+      targetRole: 'warden',
+      by: 'Tenant',
+      sentAt: new Date().toLocaleString()
+    });
+    localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
+
     UI.closeModal('complaint-modal');
     UI.showToast('Complaint filed successfully!', 'success');
     
@@ -102,9 +117,24 @@ const TenantLogic = {
     if (!title || !location || !desc) return UI.showToast('Fill all fields', 'error');
 
     State.data.issues.unshift({
-      id: Date.now(), title, desc, category: State.data.selectedIssueCategory, priority: State.data.selectedPriority, status: 'open'
+      id: Date.now(), title, desc, category: State.data.selectedIssueCategory, priority: State.data.selectedPriority, status: 'open',
+      tenantName: State.data.profile.name, room: State.data.profile.room || 'A-204'
     });
     State.save();
+
+    // Push notification to Warden/Owner
+    let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
+    crossNotifs.push({
+      id: Date.now(),
+      title: 'New Issue Reported',
+      message: `Tenant reported an issue: ${title}.`,
+      type: 'alert',
+      priority: State.data.selectedPriority,
+      targetRole: 'all',
+      by: 'Tenant',
+      sentAt: new Date().toLocaleString()
+    });
+    localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
 
     UI.showToast('Issue reported successfully!', 'success');
     Navigation.navigate('issues');
@@ -196,7 +226,9 @@ const TenantLogic = {
       id: Date.now(),
       name: serviceName,
       date: dateInput,
-      status: 'pending'
+      status: 'pending',
+      tenantName: State.data.profile.name, 
+      room: State.data.profile.room || 'A-204'
     });
     State.save();
 
@@ -564,12 +596,64 @@ selectBank(element, bankName) {
     }, 1000);
   },
 
+  renderProfile() {
+    const profile = State.data.profile;
+    
+    // Static text labels
+    const pName = document.querySelector('.profile-name');
+    const pEmail = document.querySelector('.profile-email');
+    if (pName) pName.textContent = profile.name;
+    if (pEmail) pEmail.textContent = profile.email;
+    
+    // Initials avatar
+    const pAvatar = document.querySelector('.profile-avatar');
+    if (pAvatar && profile.name) pAvatar.textContent = profile.name.charAt(0).toUpperCase();
+
+    // Form fields
+    const fName = document.getElementById('profile-name');
+    const fEmail = document.querySelector('input[type="email"]');
+    const fPhone = document.getElementById('profile-phone');
+    const fAddress = document.getElementById('profile-address');
+
+    if (fName) fName.value = profile.name || '';
+    if (fEmail) fEmail.value = profile.email || '';
+    if (fPhone) fPhone.value = profile.phone || '';
+    if (fAddress) fAddress.value = profile.address || '';
+    
+    // Stats (Room and Property)
+    const pRoom = document.getElementById('profile-room-val');
+    const pProp = document.getElementById('profile-prop-val');
+    const fProp = document.getElementById('profile-prop-assigned');
+    if (pRoom) pRoom.textContent = profile.room || 'A-204';
+    if (pProp) pProp.textContent = profile.property || 'Sunrise PG';
+    if (fProp) fProp.value = profile.property || 'Sunrise PG';
+  },
+
   saveProfile() {
-    // existing save profile...
     const name = document.getElementById('profile-name').value.trim();
-    if (!name) return;
+    const phone = document.getElementById('profile-phone').value.trim();
+    const address = document.getElementById('profile-address').value.trim();
+    
+    if (!name) return UI.showToast('Name is required', 'error');
+    
     State.data.profile.name = name;
+    State.data.profile.phone = phone;
+    State.data.profile.address = address;
     State.save();
+    
+    const sessionStr = sessionStorage.getItem('pg_user');
+    if (sessionStr) {
+      try {
+        const user = JSON.parse(sessionStr);
+        user.name = name;
+        user.phone = phone;
+        sessionStorage.setItem('pg_user', JSON.stringify(user));
+        State.data.currentUser = user;
+        if (typeof Auth !== 'undefined') Auth.applyRoleBasedUI();
+      } catch(e) {}
+    }
+    
+    this.renderProfile();
     UI.showToast('Profile saved!', 'success');
   }
 };
