@@ -2,8 +2,7 @@
   ANNOUNCEMENTS FRAGMENT
   Loaded by: navigateTo('notifications')
   Rendered by: notifications_admin.js
-================================= -->
-<section id="notifications-sec" class="section active">
+================================= --><html><head></head><body><section id="notifications-sec" class="section active">
   <div class="sec-hdr">
     <h2>Platform Announcements</h2>
     <p>Broadcast system-wide updates to all users</p>
@@ -12,14 +11,14 @@
   <div class="notif-layout">
     <!-- Compose Panel -->
     <div class="notif-compose">
-      <h3>📤 Create Announcement</h3>
+      <h3><span class="material-icons-outlined" style="font-size:24px;">outbox</span> Create Announcement</h3>
       <p>Compose and broadcast platform-level announcements</p>
 
       <!-- Type buttons -->
       <div class="notif-type-btns">
-        <button class="type-btn active" data-type="announcement">🔔 Announcement</button>
+        <button class="type-btn active" data-type="announcement"><span class="material-icons-outlined" style="font-size:24px;">notifications</span> Announcement</button>
         <button class="type-btn" data-type="alert">✉️ Alert</button>
-        <button class="type-btn" data-type="update">📤 Update</button>
+        <button class="type-btn" data-type="update"><span class="material-icons-outlined" style="font-size:24px;">outbox</span> Update</button>
       </div>
 
       <!-- Priority Level -->
@@ -28,7 +27,7 @@
         <div class="priority-btns">
           <button class="priority-btn active" data-priority="routine">🟢 Routine</button>
           <button class="priority-btn" data-priority="important">🟡 Important</button>
-          <button class="priority-btn" data-priority="urgent">🔴 Urgent</button>
+          <button class="priority-btn" data-priority="urgent"><span class="material-icons-outlined" style="font-size:24px;">error</span> Urgent</button>
         </div>
       </div>
 
@@ -53,7 +52,7 @@
 
       <div class="notif-field">
         <label>Title *</label>
-        <input type="text" id="notif-title" placeholder="Enter announcement title..."/>
+        <input type="text" id="notif-title" placeholder="Enter announcement title...">
       </div>
       <div class="notif-field">
         <label>Message *</label>
@@ -62,10 +61,10 @@
 
       <!-- Send + Schedule -->
       <div style="display:flex;gap:8px;align-items:flex-start">
-        <button class="btn-send" style="flex:1" onclick="sendNotification()">📤 Send Now</button>
+        <button class="btn-send" style="flex:1" onclick="sendNotification()"><span class="material-icons-outlined" style="font-size:24px;">outbox</span> Send Now</button>
         <div style="display:flex;flex-direction:column;gap:6px;flex:1">
-          <input type="datetime-local" id="notif-schedule-dt" style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:12px"/>
-          <button class="btn-schedule" onclick="scheduleNotification()">📅 Schedule Send</button>
+          <input type="datetime-local" id="notif-schedule-dt" style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:12px">
+          <button class="btn-schedule" onclick="scheduleNotification()"><span class="material-icons-outlined" style="font-size:24px;">calendar_today</span> Schedule Send</button>
         </div>
       </div>
     </div>
@@ -75,15 +74,15 @@
       <div class="recipients-card">
         <h4>Recipient Counts</h4>
         <div class="recipient-item selected" data-recipient="all">
-          <div class="rec-left">👥 All Users</div>
+          <div class="rec-left"><span class="material-icons-outlined" style="font-size:24px;">group</span> All Users</div>
           <span class="rec-count" id="rec-all-count">–</span>
         </div>
         <div class="recipient-item" data-recipient="tenants">
-          <div class="rec-left">👤 All Tenants</div>
+          <div class="rec-left"><span class="material-icons-outlined" style="font-size:24px;">person</span> All Tenants</div>
           <span class="rec-count" id="rec-tenants-count" style="color:#16a34a">–</span>
         </div>
         <div class="recipient-item" data-recipient="owners">
-          <div class="rec-left">🏢 Property Owners</div>
+          <div class="rec-left"><span class="material-icons-outlined" style="font-size:24px;">apartment</span> Property Owners</div>
           <span class="rec-count" id="rec-owners-count" style="color:#7c3aed">–</span>
         </div>
         <div class="recipient-item" data-recipient="wardens">
@@ -106,3 +105,4 @@
     <div id="notif-history-list"></div>
   </div>
 </section>
+</body></html>

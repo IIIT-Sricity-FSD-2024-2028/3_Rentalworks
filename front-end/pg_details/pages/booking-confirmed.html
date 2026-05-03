@@ -1,10 +1,10 @@
-<div class="page-content" style="max-width: 700px; padding-top: 20px;">
+<html><head></head><body><div class="page-content" style="max-width: 700px; padding-top: 20px;">
     <button class="btn-back" onclick="Navigation.navigate('pending')">
-        <svg viewBox="0 0 24 24"><path d="M19 12H5M5 12l7 7M5 12l7-7"/></svg>
+        <span class="material-icons-outlined" style="font-size:24px;">arrow_back</span>
         Back to Requests
     </button>
     <div style="text-align: center; margin-bottom: 32px;">
-        <div style="width: 64px; height: 64px; background: var(--success-light); border: 2px solid var(--success); color: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 16px;">✓</div>
+        <div style="width: 64px; height: 64px; background: var(--success-light); border: 2px solid var(--success); color: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 16px;"><span class="material-icons-outlined" style="font-size:24px;">check</span></div>
         <h2 style="font-size: 28px; font-weight: 800; margin-bottom: 8px;">Booking Confirmed!</h2>
         <p class="text-gray text-sm">Your payment was successful and your room is now secured.</p>
     </div>
@@ -27,7 +27,7 @@
             <div>
                 <span class="text-gray text-sm block mb-8" style="font-weight: 700;">PG Information</span>
                 <strong id="conf-pg" style="font-size: 15px; display: block; margin-bottom: 4px;">&nbsp;</strong>
-                <span class="text-gray" style="font-size: 13px; display: block; margin-bottom: 4px;">📍 <span id="conf-pg-loc">&nbsp;</span></span>
+                <span class="text-gray" style="font-size: 13px; display: block; margin-bottom: 4px;"><span class="material-icons-outlined" style="font-size:24px;">location_on</span> <span id="conf-pg-loc">&nbsp;</span></span>
                 <span class="text-gray" style="font-size: 13px; display: block;">Move-in: <strong id="conf-date" style="color: var(--text-dark);">&nbsp;</strong></span>
                 <span class="text-gray" style="font-size: 13px; display: block;">Room Type: <strong id="conf-room" style="color: var(--text-dark);">&nbsp;</strong></span>
             </div>
@@ -37,7 +37,7 @@
                 <span class="text-gray text-sm block mb-8" style="font-weight: 700;">Renter Details</span>
                 <strong id="conf-user-name" style="font-size: 15px; display: block; margin-bottom: 4px;">&nbsp;</strong>
                 <span class="text-gray" style="font-size: 13px; display: block; margin-bottom: 4px;">✉️ <span id="conf-user-email">&nbsp;</span></span>
-                <span class="text-gray" style="font-size: 13px; display: block; margin-bottom: 4px;">📞 <span id="conf-user-phone">&nbsp;</span></span>
+                <span class="text-gray" style="font-size: 13px; display: block; margin-bottom: 4px;"><span class="material-icons-outlined" style="font-size:24px;">call</span> <span id="conf-user-phone">&nbsp;</span></span>
             </div>
         </div>
 
@@ -92,4 +92,4 @@
         <button class="btn btn-primary" style="flex: 1;" onclick="Navigation.navigate('landing')">Back to Home</button>
         <button class="btn btn-outline" style="flex: 1;" onclick="UI.showToast('Downloading Receipt PDF...', 'info')">Download Receipt</button>
     </div>
-</div>
+</body></html>

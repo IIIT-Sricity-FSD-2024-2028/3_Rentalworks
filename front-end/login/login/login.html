@@ -1,26 +1,22 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+<!DOCTYPE html><html lang="en"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PG Rental Hub - Login</title>
     <link rel="stylesheet" href="login.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
 </head>
 <body>
     <div class="main-container">
         
         <!-- Navigation Back to Landing Page -->
         <a href="../../rentalbros/html/index.html" style="position: absolute; top: 30px; left: 40px; text-decoration: none; color: #fff; background: rgba(0,0,0,0.4); padding: 10px 20px; border-radius: 30px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; backdrop-filter: blur(8px); transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" onmouseover="this.style.background='rgba(0,0,0,0.6)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.background='rgba(0,0,0,0.4)'; this.style.transform='none';">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                <polyline points="9 22 9 12 15 12 15 22"></polyline>
-            </svg>
+            <span class="material-icons-outlined" style="font-size:24px;">arrow_back</span>
             Home
         </a>
 
         <div class="top-header">
             <div class="brand-logo">
-                <span class="brand-icon">🏢</span>
+                <span class="brand-icon"><span class="material-icons-outlined" style="font-size:32px;">apartment</span></span>
                 <span class="brand-name">RentBro</span>
             </div>
             <h1 class="brand-headline">Smart PG Management System</h1>
@@ -74,7 +70,7 @@
                         <div class="form-field">
                             <label id="username-label">Username</label>
                             <div class="inp-wrap">
-                                <span class="inp-ico">👤</span>
+                                <span class="inp-ico"><span class="material-icons-outlined" style="font-size:20px;">person</span></span>
                                 <input type="text" id="login-username" placeholder="Enter your username">
                             </div>
                             <div class="login-err-msg" id="err-username"></div>
@@ -83,9 +79,9 @@
                         <div class="form-field">
                             <label>Password</label>
                             <div class="inp-wrap">
-                                <span class="inp-ico">🔒</span>
+                                <span class="inp-ico"><span class="material-icons-outlined" style="font-size:20px;">lock</span></span>
                                 <input type="password" id="login-password" placeholder="Enter your password">
-                                <span class="toggle-pw" onclick="togglePw('login-password', this)">👁️</span>
+                                <span class="toggle-pw" onclick="togglePw('login-password', this)"><span class="material-icons-outlined" style="font-size:24px;">visibility</span></span>
                             </div>
                             <div class="login-err-msg" id="err-password"></div>
                         </div>
@@ -107,7 +103,7 @@
                             <div class="stepper-avatar">G</div>
                             <div>
                                 <h3>Guest Signup</h3>
-                                <p>Quick & Easy</p>
+                                <p>Quick &amp; Easy</p>
                             </div>
                         </div>
                         <h2 class="stepper-headline" id="signup-title">Personal Info</h2>
@@ -141,9 +137,7 @@
 
                 <div id="success-area" class="card success-card" style="display: none;">
                     <div class="success-icon-wrap">
-                        <svg class="success-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
+                        <span class="material-icons-outlined" style="font-size:32px;">check</span>
                     </div>
                     <h2 class="card-title" id="success-title">Success</h2>
                     <p class="card-sub" id="success-message">Operation completed successfully.</p>
@@ -161,5 +155,5 @@
 
 
     <script src="login.js"></script>
-</body>
-</html>
+
+</body></html>

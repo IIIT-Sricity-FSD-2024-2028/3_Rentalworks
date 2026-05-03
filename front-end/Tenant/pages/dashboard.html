@@ -1,4 +1,4 @@
-<div id="page-dashboard" class="page active">
+<html><head></head><body><div id="page-dashboard" class="page active">
   <div class="page-content">
     <div class="page-header">
       <h1>Dashboard</h1>
@@ -6,7 +6,7 @@
     </div>
 
     <div class="stay-banner">
-      <h3>🏠 Your Stay Information</h3>
+      <h3><span class="material-icons-outlined" style="font-size:24px;">home</span> Your Stay Information</h3>
       <div class="stay-grid">
         <div class="stay-item"><div class="stay-label">Property Name</div><div class="stay-value">Sunrise PG Residency</div></div>
         <div class="stay-item"><div class="stay-label">Room Number</div><div class="stay-value">A-204</div></div>
@@ -15,15 +15,15 @@
         <div class="stay-item"><div class="stay-label">Rent Due Date</div><div class="stay-value">Mar 10, 2026</div></div>
         <div class="stay-item"><div class="stay-label">Monthly Rent</div><div class="stay-value">₹12,000</div></div>
         <div class="stay-item"><div class="stay-label">Booking Status</div><div class="stay-value"><span class="badge-active">Active</span></div></div>
-        <div class="stay-item"><div class="stay-label">Utilities</div><div class="utility-icons"><span class="utility-icon">⚡</span><span class="utility-icon">💧</span><span class="utility-icon">📶</span></div></div>
+        <div class="stay-item"><div class="stay-label">Utilities</div><div class="utility-icons"><span class="utility-icon"><span class="material-icons-outlined" style="font-size:24px;">bolt</span></span><span class="utility-icon">💧</span><span class="utility-icon"><span class="material-icons-outlined" style="font-size:24px;">wifi</span></span></div></div>
       </div>
     </div>
 
     <div class="stats-grid">
-      <div class="stat-card"><div class="stat-label">Active Complaints <span class="stat-icon">🔴</span></div><div class="stat-value" id="dash-active-complaints">0</div><div class="stat-sub">Needs attention</div></div>
-      <div class="stat-card"><div class="stat-label">Pending Services <span class="stat-icon">🕐</span></div><div class="stat-value" id="dash-pending-services">0</div><div class="stat-sub">In progress</div></div>
+      <div class="stat-card"><div class="stat-label">Active Complaints <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px;">error</span></span></div><div class="stat-value" id="dash-active-complaints">0</div><div class="stat-sub">Needs attention</div></div>
+      <div class="stat-card"><div class="stat-label">Pending Services <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px;">schedule</span></span></div><div class="stat-value" id="dash-pending-services">0</div><div class="stat-sub">In progress</div></div>
       <div class="stat-card"><div class="stat-label">Payment Due <span class="stat-icon">₹</span></div><div class="stat-value" style="color:var(--primary)">₹12,000</div><div class="stat-sub" style="color:var(--danger)">Due in 6 days</div></div>
-      <div class="stat-card"><div class="stat-label">Days Remaining <span class="stat-icon">📅</span></div><div class="stat-value">126</div><div class="stat-sub">Until check-out</div></div>
+      <div class="stat-card"><div class="stat-label">Days Remaining <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px;">calendar_today</span></span></div><div class="stat-value">126</div><div class="stat-sub">Until check-out</div></div>
     </div>
 
     <div class="grid-2 mb-20">
@@ -55,7 +55,7 @@
     </div>
 
     <div class="payment-reminder">
-      <div class="reminder-icon">⏰</div>
+      <div class="reminder-icon"><span class="material-icons-outlined" style="font-size:24px;">schedule</span></div>
       <div class="reminder-text">Your monthly rent payment of <strong>₹12,000</strong> is due on <strong>Mar 10, 2026</strong>. Please make the payment before the due date to avoid penalties.</div>
       <div class="reminder-actions">
         <button class="btn btn-primary btn-sm" onclick="Navigation.navigate('payments')">Pay Rent Now</button>
@@ -63,4 +63,4 @@
       </div>
     </div>
   </div>
-</div>
+</div></body></html>

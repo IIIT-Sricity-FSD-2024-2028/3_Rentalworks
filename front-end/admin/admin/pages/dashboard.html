@@ -2,8 +2,7 @@
   DASHBOARD FRAGMENT
   Loaded by: navigateTo('dashboard')
   Rendered by: dashboard_admin.js
-================================= -->
-<section id="dashboard-sec" class="section active">
+================================= --><html><head></head><body><section id="dashboard-sec" class="section active">
   <div class="sec-hdr">
     <h2>Dashboard Overview</h2>
     <p>Monitor platform statistics and system health</p>
@@ -12,17 +11,17 @@
   <!-- 6 KPI Cards -->
   <div class="stats-row stats-row-6">
     <div class="stat-card">
-      <div class="stat-top"><div class="stat-icon bg-blue">👥</div><span class="stat-trend up">↑ Live</span></div>
+      <div class="stat-top"><div class="stat-icon bg-blue"><span class="material-icons-outlined" style="font-size:32px;">group</span></div><span class="stat-trend up">↑ Live</span></div>
       <div class="stat-val" id="d-total-users">–</div>
       <div class="stat-lbl">Total Users</div>
     </div>
     <div class="stat-card">
-      <div class="stat-top"><div class="stat-icon bg-purple">🏢</div><span class="stat-trend up">↑ Live</span></div>
+      <div class="stat-top"><div class="stat-icon bg-purple"><span class="material-icons-outlined" style="font-size:32px;">apartment</span></div><span class="stat-trend up">↑ Live</span></div>
       <div class="stat-val" id="d-properties">–</div>
       <div class="stat-lbl">Total PG Properties</div>
     </div>
     <div class="stat-card">
-      <div class="stat-top"><div class="stat-icon bg-green">📅</div></div>
+      <div class="stat-top"><div class="stat-icon bg-green"><span class="material-icons-outlined" style="font-size:32px;">calendar_today</span></div></div>
       <div class="stat-val" id="d-bookings">–</div>
       <div class="stat-lbl">Active Bookings</div>
     </div>
@@ -32,12 +31,12 @@
       <div class="stat-lbl">Pending Bookings</div>
     </div>
     <div class="stat-card">
-      <div class="stat-top"><div class="stat-icon bg-green">💸</div><span class="stat-trend up">↑ 8.5%</span></div>
+      <div class="stat-top"><div class="stat-icon bg-green"><span class="material-icons-outlined" style="font-size:32px;">payments</span></div><span class="stat-trend up">↑ 8.5%</span></div>
       <div class="stat-val" id="d-gtv">–</div>
       <div class="stat-lbl">Gross Transaction Value</div>
     </div>
     <div class="stat-card">
-      <div class="stat-top"><div class="stat-icon bg-purple">💰</div><span class="stat-trend up">10%</span></div>
+      <div class="stat-top"><div class="stat-icon bg-purple"><span class="material-icons-outlined" style="font-size:32px;">payments</span></div><span class="stat-trend up">10%</span></div>
       <div class="stat-val" id="d-platform-rev">–</div>
       <div class="stat-lbl">Platform Revenue</div>
     </div>
@@ -87,28 +86,28 @@
     <h3>Quick Actions</h3>
     <div class="qa-grid">
       <button class="qa-btn" onclick="navigateTo('properties')">
-        <span class="qa-icon">🏢</span>
+        <span class="qa-icon"><span class="material-icons-outlined" style="font-size:24px;">apartment</span></span>
         <div>
           <strong>Pending Approvals</strong>
           <span><span id="qa-pending-props">0</span> properties waiting</span>
         </div>
       </button>
       <button class="qa-btn" onclick="navigateTo('payments')">
-        <span class="qa-icon">💳</span>
+        <span class="qa-icon"><span class="material-icons-outlined" style="font-size:24px;">credit_card</span></span>
         <div>
           <strong>Verify Payments</strong>
           <span><span id="qa-pending-payments">0</span> pending verification</span>
         </div>
       </button>
       <button class="qa-btn" onclick="navigateTo('bookings')">
-        <span class="qa-icon">📅</span>
+        <span class="qa-icon"><span class="material-icons-outlined" style="font-size:24px;">calendar_today</span></span>
         <div>
           <strong>Confirm Bookings</strong>
           <span><span id="qa-pending-bookings">0</span> bookings pending</span>
         </div>
       </button>
       <button class="qa-btn" onclick="navigateTo('users')">
-        <span class="qa-icon">👥</span>
+        <span class="qa-icon"><span class="material-icons-outlined" style="font-size:24px;">group</span></span>
         <div>
           <strong>Manage Users</strong>
           <span>Add, edit or suspend accounts</span>
@@ -117,3 +116,4 @@
     </div>
   </div>
 </section>
+</body></html>

@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
+<!DOCTYPE html><html lang="en"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sunrise PG Residency | Smart Co-Living</title>
     <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
 </head>
 
 <body>
@@ -17,7 +15,7 @@
     <nav class="modern-nav navbar" id="navbar">
         <div class="nav-inner nav-container">
             <div class="brand nav-logo" onclick="Navigation.navigate('landing'); scrollToTop()">
-                <span>🏠</span> Sunrise PG Residency
+                <span><span class="material-icons-outlined" style="font-size:24px;">home</span></span> Sunrise PG Residency
             </div>
 
             <ul class="nav-links" id="nav-links">
@@ -34,10 +32,8 @@
 
             <div class="nav-right">
                 <div id="nav-user-menu" class="hidden" style="position: relative;">
-                    <div class="avatar-circle user-avatar" id="user-btn"
-                        onclick="UI.toggleDropdown('profile-dropdown')">
-                        <img src="https://ui-avatars.com/api/?name=User&background=ca8a04&color=fff" id="nav-avatar"
-                            alt="User">
+                    <div class="avatar-circle user-avatar" id="user-btn" onclick="UI.toggleDropdown('profile-dropdown')">
+                        <img src="https://ui-avatars.com/api/?name=User&amp;background=ca8a04&amp;color=fff" id="nav-avatar" alt="User">
                     </div>
 
                     <div class="dropdown-menu user-dropdown hidden" id="profile-dropdown">
@@ -46,21 +42,19 @@
                             <span id="drop-email" class="user-email">email@example.com</span>
                         </div>
                         <div class="drop-links">
-                            <a onclick="Navigation.navigate('pending'); UI.toggleDropdown('profile-dropdown')">📋 PG
+                            <a onclick="Navigation.navigate('pending'); UI.toggleDropdown('profile-dropdown')"><span class="material-icons-outlined" style="font-size:24px;">assignment</span> PG
                                 Request Pending List</a>
-                            <a onclick="Navigation.navigate('transactions'); UI.toggleDropdown('profile-dropdown')">💳
+                            <a onclick="Navigation.navigate('transactions'); UI.toggleDropdown('profile-dropdown')"><span class="material-icons-outlined" style="font-size:24px;">credit_card</span>
                                 Transactions</a>
-                            <a onclick="Navigation.navigate('edit-profile'); UI.toggleDropdown('profile-dropdown')">👤
+                            <a onclick="Navigation.navigate('edit-profile'); UI.toggleDropdown('profile-dropdown')"><span class="material-icons-outlined" style="font-size:24px;">person</span>
                                 Edit Profile</a>
                             <hr>
-                            <a onclick="Auth.logout()" class="text-danger">🚪 Logout</a>
+                            <a onclick="Auth.logout()" class="text-danger"><span class="material-icons-outlined" style="font-size:24px;">logout</span> Logout</a>
                         </div>
                     </div>
                 </div>
 
-                <button class="btn btn-outline"
-                    style="margin-right: 12px; border: 1px solid var(--border); background: transparent;"
-                    onclick="window.location.href='../rentalbros/html/listing.html'">← Back to Listings</button>
+                <button class="btn btn-outline" style="margin-right: 12px; border: 1px solid var(--border); background: transparent;" onclick="window.location.href='../rentalbros/html/listing.html'">← Back to Listings</button>
                 <button id="nav-login-btn" class="btn btn-primary" onclick="Navigation.navigate('login')">Sign
                     In</button>
 
@@ -108,6 +102,6 @@
             onScroll(); // run once on load
         })();
     </script>
-</body>
 
-</html>
+
+</body></html>

@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RentBro - Warden Portal</title>
-  <link rel="stylesheet" href="styles_warden.css" />
+  <link rel="stylesheet" href="styles_warden.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
 </head>
 
 <body>
@@ -19,7 +17,7 @@
     <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="sidebar-brand">
-        <span class="brand-icon">🏢</span>
+        <span class="brand-icon"><span class="material-icons-outlined" style="font-size:32px;">apartment</span></span>
         <div class="brand-text">
           <h3>RentBro</h3>
           <span>Warden Portal</span>
@@ -27,25 +25,25 @@
       </div>
       <nav class="sidebar-nav">
         <div class="nav-item active" data-section="dashboard">
-          <span class="nav-icon">🗂️</span> Dashboard
+          <span class="nav-icon"><span class="material-icons-outlined" style="font-size:24px;">folder</span></span> Dashboard
         </div>
         <div class="nav-item" data-section="tenants">
-          <span class="nav-icon">👥</span> Tenant Records
+          <span class="nav-icon"><span class="material-icons-outlined" style="font-size:24px;">group</span></span> Tenant Records
         </div>
         <div class="nav-item" data-section="rooms">
-          <span class="nav-icon">🏠</span> Room Services
+          <span class="nav-icon"><span class="material-icons-outlined" style="font-size:24px;">home</span></span> Room Services
         </div>
         <div class="nav-item" data-section="violations">
-          <span class="nav-icon">⚠️</span> Rule Violations
+          <span class="nav-icon"><span class="material-icons-outlined" style="font-size:24px;">warning</span></span> Rule Violations
         </div>
         <div class="nav-item" data-section="complaints">
-          <span class="nav-icon">💬</span> Complaints
+          <span class="nav-icon"><span class="material-icons-outlined" style="font-size:24px;">chat</span></span> Complaints
         </div>
         <div class="nav-item" data-section="notifications">
-          <span class="nav-icon">🔔</span> Notifications
+          <span class="nav-icon"><span class="material-icons-outlined" style="font-size:24px;">notifications</span></span> Notifications
         </div>
         <div class="nav-item" data-section="profile">
-          <span class="nav-icon">👤</span> Profile
+          <span class="nav-icon"><span class="material-icons-outlined" style="font-size:24px;">person</span></span> Profile
         </div>
       </nav>
     </aside>
@@ -61,10 +59,10 @@
         </div>
         <div class="navbar-right">
           <div class="nav-icon-btn" onclick="navigateTo('notifications')">
-            🔔
+            <span class="material-icons-outlined" style="font-size:24px;">notifications</span>
             <span class="notif-badge" id="notif-badge"></span>
           </div>
-          <div class="nav-icon-btn" onclick="navigateTo('profile')">👤</div>
+          <div class="nav-icon-btn" onclick="navigateTo('profile')"><span class="material-icons-outlined" style="font-size:24px;">person</span></div>
           <button class="btn-logout" id="logout-btn">↪ Logout</button>
         </div>
       </header>
@@ -86,7 +84,7 @@
     <div class="modal">
       <div class="modal-header">
         <h3 id="modal-title">Modal Title</h3>
-        <span class="modal-close" id="modal-close">✕</span>
+        <span class="modal-close" id="modal-close"><span class="material-icons-outlined" style="font-size:24px;">close</span></span>
       </div>
       <div id="modal-body"></div>
       <div class="modal-footer">
@@ -100,7 +98,7 @@
   TOAST  (global — stays in shell)
 ================================= -->
   <div class="toast" id="toast">
-    <span class="toast-icon">✅</span>
+    <span class="toast-icon"><span class="material-icons-outlined" style="font-size:24px;">check_circle</span></span>
     <div class="toast-text">
       <strong>Title</strong>
       <span>Message</span>
@@ -118,6 +116,6 @@
   <script src="js/complaints_warden.js"></script>
   <script src="js/notifications_warden.js"></script>
   <script src="js/profile_warden.js"></script>
-</body>
 
-</html>
+
+</body></html>

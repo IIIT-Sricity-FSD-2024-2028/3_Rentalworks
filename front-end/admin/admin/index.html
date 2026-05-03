@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RentBro- Admin Portal</title>
-  <link rel="stylesheet" href="styles_admin.css" />
+  <link rel="stylesheet" href="styles_admin.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
 </head>
 
 <body>
@@ -16,19 +14,19 @@
     <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="sb-brand">
-        <span class="b-ico">🏢</span>
+        <span class="b-ico"><span class="material-icons-outlined" style="font-size:24px;">apartment</span></span>
         <div>
           <h3>RentBro</h3>
           <span>Admin Portal</span>
         </div>
       </div>
       <nav class="sb-nav">
-        <div class="nav-item active" data-sec="dashboard"><span class="n-ico">🗂️</span> Dashboard</div>
-        <div class="nav-item" data-sec="users"><span class="n-ico">👥</span> User Management</div>
-        <div class="nav-item" data-sec="properties"><span class="n-ico">🏢</span> PG Properties</div>
-        <div class="nav-item" data-sec="bookings"><span class="n-ico">📅</span> Bookings</div>
-        <div class="nav-item" data-sec="payments"><span class="n-ico">💳</span> Payments</div>
-        <div class="nav-item" data-sec="notifications"><span class="n-ico">🔔</span> Announcements</div>
+        <div class="nav-item active" data-sec="dashboard"><span class="n-ico"><span class="material-icons-outlined" style="font-size:24px;">folder</span></span> Dashboard</div>
+        <div class="nav-item" data-sec="users"><span class="n-ico"><span class="material-icons-outlined" style="font-size:24px;">group</span></span> User Management</div>
+        <div class="nav-item" data-sec="properties"><span class="n-ico"><span class="material-icons-outlined" style="font-size:24px;">apartment</span></span> PG Properties</div>
+        <div class="nav-item" data-sec="bookings"><span class="n-ico"><span class="material-icons-outlined" style="font-size:24px;">calendar_today</span></span> Bookings</div>
+        <div class="nav-item" data-sec="payments"><span class="n-ico"><span class="material-icons-outlined" style="font-size:24px;">credit_card</span></span> Payments</div>
+        <div class="nav-item" data-sec="notifications"><span class="n-ico"><span class="material-icons-outlined" style="font-size:24px;">notifications</span></span> Announcements</div>
       </nav>
     </aside>
 
@@ -42,8 +40,8 @@
           <p id="nb-email">admin@pgrentals.com</p>
         </div>
         <div class="nb-right">
-          <div class="nb-icon" onclick="navigateTo('notifications')">🔔<span class="nb-dot"></span></div>
-          <div class="nb-icon" id="gear-btn" title="Settings & Profile">⚙️</div>
+          <div class="nb-icon" onclick="navigateTo('notifications')"><span class="material-icons-outlined" style="font-size:24px;">notifications</span><span class="nb-dot"></span></div>
+          <div class="nb-icon" id="gear-btn" title="Settings &amp; Profile"><span class="material-icons-outlined" style="font-size:24px;">settings</span></div>
           <button class="btn-logout" id="logout-btn">↪ Logout</button>
         </div>
       </header>
@@ -60,8 +58,8 @@
   <div class="modal-overlay" id="profile-modal-overlay">
     <div class="modal" style="width:520px;max-height:90vh;overflow-y:auto">
       <div class="modal-hdr">
-        <h3>⚙️ Profile &amp; Settings</h3>
-        <span class="modal-close" onclick="closeProfileModal()">✕</span>
+        <h3><span class="material-icons-outlined" style="font-size:24px;">settings</span> Profile &amp; Settings</h3>
+        <span class="modal-close" onclick="closeProfileModal()"><span class="material-icons-outlined" style="font-size:24px;">close</span></span>
       </div>
       <div class="profile-section">
         <div class="profile-avatar-wrap">
@@ -83,15 +81,15 @@
         <h4 class="profile-section-title">🔐 Security Settings</h4>
         <div class="modal-field">
           <label>Current Password</label>
-          <input type="password" id="pm-curr-pass" placeholder="Enter current password" />
+          <input type="password" id="pm-curr-pass" placeholder="Enter current password">
         </div>
         <div class="modal-field">
           <label>New Password</label>
-          <input type="password" id="pm-new-pass" placeholder="Min 6 characters" />
+          <input type="password" id="pm-new-pass" placeholder="Min 6 characters">
         </div>
         <div class="modal-field">
           <label>Confirm New Password</label>
-          <input type="password" id="pm-conf-pass" placeholder="Repeat new password" />
+          <input type="password" id="pm-conf-pass" placeholder="Repeat new password">
         </div>
         <button class="btn-confirm-blue" style="width:100%;padding:10px" onclick="updatePassword()">Update
           Password</button>
@@ -104,13 +102,13 @@
             <div style="font-size:12px;color:#94a3b8;margin-top:2px">Add an extra layer of security</div>
           </div>
           <label class="toggle-switch">
-            <input type="checkbox" id="twofa-toggle" onchange="toggle2FA()" />
+            <input type="checkbox" id="twofa-toggle" onchange="toggle2FA()">
             <span class="toggle-slider"></span>
           </label>
         </div>
       </div>
       <div class="profile-section" style="border-bottom:none">
-        <h4 class="profile-section-title">📋 Session History</h4>
+        <h4 class="profile-section-title"><span class="material-icons-outlined" style="font-size:24px;">assignment</span> Session History</h4>
         <div class="session-item">
           <div class="session-dot active-dot"></div>
           <div>
@@ -136,7 +134,7 @@
     <div class="modal">
       <div class="modal-hdr">
         <h3 id="modal-title">Modal</h3>
-        <span class="modal-close" id="modal-close-btn">✕</span>
+        <span class="modal-close" id="modal-close-btn"><span class="material-icons-outlined" style="font-size:24px;">close</span></span>
       </div>
       <p id="modal-subtitle" style="font-size:12px;color:#94a3b8;margin-bottom:14px"></p>
       <div id="modal-body"></div>
@@ -146,7 +144,7 @@
 
   <!-- ================================ TOAST ================================ -->
   <div class="toast" id="toast">
-    <span class="t-ico">✅</span>
+    <span class="t-ico"><span class="material-icons-outlined" style="font-size:24px;">check_circle</span></span>
     <div class="t-text"><strong>Title</strong><span>Message</span></div>
   </div>
 
@@ -162,6 +160,6 @@
   <script src="js/notifications_admin.js"></script>
   <script src="js/profile_admin.js"></script>
 
-</body>
 
-</html>
+
+</body></html>

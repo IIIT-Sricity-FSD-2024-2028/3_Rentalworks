@@ -1,7 +1,7 @@
-<div class="page-content" style="max-width: 800px;">
+<html><head></head><body><div class="page-content" style="max-width: 800px;">
     <div style="display: flex; align-items: center; gap: 24px; margin-bottom: 32px;">
         <button class="btn-back" onclick="Navigation.navigate('roommate-intro')">
-            <svg viewBox="0 0 24 24"><path d="M19 12H5M5 12l7 7M5 12l7-7"/></svg>
+            <span class="material-icons-outlined" style="font-size:24px;">arrow_back</span>
             Back
         </button>
         <div>
@@ -20,7 +20,7 @@
         </div>
 
         <div style="text-align: center; margin-bottom: 40px;">
-            <div style="width: 64px; height: 64px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; margin: 0 auto 16px;">👥</div>
+            <div style="width: 64px; height: 64px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; margin: 0 auto 16px;"><span class="material-icons-outlined" style="font-size:24px;">group</span></div>
             <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 8px;">Your Roommate Preferences</h2>
             <p style="color: var(--text-gray); font-size: 14px;">Help us find the perfect match for you</p>
         </div>
@@ -45,7 +45,7 @@
         </div>
 
         <div style="margin-bottom: 24px;">
-            <label style="font-weight: 800; display: block; margin-bottom: 12px; font-size: 14px;">Smoking & Drinking Preference *</label>
+            <label style="font-weight: 800; display: block; margin-bottom: 12px; font-size: 14px;">Smoking &amp; Drinking Preference *</label>
             <div class="grid-2" style="gap: 12px;">
                 <div class="radio-box p-smoke selected" onclick="RoommateLogic.selectRadio(this, 'p-smoke')">Non-Smoker, Non-Drinker</div>
                 <div class="radio-box p-smoke" onclick="RoommateLogic.selectRadio(this, 'p-smoke')">Non-Smoker, Occasional Drinker</div>
@@ -75,4 +75,4 @@
     color: var(--primary-hover) !important;
     font-weight: 700;
 }
-</style>
+</style></body></html>

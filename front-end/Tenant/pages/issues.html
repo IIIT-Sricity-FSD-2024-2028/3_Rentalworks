@@ -1,4 +1,4 @@
-<div id="page-issues" class="page">
+<html><head></head><body><div id="page-issues" class="page">
   <div class="page-content">
     <div class="page-header page-header-row">
       <div><h1>Issues</h1><p>Track and manage all reported issues</p></div>
@@ -6,9 +6,9 @@
     </div>
     <div class="stats-grid mb-20">
       <div class="stat-card"><div class="stat-label">Total Issues <span class="stat-icon">ℹ️</span></div><div class="stat-value" id="iss-total">0</div></div>
-      <div class="stat-card"><div class="stat-label">Open <span class="stat-icon">🔴</span></div><div class="stat-value" id="iss-open" style="color:var(--danger)">0</div></div>
-      <div class="stat-card"><div class="stat-label">In Progress <span class="stat-icon">🕐</span></div><div class="stat-value" id="iss-inprog" style="color:var(--warning)">0</div></div>
-      <div class="stat-card"><div class="stat-label">Resolved <span class="stat-icon">✅</span></div><div class="stat-value" id="iss-resolved" style="color:var(--success)">0</div></div>
+      <div class="stat-card"><div class="stat-label">Open <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px;">error</span></span></div><div class="stat-value" id="iss-open" style="color:var(--danger)">0</div></div>
+      <div class="stat-card"><div class="stat-label">In Progress <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px;">schedule</span></span></div><div class="stat-value" id="iss-inprog" style="color:var(--warning)">0</div></div>
+      <div class="stat-card"><div class="stat-label">Resolved <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px;">check_circle</span></span></div><div class="stat-value" id="iss-resolved" style="color:var(--success)">0</div></div>
     </div>
     <div class="section-card">
       <div class="section-header"><span class="section-title">All Issues</span></div>
@@ -30,11 +30,11 @@
       <div class="section-body">
         <div class="category-grid">
           <div class="category-item" onclick="TenantLogic.selectCategory(this,'Plumbing')"><div class="cat-icon">💧</div><div class="cat-name">Plumbing</div></div>
-          <div class="category-item" onclick="TenantLogic.selectCategory(this,'Electrical')"><div class="cat-icon">⚡</div><div class="cat-name">Electrical</div></div>
+          <div class="category-item" onclick="TenantLogic.selectCategory(this,'Electrical')"><div class="cat-icon"><span class="material-icons-outlined" style="font-size:24px;">bolt</span></div><div class="cat-name">Electrical</div></div>
           <div class="category-item" onclick="TenantLogic.selectCategory(this,'Appliances')"><div class="cat-icon">🔌</div><div class="cat-name">Appliances</div></div>
-          <div class="category-item" onclick="TenantLogic.selectCategory(this,'Internet/WiFi')"><div class="cat-icon">📶</div><div class="cat-name">Internet/WiFi</div></div>
+          <div class="category-item" onclick="TenantLogic.selectCategory(this,'Internet/WiFi')"><div class="cat-icon"><span class="material-icons-outlined" style="font-size:24px;">wifi</span></div><div class="cat-name">Internet/WiFi</div></div>
           <div class="category-item" onclick="TenantLogic.selectCategory(this,'Maintenance')"><div class="cat-icon">🔩</div><div class="cat-name">Maintenance</div></div>
-          <div class="category-item" onclick="TenantLogic.selectCategory(this,'Other')"><div class="cat-icon">📱</div><div class="cat-name">Other</div></div>
+          <div class="category-item" onclick="TenantLogic.selectCategory(this,'Other')"><div class="cat-icon"><span class="material-icons-outlined" style="font-size:24px;">smartphone</span></div><div class="cat-name">Other</div></div>
         </div>
       </div>
     </div>
@@ -49,8 +49,8 @@
     <div class="section-card mb-16">
       <div class="section-header"><span class="section-title">Issue Details</span></div>
       <div class="section-body">
-        <div class="form-group"><label>Issue Title *</label><input type="text" id="issue-title" placeholder="Brief title of the issue" /></div>
-        <div class="form-group"><label>Location *</label><input type="text" id="issue-location" placeholder="Room number or area" /></div>
+        <div class="form-group"><label>Issue Title *</label><input type="text" id="issue-title" placeholder="Brief title of the issue"></div>
+        <div class="form-group"><label>Location *</label><input type="text" id="issue-location" placeholder="Room number or area"></div>
         <div class="form-group"><label>Detailed Description *</label><textarea id="issue-desc" placeholder="Describe the issue..."></textarea></div>
       </div>
     </div>
@@ -59,4 +59,4 @@
       <button class="btn btn-primary" style="flex:2" onclick="TenantLogic.submitIssue()"><span class="btn-text">Submit Issue</span></button>
     </div>
   </div>
-</div>
+</div></body></html>

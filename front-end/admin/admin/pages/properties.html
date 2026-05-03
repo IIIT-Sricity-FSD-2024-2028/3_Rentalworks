@@ -2,8 +2,7 @@
   PG PROPERTIES FRAGMENT
   Loaded by: navigateTo('properties')
   Rendered by: properties_admin.js
-================================= -->
-<section id="properties-sec" class="section active">
+================================= --><html><head></head><body><section id="properties-sec" class="section active">
   <div class="sec-hdr">
     <h2>PG Property Management</h2>
     <p>Manage listings, onboarding pipeline and property approvals</p>
@@ -20,8 +19,8 @@
   <!-- Search + Add -->
   <div class="tbl-hdr" style="background:white;border-radius:10px;border:1px solid #e2e8f0;margin-bottom:16px">
     <div class="search-wrap">
-      <span class="s-ico">🔍</span>
-      <input type="text" id="prop-search" placeholder="Search by property name, owner, or location..."/>
+      <span class="s-ico"><span class="material-icons-outlined" style="font-size:24px;">search</span></span>
+      <input type="text" id="prop-search" placeholder="Search by property name, owner, or location...">
     </div>
     <button class="btn-add" onclick="addProperty()">+ Add Property</button>
   </div>
@@ -29,3 +28,4 @@
   <!-- Property Cards Grid -->
   <div class="prop-grid" id="prop-grid"></div>
 </section>
+</body></html>

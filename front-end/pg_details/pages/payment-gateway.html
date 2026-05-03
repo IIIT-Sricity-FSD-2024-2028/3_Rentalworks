@@ -1,6 +1,6 @@
-<div class="page-content" style="max-width: 1000px;">
+<html><head></head><body><div class="page-content" style="max-width: 1000px;">
     <button class="btn-back" onclick="Navigation.navigate('booking-details')">
-        <svg viewBox="0 0 24 24"><path d="M19 12H5M5 12l7 7M5 12l7-7"/></svg>
+        <span class="material-icons-outlined" style="font-size:24px;">arrow_back</span>
         Back to Booking Details
     </button>
     <h2 style="font-size: 28px; font-weight: 800; margin-bottom: 8px;">Complete Your Booking</h2>
@@ -13,15 +13,15 @@
 
             <div class="grid-3 mb-16" style="gap: 12px; margin-bottom: 24px; display: grid; grid-template-columns: repeat(3, 1fr);">
               <div id="method-upi" class="pay-method-box active" style="text-align:center; padding: 16px; display:flex; flex-direction:column; align-items:center; justify-content:center;" onclick="BookingLogic.selectPayment('upi')">
-                 <div style="font-size: 28px; margin-bottom: 8px;">📱</div>
+                 <div style="font-size: 28px; margin-bottom: 8px;"><span class="material-icons-outlined" style="font-size:24px;">smartphone</span></div>
                  <strong style="font-size: 13px;">UPI</strong>
               </div>
               <div id="method-card" class="pay-method-box" style="text-align:center; padding: 16px; display:flex; flex-direction:column; align-items:center; justify-content:center;" onclick="BookingLogic.selectPayment('card')">
-                 <div style="font-size: 28px; margin-bottom: 8px;">💳</div>
+                 <div style="font-size: 28px; margin-bottom: 8px;"><span class="material-icons-outlined" style="font-size:24px;">credit_card</span></div>
                  <strong style="font-size: 13px;">Card</strong>
               </div>
               <div id="method-net" class="pay-method-box" style="text-align:center; padding: 16px; display:flex; flex-direction:column; align-items:center; justify-content:center;" onclick="BookingLogic.selectPayment('net')">
-                 <div style="font-size: 28px; margin-bottom: 8px;">🏦</div>
+                 <div style="font-size: 28px; margin-bottom: 8px;"><span class="material-icons-outlined" style="font-size:24px;">account_balance</span></div>
                  <strong style="font-size: 13px;">Net Banking</strong>
               </div>
             </div>
@@ -32,9 +32,9 @@
                 
                 <p style="font-size:12px; font-weight:700; margin-top:16px; margin-bottom:12px;">Popular UPI Apps</p>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                   <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;" onclick="document.getElementById('upi-id').value='user@googlepay'">🟦 Google Pay</div>
+                   <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;" onclick="document.getElementById('upi-id').value='user@googlepay'"><span class="material-icons-outlined" style="font-size:24px;">stop</span> Google Pay</div>
                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;" onclick="document.getElementById('upi-id').value='user@ybl'">🟣 PhonePe</div>
-                   <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;" onclick="document.getElementById('upi-id').value='user@paytm'">🟦 Paytm</div>
+                   <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;" onclick="document.getElementById('upi-id').value='user@paytm'"><span class="material-icons-outlined" style="font-size:24px;">stop</span> Paytm</div>
                 </div>
                 
                 <div style="text-align:center; position:relative; margin: 20px 0;">
@@ -43,7 +43,7 @@
                 </div>
                 
                 <div style="text-align:center; padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1;">
-                  <div style="font-size: 40px; line-height: 1;">📱</div>
+                  <div style="font-size: 40px; line-height: 1;"><span class="material-icons-outlined" style="font-size:24px;">smartphone</span></div>
                   <p style="font-size: 13px; font-weight: 800; margin-top: 8px; margin-bottom: 4px;">Scan QR Code</p>
                   <p style="font-size: 11px; color: var(--text-gray);">Open any UPI app and scan this to pay directly.</p>
                 </div>
@@ -51,7 +51,7 @@
 
             <div id="form-card" class="pay-form hidden">
                 <div class="card-visual mb-16" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom:20px;">
-                    <div class="card-logo" style="font-size: 24px; text-align: right; margin-bottom: 10px;">💳</div>
+                    <div class="card-logo" style="font-size: 24px; text-align: right; margin-bottom: 10px;"><span class="material-icons-outlined" style="font-size:24px;">credit_card</span></div>
                     <div class="card-visual-chip" style="background: gold; width: 40px; height: 30px; border-radius: 4px; margin-bottom: 15px;"></div>
                     <div class="card-visual-number" id="card-display-num" style="font-size: 20px; letter-spacing: 2px; margin-bottom: 20px; font-family: monospace;">•••• •••• •••• ••••</div>
                     <div class="card-visual-bottom" style="display: flex; justify-content: space-between; text-transform: uppercase; font-size: 12px; opacity: 0.8;">
@@ -83,18 +83,18 @@
             </div>
 
             <div id="form-net" class="pay-form hidden">
-                <input type="text" placeholder="🔍 Search for your bank..." style="width: 100%; padding: 12px 14px; font-size: 14px; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 16px; box-sizing:border-box;" />
+                <input type="text" placeholder="🔍 Search for your bank..." style="width: 100%; padding: 12px 14px; font-size: 14px; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 16px; box-sizing:border-box;">
                 <p style="font-size:12px; font-weight:700; margin-bottom:12px;">Popular Banks</p>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;">🏦 State Bank of India</div>
-                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;">🏦 HDFC Bank</div>
-                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;">🏦 ICICI Bank</div>
-                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;">🏦 Axis Bank</div>
+                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;"><span class="material-icons-outlined" style="font-size:24px;">account_balance</span> State Bank of India</div>
+                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;"><span class="material-icons-outlined" style="font-size:24px;">account_balance</span> HDFC Bank</div>
+                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;"><span class="material-icons-outlined" style="font-size:24px;">account_balance</span> ICICI Bank</div>
+                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;"><span class="material-icons-outlined" style="font-size:24px;">account_balance</span> Axis Bank</div>
                 </div>
             </div>
 
             <div style="background: var(--success-light); border: 1px solid #86efac; color: var(--success); padding: 12px; border-radius: 8px; font-size: 11px; font-weight: 600; margin-top: 24px; display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 14px;">🔒</span> Your payment is secured with encrypted payment processing.
+                <span style="font-size: 14px;"><span class="material-icons-outlined" style="font-size:24px;">lock</span></span> Your payment is secured with encrypted payment processing.
             </div>
         </div>
 
@@ -139,4 +139,4 @@
     border: 2px solid #3b82f6; /* Blue border */
     background: #f8fafc;
 }
-</style>
+</style></body></html>
