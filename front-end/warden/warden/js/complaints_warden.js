@@ -73,6 +73,14 @@ function viewComplaintDetail(id) {
   setInner('detail-tenant-room', complaint.room);
   setInner('detail-tenant-date', complaint.date);
 
+  // --- Severity Display ---
+  const severityEl = document.getElementById('detail-severity-display');
+  if (severityEl) {
+    const sev = complaint.severity || 'Not Set';
+    const sevColors = { High: '#dc2626', Critical: '#7c2d12', Medium: '#b45309', Low: '#16a34a', 'Not Set': '#6b7280' };
+    severityEl.innerHTML = `<span style="font-weight:700;color:${sevColors[sev] || '#6b7280'}">${sev}</span>`;
+  }
+
   const timeline = document.getElementById('detail-timeline');
   if (timeline) {
     if (!complaint.timeline || complaint.timeline.length === 0) {
@@ -90,6 +98,62 @@ function viewComplaintDetail(id) {
       `).join('');
     }
   }
+}
+
+// ----- Set Severity -----
+function openSetSeverityModal() {
+  if (!currentComplaintId) return;
+  const complaint = complaints.find(c => String(c.id) === String(currentComplaintId));
+  if (!complaint) return;
+
+  const current = complaint.severity || 'Not Set';
+  const severities = [
+    { label: 'Low',      color: '#16a34a', bg: '#f0fdf4', desc: 'Minor inconvenience, can wait' },
+    { label: 'Medium',   color: '#b45309', bg: '#fef9c3', desc: 'Needs attention within a week' },
+    { label: 'High',     color: '#dc2626', bg: '#fee2e2', desc: 'Urgent — resolve within 24 hrs' },
+    { label: 'Critical', color: '#7c2d12', bg: '#fef2f2', desc: 'Emergency — immediate action needed' }
+  ];
+
+  showModal('Set Complaint Severity', `
+    <p style="font-size:13px;color:#6b7280;margin-bottom:16px">Current severity: <strong>${current}</strong></p>
+    <div style="display:grid;gap:10px">
+      ${severities.map(s => `
+        <button
+          onclick="setSeverity('${s.label}')"
+          style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;
+                 border:2px solid ${s.label === current ? s.color : '#e5e7eb'};
+                 background:${s.label === current ? s.bg : 'white'};
+                 cursor:pointer;text-align:left;width:100%"
+        >
+          <span style="width:12px;height:12px;border-radius:50%;background:${s.color};flex-shrink:0"></span>
+          <div>
+            <div style="font-weight:700;color:${s.color}">${s.label}</div>
+            <div style="font-size:12px;color:#6b7280">${s.desc}</div>
+          </div>
+        </button>
+      `).join('')}
+    </div>
+  `, null);
+}
+
+function setSeverity(level) {
+  if (!currentComplaintId) return;
+  const complaint = complaints.find(c => String(c.id) === String(currentComplaintId));
+  if (!complaint) return;
+
+  complaint.severity = level;
+  complaint.timeline = complaint.timeline || [];
+  complaint.timeline.push({
+    time: new Date().toLocaleString(),
+    event: `Severity set to ${level}`,
+    by: 'Warden'
+  });
+
+  saveToStorage();
+  closeModal();
+  viewComplaintDetail(currentComplaintId);
+  renderComplaints();
+  showToast('success', 'Severity Set', `Complaint severity updated to ${level}`);
 }
 
 function backToComplaints() {
@@ -114,7 +178,21 @@ function updateComplaintStatus(newStatus) {
   saveToStorage();
   viewComplaintDetail(currentComplaintId);
   renderComplaints();
-  showToast('success', 'Status Updated', `Complaint ${currentComplaintId} marked as ${newStatus.replace('_', ' ')}`);
+  showToast('success', 'Status Updated', `Complaint marked as ${newStatus.replace('_', ' ')}`);
+
+  // Notify Tenant of status change
+  let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
+  crossNotifs.push({
+    id: Date.now(),
+    title: 'Complaint Status Updated',
+    message: `Your complaint "${complaint.description || complaint.type}" is now ${getStatusLabel(newStatus)}.`,
+    type: newStatus === 'resolved' ? 'success' : 'update',
+    priority: 'important',
+    targetRole: 'tenant',
+    by: 'Warden',
+    sentAt: new Date().toLocaleString()
+  });
+  localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
 }
 
 function addRemark() {
@@ -153,34 +231,69 @@ function escalateComplaint() {
     by: 'Warden'
   });
 
-  const newNotif = {
+  notifications.unshift({
     id: Date.now(),
     title: 'Complaint Escalated',
-    message: `Complaint ${currentComplaintId} (${complaint.tenant}) escalated to owner.`,
+    message: `Complaint (${complaint.tenant}) escalated to owner.`,
     time: 'Just now',
     read: false,
     icon: 'warning'
-  };
-  notifications.unshift(newNotif);
+  });
 
-  // Push to cross-actor simulation system for Owner
   let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
+  const escalateId = Date.now();
+
+  // Notify Owner
   crossNotifs.push({
-    id: Date.now(),
+    id: escalateId,
     title: 'Complaint Escalated by Warden',
-    message: `Complaint ${currentComplaintId} from ${complaint.tenant} requires your attention.`,
+    message: `Complaint from ${complaint.tenant} (Room ${complaint.room}) requires your attention.`,
     type: 'warning',
     priority: 'high',
     targetRole: 'owner',
     by: 'Warden',
     sentAt: new Date().toLocaleString()
   });
+
+  // Also notify the Tenant that their complaint was escalated
+  crossNotifs.push({
+    id: escalateId + 1,
+    title: 'Complaint Escalated by Warden',
+    message: `Your complaint "${complaint.description || complaint.type}" has been escalated to the Property Owner for faster resolution.`,
+    type: 'warning',
+    priority: 'high',
+    targetRole: 'tenant',
+    by: 'Warden',
+    sentAt: new Date().toLocaleString()
+  });
+
   localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
+
+  // === KEY FIX: Push the escalated complaint into global_issues ===
+  // Owner's issues.js reads global_issues, so this will auto-appear in their Issues page.
+  let globalIss = JSON.parse(localStorage.getItem('global_issues') || '[]');
+  const alreadyEscalated = globalIss.some(i => String(i.id) === String(complaint.id));
+  if (!alreadyEscalated) {
+    globalIss.unshift({
+      id: complaint.id,
+      title: complaint.description || complaint.type || 'Escalated Complaint',
+      desc: complaint.description || 'Escalated from Warden dashboard.',
+      category: complaint.type || 'Maintenance',
+      priority: complaint.priority || 'high',
+      status: complaint.status === 'in_progress' ? 'in-progress' : complaint.status || 'open',
+      tenantName: complaint.tenant || 'Tenant',
+      room: complaint.room || 'A-204',
+      propertyName: 'Sunrise PG Residency',
+      reportedDate: new Date().toISOString().split('T')[0],
+      _escalatedByWarden: true
+    });
+    localStorage.setItem('global_issues', JSON.stringify(globalIss));
+  }
 
   saveToStorage();
   viewComplaintDetail(currentComplaintId);
   updateNotifBadge();
-  showToast('warning', 'Escalated to Owner', 'Complaint has been sent to the Property Owner');
+  showToast('warning', 'Escalated to Owner', 'Complaint has been sent to the Property Owner and will appear in their Issues page.');
 }
 
 // ----- Filter Setup -----

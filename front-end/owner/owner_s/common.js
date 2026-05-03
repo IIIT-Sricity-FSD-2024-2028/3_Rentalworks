@@ -48,20 +48,22 @@ window.addEventListener('storage', (e) => {
       const data = getData();
       if (data) {
         if (!data.notifications) data.notifications = [];
-        if (!data.notifications.find(n => n.id === latest.id)) {
-            data.notifications.unshift({
-              id: latest.id,
-              type: latest.type || 'info',
-              title: latest.title,
-              desc: latest.message,
-              time: 'Just now',
-              read: false
-            });
-            updateData(data);
+        // Deduplicate
+        if (!data.notifications.find(n => String(n.id) === String(latest.id))) {
+          data.notifications.unshift({
+            id: latest.id,
+            type: latest.type || 'alert',
+            title: latest.title,
+            message: latest.message,   // owner renderer uses .message
+            sender: latest.by || 'System',
+            date: latest.sentAt || new Date().toISOString().split('T')[0],
+            read: false
+          });
+          updateData(data);
         }
       }
       
-      loadSidebarBadges(); // Refresh badges
+      loadSidebarBadges();
       if (typeof loadNotifications === 'function' && window.location.pathname.includes('notifications.html')) {
         loadNotifications();
       }

@@ -27,14 +27,17 @@
     </div>
   </div>
 
-  <div class="filter-bar">
-    <label>Filter by Severity:</label>
-    <select class="filter-select" id="violation-filter">
-      <option value="all">All Severity</option>
-      <option value="high">High</option>
-      <option value="medium">Medium</option>
-      <option value="low">Low</option>
-    </select>
+  <div class="filter-bar" style="display:flex; justify-content:space-between; align-items:center;">
+    <div>
+      <label>Filter by Severity:</label>
+      <select class="filter-select" id="violation-filter">
+        <option value="all">All Severity</option>
+        <option value="high">High</option>
+        <option value="medium">Medium</option>
+        <option value="low">Low</option>
+      </select>
+    </div>
+    <button class="btn-save" onclick="openAddViolationModal()">+ Add Violation</button>
   </div>
 
   <div class="table-wrapper">

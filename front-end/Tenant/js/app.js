@@ -25,6 +25,53 @@ document.addEventListener('DOMContentLoaded', () => {
       const latest = notifs[notifs.length - 1];
       if (latest.targetRole === 'tenant' || latest.targetRole === 'all') {
         if (typeof UI !== 'undefined') UI.showToast('🔔 ' + latest.title + ': ' + latest.message, 'info');
+        
+        // Push to local notifications state (with deduplication)
+        if (State.data && State.data.notifications) {
+          const alreadyExists = State.data.notifications.some(n => n.id === latest.id);
+          if (!alreadyExists) {
+            const iconMap = {
+              'announcement': '🔔',
+              'warning': '⚠️',
+              'success': '✅',
+              'update': '📤',
+              'alert': '🚨',
+              'info': 'ℹ️'
+            };
+            const bgMap = {
+              'warning': '#fef2f2',
+              'success': '#f0fdf4',
+              'announcement': '#fef9c3',
+              'update': '#eff6ff',
+              'alert': '#fef2f2'
+            };
+            State.data.notifications.unshift({
+              id: latest.id,
+              type: latest.type || 'info',
+              icon: iconMap[latest.type] || 'ℹ️',
+              bg: bgMap[latest.type] || '#eff6ff',
+              title: latest.title,
+              desc: latest.message,
+              time: latest.sentAt || new Date().toLocaleString(),
+              unread: true
+            });
+            State.save();
+          }
+          
+          // Always refresh badge & notification list
+          const unreadCount = State.data.notifications.filter(n => n.unread).length;
+          document.querySelectorAll('.notif-count').forEach(el => {
+            el.textContent = unreadCount;
+            el.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+          });
+
+          // Refresh notifications page if currently open
+          if (State.data.currentPage === 'notifications' || State.data.currentPage === 'notification') {
+            if (typeof TenantLogic !== 'undefined' && typeof TenantLogic.renderNotifications === 'function') {
+              TenantLogic.renderNotifications();
+            }
+          }
+        }
       }
     }
     

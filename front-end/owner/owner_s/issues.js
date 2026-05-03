@@ -5,31 +5,65 @@ let allProperties = [];
 document.addEventListener('DOMContentLoaded', async () => {
   await initPage('issues', 'Issues', 'Track and resolve property issues');
   await loadIssues();
+
+  // Live sync: when tenant submits a new issue, refresh the list
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'global_issues' || e.key === 'cross_notifications') {
+      loadIssues();
+    }
+  });
 });
 
 async function loadIssues() {
   const data = await fetchData();
   allProperties = data.properties || [];
   
-  // Merge global_issues from Tenant
-  let globalIss = JSON.parse(localStorage.getItem('global_issues')) || [];
-  let mergedIssues = [
-    ...(data.issues || []),
-    ...globalIss.map(i => ({
-      id: i.id,
-      title: i.title,
-      description: i.desc,
-      category: i.category || 'Maintenance',
-      priority: i.priority || 'Medium',
-      status: i.status === 'open' ? 'Open' : i.status === 'in-progress' ? 'In Progress' : 'Resolved',
-      reportedBy: 'Tenant (A-204)',
-      propertyName: 'Default Property',
-      reportedDate: new Date().toISOString().split('T')[0],
-      _isGlobal: true
-    }))
+  // Only keep 2 meaningful static issues (clean data)
+  const staticIssues = [
+    {
+      id: 'issue_001',
+      propertyId: 'prop_001',
+      propertyName: 'Sunrise PG',
+      title: 'Water leakage in Room 3',
+      description: 'There is a water leakage from the roof in Room 3 which is causing inconvenience to tenants.',
+      category: 'Maintenance',
+      priority: 'High',
+      status: 'Open',
+      reportedBy: 'Rahul Sharma',
+      reportedDate: '2025-03-20'
+    },
+    {
+      id: 'issue_002',
+      propertyId: 'prop_001',
+      propertyName: 'Sunrise PG',
+      title: 'WiFi not working in Block B',
+      description: 'The WiFi router in Block B stopped working since yesterday morning.',
+      category: 'Internet',
+      priority: 'Medium',
+      status: 'Open',
+      reportedBy: 'Priya Nair',
+      reportedDate: '2025-03-22'
+    }
   ];
+
+  // Merge tenant-submitted issues from global_issues
+  let globalIss = JSON.parse(localStorage.getItem('global_issues')) || [];
+  let tenantIssues = globalIss.map(i => ({
+    id: i.id,
+    title: i.title,
+    description: i.desc || i.description || 'No description provided.',
+    category: i.category || 'Maintenance',
+    priority: i.priority ? (i.priority.charAt(0).toUpperCase() + i.priority.slice(1)) : 'Medium',
+    status: i.status === 'open' ? 'Open' : i.status === 'in-progress' ? 'In Progress' : 'Resolved',
+    reportedBy: i.tenantName || 'Amit Sharma (Tenant)',
+    propertyName: i.propertyName || 'Sunrise PG Residency',
+    room: i.room || 'A-204',
+    reportedDate: i.reportedDate || new Date().toISOString().split('T')[0],
+    _isGlobal: true
+  }));
   
-  allIssues = mergedIssues;
+  // Merge: tenant issues first (most recent), then static
+  allIssues = [...tenantIssues, ...staticIssues];
   renderIssuesPage(allIssues);
 }
 
@@ -118,21 +152,22 @@ function renderIssuesList(issues) {
             👤 Reported by: ${issue.reportedBy || 'Warden'}
           </span>
           <span>•</span>
-          <span>🏢 ${issue.propertyName}</span>
+          <span>🏢 ${issue.propertyName || 'Sunrise PG'}${issue.room ? ' — Room ' + issue.room : ''}</span>
           <span>•</span>
           <span>📅 ${formatDate(issue.reportedDate)}</span>
           <span>•</span>
-          <span class="badge badge-${issue.priority.toLowerCase()}">${getPriorityIcon(issue.priority)} ${issue.priority}</span>
-          <span class="badge badge-${issue.status.toLowerCase().replace(' ', '')}">${issue.status}</span>
+          <span class="badge badge-${(issue.priority || 'medium').toLowerCase()}">${getPriorityIcon(issue.priority)} ${issue.priority}</span>
+          <span class="badge badge-${(issue.status || 'open').toLowerCase().replace(' ', '')}">${issue.status}</span>
+          ${issue._escalatedByWarden ? '<span class="badge" style="background:#fce7f3;color:#9d174d;font-size:10px">⚠️ Escalated by Warden</span>' : (issue._isGlobal ? '<span class="badge" style="background:#fef9c3;color:#92400e;font-size:10px">📩 Reported by Tenant</span>' : '')}
         </div>
-        <div class="issue-desc">${issue.description}</div>
+        <div class="issue-desc">${issue.description || 'No description provided.'}</div>
       </div>
       <div class="issue-actions">
         ${issue.status !== 'Resolved' ? `
           <button class="btn btn-success btn-sm" onclick="updateIssueStatus('${issue.id}', 'Resolved')">✅ Resolve</button>
           ${issue.status === 'Open' ? `<button class="btn btn-warning btn-sm" onclick="updateIssueStatus('${issue.id}', 'In Progress')">⏳ In Progress</button>` : ''}
         ` : `<span class="badge badge-resolved">✅ Resolved</span>`}
-        
+        <button class="btn btn-danger btn-sm" onclick="deleteIssue('${issue.id}')">🗑 Delete</button>
         </div>
     </div>
   `).join('');
@@ -157,26 +192,56 @@ function filterIssues() {
 }
 
 async function updateIssueStatus(id, newStatus) {
-  const data = getData();
-  if (!data) return;
+  const issueRef = allIssues.find(i => String(i.id) === String(id));
+  if (!issueRef) return;
   
-  const issueRef = allIssues.find(i => i.id === id);
-  if (issueRef && issueRef._isGlobal) {
+  if (issueRef._isGlobal) {
+    // Update in global_issues (Tenant's data store)
     let globalIss = JSON.parse(localStorage.getItem('global_issues')) || [];
-    let match = globalIss.find(i => i.id === id);
+    let match = globalIss.find(i => String(i.id) === String(id));
     if (match) {
       match.status = newStatus === 'Open' ? 'open' : newStatus === 'In Progress' ? 'in-progress' : 'resolved';
       localStorage.setItem('global_issues', JSON.stringify(globalIss));
-      issueRef.status = newStatus;
     }
+    issueRef.status = newStatus;
   } else {
-    const idx = data.issues.findIndex(i => i.id === id);
-    if (idx !== -1) {
-      data.issues[idx].status = newStatus;
-      updateData(data);
-      const issueToUpdate = allIssues.find(i => i.id === id);
-      if (issueToUpdate) issueToUpdate.status = newStatus;
+    // Update in owner's own data.json storage
+    const data = getData();
+    if (data) {
+      const idx = data.issues.findIndex(i => String(i.id) === String(id));
+      if (idx !== -1) {
+        data.issues[idx].status = newStatus;
+        updateData(data);
+      }
     }
+    issueRef.status = newStatus;
+  }
+
+  // Fire cross_notification to Tenant when resolved
+  if (newStatus === 'Resolved') {
+    let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
+    crossNotifs.push({
+      id: Date.now(),
+      title: 'Issue Resolved by Owner',
+      message: `Your issue "${issueRef.title}" at ${issueRef.propertyName || 'Sunrise PG'} has been resolved by the Property Owner.`,
+      type: 'success',
+      priority: 'important',
+      targetRole: 'tenant',
+      by: 'Owner',
+      sentAt: new Date().toLocaleString()
+    });
+    // Also notify Warden
+    crossNotifs.push({
+      id: Date.now() + 1,
+      title: 'Issue Resolved by Owner',
+      message: `Issue "${issueRef.title}" has been marked resolved by the Property Owner.`,
+      type: 'success',
+      priority: 'important',
+      targetRole: 'warden',
+      by: 'Owner',
+      sentAt: new Date().toLocaleString()
+    });
+    localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
   }
 
   const card = document.getElementById(`issue-card-${id}`);
@@ -185,21 +250,30 @@ async function updateIssueStatus(id, newStatus) {
 
   showToast(`Issue marked as "${newStatus}"`, 'success');
   renderIssuesPage(allIssues);
-  filterIssues();
   loadSidebarBadges();
 }
 
 function deleteIssue(id) {
-  const issue = allIssues.find(i => i.id === id);
+  const issue = allIssues.find(i => String(i.id) === String(id));
   if (!issue) return;
   confirmDialog('Delete Issue', `Delete "<strong>${issue.title}</strong>"? This cannot be undone.`, () => {
-    const data = getData();
-    data.issues = data.issues.filter(i => i.id !== id);
-    updateData(data);
-    allIssues = data.issues;
+    if (issue._isGlobal) {
+      // Remove from global_issues (Tenant's store)
+      let globalIss = JSON.parse(localStorage.getItem('global_issues')) || [];
+      globalIss = globalIss.filter(i => String(i.id) !== String(id));
+      localStorage.setItem('global_issues', JSON.stringify(globalIss));
+    } else {
+      // Remove from owner's own data store
+      const data = getData();
+      if (data) {
+        data.issues = data.issues.filter(i => String(i.id) !== String(id));
+        updateData(data);
+      }
+    }
+    allIssues = allIssues.filter(i => String(i.id) !== String(id));
     closeModal();
     showToast('Issue deleted', 'success');
-    filterIssues();
+    renderIssuesPage(allIssues);
     loadSidebarBadges();
   });
 }

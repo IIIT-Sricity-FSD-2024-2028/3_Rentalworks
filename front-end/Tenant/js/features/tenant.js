@@ -336,18 +336,25 @@ const TenantLogic = {
       return;
     }
 
-    // Render with safe fallbacks to prevent 'undefined' text
-    container.innerHTML = notifications.map(n => `
+    // Support both Tenant-native (desc/time) and cross-actor (message/sentAt) notification formats
+    container.innerHTML = notifications.map(n => {
+      const displayDesc = n.desc || n.message || 'You have a new alert.';
+      const displayTime = n.time || n.sentAt || 'Just now';
+      const displayTitle = n.title || 'Notification';
+      const displayIcon = n.icon || (n.type === 'announcement' ? '🔔' : n.type === 'warning' ? '⚠️' : n.type === 'success' ? '✅' : 'ℹ️');
+      const displayBg = n.bg || (n.type === 'warning' ? '#fef2f2' : n.type === 'success' ? '#f0fdf4' : '#eff6ff');
+
+      return `
       <div class="notif-item ${n.unread ? 'unread' : ''}">
-        <div class="notif-icon-wrap" style="background:${n.bg || '#f0fdf4'}">${n.icon || '🔔'}</div>
+        <div class="notif-icon-wrap" style="background:${displayBg}">${displayIcon}</div>
         <div class="notif-content">
-          <div class="notif-title">${n.title || 'Notification'} ${n.unread ? '<span class="notif-unread-dot"></span>' : ''}</div>
-          <div class="notif-desc">${n.desc || 'You have a new alert.'}</div>
-          <div class="notif-time">${n.time || 'Just now'}</div>
+          <div class="notif-title">${displayTitle} ${n.unread ? '<span class="notif-unread-dot"></span>' : ''}</div>
+          <div class="notif-desc">${displayDesc}</div>
+          <div class="notif-time">${displayTime}</div>
           ${n.unread ? `<div class="notif-actions" onclick="TenantLogic.markSingleRead(${n.id})">Mark Read</div>` : ''}
         </div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
   },
 
   markAllRead() {
@@ -636,10 +643,37 @@ selectBank(element, bankName) {
     
     if (!name) return UI.showToast('Name is required', 'error');
     
+    const oldName = State.data.profile.name;
     State.data.profile.name = name;
     State.data.profile.phone = phone;
     State.data.profile.address = address;
     State.save();
+    
+    // Sync name change to Warden's tenant records
+    if (oldName !== name) {
+      let wardenTenants = JSON.parse(localStorage.getItem('warden_tenants') || '[]');
+      const room = State.data.profile.room || 'A-204';
+      let matched = wardenTenants.find(t => t.name === oldName || t.room === room);
+      if (matched) {
+        matched.name = name;
+        matched.phone = phone || matched.phone;
+        localStorage.setItem('warden_tenants', JSON.stringify(wardenTenants));
+
+        // Notify warden of name change
+        let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
+        crossNotifs.push({
+          id: Date.now(),
+          title: 'Tenant Profile Updated',
+          message: `Tenant "${oldName}" has updated their profile name to "${name}".`,
+          type: 'info',
+          priority: 'routine',
+          targetRole: 'warden',
+          by: 'Tenant',
+          sentAt: new Date().toLocaleString()
+        });
+        localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
+      }
+    }
     
     const sessionStr = sessionStorage.getItem('pg_user');
     if (sessionStr) {
@@ -654,6 +688,6 @@ selectBank(element, bankName) {
     }
     
     this.renderProfile();
-    UI.showToast('Profile saved!', 'success');
+    UI.showToast('Profile saved successfully!', 'success');
   }
 };

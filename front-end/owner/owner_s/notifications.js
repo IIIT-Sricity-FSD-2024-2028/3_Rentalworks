@@ -52,11 +52,11 @@ function renderNotifList(notifications) {
     <div class="notif-card ${!n.read ? 'unread' : ''}" id="notif-${n.id}">
       <div class="notif-body" style="flex:1">
         <div style="display:flex;gap:8px;align-items:center">
-          <span class="badge" style="background:var(--bg-main); font-size:10px">FROM: ${n.sender || 'System'}</span>
+          <span class="badge" style="background:var(--bg-main); font-size:10px">FROM: ${n.sender || n.by || 'System'}</span>
           <div class="notif-title">${n.title}</div>
         </div>
-        <div class="notif-msg">${n.message}</div>
-        <div class="notif-date">📅 ${formatDate(n.date)}</div>
+        <div class="notif-msg">${n.message || n.desc || n.msg || 'No details available.'}</div>
+        <div class="notif-date">📅 ${formatDate(n.date || n.sentAt)}</div>
       </div>
       <div class="notif-actions">
         <button class="btn btn-secondary btn-sm btn-icon" onclick="deleteNotif('${n.id}')">🗑</button>
@@ -115,13 +115,17 @@ async function markAllRead() {
 }
 
 function deleteNotif(id) {
-  const notif = allNotifications.find(n => n.id === id);
+  const notif = allNotifications.find(n => String(n.id) === String(id));
   if (!notif) return;
   confirmDialog('Delete Notification', `Delete "<strong>${notif.title}</strong>"?`, () => {
     const data = getData();
-    data.notifications = data.notifications.filter(n => n.id !== id);
-    updateData(data);
-    allNotifications = data.notifications;
+    if (data) {
+      data.notifications = data.notifications.filter(n => String(n.id) !== String(id));
+      updateData(data);
+      allNotifications = data.notifications;
+    } else {
+      allNotifications = allNotifications.filter(n => String(n.id) !== String(id));
+    }
     closeModal();
     showToast('Notification deleted', 'success');
     loadSidebarBadges();

@@ -27,9 +27,9 @@ function renderTenants(filter = '', statusFilter = 'all') {
         <td><span class="badge badge-${t.paymentStatus}">${t.paymentStatus === 'paid' ? '✓ Paid' : '✗ Pending'}</span></td>
         <td>
           <div class="action-icons">
-            <button class="icon-btn" onclick="viewTenant(${t.id})" title="View">👁️</button>
-            <button class="icon-btn" onclick="editTenant(${t.id})" title="Edit">✏️</button>
-            <button class="icon-btn" onclick="deleteTenant(${t.id})" title="Delete">🗑️</button>
+            <button class="icon-btn" onclick="viewTenant('${t.id}')" title="View">👁️</button>
+            <button class="icon-btn" onclick="editTenant('${t.id}')" title="Edit">✏️</button>
+            <button class="icon-btn" onclick="deleteTenant('${t.id}')" title="Delete">🗑️</button>
           </div>
         </td>
       </tr>
@@ -106,7 +106,7 @@ function addTenant() {
 
 // ----- View Tenant -----
 function viewTenant(id) {
-  const tenant = tenants.find(t => t.id === id);
+  const tenant = tenants.find(t => String(t.id) === String(id));
   if (!tenant) return;
   showModal('Tenant Details',
     `<div style="display:grid;gap:12px;font-size:13px">
@@ -122,7 +122,7 @@ function viewTenant(id) {
 
 // ----- Edit Tenant -----
 function editTenant(id) {
-  const tenant = tenants.find(t => t.id === id);
+  const tenant = tenants.find(t => String(t.id) === String(id));
   if (!tenant) return;
   showModal('Edit Tenant', `
     <div class="form-group">
@@ -172,12 +172,12 @@ function editTenant(id) {
 
 // ----- Delete Tenant -----
 function deleteTenant(id) {
-  const tenant = tenants.find(t => t.id === id);
+  const tenant = tenants.find(t => String(t.id) === String(id));
   if (!tenant) return;
   showModal('Delete Tenant',
     `<p style="font-size:14px;color:#374151">Are you sure you want to remove <strong>${tenant.name}</strong> (Room ${tenant.room})? This action cannot be undone.</p>`,
     () => {
-      tenants = tenants.filter(t => t.id !== id);
+      tenants = tenants.filter(t => String(t.id) !== String(id));
       saveToStorage();
       renderTenants();
       closeModal();

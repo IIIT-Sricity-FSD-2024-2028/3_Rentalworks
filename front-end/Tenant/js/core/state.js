@@ -49,16 +49,26 @@ const State = {
 
   init() {
     const saved = localStorage.getItem('pgRentalState');
-    if (saved) this.data = { ...this.data, ...JSON.parse(saved) };
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Force-migrate old Rahul Sharma profile to Amit Sharma
+      if (parsed.profile && parsed.profile.name === 'Rahul Sharma') {
+        parsed.profile.name  = 'Amit Sharma';
+        parsed.profile.email = 'amit.s@email.com';
+      }
+      this.data = { ...this.data, ...parsed };
+    }
 
-    // Set dynamic profile from logged in user
+    // Always apply session user on top, but override Rahul → Amit
     const sessionStr = sessionStorage.getItem('pg_user');
     if (sessionStr) {
       try {
         const user = JSON.parse(sessionStr);
-        this.data.profile.name = user.name || this.data.profile.name;
+        const displayName = (user.name === 'Rahul Sharma') ? 'Amit Sharma' : (user.name || this.data.profile.name);
+        const displayEmail = (user.name === 'Rahul Sharma') ? 'amit.s@email.com' : (user.email || this.data.profile.email);
+        this.data.profile.name  = displayName;
         this.data.profile.phone = user.phone || this.data.profile.phone;
-        this.data.profile.email = user.email || this.data.profile.email;
+        this.data.profile.email = displayEmail;
       } catch(e) {}
     }
 

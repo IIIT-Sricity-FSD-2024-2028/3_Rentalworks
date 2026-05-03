@@ -22,8 +22,8 @@ function renderViolations(filter = 'all') {
         <td>${v.date}</td>
         <td>
           <div class="action-icons">
-            <button class="btn-issue-warning" onclick="issueWarning(${v.id})">Issue Warning</button>
-            <button class="btn-escalate" onclick="escalateViolation(${v.id})">↑ Escalate</button>
+            <button class="btn-issue-warning" onclick="issueWarning('${v.id}')">Issue Warning</button>
+            <button class="btn-escalate" onclick="escalateViolation('${v.id}')">↑ Escalate</button>
           </div>
         </td>
       </tr>
@@ -41,7 +41,7 @@ function renderViolations(filter = 'all') {
 }
 
 function issueWarning(id) {
-  const v = violations.find(v => v.id === id);
+  const v = violations.find(v => String(v.id) === String(id));
   if (!v) return;
   v.warnings++;
   saveToStorage();
@@ -50,7 +50,7 @@ function issueWarning(id) {
 }
 
 function escalateViolation(id) {
-  const v = violations.find(v => v.id === id);
+  const v = violations.find(v => String(v.id) === String(id));
   if (!v) return;
 
   showToast('warning', 'Escalated to Owner', `Violation by ${v.tenant} has been sent to the Property Owner.`);
@@ -79,4 +79,60 @@ function setupViolationFilter() {
   if (violFilter) {
     violFilter.addEventListener('change', () => renderViolations(violFilter.value));
   }
+}
+
+// ----- Add Violation -----
+function openAddViolationModal() {
+  // Populate tenant dropdown
+  const currentTenants = JSON.parse(localStorage.getItem('warden_tenants') || '[]');
+  const tenantOptions = currentTenants.map(t => `<option value="${t.name}|${t.room}">${t.name} (Room ${t.room})</option>`).join('');
+
+  showModal('Add Rule Violation', `
+    <div class="form-group">
+      <label>Tenant *</label>
+      <select id="new-viol-tenant" class="filter-select" style="width:100%">
+        ${tenantOptions || '<option disabled selected>No tenants available</option>'}
+      </select>
+      <div class="error-msg" id="err-new-viol-tenant"></div>
+    </div>
+    <div class="form-group">
+      <label>Violation Type *</label>
+      <div class="input-wrapper"><input type="text" id="new-viol-type" placeholder="e.g. Late Night Entry, Noise Complaint" /></div>
+      <div class="error-msg" id="err-new-viol-type"></div>
+    </div>
+    <div class="form-group">
+      <label>Severity *</label>
+      <select id="new-viol-severity" class="filter-select" style="width:100%">
+        <option value="low">Low</option>
+        <option value="medium">Medium</option>
+        <option value="high">High</option>
+      </select>
+    </div>
+  `, () => {
+    const tenantVal = document.getElementById('new-viol-tenant').value;
+    const type = document.getElementById('new-viol-type').value.trim();
+    const severity = document.getElementById('new-viol-severity').value;
+
+    let valid = true;
+    if (!tenantVal) { showFieldError('err-new-viol-tenant', 'Select a tenant'); valid = false; }
+    if (!type) { showFieldError('err-new-viol-type', 'Violation type is required'); valid = false; }
+    if (!valid) return;
+
+    const [tenantName, room] = tenantVal.split('|');
+
+    violations.unshift({
+      id: Date.now(),
+      tenant: tenantName,
+      room: room,
+      type: type,
+      severity: severity,
+      warnings: 1,
+      date: new Date().toLocaleDateString()
+    });
+
+    saveToStorage();
+    renderViolations();
+    closeModal();
+    showToast('success', 'Violation Added', `Added ${type} for ${tenantName}`);
+  });
 }

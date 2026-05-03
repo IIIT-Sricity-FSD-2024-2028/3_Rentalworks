@@ -135,7 +135,33 @@ function editUser(id) {
     if (!validPhone(phone)) { showFieldErr('f-phone', 'Enter a valid phone number'); ok = false; }
     if (!ok) return;
 
+    const oldName = u.name;
     u.name = name; u.email = email; u.phone = phone; u.role = role; u.property = property;
+    
+    // Sync to Warden's tenant records if this is a tenant
+    if (role === 'tenant') {
+      let wardenTenants = JSON.parse(localStorage.getItem('warden_tenants') || '[]');
+      let matched = wardenTenants.find(t => t.name === oldName || t.phone === oldName || t.phone === u.phone);
+      if (matched) {
+        matched.name = name;
+        matched.phone = phone;
+        localStorage.setItem('warden_tenants', JSON.stringify(wardenTenants));
+
+        let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
+        crossNotifs.push({
+          id: Date.now(),
+          title: 'Tenant Profile Updated',
+          message: `Admin has updated the profile for tenant "${name}".`,
+          type: 'info',
+          priority: 'routine',
+          targetRole: 'warden',
+          by: 'Admin',
+          sentAt: new Date().toLocaleString()
+        });
+        localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
+      }
+    }
+
     saveData(); renderUsers(); closeModal();
     showToast('success', 'User Updated', 'Changes saved successfully');
   }, 'btn-confirm-blue', 'Save Changes');

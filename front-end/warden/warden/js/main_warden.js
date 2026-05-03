@@ -79,23 +79,54 @@ document.addEventListener('DOMContentLoaded', () => {
       const notifs = JSON.parse(e.newValue || '[]');
       if (notifs.length === 0) return;
       const latest = notifs[notifs.length - 1];
+
       // Warden receives notifications if targetRole is 'warden' or 'all'
       if (latest.by !== 'Warden' && (latest.targetRole === 'warden' || latest.targetRole === 'all')) {
         showToast('info', 'Incoming Update', latest.title + ': ' + latest.message);
-        
-        notifications.unshift({
+
+        // Deduplicate before adding
+        const alreadyExists = notifications.some(n => n.id === latest.id);
+        if (!alreadyExists) {
+          notifications.unshift({
             id: latest.id,
             type: latest.type || 'info',
             title: latest.title,
             desc: latest.message,
-            time: 'Just now',
+            time: latest.sentAt || 'Just now',
             unread: true
-        });
-        saveToStorage();
-        if (currentSection === 'notifications' && typeof renderNotifications === 'function') {
-            renderNotifications();
+          });
+          saveToStorage();
         }
+
+        // Map tenant complaints/issues/services into warden complaints
+        const isTenantAction = ['New Complaint', 'New Issue Reported', 'New Service Request'].includes(latest.title);
+        if (isTenantAction) {
+          let complaintType = 'General';
+          if (latest.title === 'New Issue Reported') complaintType = 'Issue';
+          if (latest.title === 'New Service Request') complaintType = 'Service Request';
+
+          const compAlreadyExists = complaints.some(c => String(c.id) === String(latest.id));
+          if (!compAlreadyExists) {
+            complaints.unshift({
+              id: latest.id || Date.now(),
+              tenant: latest.tenantName || 'Tenant',
+              room: latest.room || 'A-204',
+              type: complaintType,
+              description: latest.message,
+              priority: latest.priority || 'medium',
+              status: 'open',
+              date: new Date().toLocaleDateString('en-US'),
+              timeline: [{ time: new Date().toLocaleString(), event: `${latest.title} filed`, by: 'Tenant' }],
+              _source: latest.title === 'New Complaint' ? 'complaints' : (latest.title === 'New Issue Reported' ? 'issues' : 'services')
+            });
+            saveToStorage();
+          }
+        }
+
         if (typeof updateNotifBadge === 'function') updateNotifBadge();
+        if (currentSection === 'complaints' && typeof renderComplaints === 'function') renderComplaints();
+        if (currentSection === 'dashboard' && typeof renderDashboard === 'function') renderDashboard();
+        if (currentSection === 'notifications' && typeof renderNotifications === 'function') renderNotifications();
       }
     }
 

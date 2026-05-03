@@ -77,21 +77,21 @@ function buildPropertyCard(p) {
   if (p.status === 'pending') {
     if (docsOk && inspectionOk) {
       actionBtns = `
-        <button class="btn-approve" onclick="approveProperty(${p.id})">✓ Approve Property</button>
-        <button class="btn-reject"  onclick="rejectProperty(${p.id})">✗ Reject</button>`;
+        <button class="btn-approve" onclick="approveProperty('${p.id}')">✓ Approve Property</button>
+        <button class="btn-reject"  onclick="rejectProperty('${p.id}')">✗ Reject</button>`;
     } else {
       actionBtns = `
-        ${!docsOk ? `<button class="btn-verify-docs" onclick="viewPropertyDocuments(${p.id})">📂 View & Verify Docs</button>` : ''}
-        ${docsOk && !inspectionOk ? `<button class="btn-inspection" onclick="openInspectionReport(${p.id})">📝 Pass Live Inspection</button>` : ''}`;
+        ${!docsOk ? `<button class="btn-verify-docs" onclick="viewPropertyDocuments('${p.id}')">📂 View & Verify Docs</button>` : ''}
+        ${docsOk && !inspectionOk ? `<button class="btn-inspection" onclick="openInspectionReport('${p.id}')">📝 Pass Live Inspection</button>` : ''}`;
     }
   } else if (p.status === 'approved') {
     actionBtns = `
-      <button class="btn-edit-prop" onclick="editProperty(${p.id})">✏️ Edit</button>
-      <button class="btn-offboard"  onclick="initiateOffboarding(${p.id})">⚠️ Notice Period</button>`;
+      <button class="btn-edit-prop" onclick="editProperty('${p.id}')">✏️ Edit</button>
+      <button class="btn-offboard"  onclick="initiateOffboarding('${p.id}')">⚠️ Notice Period</button>`;
   } else if (p.status === 'offboarding') {
-    actionBtns = `<button class="btn-reject" onclick="finalRemoveProperty(${p.id})">Finalize Removal</button>`;
+    actionBtns = `<button class="btn-reject" onclick="finalRemoveProperty('${p.id}')">Finalize Removal</button>`;
   } else if (p.status === 'rejected') {
-    actionBtns = `<button class="btn-approve" onclick="approveProperty(${p.id})">Reconsider</button>`;
+    actionBtns = `<button class="btn-approve" onclick="approveProperty('${p.id}')">Reconsider</button>`;
   }
 
   return `
@@ -144,7 +144,7 @@ function buildPropertyCard(p) {
 
 // ===== PIPELINE ACTIONS =====
 function verifyDocs(id) {
-  const p = properties.find(x => x.id === id);
+  const p = properties.find(x => String(x.id) === String(id));
   if (!p) return;
   p.docsVerified = true;
   saveData(); renderProperties();
@@ -152,7 +152,7 @@ function verifyDocs(id) {
 }
 
 function passInspection(id) {
-  const p = properties.find(x => x.id === id);
+  const p = properties.find(x => String(x.id) === String(id));
   if (!p) return;
   p.inspectionPassed = true;
   saveData(); renderProperties();
@@ -160,7 +160,7 @@ function passInspection(id) {
 }
 
 function approveProperty(id) {
-  const p = properties.find(x => x.id === id);
+  const p = properties.find(x => String(x.id) === String(id));
   if (!p) return;
   p.status = 'approved';
   saveData(); renderProperties();
@@ -168,7 +168,7 @@ function approveProperty(id) {
 }
 
 function rejectProperty(id) {
-  const p = properties.find(x => x.id === id);
+  const p = properties.find(x => String(x.id) === String(id));
   if (!p) return;
   pendingAction = () => {
     p.status = 'rejected';
@@ -182,7 +182,7 @@ function rejectProperty(id) {
 }
 
 function initiateOffboarding(id) {
-  const p = properties.find(x => x.id === id);
+  const p = properties.find(x => String(x.id) === String(id));
   if (!p) return;
   pendingAction = () => {
     p.status = 'offboarding';
@@ -196,10 +196,10 @@ function initiateOffboarding(id) {
 }
 
 function finalRemoveProperty(id) {
-  const p = properties.find(x => x.id === id);
+  const p = properties.find(x => String(x.id) === String(id));
   if (!p) return;
   pendingAction = () => {
-    properties = properties.filter(x => x.id !== id);
+    properties = properties.filter(x => String(x.id) !== String(id));
     saveData(); renderProperties(); closeModal();
     showToast('success', 'Property Removed', `${p.name} has been removed from the platform`);
   };
@@ -248,7 +248,7 @@ function addProperty() {
 
 // ===== EDIT PROPERTY =====
 function editProperty(id) {
-  const p = properties.find(x => x.id === id);
+  const p = properties.find(x => String(x.id) === String(id));
   if (!p) return;
   showFormModal('Edit Property', 'Note: Rent and Location changes require owner approval', [
     { label: 'Property Name', id: 'p-name',    type: 'text',   value: p.name,     required: true },
@@ -273,7 +273,7 @@ function setupPropSearch() {
 
 // ===== 1. DOCUMENT VIEWER (The "Submitted" Docs) =====
 function viewPropertyDocuments(id) {
-  const p = properties.find(x => x.id === id);
+  const p = properties.find(x => String(x.id) === String(id));
   const docsHtml = `
     <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
       <p style="font-size:13px; color:#666; margin-bottom:10px;">Please verify the following uploaded files:</p>
@@ -299,7 +299,7 @@ function viewPropertyDocuments(id) {
 
 // ===== 2. INSPECTION REPORT (The "Live" Report) =====
 function openInspectionReport(id) {
-  const p = properties.find(x => x.id === id);
+  const p = properties.find(x => String(x.id) === String(id));
   if (!p) return;
 
   // 1. Define the report HTML as a string (this will go into the subtitle)
