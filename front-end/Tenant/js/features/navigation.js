@@ -44,7 +44,10 @@ const Navigation = {
       if (fileName === 'services' && State.data.currentUser) TenantLogic.renderServices();
       if (fileName === 'notification' && State.data.currentUser) TenantLogic.renderNotifications();
       if (fileName === 'payments' && State.data.currentUser) TenantLogic.renderPayments();
-      if (fileName === 'profile' && State.data.currentUser) TenantLogic.renderProfileSecurity();
+      if (fileName === 'profile' && State.data.currentUser) {
+        TenantLogic.renderProfile();
+        TenantLogic.renderProfileSecurity();
+      }
 
     } catch (error) {
       console.error("Navigation Error:", error);

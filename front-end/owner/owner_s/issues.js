@@ -9,8 +9,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadIssues() {
   const data = await fetchData();
-  allIssues = data.issues || [];
   allProperties = data.properties || [];
+  
+  // Merge global_issues from Tenant
+  let globalIss = JSON.parse(localStorage.getItem('global_issues')) || [];
+  let mergedIssues = [
+    ...(data.issues || []),
+    ...globalIss.map(i => ({
+      id: i.id,
+      title: i.title,
+      description: i.desc,
+      category: i.category || 'Maintenance',
+      priority: i.priority || 'Medium',
+      status: i.status === 'open' ? 'Open' : i.status === 'in-progress' ? 'In Progress' : 'Resolved',
+      reportedBy: 'Tenant (A-204)',
+      propertyName: 'Default Property',
+      reportedDate: new Date().toISOString().split('T')[0],
+      _isGlobal: true
+    }))
+  ];
+  
+  allIssues = mergedIssues;
   renderIssuesPage(allIssues);
 }
 
@@ -140,11 +159,25 @@ function filterIssues() {
 async function updateIssueStatus(id, newStatus) {
   const data = getData();
   if (!data) return;
-  const idx = data.issues.findIndex(i => i.id === id);
-  if (idx === -1) return;
-  data.issues[idx].status = newStatus;
-  updateData(data);
-  allIssues = data.issues;
+  
+  const issueRef = allIssues.find(i => i.id === id);
+  if (issueRef && issueRef._isGlobal) {
+    let globalIss = JSON.parse(localStorage.getItem('global_issues')) || [];
+    let match = globalIss.find(i => i.id === id);
+    if (match) {
+      match.status = newStatus === 'Open' ? 'open' : newStatus === 'In Progress' ? 'in-progress' : 'resolved';
+      localStorage.setItem('global_issues', JSON.stringify(globalIss));
+      issueRef.status = newStatus;
+    }
+  } else {
+    const idx = data.issues.findIndex(i => i.id === id);
+    if (idx !== -1) {
+      data.issues[idx].status = newStatus;
+      updateData(data);
+      const issueToUpdate = allIssues.find(i => i.id === id);
+      if (issueToUpdate) issueToUpdate.status = newStatus;
+    }
+  }
 
   const card = document.getElementById(`issue-card-${id}`);
   if (card) { card.style.opacity = '0.5'; card.style.transform = 'scale(0.98)'; card.style.transition = '0.2s'; }

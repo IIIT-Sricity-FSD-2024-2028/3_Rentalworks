@@ -126,6 +126,11 @@ function editTenant(id) {
   if (!tenant) return;
   showModal('Edit Tenant', `
     <div class="form-group">
+      <label>Room Number *</label>
+      <div class="input-wrapper"><input type="text" id="edit-room" value="${tenant.room}" placeholder="Room No"/></div>
+      <div class="error-msg" id="err-edit-room"></div>
+    </div>
+    <div class="form-group">
       <label>Phone Number *</label>
       <div class="input-wrapper"><input type="text" id="edit-phone" value="${tenant.phone}" placeholder="Phone"/></div>
       <div class="error-msg" id="err-edit-phone"></div>
@@ -143,15 +148,18 @@ function editTenant(id) {
       </select>
     </div>
   `, () => {
+    const room  = document.getElementById('edit-room').value.trim();
     const phone = document.getElementById('edit-phone').value.trim();
     const rent  = parseInt(document.getElementById('edit-rent').value);
     const payment = document.getElementById('edit-payment').value;
 
     let valid = true;
+    if (!room) { showFieldError('err-edit-room', 'Room number is required'); valid = false; }
     if (!phone || !/^\+?[\d\s\-]{10,}$/.test(phone)) { showFieldError('err-edit-phone', 'Enter a valid phone number'); valid = false; }
     if (!rent || isNaN(rent) || rent <= 0) { showFieldError('err-edit-rent', 'Enter a valid rent amount'); valid = false; }
     if (!valid) return;
 
+    tenant.room = room;
     tenant.phone = phone;
     tenant.rent = rent;
     tenant.paymentStatus = payment;

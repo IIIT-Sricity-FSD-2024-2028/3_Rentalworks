@@ -8,8 +8,8 @@
         <div class="profile-email">rahul.sharma@email.com</div>
         <span class="profile-badge">Tenant</span>
         <div class="profile-stats">
-          <div class="profile-stat"><div class="profile-stat-label">Room Number</div><div class="profile-stat-value">A-204</div></div>
-          <div class="profile-stat"><div class="profile-stat-label">Property</div><div class="profile-stat-value">Sunrise PG</div></div>
+          <div class="profile-stat"><div class="profile-stat-label">Room Number</div><div class="profile-stat-value" id="profile-room-val">A-204</div></div>
+          <div class="profile-stat"><div class="profile-stat-label">Property</div><div class="profile-stat-value" id="profile-prop-val">Sunrise PG</div></div>
         </div>
       </div>
       <div>
@@ -19,7 +19,7 @@
             <div class="form-group"><label>Full Name</label><input type="text" id="profile-name" value="Rahul Sharma" /></div>
             <div class="form-group"><label>Email Address</label><input type="email" value="rahul.sharma@email.com" readonly style="background:var(--bg-main)" /></div>
             <div class="form-group"><label>Phone Number</label><input type="tel" id="profile-phone" value="+91 98765 43210" /></div>
-            <div class="form-group"><label>Property Assigned</label><input type="text" value="Sunrise PG Residency" readonly style="background:var(--bg-main)" /></div>
+            <div class="form-group"><label>Property Assigned</label><input type="text" id="profile-prop-assigned" value="Sunrise PG Residency" readonly style="background:var(--bg-main)" /></div>
             <div class="form-group"><label>Address</label><textarea id="profile-address" style="min-height:70px">A-204, Sunrise PG Residency, Andheri West, Mumbai</textarea></div>
             <button class="btn btn-primary" onclick="TenantLogic.saveProfile()">💾 Save Changes</button>
           </div>

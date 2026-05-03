@@ -76,6 +76,50 @@ function updateRoomStatus(id) {
   });
 }
 
+function openAddRoomModal() {
+  showModal('Add New Room', `
+    <div class="form-group">
+      <label>Room Number</label>
+      <input type="text" id="add-room-number" class="filter-select" style="width:100%" placeholder="e.g. A-204">
+    </div>
+    <div class="form-group">
+      <label>Room Type</label>
+      <select id="add-room-type" class="filter-select" style="width:100%">
+        <option value="Single">Single</option>
+        <option value="Double">Double</option>
+        <option value="Triple">Triple</option>
+      </select>
+    </div>
+  `, () => {
+    const number = document.getElementById('add-room-number').value.trim();
+    const type = document.getElementById('add-room-type').value;
+    
+    if (!number) {
+      showToast('error', 'Error', 'Room number is required');
+      return;
+    }
+    
+    if (rooms.find(r => r.number === number)) {
+      showToast('error', 'Error', 'Room already exists');
+      return;
+    }
+
+    rooms.push({
+      id: Date.now(),
+      number: number,
+      type: type,
+      occupancy: 'Vacant',
+      maintenance: 'Ready',
+      lastUpdated: new Date().toLocaleDateString('en-US')
+    });
+    
+    saveToStorage();
+    renderRooms();
+    closeModal();
+    showToast('success', 'Room Added', `Room ${number} added successfully`);
+  });
+}
+
 // ----- Filter Setup -----
 function setupRoomFilter() {
   const roomFilter = document.getElementById('room-filter');

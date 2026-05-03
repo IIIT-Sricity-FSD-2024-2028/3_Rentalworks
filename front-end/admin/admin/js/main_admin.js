@@ -49,6 +49,13 @@ async function fetchData() {
     bookings     = await fetchArray('http://localhost:3000/bookings');
     payments     = await fetchArray('http://localhost:3000/payments');
     notifHistory = await fetchArray('http://localhost:3000/notifications');
+    // Merge with local cross-notifications to prevent them from being overwritten
+    const localNotifs = JSON.parse(localStorage.getItem('admin_notifs') || '[]');
+    const mergedNotifs = [...localNotifs];
+    notifHistory.forEach(bn => {
+      if (!mergedNotifs.find(m => m.id === bn.id)) mergedNotifs.push(bn);
+    });
+    notifHistory = mergedNotifs;
   } catch(e) {
     console.error('API Error:', e);
   }
@@ -87,9 +94,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       const notifs = JSON.parse(e.newValue || '[]');
       if (notifs.length === 0) return;
       const latest = notifs[notifs.length - 1];
-      // Only alert if sent by someone else to Admin, or broadcast to all
       if (latest.by !== 'Admin' && (latest.targetRole === 'admin' || latest.targetRole === 'all')) {
         showToast('info', 'Incoming Alert', latest.title + ': ' + latest.message);
+        notifHistory.unshift({
+            id: latest.id,
+            type: latest.type || 'info',
+            title: latest.title,
+            message: latest.message,
+            date: new Date().toLocaleDateString(),
+            time: 'Just now',
+            read: false,
+            sender: latest.by
+        });
+        saveData();
+        const activeNav = document.querySelector('.nav-item.active');
+        if (activeNav && activeNav.dataset.sec === 'notifications' && typeof renderNotifications === 'function') {
+            renderNotifications();
+        }
       }
     }
   });

@@ -41,12 +41,32 @@ const PAGE_MAP = {
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
-  // Load data from localStorage or fall back to mock data
   tenants       = JSON.parse(localStorage.getItem('warden_tenants'))       || [...MOCK_DATA.tenants];
   rooms         = JSON.parse(localStorage.getItem('warden_rooms'))         || [...MOCK_DATA.rooms];
   violations    = JSON.parse(localStorage.getItem('warden_violations'))    || [...MOCK_DATA.violations];
-  complaints    = JSON.parse(localStorage.getItem('warden_complaints'))    || [...MOCK_DATA.complaints];
   notifications = JSON.parse(localStorage.getItem('warden_notifications')) || [...MOCK_DATA.notifications];
+
+  // Merge global complaints, issues, and services from Tenant into Warden's complaints view
+  let globalCmp = JSON.parse(localStorage.getItem('global_complaints')) || [];
+  let globalIss = JSON.parse(localStorage.getItem('global_issues')) || [];
+  let globalSrv = JSON.parse(localStorage.getItem('global_services')) || [];
+
+  // Build unified complaints array
+  complaints = [
+    ...globalCmp.map(c => ({
+      id: c.id, tenant: c.tenantName || 'Amit Sharma', room: c.room || 'A-204', type: 'Complaint', priority: c.priority || 'medium', status: c.status === 'in-progress' ? 'in_progress' : c.status, date: c.created || new Date().toLocaleDateString(), description: c.desc, _source: 'complaints'
+    })),
+    ...globalIss.map(i => ({
+      id: i.id, tenant: i.tenantName || 'Amit Sharma', room: i.room || 'A-204', type: 'Issue: ' + i.category, priority: i.priority || 'medium', status: i.status === 'in-progress' ? 'in_progress' : i.status, date: new Date().toLocaleDateString(), description: i.desc, _source: 'issues'
+    })),
+    ...globalSrv.map(s => ({
+      id: s.id, tenant: s.tenantName || 'Amit Sharma', room: s.room || 'A-204', type: 'Service: ' + s.name, priority: 'low', status: s.status === 'pending' ? 'open' : s.status, date: s.date, description: 'Requested ' + s.name, _source: 'services'
+    }))
+  ];
+
+  if (complaints.length === 0) {
+    complaints = JSON.parse(localStorage.getItem('warden_complaints')) || [...MOCK_DATA.complaints];
+  }
 
   checkAuth();           // from auth_warden.js
   setupLogout();         // from auth_warden.js
@@ -62,8 +82,43 @@ document.addEventListener('DOMContentLoaded', () => {
       // Warden receives notifications if targetRole is 'warden' or 'all'
       if (latest.by !== 'Warden' && (latest.targetRole === 'warden' || latest.targetRole === 'all')) {
         showToast('info', 'Incoming Update', latest.title + ': ' + latest.message);
-        // Optional: auto-fetch into local notifications if on notifications tab
+        
+        notifications.unshift({
+            id: latest.id,
+            type: latest.type || 'info',
+            title: latest.title,
+            desc: latest.message,
+            time: 'Just now',
+            unread: true
+        });
+        saveToStorage();
+        if (currentSection === 'notifications' && typeof renderNotifications === 'function') {
+            renderNotifications();
+        }
         if (typeof updateNotifBadge === 'function') updateNotifBadge();
+      }
+    }
+
+    if (['global_complaints', 'global_issues', 'global_services'].includes(e.key)) {
+      // Rebuild unified complaints array
+      let gc = JSON.parse(localStorage.getItem('global_complaints')) || [];
+      let gi = JSON.parse(localStorage.getItem('global_issues')) || [];
+      let gs = JSON.parse(localStorage.getItem('global_services')) || [];
+      
+      complaints = [
+        ...gc.map(c => ({
+          id: c.id, tenant: c.tenantName || 'Amit Sharma', room: c.room || 'A-204', type: 'Complaint', priority: c.priority || 'medium', status: c.status === 'in-progress' ? 'in_progress' : c.status, date: c.created || new Date().toLocaleDateString(), description: c.desc, _source: 'complaints'
+        })),
+        ...gi.map(i => ({
+          id: i.id, tenant: i.tenantName || 'Amit Sharma', room: i.room || 'A-204', type: 'Issue: ' + i.category, priority: i.priority || 'medium', status: i.status === 'in-progress' ? 'in_progress' : i.status, date: new Date().toLocaleDateString(), description: i.desc, _source: 'issues'
+        })),
+        ...gs.map(s => ({
+          id: s.id, tenant: s.tenantName || 'Amit Sharma', room: s.room || 'A-204', type: 'Service: ' + s.name, priority: 'low', status: s.status === 'pending' ? 'open' : s.status, date: s.date, description: 'Requested ' + s.name, _source: 'services'
+        }))
+      ];
+      
+      if (currentSection === 'complaints' && typeof renderComplaints === 'function') {
+        renderComplaints();
       }
     }
   });
@@ -253,8 +308,30 @@ function saveToStorage() {
   localStorage.setItem('warden_tenants',       JSON.stringify(tenants));
   localStorage.setItem('warden_rooms',         JSON.stringify(rooms));
   localStorage.setItem('warden_violations',    JSON.stringify(violations));
-  localStorage.setItem('warden_complaints',    JSON.stringify(complaints));
   localStorage.setItem('warden_notifications', JSON.stringify(notifications));
+
+  // Reverse map the unified complaints array back to their global sources
+  let globalCmp = JSON.parse(localStorage.getItem('global_complaints')) || [];
+  let globalIss = JSON.parse(localStorage.getItem('global_issues')) || [];
+  let globalSrv = JSON.parse(localStorage.getItem('global_services')) || [];
+
+  complaints.forEach(wc => {
+    if (wc._source === 'complaints') {
+      let match = globalCmp.find(c => c.id === wc.id);
+      if (match) match.status = wc.status === 'in_progress' ? 'in-progress' : wc.status;
+    } else if (wc._source === 'issues') {
+      let match = globalIss.find(i => i.id === wc.id);
+      if (match) match.status = wc.status === 'in_progress' ? 'in-progress' : wc.status;
+    } else if (wc._source === 'services') {
+      let match = globalSrv.find(s => s.id === wc.id);
+      if (match) match.status = wc.status === 'open' ? 'pending' : wc.status;
+    }
+  });
+
+  localStorage.setItem('global_complaints', JSON.stringify(globalCmp));
+  localStorage.setItem('global_issues', JSON.stringify(globalIss));
+  localStorage.setItem('global_services', JSON.stringify(globalSrv));
+  localStorage.setItem('warden_complaints', JSON.stringify(complaints)); // fallback
 }
 
 function showFieldError(id, msg) {
