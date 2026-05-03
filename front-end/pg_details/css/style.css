@@ -1009,3 +1009,17 @@ html {
         transform: translateX(20px);
     }
 }
+/* Material Icons Outlined Global Rules */
+.material-icons-outlined {
+  font-size: 24px;
+  vertical-align: middle;
+  line-height: 1;
+  user-select: none;
+  color: inherit;
+}
+.material-icons-outlined.icon-sm {
+  font-size: 20px;
+}
+.material-icons-outlined.icon-lg {
+  font-size: 32px;
+}

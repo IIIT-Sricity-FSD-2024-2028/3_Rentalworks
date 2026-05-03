@@ -28,23 +28,23 @@
           <span class="nav-icon">⊞</span> Dashboard
         </a>
         <a class="nav-item" data-page="issues" data-role="tenant,warden" onclick="Navigation.navigate('issues')">
-          <span class="nav-icon"><span class="material-icons-outlined" style="font-size:24px;">warning</span></span> Issues
+          <span class="nav-icon"><span class="material-icons-outlined" style="font-size:24px;">warning_amber</span></span> Issues
         </a>
         <a class="nav-item" data-page="notifications" data-role="all" onclick="Navigation.navigate('notifications')">
-          <span class="nav-icon"><span class="material-icons-outlined" style="font-size:24px;">notifications</span></span> Notifications
+          <span class="nav-icon"><span class="material-icons-outlined" style="font-size:24px;">notifications_none</span></span> Notifications
           <span class="nav-badge notif-count" id="notif-nav-badge">3</span>
         </a>
         <a class="nav-item" data-page="complaints" data-role="tenant" onclick="Navigation.navigate('complaints')">
-          <span class="nav-icon"><span class="material-icons-outlined" style="font-size:24px;">chat</span></span> Complaints
+          <span class="nav-icon"><span class="material-icons-outlined" style="font-size:24px;">chat_bubble_outline</span></span> Complaints
         </a>
         <a class="nav-item" data-page="services" data-role="tenant" onclick="Navigation.navigate('services')">
-          <span class="nav-icon"><span class="material-icons-outlined" style="font-size:24px;">build</span></span> Services
+          <span class="nav-icon"><span class="material-icons-outlined" style="font-size:24px;">construction</span></span> Services
         </a>
         <a class="nav-item" data-page="payments" data-role="tenant" onclick="Navigation.navigate('payments')">
           <span class="nav-icon"><span class="material-icons-outlined" style="font-size:24px;">credit_card</span></span> Payments
         </a>
         <a class="nav-item" data-page="profile" data-role="all" onclick="Navigation.navigate('profile')">
-          <span class="nav-icon"><span class="material-icons-outlined" style="font-size:24px;">person</span></span> Profile
+          <span class="nav-icon"><span class="material-icons-outlined" style="font-size:24px;">person_outline</span></span> Profile
         </a>
       </nav>
 
@@ -59,10 +59,10 @@
         </div>
         <div class="topbar-actions">
           <button class="topbar-btn" onclick="Navigation.navigate('notifications')" title="Notifications">
-            <span class="material-icons-outlined" style="font-size:24px;">notifications</span>
+            <span class="material-icons-outlined" style="font-size:24px;">notifications_none</span>
             <span class="notif-dot notif-count"></span>
           </button>
-          <button class="topbar-btn" onclick="Navigation.navigate('profile')" title="Profile"><span class="material-icons-outlined" style="font-size:24px;">person</span></button>
+          <button class="topbar-btn" onclick="Navigation.navigate('profile')" title="Profile"><span class="material-icons-outlined" style="font-size:24px;">person_outline</span></button>
           <button class="logout-btn" onclick="Auth.logout()">↪ Logout</button>
         </div>
       </header>
@@ -82,7 +82,7 @@
         <button class="modal-close" onclick="UI.closeModal('service-info-modal')"><span class="material-icons-outlined" style="font-size:24px;">close</span></button>
       </div>
       <div class="modal-body">
-        <div class="status-banner success mb-16"><span><span class="material-icons-outlined" style="font-size:24px;">check_circle</span></span>
+        <div class="status-banner success mb-16"><span><span class="material-icons-outlined" style="font-size:24px;">check_circle_outline</span></span>
           <div>
             <div class="status-banner-title">Service is Available</div>
             <div class="status-banner-sub">You can use this service now</div>
@@ -96,7 +96,7 @@
           </div>
         </div>
         <div class="status-banner" style="background:#f0f7ff;border:1px solid #bfdbfe;color:#1e40af;margin-bottom:14px">
-          <span>ℹ️</span>
+          <span><span class="material-icons-outlined" style="font-size:24px; vertical-align:middle; line-height:1;">info_outline</span></span>
           <div>
             <div class="status-banner-title">Location</div>
             <div class="status-banner-sub" id="modal-service-location"></div>
@@ -123,7 +123,7 @@
       </div>
       <div class="modal-body">
         <div class="form-group"><label>When would you like to use this service?</label><input type="datetime-local" id="service-request-date"></div>
-        <div class="status-banner info mb-16"><span>ℹ️</span>
+        <div class="status-banner info mb-16"><span><span class="material-icons-outlined" style="font-size:24px; vertical-align:middle; line-height:1;">info_outline</span></span>
           <div>
             <div class="status-banner-title">Service Hours</div>
             <div class="status-banner-sub" id="modal-service-hours">Check availability above</div>
@@ -141,7 +141,7 @@
   <div class="modal-overlay" id="complaint-modal">
     <div class="modal">
       <div class="modal-header">
-        <div class="modal-icon"><span class="material-icons-outlined" style="font-size:24px;">chat</span></div>
+        <div class="modal-icon"><span class="material-icons-outlined" style="font-size:24px;">chat_bubble_outline</span></div>
         <div>
           <div class="modal-title">File New Complaint</div>
           <div class="modal-sub">Report an issue to management</div>

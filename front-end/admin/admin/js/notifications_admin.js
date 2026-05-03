@@ -37,17 +37,17 @@ function renderNotifHistory() {
   c.innerHTML = notifHistory.map(n => `
     <div class="nh-item">
       <div class="nh-icon ${n.type}">
-        ${n.type === 'announcement' ? '🔔' : n.type === 'update' ? '📤' : '✉️'}
+        ${n.type === 'announcement' ? '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">notifications_none</span>' : n.type === 'update' ? '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">outbox</span>' : '✉️'}
       </div>
       <div class="nh-content">
         <strong>${n.title}</strong>
         ${n.priority ? `<span style="font-size:10px;padding:2px 6px;border-radius:10px;font-weight:600;margin-left:6px;background:${getPriorityBg(n.priority)};color:${getPriorityColor(n.priority)}">${cap(n.priority)}</span>` : ''}
         <p>${n.message}</p>
         <div class="nh-meta">
-          <span>👥 ${(n.recipients || 0).toLocaleString()} recipients</span>
+          <span><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">group</span> ${(n.recipients || 0).toLocaleString()} recipients</span>
           <span>Sent: ${n.sentAt}</span>
           <span>By: ${n.by}</span>
-          ${n.scheduled ? `<span style="color:#7c3aed">📅 Scheduled</span>` : ''}
+          ${n.scheduled ? `<span style="color:#7c3aed"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">calendar_today</span> Scheduled</span>` : ''}
         </div>
       </div>
       <span class="nh-type-badge ${n.type}">${cap(n.type)}</span>

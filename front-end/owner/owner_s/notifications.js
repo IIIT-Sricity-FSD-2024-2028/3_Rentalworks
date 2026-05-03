@@ -23,7 +23,7 @@ function renderNotificationsPage(notifications) {
         ${unread > 0 ? `<span class="badge" style="background:var(--primary-light);color:var(--primary)">${unread} new</span>` : ''}
       </div>
       <div style="display:flex;gap:10px">
-        ${unread > 0 ? `<button class="btn btn-secondary" onclick="markAllRead()">✔️ Mark All Read</button>` : ''}
+        ${unread > 0 ? `<button class="btn btn-secondary" onclick="markAllRead()"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span>️ Mark All Read</button>` : ''}
         ${notifications.length > 0 ? `<button class="btn btn-danger btn-sm" onclick="clearAllNotifications()">🗑 Clear All</button>` : ''}
         <button class="btn btn-primary" onclick="openAddNotifModal()">➕ Add</button>
       </div>
@@ -56,7 +56,7 @@ function renderNotifList(notifications) {
           <div class="notif-title">${n.title}</div>
         </div>
         <div class="notif-msg">${n.message}</div>
-        <div class="notif-date">📅 ${formatDate(n.date)}</div>
+        <div class="notif-date"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">calendar_today</span> ${formatDate(n.date)}</div>
       </div>
       <div class="notif-actions">
         <button class="btn btn-secondary btn-sm btn-icon" onclick="deleteNotif('${n.id}')">🗑</button>

@@ -149,7 +149,7 @@ async function navigateTo(sec) {
     } catch (err) {
       target.innerHTML = `
         <div style="padding:40px;text-align:center;color:#dc2626">
-          <p style="font-size:14px">⚠️ Could not load section: <strong>${sec}</strong></p>
+          <p style="font-size:14px"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">warning_amber</span> Could not load section: <strong>${sec}</strong></p>
           <p style="font-size:12px;color:#94a3b8;margin-top:8px">${err.message}</p>
           <p style="font-size:12px;color:#94a3b8;margin-top:4px">Make sure you are running this from a local server (e.g. VS Code Live Server)</p>
         </div>`;
@@ -202,7 +202,7 @@ function setupModalEvents() {
 }
 
 function openConfirmModal(title, bodyHtml, btnClass, btnText) {
-  document.getElementById('modal-title').textContent    = title;
+  document.getElementById('modal-title').innerHTML    = title;
   document.getElementById('modal-subtitle').textContent = '';
   document.getElementById('modal-body').innerHTML =
     `<p style="font-size:13px;line-height:1.6;color:#475569">${bodyHtml}</p>`;
@@ -214,7 +214,7 @@ function openConfirmModal(title, bodyHtml, btnClass, btnText) {
 }
 
 function showFormModal(title, subtitle = '', fields = [], onConfirm, btnClass, btnText) {
-  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-title').innerHTML = title;
   const subEl = document.getElementById('modal-subtitle');
   if (subEl) subEl.innerHTML = subtitle;
 
@@ -246,7 +246,7 @@ function showFormModal(title, subtitle = '', fields = [], onConfirm, btnClass, b
 }
 
 function showInfoModal(title, subtitle, bodyHtml) {
-  document.getElementById('modal-title').textContent    = title;
+  document.getElementById('modal-title').innerHTML    = title;
   document.getElementById('modal-subtitle').textContent = subtitle;
   document.getElementById('modal-body').innerHTML       = bodyHtml;
   document.getElementById('modal-foot').innerHTML =
@@ -266,9 +266,9 @@ let toastTimer;
 function showToast(type, title, msg) {
   const t = document.getElementById('toast');
   if (!t) return;
-  const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+  const icons = { success: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span>', error: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">close</span>', info: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">info_outline</span>', warning: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">warning_amber</span>' };
   t.className = `toast ${type}`;
-  t.querySelector('.t-ico').textContent         = icons[type] || 'ℹ️';
+  t.querySelector('.t-ico').innerHTML = icons[type] || '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">info_outline</span>';
   t.querySelector('.t-text strong').textContent = title;
   t.querySelector('.t-text span').textContent   = msg;
   t.classList.add('show');

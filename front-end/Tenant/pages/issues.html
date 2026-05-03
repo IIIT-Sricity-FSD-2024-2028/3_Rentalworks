@@ -1,14 +1,15 @@
-<html><head></head><body><div id="page-issues" class="page">
+<html><head>    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+</head><body><div id="page-issues" class="page">
   <div class="page-content">
     <div class="page-header page-header-row">
       <div><h1>Issues</h1><p>Track and manage all reported issues</p></div>
       <button class="btn btn-primary" onclick="Navigation.navigate('report-issue')">+ Report New Issue</button>
     </div>
     <div class="stats-grid mb-20">
-      <div class="stat-card"><div class="stat-label">Total Issues <span class="stat-icon">ℹ️</span></div><div class="stat-value" id="iss-total">0</div></div>
-      <div class="stat-card"><div class="stat-label">Open <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px;">error</span></span></div><div class="stat-value" id="iss-open" style="color:var(--danger)">0</div></div>
+      <div class="stat-card"><div class="stat-label">Total Issues <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px; vertical-align:middle; line-height:1;">info_outline</span></span></div><div class="stat-value" id="iss-total">0</div></div>
+      <div class="stat-card"><div class="stat-label">Open <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px;">error_outline</span></span></div><div class="stat-value" id="iss-open" style="color:var(--danger)">0</div></div>
       <div class="stat-card"><div class="stat-label">In Progress <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px;">schedule</span></span></div><div class="stat-value" id="iss-inprog" style="color:var(--warning)">0</div></div>
-      <div class="stat-card"><div class="stat-label">Resolved <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px;">check_circle</span></span></div><div class="stat-value" id="iss-resolved" style="color:var(--success)">0</div></div>
+      <div class="stat-card"><div class="stat-label">Resolved <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px;">check_circle_outline</span></span></div><div class="stat-value" id="iss-resolved" style="color:var(--success)">0</div></div>
     </div>
     <div class="section-card">
       <div class="section-header"><span class="section-title">All Issues</span></div>

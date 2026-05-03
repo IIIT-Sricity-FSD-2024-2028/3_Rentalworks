@@ -95,7 +95,7 @@ const UI = {
         this.showLoader();
         setTimeout(() => {
             this.hideLoader();
-            this.showToast('✅ Message sent! The owner will contact you shortly.', 'success');
+            this.showToast('<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span> Message sent! The owner will contact you shortly.', 'success');
 
             // Clear & reset fields
             ['contact-name', 'contact-email', 'contact-phone', 'contact-msg'].forEach(id => {

@@ -44,10 +44,10 @@ function renderUsers(search = '', roleF = 'all', statusF = 'all') {
         <td style="font-size:12px">${u.joinDate}</td>
         <td>
           <div class="act-icons">
-            <button class="ico-btn" onclick="viewUser('${u.id}')" title="View">👁️</button>
+            <button class="ico-btn" onclick="viewUser('${u.id}')" title="View"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">visibility</span></button>
             <button class="ico-btn" onclick="editUser('${u.id}')" title="Edit">✏️</button>
             <button class="ico-btn warn" onclick="toggleSuspend('${u.id}')" title="${u.status === 'suspended' ? 'Activate' : 'Suspend'}">
-              ${u.status === 'suspended' ? '✅' : '🚫'}
+              ${u.status === 'suspended' ? '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span>' : '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">block</span>'}
             </button>
             <button class="ico-btn danger" onclick="deleteUser('${u.id}')" title="Delete">🗑️</button>
           </div>
@@ -64,7 +64,7 @@ function renderUsers(search = '', roleF = 'all', statusF = 'all') {
 function viewUser(id) {
   const u = users.find(x => x.id.toString() === id.toString());
   if (!u) return;
-  showInfoModal('👤 User Details', u.email,
+  showInfoModal('<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">person_outline</span> User Details', u.email,
     `<div style="display:grid;gap:10px;font-size:13px">
       <div><strong>Name:</strong> ${u.name}</div>
       <div><strong>Email:</strong> ${u.email}</div>
@@ -141,11 +141,20 @@ function editUser(id) {
   }, 'btn-confirm-blue', 'Save Changes');
 }
 
-// ===== TOGGLE SUSPEND =====
 function toggleSuspend(id) {
   const u = users.find(x => x.id.toString() === id.toString());
   if (!u) return;
   u.status = u.status === 'suspended' ? 'active' : 'suspended';
+
+  // Sync status back to local storage sources
+  let regG = JSON.parse(localStorage.getItem('registered_guests') || '[]');
+  const guestIdx = regG.findIndex(g => g.email === u.email && g.id === u.id);
+  if (guestIdx !== -1) { regG[guestIdx].status = u.status; localStorage.setItem('registered_guests', JSON.stringify(regG)); }
+
+  let regO = JSON.parse(localStorage.getItem('registered_owners') || '[]');
+  const ownerIdx = regO.findIndex(o => o.email === u.email && o.id === u.id);
+  if (ownerIdx !== -1) { regO[ownerIdx].status = u.status; localStorage.setItem('registered_owners', JSON.stringify(regO)); }
+
   saveData(); renderUsers();
   showToast('success', u.status === 'active' ? 'User Activated' : 'User Suspended', u.name + ' status updated');
 }

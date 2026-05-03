@@ -16,7 +16,7 @@ const UI = {
     const container = document.getElementById('toast-container');
     if (!container) return;
     
-    const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+    const icons = { success: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span>', error: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">close</span>', info: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">info_outline</span>' };
     const borderColors = { success: 'green', error: 'red', info: 'blue' };
     
     const toast = document.createElement('div');

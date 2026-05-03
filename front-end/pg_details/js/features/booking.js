@@ -134,7 +134,7 @@ const BookingLogic = {
                 </div>
                 <div style="padding: 24px; display: flex; flex-direction: column; flex: 1;">
                     <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 4px;">${b.pg}</h3>
-                    <p style="color: var(--text-gray); font-size: 13px; margin-bottom: 24px;">📍 ${b.location || 'Koramangala, Bangalore'}</p>
+                    <p style="color: var(--text-gray); font-size: 13px; margin-bottom: 24px;"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">location_on</span> ${b.location || 'Koramangala, Bangalore'}</p>
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; align-items: center;">
                         <span style="color: var(--text-gray); font-size: 13px;">Room Type:</span>
@@ -146,7 +146,7 @@ const BookingLogic = {
                     
                     <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
                         ${b.status === 'confirmed' 
-                            ? `<div style="background: #f0fdf4; color: #16a34a; padding: 16px; border-radius: 12px; text-align: center; font-size: 14px; font-weight: 700; border: 1px solid #bbf7d0;">✓ Paid & Confirmed</div>`
+                            ? `<div style="background: #f0fdf4; color: #16a34a; padding: 16px; border-radius: 12px; text-align: center; font-size: 14px; font-weight: 700; border: 1px solid #bbf7d0;"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span> Paid & Confirmed</div>`
                             : b.status === 'approved' 
                                 ? `<button class="btn btn-primary btn-full" style="padding: 16px; font-size: 15px;" onclick="event.stopPropagation(); BookingLogic.initPaymentUI('${b.id}')">Proceed to Payment</button>
                                    <button class="btn-full" style="padding: 12px; font-size: 13px; background: transparent; color: var(--text-gray); border: none; cursor: pointer; font-weight: 600;" onclick="event.stopPropagation(); BookingLogic.deleteBooking('${b.id}')">Cancel Request</button>`
@@ -208,7 +208,7 @@ const BookingLogic = {
         // Robust DOM selection with fallbacks
         document.querySelectorAll('.dyn-pg-name').forEach(el => el.textContent = b.pg);
         document.querySelectorAll('.dyn-booking-id').forEach(el => el.textContent = b.id || 'BK-XXXXXX');
-        document.querySelectorAll('.dyn-location').forEach(el => el.textContent = '📍 ' + (b.location || 'Koramangala, Bangalore'));
+        document.querySelectorAll('.dyn-location').forEach(el => el.innerHTML = '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">location_on</span> ' + (b.location || 'Koramangala, Bangalore'));
         document.querySelectorAll('.dyn-room').forEach(el => el.textContent = b.room);
         document.querySelectorAll('.dyn-date').forEach(el => el.textContent = b.date || '20 March 2026');
         
@@ -244,13 +244,13 @@ const BookingLogic = {
             if (b.status === 'confirmed') {
                 statusBox.innerHTML = `
                     <div style="background: var(--success-light); border: 1px solid var(--success); border-radius: 8px; padding: 12px; margin-bottom: 24px; text-align: center;">
-                        <strong style="color: var(--success); font-size: 14px;">✓ Booking Confirmed & Paid</strong>
+                        <strong style="color: var(--success); font-size: 14px;"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span> Booking Confirmed & Paid</strong>
                     </div>
                 `;
             } else if (b.status === 'approved') {
                 statusBox.innerHTML = `
                     <div style="background: var(--success-light); border: 1px solid var(--success); border-radius: 8px; padding: 12px; margin-bottom: 24px; text-align: center;">
-                        <strong style="color: var(--success); font-size: 14px;">✓ Admin Approved</strong>
+                        <strong style="color: var(--success); font-size: 14px;"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span> Admin Approved</strong>
                     </div>
 
                     <div style="background: var(--bg-main); padding: 16px; border-radius: 12px; margin-bottom: 24px;">
@@ -461,7 +461,7 @@ const BookingLogic = {
                     <div>
                         <strong style="font-size: 15px;">${b.roommate.name}</strong>
                         <p style="font-size: 12px; color: var(--text-gray);">${b.roommate.age || 24} years, ${b.roommate.job || 'Professional'}</p>
-                        <p style="font-size: 13px; color: var(--primary); margin-top: 4px; font-weight: 600;">📞 +91 98765 43210</p>
+                        <p style="font-size: 13px; color: var(--primary); margin-top: 4px; font-weight: 600;"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">phone_in_talk</span> +91 98765 43210</p>
                         <p style="font-size: 13px; color: var(--primary); font-weight: 600;">✉️ ${b.roommate.name.split(' ')[0].toLowerCase()}@example.com</p>
                     </div>
                 </div>

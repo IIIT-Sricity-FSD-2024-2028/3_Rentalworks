@@ -36,12 +36,12 @@ function renderActivityFeed() {
   if (!c) return;
 
   const feed = [
-    { icon: '📅', action: 'Booked Room 305',  person: 'Amit Sharma',  property: 'Green Valley PG',  time: '5 min ago' },
-    { icon: '💰', action: 'Paid ₹9,000 rent', person: 'Priya Patel',  property: 'Sunrise Heights',  time: '12 min ago' },
-    { icon: '⚠️', action: 'Raised complaint', person: 'Rohan Singh',  property: 'Urban Nest',        time: '23 min ago' },
-    { icon: '⭐', action: 'Left 5-star review',person: 'Sneha Gupta', property: 'Sunrise Heights',  time: '1 hour ago' },
-    { icon: '🏢', action: 'Added new property',person: 'Rajesh Kumar',property: 'Urban Nest',        time: '2 hours ago' },
-    { icon: '❌', action: 'Cancelled booking', person: 'Anita Verma', property: 'Sunrise Heights',  time: '3 hours ago' }
+    { icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">calendar_today</span>', action: 'Booked Room 305',  person: 'Amit Sharma',  property: 'Green Valley PG',  time: '5 min ago' },
+    { icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">payments</span>', action: 'Paid ₹9,000 rent', person: 'Priya Patel',  property: 'Sunrise Heights',  time: '12 min ago' },
+    { icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">warning_amber</span>', action: 'Raised complaint', person: 'Rohan Singh',  property: 'Urban Nest',        time: '23 min ago' },
+    { icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">star_border</span>', action: 'Left 5-star review',person: 'Sneha Gupta', property: 'Sunrise Heights',  time: '1 hour ago' },
+    { icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">apartment</span>', action: 'Added new property',person: 'Rajesh Kumar',property: 'Urban Nest',        time: '2 hours ago' },
+    { icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">close</span>', action: 'Cancelled booking', person: 'Anita Verma', property: 'Sunrise Heights',  time: '3 hours ago' }
   ];
 
   c.innerHTML = feed.map(a => `

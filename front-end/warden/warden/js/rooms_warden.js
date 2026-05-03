@@ -19,7 +19,7 @@ function renderRooms(filter = 'all') {
   } else {
     tbody.innerHTML = filtered.map(r => `
       <tr>
-        <td>🏠 ${r.number}</td>
+        <td><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">home</span> ${r.number}</td>
         <td><span style="background:#f3f4f6;padding:3px 10px;border-radius:20px;font-size:12px">${r.type}</span></td>
         <td><span class="badge badge-${r.occupancy.toLowerCase()}">${r.occupancy}</span></td>
         <td><span class="badge ${getMaintenanceBadge(r.maintenance)}">${r.maintenance}</span></td>

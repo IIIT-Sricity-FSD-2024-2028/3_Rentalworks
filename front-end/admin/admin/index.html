@@ -21,12 +21,12 @@
         </div>
       </div>
       <nav class="sb-nav">
-        <div class="nav-item active" data-sec="dashboard"><span class="n-ico"><span class="material-icons-outlined" style="font-size:24px;">folder</span></span> Dashboard</div>
+        <div class="nav-item active" data-sec="dashboard"><span class="n-ico"><span class="material-icons-outlined" style="font-size:24px;">folder_open</span></span> Dashboard</div>
         <div class="nav-item" data-sec="users"><span class="n-ico"><span class="material-icons-outlined" style="font-size:24px;">group</span></span> User Management</div>
         <div class="nav-item" data-sec="properties"><span class="n-ico"><span class="material-icons-outlined" style="font-size:24px;">apartment</span></span> PG Properties</div>
         <div class="nav-item" data-sec="bookings"><span class="n-ico"><span class="material-icons-outlined" style="font-size:24px;">calendar_today</span></span> Bookings</div>
         <div class="nav-item" data-sec="payments"><span class="n-ico"><span class="material-icons-outlined" style="font-size:24px;">credit_card</span></span> Payments</div>
-        <div class="nav-item" data-sec="notifications"><span class="n-ico"><span class="material-icons-outlined" style="font-size:24px;">notifications</span></span> Announcements</div>
+        <div class="nav-item" data-sec="notifications"><span class="n-ico"><span class="material-icons-outlined" style="font-size:24px;">notifications_none</span></span> Announcements</div>
       </nav>
     </aside>
 
@@ -40,7 +40,7 @@
           <p id="nb-email">admin@pgrentals.com</p>
         </div>
         <div class="nb-right">
-          <div class="nb-icon" onclick="navigateTo('notifications')"><span class="material-icons-outlined" style="font-size:24px;">notifications</span><span class="nb-dot"></span></div>
+          <div class="nb-icon" onclick="navigateTo('notifications')"><span class="material-icons-outlined" style="font-size:24px;">notifications_none</span><span class="nb-dot"></span></div>
           <div class="nb-icon" id="gear-btn" title="Settings &amp; Profile"><span class="material-icons-outlined" style="font-size:24px;">settings</span></div>
           <button class="btn-logout" id="logout-btn">↪ Logout</button>
         </div>
@@ -95,7 +95,7 @@
           Password</button>
       </div>
       <div class="profile-section">
-        <h4 class="profile-section-title">🛡️ System Security</h4>
+        <h4 class="profile-section-title"><span class="material-icons-outlined" style="font-size:24px; vertical-align:middle; line-height:1;">security</span> System Security</h4>
         <div class="twofa-row">
           <div>
             <strong style="font-size:13px">Two-Factor Authentication (2FA)</strong>
@@ -144,7 +144,7 @@
 
   <!-- ================================ TOAST ================================ -->
   <div class="toast" id="toast">
-    <span class="t-ico"><span class="material-icons-outlined" style="font-size:24px;">check_circle</span></span>
+    <span class="t-ico"><span class="material-icons-outlined" style="font-size:24px;">check_circle_outline</span></span>
     <div class="t-text"><strong>Title</strong><span>Message</span></div>
   </div>
 

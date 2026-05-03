@@ -57,10 +57,10 @@ function renderPayments(search = '', statusF = 'verified') {
           <td>
             <div class="act-icons">
               <button class="btn-issue-refund" style="${refundStyle}" onclick="issueRefund(${p.id})" title="${refundDisabled ? 'Clearance required' : 'Issue Refund'}">
-                ${refundDisabled ? '🔒 Refund' : '↩️ Refund'}
+                ${refundDisabled ? '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">lock_outline</span> Refund' : '↩️ Refund'}
               </button>
-              <button class="ico-btn" onclick="viewPayment(${p.id})" title="View">👁️</button>
-              ${clearance !== 'Approved' ? `<button class="ico-btn" onclick="approveClearance(${p.id})" title="Approve Clearance">✅</button>` : ''}
+              <button class="ico-btn" onclick="viewPayment(${p.id})" title="View"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">visibility</span></button>
+              ${clearance !== 'Approved' ? `<button class="ico-btn" onclick="approveClearance(${p.id})" title="Approve Clearance"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span></button>` : ''}
             </div>
           </td>
         </tr>
@@ -153,7 +153,7 @@ function issueRefund(id) {
 function viewPayment(id) {
   const p = payments.find(x => x.id === id);
   if (!p) return;
-  showInfoModal('💰 Payment Details', `Transaction: ${p.transactionId}`,
+  showInfoModal('<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">payments</span> Payment Details', `Transaction: ${p.transactionId}`,
     `<div style="display:grid;gap:10px;font-size:13px">
       <div><strong>Tenant:</strong> ${p.tenant}</div>
       <div><strong>Property:</strong> ${p.property}</div>

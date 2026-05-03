@@ -1,13 +1,13 @@
 // add-property.js
 const AMENITY_LIST = [
-  { label: 'WiFi', icon: '📶' },
-  { label: 'AC', icon: '❄️' },
+  { label: 'WiFi', icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">wifi</span>' },
+  { label: 'AC', icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">ac_unit</span>' },
   { label: 'Laundry', icon: '🧺' },
-  { label: 'Parking', icon: '🚗' },
+  { label: 'Parking', icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">directions_car</span>' },
   { label: 'Gym', icon: '💪' },
-  { label: 'Mess', icon: '🍽️' },
-  { label: 'Power Backup', icon: '⚡' },
-  { label: 'Security', icon: '🔒' },
+  { label: 'Mess', icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">restaurant_menu</span>️' },
+  { label: 'Power Backup', icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">bolt</span>' },
+  { label: 'Security', icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">lock_outline</span>' },
 ];
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -134,7 +134,7 @@ function renderAddPropertyPage() {
     <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px">
       <a href="properties.html" class="btn btn-secondary btn-lg">Cancel</a>
       <button class="btn btn-primary btn-lg" id="submitBtn" onclick="submitProperty()">
-        ✅ Submit for Verification
+        <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span> Submit for Verification
       </button>
     </div>
   `;

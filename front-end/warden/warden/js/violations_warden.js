@@ -17,7 +17,7 @@ function renderViolations(filter = 'all') {
         <td>${v.tenant}</td>
         <td><span class="room-badge">${v.room}</span></td>
         <td>${v.type}</td>
-        <td><span class="badge badge-${v.severity}">⚠️ ${capitalize(v.severity)}</span></td>
+        <td><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">warning_amber</span> ${capitalize(v.severity)}</span></td>
         <td><span class="badge-warnings badge" style="background:#fef9c3;color:#b45309">${v.warnings} warning${v.warnings > 1 ? 's' : ''}</span></td>
         <td>${v.date}</td>
         <td>

@@ -49,10 +49,10 @@ function buildPropertyCard(p) {
     pipelineBadges = `
       <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
         <span style="font-size:10px;padding:3px 8px;border-radius:20px;font-weight:600;background:${docsOk ? '#dcfce7' : '#fef9c3'};color:${docsOk ? '#15803d' : '#b45309'}">
-          ${docsOk ? '✓' : '⏳'} Docs ${docsOk ? 'Verified' : 'Pending'}
+          ${docsOk ? '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span>' : '⏳'} Docs ${docsOk ? 'Verified' : 'Pending'}
         </span>
         <span style="font-size:10px;padding:3px 8px;border-radius:20px;font-weight:600;background:${inspectionOk ? '#dcfce7' : '#fef9c3'};color:${inspectionOk ? '#15803d' : '#b45309'}">
-          ${inspectionOk ? '✓' : '⏳'} Inspection ${inspectionOk ? 'Passed' : 'Pending'}
+          ${inspectionOk ? '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span>' : '⏳'} Inspection ${inspectionOk ? 'Passed' : 'Pending'}
         </span>
       </div>`;
   }
@@ -62,7 +62,7 @@ function buildPropertyCard(p) {
   if (hasChangeReq) {
     changeReqAlert = `
       <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:11px;color:#92400e;display:flex;align-items:center;gap:6px">
-        ⚠️ <strong>Change Request Pending</strong> — Owner requested rent/location update
+        <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">warning_amber</span> <strong>Change Request Pending</strong> — Owner requested rent/location update
       </div>`;
   }
 
@@ -77,21 +77,21 @@ function buildPropertyCard(p) {
   if (p.status === 'pending') {
     if (docsOk && inspectionOk) {
       actionBtns = `
-        <button class="btn-approve" onclick="approveProperty(${p.id})">✓ Approve Property</button>
-        <button class="btn-reject"  onclick="rejectProperty(${p.id})">✗ Reject</button>`;
+        <button class="btn-approve" onclick="approveProperty('${p.id}')"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span> Approve Property</button>
+        <button class="btn-reject"  onclick="rejectProperty('${p.id}')">✗ Reject</button>`;
     } else {
       actionBtns = `
-        ${!docsOk ? `<button class="btn-verify-docs" onclick="viewPropertyDocuments(${p.id})">📂 View & Verify Docs</button>` : ''}
-        ${docsOk && !inspectionOk ? `<button class="btn-inspection" onclick="openInspectionReport(${p.id})">📝 Pass Live Inspection</button>` : ''}`;
+        ${!docsOk ? `<button class="btn-verify-docs" onclick="viewPropertyDocuments('${p.id}')">📂 View & Verify Docs</button>` : ''}
+        ${docsOk && !inspectionOk ? `<button class="btn-inspection" onclick="openInspectionReport('${p.id}')"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">description</span> Pass Live Inspection</button>` : ''}`;
     }
   } else if (p.status === 'approved') {
     actionBtns = `
-      <button class="btn-edit-prop" onclick="editProperty(${p.id})">✏️ Edit</button>
-      <button class="btn-offboard"  onclick="initiateOffboarding(${p.id})">⚠️ Notice Period</button>`;
+      <button class="btn-edit-prop" onclick="editProperty('${p.id}')">✏️ Edit</button>
+      <button class="btn-offboard"  onclick="initiateOffboarding('${p.id}')"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">warning_amber</span> Notice Period</button>`;
   } else if (p.status === 'offboarding') {
-    actionBtns = `<button class="btn-reject" onclick="finalRemoveProperty(${p.id})">Finalize Removal</button>`;
+    actionBtns = `<button class="btn-reject" onclick="finalRemoveProperty('${p.id}')">Finalize Removal</button>`;
   } else if (p.status === 'rejected') {
-    actionBtns = `<button class="btn-approve" onclick="approveProperty(${p.id})">Reconsider</button>`;
+    actionBtns = `<button class="btn-approve" onclick="approveProperty('${p.id}')">Reconsider</button>`;
   }
 
   return `
@@ -100,7 +100,7 @@ function buildPropertyCard(p) {
         <h3>${p.name} ${offboardBadge}</h3>
         <span class="badge badge-${p.status}">${cap(p.status)}</span>
       </div>
-      <div class="prop-location">📍 ${p.location}</div>
+      <div class="prop-location"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">location_on</span> ${p.location}</div>
       <div class="prop-owner">Owner: <span>${p.owner}</span></div>
       ${pipelineBadges}
       ${changeReqAlert}
@@ -128,7 +128,7 @@ function buildPropertyCard(p) {
         </div>
         <div class="prop-detail">
           <div class="pd-lbl">Compliance</div>
-          <div class="pd-val" style="color:#16a34a;font-size:12px">✓ ${compliance}</div>
+          <div class="pd-val" style="color:#16a34a;font-size:12px"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span> ${compliance}</div>
         </div>
       </div>
       <div style="font-size:11px;color:#475569;margin-bottom:10px">
@@ -143,8 +143,26 @@ function buildPropertyCard(p) {
 }
 
 // ===== PIPELINE ACTIONS =====
+function syncBackToOwner(id, newStatus, doRemove = false) {
+  try {
+    const ownerDataStr = localStorage.getItem('pg_manager_data_storage');
+    if (!ownerDataStr) return;
+    const ownerData = JSON.parse(ownerDataStr);
+    if (!ownerData.properties) return;
+    
+    const idx = ownerData.properties.findIndex(p => String(p.id) === String(id));
+    if (idx !== -1) {
+      if (doRemove) {
+        ownerData.properties.splice(idx, 1);
+      } else {
+        ownerData.properties[idx].status = newStatus;
+      }
+      localStorage.setItem('pg_manager_data_storage', JSON.stringify(ownerData));
+    }
+  } catch(e) { console.error('Failed to sync back to owner:', e); }
+}
 function verifyDocs(id) {
-  const p = properties.find(x => x.id === id);
+  const p = properties.find(x => String(x.id) === String(id));
   if (!p) return;
   p.docsVerified = true;
   saveData(); renderProperties();
@@ -152,7 +170,7 @@ function verifyDocs(id) {
 }
 
 function passInspection(id) {
-  const p = properties.find(x => x.id === id);
+  const p = properties.find(x => String(x.id) === String(id));
   if (!p) return;
   p.inspectionPassed = true;
   saveData(); renderProperties();
@@ -160,19 +178,21 @@ function passInspection(id) {
 }
 
 function approveProperty(id) {
-  const p = properties.find(x => x.id === id);
+  const p = properties.find(x => String(x.id) === String(id));
   if (!p) return;
   p.status = 'approved';
   saveData(); renderProperties();
+  syncBackToOwner(id, 'live'); // Owner dash expects 'live' or 'approved', but owner dashboard uses 'live' for active properties
   showToast('success', 'Property Approved', `${p.name} is now live on the platform`);
 }
 
 function rejectProperty(id) {
-  const p = properties.find(x => x.id === id);
+  const p = properties.find(x => String(x.id) === String(id));
   if (!p) return;
   pendingAction = () => {
     p.status = 'rejected';
     saveData(); renderProperties(); closeModal();
+    syncBackToOwner(id, 'rejected');
     showToast('error', 'Property Rejected', `${p.name} has been rejected`);
   };
   openConfirmModal('Reject Property',
@@ -182,7 +202,7 @@ function rejectProperty(id) {
 }
 
 function initiateOffboarding(id) {
-  const p = properties.find(x => x.id === id);
+  const p = properties.find(x => String(x.id) === String(id));
   if (!p) return;
   pendingAction = () => {
     p.status = 'offboarding';
@@ -196,11 +216,12 @@ function initiateOffboarding(id) {
 }
 
 function finalRemoveProperty(id) {
-  const p = properties.find(x => x.id === id);
+  const p = properties.find(x => String(x.id) === String(id));
   if (!p) return;
   pendingAction = () => {
-    properties = properties.filter(x => x.id !== id);
+    properties = properties.filter(x => String(x.id) !== String(id));
     saveData(); renderProperties(); closeModal();
+    syncBackToOwner(id, null, true);
     showToast('success', 'Property Removed', `${p.name} has been removed from the platform`);
   };
   openConfirmModal('Finalize Removal',
@@ -248,7 +269,7 @@ function addProperty() {
 
 // ===== EDIT PROPERTY =====
 function editProperty(id) {
-  const p = properties.find(x => x.id === id);
+  const p = properties.find(x => String(x.id) === String(id));
   if (!p) return;
   showFormModal('Edit Property', 'Note: Rent and Location changes require owner approval', [
     { label: 'Property Name', id: 'p-name',    type: 'text',   value: p.name,     required: true },
@@ -273,7 +294,7 @@ function setupPropSearch() {
 
 // ===== 1. DOCUMENT VIEWER (The "Submitted" Docs) =====
 function viewPropertyDocuments(id) {
-  const p = properties.find(x => x.id === id);
+  const p = properties.find(x => String(x.id) === String(id));
   const docsHtml = `
     <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
       <p style="font-size:13px; color:#666; margin-bottom:10px;">Please verify the following uploaded files:</p>
@@ -289,17 +310,16 @@ function viewPropertyDocuments(id) {
       </div>
     </div>`;
 
-  // Note: fields is passed as []
   showFormModal(`Verify Docs: ${p.name}`, docsHtml, [], () => {
     p.docsVerified = true;
-    saveData(); renderProperties();
+    saveData(); renderProperties(); closeModal();
     showToast('success', 'Verified', 'Documents marked as valid');
   }, 'btn-confirm-blue', 'Approve All Documents');
 }
 
 // ===== 2. INSPECTION REPORT (The "Live" Report) =====
 function openInspectionReport(id) {
-  const p = properties.find(x => x.id === id);
+  const p = properties.find(x => String(x.id) === String(id));
   if (!p) return;
 
   // 1. Define the report HTML as a string (this will go into the subtitle)
@@ -329,9 +349,6 @@ function openInspectionReport(id) {
     </div>
   `;
 
-  // 2. Call the updated showFormModal
-  // We pass reportHtml as the SECOND argument (subtitle)
-  // We pass an empty array [] as the THIRD argument (fields)
   showFormModal(
     `Live Inspection: ${p.name}`, 
     reportHtml, 
@@ -340,6 +357,7 @@ function openInspectionReport(id) {
       p.inspectionPassed = true;
       saveData(); 
       renderProperties();
+      closeModal();
       showToast('success', 'Inspection Passed', 'Property has cleared the physical site audit.');
     }, 
     'btn-confirm-blue', 

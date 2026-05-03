@@ -68,7 +68,7 @@ const TenantLogic = {
       let badgeColor = c.status === 'resolved' ? '#16a34a' : c.status === 'in-progress' ? '#b45309' : '#dc2626';
       
       let actionHtml = c.status === 'resolved' ? 
-        `<span style="color: #16a34a; font-size: 13px; font-weight:bold;">✔ Resolved by Warden</span>` : 
+        `<span style="color: #16a34a; font-size: 13px; font-weight:bold;"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span> Resolved by Warden</span>` : 
         `<button class="btn btn-outline btn-sm" onclick="TenantLogic.deleteComplaint(${c.id})">Withdraw</button>`;
 
       return `
@@ -164,7 +164,7 @@ const TenantLogic = {
       let badgeColor = i.status === 'resolved' ? '#16a34a' : i.status === 'in-progress' ? '#b45309' : '#dc2626';
 
       let actionHtml = i.status === 'resolved' ? 
-        `<span style="color: #16a34a; font-size: 13px; font-weight:bold;">✔ Resolved by Maintenance</span>` : 
+        `<span style="color: #16a34a; font-size: 13px; font-weight:bold;"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span> Resolved by Maintenance</span>` : 
         `<button class="btn btn-outline btn-sm" onclick="TenantLogic.deleteIssue(${i.id})">Withdraw Issue</button>`;
 
       return `
@@ -269,14 +269,14 @@ const TenantLogic = {
     }
 
     const serviceDetails = {
-      'Laundry': { icon: '👕', price: '₹50 per kg' },
-      'Parking': { icon: '🚗', price: '₹500 / month' },
-      'Indoor Games': { icon: '🎮', price: 'Included in rent' },
-      'Pantry': { icon: '☕', price: 'Included in rent' }
+      'Laundry': { icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">local_laundry_service</span>', price: '₹50 per kg' },
+      'Parking': { icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">directions_car</span>', price: '₹500 / month' },
+      'Indoor Games': { icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">sports_esports</span>', price: 'Included in rent' },
+      'Pantry': { icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">coffee</span>', price: 'Included in rent' }
     };
 
     container.innerHTML = State.data.serviceRequests.map(s => {
-      const details = serviceDetails[s.name] || { icon: '🔧', price: 'Standard rates apply' };
+      const details = serviceDetails[s.name] || { icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">construction</span>', price: 'Standard rates apply' };
 
       return `
       <div style="display:flex; align-items: flex-start; justify-content:space-between; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 12px; background: white;">
@@ -289,7 +289,7 @@ const TenantLogic = {
             <div style="font-size:13px; color:var(--text-secondary); margin-top: 4px;">
               You requested the <strong>${s.name.toLowerCase()}</strong> service for <strong>${s.date}</strong>.
             </div>
-            <div style="font-size:12px; color:var(--text-muted); margin-top: 6px;">💵 Estimated Cost: ${details.price}</div>
+            <div style="font-size:12px; color:var(--text-muted); margin-top: 6px;"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">payments</span> Estimated Cost: ${details.price}</div>
           </div>
         </div>
         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
@@ -339,7 +339,7 @@ const TenantLogic = {
     // Render with safe fallbacks to prevent 'undefined' text
     container.innerHTML = notifications.map(n => `
       <div class="notif-item ${n.unread ? 'unread' : ''}">
-        <div class="notif-icon-wrap" style="background:${n.bg || '#f0fdf4'}">${n.icon || '🔔'}</div>
+        <div class="notif-icon-wrap" style="background:${n.bg || '#f0fdf4'}">${n.icon || '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">notifications_none</span>'}</div>
         <div class="notif-content">
           <div class="notif-title">${n.title || 'Notification'} ${n.unread ? '<span class="notif-unread-dot"></span>' : ''}</div>
           <div class="notif-desc">${n.desc || 'You have a new alert.'}</div>
@@ -382,13 +382,13 @@ const TenantLogic = {
 
     if (upcomingContainer) {
       if (State.data.pendingPayments.length === 0) {
-        upcomingContainer.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted);">No pending payments! 🎉</div>';
+        upcomingContainer.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted);">No pending payments! <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">celebration</span></div>';
       } else {
         upcomingContainer.innerHTML = State.data.pendingPayments.map(p => `
           <div class="payment-item">
             <div class="payment-info">
               <div class="payment-type">${p.type}</div>
-              <div class="payment-sub">${p.title} <span>📅 Due: ${p.due}</span> <span class="badge badge-warning">Pending</span></div>
+              <div class="payment-sub">${p.title} <span><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">calendar_today</span> Due: ${p.due}</span> <span class="badge badge-warning">Pending</span></div>
             </div>
             <div class="payment-right">
               <div class="payment-amount">₹${p.amount.toLocaleString()}</div>
@@ -552,7 +552,7 @@ selectBank(element, bankName) {
     const btn2FA = document.getElementById('btn-2fa');
     if (btn2FA) {
       if (State.data.profile.twoFactorEnabled) {
-        btn2FA.textContent = 'Enabled ✓';
+        btn2FA.innerHTML = 'Enabled <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span>';
         btn2FA.style.background = 'var(--success)';
         btn2FA.style.color = 'white';
         btn2FA.style.borderColor = 'var(--success)';
@@ -569,7 +569,7 @@ selectBank(element, bankName) {
     this.renderProfileSecurity();
     
     if (State.data.profile.twoFactorEnabled) {
-      UI.showToast('Two-Factor Authentication Enabled! 🔒', 'success');
+      UI.showToast('Two-Factor Authentication Enabled! <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">lock_outline</span>', 'success');
     } else {
       UI.showToast('Two-Factor Authentication Disabled.', 'info');
     }
@@ -586,7 +586,7 @@ selectBank(element, bankName) {
     UI.showLoader();
     setTimeout(() => {
       UI.hideLoader();
-      UI.showToast('Password updated successfully! 🔑', 'success');
+      UI.showToast('Password updated successfully! <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">key</span>', 'success');
       Navigation.navigate('profile');
       
       // Clear fields

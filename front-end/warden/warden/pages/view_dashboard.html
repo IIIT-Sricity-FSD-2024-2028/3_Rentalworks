@@ -1,4 +1,5 @@
-<!-- pages/view_dashboard.html --><html><head></head><body><section id="dashboard-section" class="section active">
+<!-- pages/view_dashboard.html --><html><head>    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+</head><body><section id="dashboard-section" class="section active">
   <div class="section-header">
     <h2>Warden Dashboard</h2>
     <p>Overview of PG operations and tenant management</p>
@@ -31,7 +32,7 @@
       <div class="stat-sub">2 urgent</div>
     </div>
     <div class="stat-card">
-      <div class="stat-icon orange"><span class="material-icons-outlined" style="font-size:32px;">warning</span></div>
+      <div class="stat-icon orange"><span class="material-icons-outlined" style="font-size:32px;">warning_amber</span></div>
       <div class="stat-label">Rule Violations</div>
       <div class="stat-value" id="stat-violations">—</div>
       <div class="stat-sub">2 this week</div>
@@ -69,14 +70,14 @@
         </div>
       </button>
       <button class="action-btn" onclick="navigateTo('violations')">
-        <span class="action-icon"><span class="material-icons-outlined" style="font-size:24px;">warning</span></span>
+        <span class="action-icon"><span class="material-icons-outlined" style="font-size:24px;">warning_amber</span></span>
         <div class="action-text">
           <strong>Report Violation</strong>
           <span>Log rule violations</span>
         </div>
       </button>
       <button class="action-btn" onclick="navigateTo('rooms')">
-        <span class="action-icon"><span class="material-icons-outlined" style="font-size:24px;">check_circle</span></span>
+        <span class="action-icon"><span class="material-icons-outlined" style="font-size:24px;">check_circle_outline</span></span>
         <div class="action-text">
           <strong>Update Room Status</strong>
           <span>Manage room services</span>

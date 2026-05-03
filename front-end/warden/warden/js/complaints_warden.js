@@ -26,7 +26,7 @@ function renderComplaints(statusFilter = 'all', priorityFilter = 'all') {
         <td style="color:${c.priority === 'high' ? '#dc2626' : c.priority === 'medium' ? '#b45309' : '#16a34a'};font-weight:600">${capitalize(c.priority)}</td>
         <td><span class="badge badge-${c.status.replace('_', '-')}">${getStatusLabel(c.status)}</span></td>
         <td>${c.date}</td>
-        <td><button class="btn-view" onclick="viewComplaintDetail('${c.id}')">👁️ View</button></td>
+        <td><button class="btn-view" onclick="viewComplaintDetail('${c.id}')"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">visibility</span> View</button></td>
       </tr>
     `).join('');
   }
@@ -44,7 +44,7 @@ function renderComplaints(statusFilter = 'all', priorityFilter = 'all') {
 function getStatusLabel(status) {
   if (status === 'open')        return '⊙ Open';
   if (status === 'in_progress') return '⏱ In Progress';
-  if (status === 'resolved')    return '✓ Resolved';
+  if (status === 'resolved')    return '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span> Resolved';
   return status;
 }
 

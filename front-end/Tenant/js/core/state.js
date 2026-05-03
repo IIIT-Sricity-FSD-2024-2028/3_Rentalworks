@@ -38,12 +38,12 @@ const State = {
     ],
     serviceRequests: [],
     notifications: [
-      { id: 1, type: 'alert', icon: '⏰', bg: '#fef9c3', title: 'Payment Reminder', desc: 'March Rent due on Mar 10.', time: '2 hours ago', unread: true },
-      { id: 2, type: 'info', icon: '📦', bg: '#eff6ff', title: 'Package Delivered', desc: 'A package arrived for you at the reception.', time: '5 hours ago', unread: true },
-      { id: 3, type: 'success', icon: '✅', bg: '#f0fdf4', title: 'Issue Resolved', desc: 'Maintenance fixed the flickering tube light.', time: '1 day ago', unread: true },
-      { id: 4, type: 'info', icon: 'ℹ️', bg: '#eff6ff', title: 'Water Supply Notice', desc: 'Water will be shut off for 2 hours tomorrow at 2 PM.', time: '2 days ago', unread: false },
-      { id: 5, type: 'success', icon: '👕', bg: '#f0fdf4', title: 'Laundry Ready', desc: 'Your laundry has been washed, ironed, and is ready for pickup.', time: '3 days ago', unread: false },
-      { id: 6, type: 'success', icon: '✅', bg: '#f0fdf4', title: 'Payment Received', desc: 'Your February rent payment was successful.', time: '1 week ago', unread: false }
+      { id: 1, type: 'alert', icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">schedule</span>', bg: '#fef9c3', title: 'Payment Reminder', desc: 'March Rent due on Mar 10.', time: '2 hours ago', unread: true },
+      { id: 2, type: 'info', icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">inventory_2</span>', bg: '#eff6ff', title: 'Package Delivered', desc: 'A package arrived for you at the reception.', time: '5 hours ago', unread: true },
+      { id: 3, type: 'success', icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span>', bg: '#f0fdf4', title: 'Issue Resolved', desc: 'Maintenance fixed the flickering tube light.', time: '1 day ago', unread: true },
+      { id: 4, type: 'info', icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">info_outline</span>', bg: '#eff6ff', title: 'Water Supply Notice', desc: 'Water will be shut off for 2 hours tomorrow at 2 PM.', time: '2 days ago', unread: false },
+      { id: 5, type: 'success', icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">local_laundry_service</span>', bg: '#f0fdf4', title: 'Laundry Ready', desc: 'Your laundry has been washed, ironed, and is ready for pickup.', time: '3 days ago', unread: false },
+      { id: 6, type: 'success', icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span>', bg: '#f0fdf4', title: 'Payment Received', desc: 'Your February rent payment was successful.', time: '1 week ago', unread: false }
     ]
   },
 

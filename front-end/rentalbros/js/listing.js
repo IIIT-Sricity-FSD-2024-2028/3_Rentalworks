@@ -205,7 +205,7 @@ function updateActiveChips({ searchText, price, sort, ratingMin, distance, roomT
   if (chips.length > 0) {
     activeFiltersBar.style.display = "flex";
     activeChips.innerHTML = chips.map(c =>
-      `<span class="filter-chip" data-key="${c.key}">${c.label} <span class="chip-remove">✕</span></span>`
+      `<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">close</span></span></span>`
     ).join("");
 
     // Chip remove handlers
@@ -307,24 +307,71 @@ listingsGrid.addEventListener("click", e => {
   }
 });
 
+function injectDynamicListings() {
+  const container = document.getElementById("listingsGrid");
+  if (!container) return;
+
+  const adminData = localStorage.getItem('admin_properties');
+  let properties = [];
+  if (adminData) {
+    properties = JSON.parse(adminData);
+  }
+
+  const liveProps = properties.filter(p => p.status === 'live' || p.status === 'approved');
+
+  // If there are real live properties, use them instead of hardcoded HTML
+  if (liveProps.length > 0) {
+    let html = '';
+    liveProps.forEach((p, idx) => {
+      const imgs = ['6h.webp', '1h.jpg', '2h.webp', '3h.jpg', '4h.webp', '5h.webp'];
+      const imgSrc = p.img || `../public/room_images/${imgs[idx % imgs.length]}`;
+      const rent = p.rentMin || 10000;
+      const amens = (p.amenities && p.amenities.length > 0) ? p.amenities.join(',') : 'wifi,parking';
+      const loc = p.location || '';
+      
+      // Determine pseudo-filters
+      const priceStr = rent;
+      const gender = p.owner && p.owner.toLowerCase().includes('boys') ? 'boys' : 'unisex';
+      const room = p.rooms ? (p.rooms.includes('/') ? 'double' : 'single') : 'double';
+
+      html += `
+      <div class="listing-card dynamic-card" style="cursor: pointer;" onclick="window.location.href='../../pg_details/index.html?id=${p.id}'" data-price="${priceStr}" data-rating="${p.safetyScore || 4.5}" data-room="${room}" data-food="food" data-foodtype="vegnonveg" data-gender="${gender}" data-distance="1" data-amenities="${amens.toLowerCase()}">
+        <div class="image-box">
+          <img src="${imgSrc}" onerror="this.src='../public/room_images/1h.jpg'">
+          <span class="badge badge-rating"><span class="material-icons-outlined" style="font-size:20px;">star_border</span> ${p.safetyScore || 4.5}</span>
+        </div>
+        <div class="listing-content">
+          <h3>${p.name} <span style="font-size:10px;background:#22c55e;color:#fff;padding:2px 6px;border-radius:10px;margin-left:6px;vertical-align:middle;">NEW</span></h3>
+          <p class="location">
+            <span class="material-icons-outlined" style="font-size:24px;">location_on</span>
+            ${loc}
+          </p>
+          <div class="price">₹${rent.toLocaleString()} <span>/month</span></div>
+          <div class="features">
+            <span class="tag"><span class="material-icons-outlined" style="font-size:20px;">bed</span> Room</span>
+            ${(p.amenities || []).slice(0,3).map(a => `<span class="tag">${a}</span>`).join('')}
+          </div>
+          <button class="view-btn">View Details</button>
+        </div>
+      </div>
+      `;
+    });
+    
+    // Remove previously injected dynamic cards so we don't duplicate on storage event
+    container.querySelectorAll('.dynamic-card').forEach(el => el.remove());
+    container.insertAdjacentHTML('afterbegin', html);
+  }
+}
+
 // ================= INITIAL RENDER =================
 window.addEventListener("DOMContentLoaded", () => {
+  injectDynamicListings();
   filterListings();
-  
-  // Make all non-Sunrise PGs visually disabled across the listing app
-  const cards = document.querySelectorAll(".listing-card");
-  cards.forEach(card => {
-    const title = card.querySelector("h3")?.innerText || "";
-    if (title.trim() !== "Sunrise PG Residency") {
-      card.style.opacity = "0.6";
-      card.style.pointerEvents = "none"; // Hard-locks the entire card and buttons
-      const btn = card.querySelector(".view-btn");
-      if (btn) {
-        btn.innerText = "Currently Unavailable";
-        btn.style.background = "#e2e8f0";
-        btn.style.color = "#64748b";
-        btn.style.boxShadow = "none";
-      }
-    }
-  });
+});
+
+window.addEventListener("storage", (e) => {
+  if (e.key === 'admin_properties') {
+    injectDynamicListings();
+    filterListings();
+  }
 });

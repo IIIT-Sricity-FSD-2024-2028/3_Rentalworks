@@ -1,4 +1,5 @@
-<html><head></head><body><div id="page-profile" class="page active">
+<html><head>    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+</head><body><div id="page-profile" class="page active">
   <div class="page-content">
     <div class="page-header"><h1>Profile</h1><p>Manage your account information</p></div>
     <div class="grid-2">
@@ -29,11 +30,11 @@
           <div class="section-header"><span class="section-title">Security</span></div>
           <div class="section-body">
             <div class="security-item">
-              <div style="display:flex;align-items:center"><div class="security-icon" style="background:var(--primary-bg)"><span class="material-icons-outlined" style="font-size:24px;">vpn_key</span></div><div class="security-info"><div class="security-title">Password</div><div class="security-sub">Last changed 30 days ago</div></div></div>
+              <div style="display:flex;align-items:center"><div class="security-icon" style="background:var(--primary-bg)"><span class="material-icons-outlined" style="font-size:24px;">key</span></div><div class="security-info"><div class="security-title">Password</div><div class="security-sub">Last changed 30 days ago</div></div></div>
               <button class="btn btn-outline btn-sm" onclick="Navigation.navigate('change-password')">Change Password</button>
             </div>
             <div class="security-item">
-              <div style="display:flex;align-items:center"><div class="security-icon" style="background:#f0fdf4"><span class="material-icons-outlined" style="font-size:24px;">lock</span></div><div class="security-info"><div class="security-title">Two-Factor Authentication</div><div class="security-sub">Add an extra layer of security</div></div></div>
+              <div style="display:flex;align-items:center"><div class="security-icon" style="background:#f0fdf4"><span class="material-icons-outlined" style="font-size:24px;">lock_outline</span></div><div class="security-info"><div class="security-title">Two-Factor Authentication</div><div class="security-sub">Add an extra layer of security</div></div></div>
               <button id="btn-2fa" class="btn btn-primary btn-sm" onclick="TenantLogic.toggle2FA()">Enable</button>
             </div>
           </div>

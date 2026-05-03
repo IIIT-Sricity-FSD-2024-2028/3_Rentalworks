@@ -289,7 +289,7 @@ function renderGuestStep() {
     body.innerHTML = `
       <div class="step-animated">
         <div style="text-align:center; margin-bottom: 28px;">
-           <div style="font-size: 42px; margin-bottom:12px; filter: drop-shadow(0 4px 6px rgba(59, 130, 246, 0.2));">👋</div>
+           <div style="font-size: 42px; margin-bottom:12px; filter: drop-shadow(0 4px 6px rgba(59, 130, 246, 0.2));"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">waving_hand</span></div>
            <h3 style="font-size: 20px; font-weight:800; color:var(--text); margin-bottom:8px;">Welcome! Let's get to know you</h3>
            <p style="color:var(--muted); font-size:14px; line-height:1.5; padding: 0 10px;">Please provide your basic details so we can set up your profile.</p>
         </div>
@@ -297,7 +297,7 @@ function renderGuestStep() {
           <div class="reg-field full" style="margin-bottom: 0;">
             <label>Full Name *</label>
             <div class="reg-inp-wrap">
-              <span class="reg-ico">👤</span>
+              <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">person_outline</span></span>
               <input type="text" id="g-name" placeholder="Enter your full name" value="${guestFormData.name || ''}"/>
             </div>
             <div class="reg-err" id="err-g-name"></div>
@@ -313,7 +313,7 @@ function renderGuestStep() {
           <div class="reg-field" style="margin-bottom: 0;">
             <label>Phone Number *</label>
             <div class="reg-inp-wrap">
-              <span class="reg-ico">📞</span>
+              <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">phone_in_talk</span></span>
               <input type="tel" id="g-phone" placeholder="+91 98765 43210" value="${guestFormData.phone || ''}"/>
             </div>
             <div class="reg-err" id="err-g-phone"></div>
@@ -332,7 +332,7 @@ function renderGuestStep() {
     body.innerHTML = `
       <div class="step-animated">
         <div style="text-align:center; margin-bottom: 28px;">
-           <div style="font-size: 42px; margin-bottom:12px; filter: drop-shadow(0 4px 6px rgba(245, 158, 11, 0.2));">🌍</div>
+           <div style="font-size: 42px; margin-bottom:12px; filter: drop-shadow(0 4px 6px rgba(245, 158, 11, 0.2));"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">public</span></div>
            <h3 style="font-size: 20px; font-weight:800; color:var(--text); margin-bottom:8px;">Where are you from?</h3>
            <p style="color:var(--muted); font-size:14px; line-height:1.5; padding: 0 10px;">Help us tailor your experience by providing your location details.</p>
         </div>
@@ -340,7 +340,7 @@ function renderGuestStep() {
           <div class="reg-field" style="margin-bottom: 0;">
             <label>Date of Birth *</label>
             <div class="reg-inp-wrap">
-              <span class="reg-ico">📅</span>
+              <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">calendar_today</span></span>
               <input type="date" id="g-dob" value="${guestFormData.dob || ''}"/>
             </div>
             <div class="reg-err" id="err-g-dob"></div>
@@ -348,7 +348,7 @@ function renderGuestStep() {
           <div class="reg-field" style="margin-bottom: 0;">
             <label>City *</label>
             <div class="reg-inp-wrap">
-              <span class="reg-ico">🏙️</span>
+              <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">location_city</span></span>
               <input type="text" id="g-city" placeholder="Enter your city" value="${guestFormData.city || ''}"/>
             </div>
             <div class="reg-err" id="err-g-city"></div>
@@ -356,7 +356,7 @@ function renderGuestStep() {
           <div class="reg-field full" style="margin-bottom: 0;">
             <label>Current Address *</label>
             <div class="reg-inp-wrap">
-              <span class="reg-ico">📍</span>
+              <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">location_on</span></span>
               <textarea id="g-address" placeholder="Enter your current address" rows="2">${guestFormData.address || ''}</textarea>
             </div>
             <div class="reg-err" id="err-g-address"></div>
@@ -376,15 +376,15 @@ function renderGuestStep() {
     body.innerHTML = `
       <div class="step-animated">
         <div style="text-align:center; margin-bottom: 28px;">
-           <div style="font-size: 42px; margin-bottom:12px; filter: drop-shadow(0 4px 6px rgba(16, 185, 129, 0.2));">🛡️</div>
+           <div style="font-size: 42px; margin-bottom:12px; filter: drop-shadow(0 4px 6px rgba(16, 185, 129, 0.2));"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">security</span></div>
            <p style="color:var(--muted); font-size:14px; line-height:1.5; padding: 0 10px;">Create a strong password to protect your bookings and personal information.</p>
         </div>
         <div class="reg-field">
           <label>Password *</label>
           <div class="reg-inp-wrap">
-            <span class="reg-ico">🔒</span>
+            <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">lock_outline</span></span>
             <input type="password" id="g-password" placeholder="Create a strong password" oninput="checkPwStrength(this.value)"/>
-            <span class="toggle-reg-pw" onclick="togglePw('g-password', this)">👁️</span>
+            <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">visibility</span></span>
           </div>
           <div class="pw-strength-bar" style="height:4px; background:#e2e8f0; margin-top:8px; border-radius:2px; overflow:hidden;">
               <div id="pw-fill" style="height:100%; width:0%; transition:all 0.3s; background:var(--red);"></div>
@@ -395,9 +395,9 @@ function renderGuestStep() {
         <div class="reg-field">
           <label>Confirm Password *</label>
           <div class="reg-inp-wrap">
-            <span class="reg-ico">🔒</span>
+            <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">lock_outline</span></span>
             <input type="password" id="g-confirm" placeholder="Re-enter your password"/>
-            <span class="toggle-reg-pw" onclick="togglePw('g-confirm', this)">👁️</span>
+            <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">visibility</span></span>
           </div>
           <div class="reg-err" id="err-g-confirm"></div>
         </div>
@@ -518,7 +518,7 @@ function submitGuestRegistration() {
 
   // Show success then redirect to guest booking page
   showSuccessScreen(
-    'Account Created! 🎉',
+    'Account Created! <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">celebration</span>',
     `Welcome to RentBro, ${newGuest.name}! Your account has been set up securely.`,
     true
   );
@@ -543,7 +543,7 @@ function renderOwnerRegForm() {
       <div class="reg-field">
         <label>Full Name *</label>
         <div class="reg-inp-wrap">
-          <span class="reg-ico">👤</span>
+          <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">person_outline</span></span>
           <input type="text" id="o-name" placeholder="Enter your full name"/>
         </div>
         <div class="reg-err" id="err-o-name"></div>
@@ -559,7 +559,7 @@ function renderOwnerRegForm() {
       <div class="reg-field">
         <label>Phone Number *</label>
         <div class="reg-inp-wrap">
-          <span class="reg-ico">📞</span>
+          <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">phone_in_talk</span></span>
           <input type="tel" id="o-phone" placeholder="Enter your phone number"/>
         </div>
         <div class="reg-err" id="err-o-phone"></div>
@@ -567,7 +567,7 @@ function renderOwnerRegForm() {
       <div class="reg-field">
         <label>Total Rooms *</label>
         <div class="reg-inp-wrap">
-          <span class="reg-ico">🏠</span>
+          <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">home</span></span>
           <input type="number" id="o-rooms" placeholder="0" min="1"/>
         </div>
         <div class="reg-err" id="err-o-rooms"></div>
@@ -575,7 +575,7 @@ function renderOwnerRegForm() {
       <div class="reg-field full">
         <label>PG Property Name *</label>
         <div class="reg-inp-wrap">
-          <span class="reg-ico">🏢</span>
+          <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">apartment</span></span>
           <input type="text" id="o-propname" placeholder="Enter PG property name"/>
         </div>
         <div class="reg-err" id="err-o-propname"></div>
@@ -583,7 +583,7 @@ function renderOwnerRegForm() {
       <div class="reg-field full">
         <label>Property Address *</label>
         <div class="reg-inp-wrap">
-          <span class="reg-ico">📍</span>
+          <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">location_on</span></span>
           <input type="text" id="o-propaddr" placeholder="Enter complete property address"/>
         </div>
         <div class="reg-err" id="err-o-propaddr"></div>
@@ -591,7 +591,7 @@ function renderOwnerRegForm() {
       <div class="reg-field">
         <label>City *</label>
         <div class="reg-inp-wrap">
-          <span class="reg-ico">🏙️</span>
+          <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">location_city</span></span>
           <input type="text" id="o-city" placeholder="City"/>
         </div>
         <div class="reg-err" id="err-o-city"></div>
@@ -599,7 +599,7 @@ function renderOwnerRegForm() {
       <div class="reg-field">
         <label>State *</label>
         <div class="reg-inp-wrap">
-          <span class="reg-ico">🗺️</span>
+          <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">map</span></span>
           <input type="text" id="o-state" placeholder="State"/>
         </div>
         <div class="reg-err" id="err-o-state"></div>
@@ -607,7 +607,7 @@ function renderOwnerRegForm() {
       <div class="reg-field">
         <label>Total Capacity *</label>
         <div class="reg-inp-wrap">
-          <span class="reg-ico">👥</span>
+          <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">group</span></span>
           <input type="number" id="o-capacity" placeholder="0" min="1"/>
         </div>
         <div class="reg-err" id="err-o-capacity"></div>
@@ -633,7 +633,7 @@ function renderOwnerRegForm() {
         <div class="reg-field">
           <label>ID Proof * (Aadhaar / PAN / Driving License)</label>
           <div class="file-inp-wrap">
-            <span class="reg-ico">📋</span>
+            <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">assignment</span></span>
             <input type="file" id="o-idproof" accept=".pdf,.jpg,.jpeg,.png" class="file-input"/>
             <span class="file-label">Choose file...</span>
           </div>
@@ -651,7 +651,7 @@ function renderOwnerRegForm() {
         <div class="reg-field">
           <label>Property Ownership Proof</label>
           <div class="file-inp-wrap">
-            <span class="reg-ico">🏠</span>
+            <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">home</span></span>
             <input type="file" id="o-ownership" accept=".pdf,.jpg,.jpeg,.png" class="file-input"/>
             <span class="file-label">Choose file...</span>
           </div>
@@ -893,5 +893,5 @@ function togglePw(inputId, btn) {
   const inp = document.getElementById(inputId);
   if (!inp) return;
   inp.type     = inp.type === 'password' ? 'text' : 'password';
-  btn.textContent = inp.type === 'password' ? '👁️' : '🙈';
+  btn.innerHTML = inp.type === 'password' ? '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">visibility</span>' : '🙈';
 }

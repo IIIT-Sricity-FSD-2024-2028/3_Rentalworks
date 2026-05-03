@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (notifs.length === 0) return;
       const latest = notifs[notifs.length - 1];
       if (latest.targetRole === 'tenant' || latest.targetRole === 'all') {
-        if (typeof UI !== 'undefined') UI.showToast('🔔 ' + latest.title + ': ' + latest.message, 'info');
+        if (typeof UI !== 'undefined') UI.showToast('<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">notifications_none</span> ' + latest.title + ': ' + latest.message, 'info');
       }
     }
     

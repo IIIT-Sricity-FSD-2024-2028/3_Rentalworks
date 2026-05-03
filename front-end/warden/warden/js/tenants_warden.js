@@ -24,10 +24,10 @@ function renderTenants(filter = '', statusFilter = 'all') {
         <td>${t.phone}</td>
         <td>${t.checkIn}</td>
         <td>₹${t.rent.toLocaleString()}</td>
-        <td><span class="badge badge-${t.paymentStatus}">${t.paymentStatus === 'paid' ? '✓ Paid' : '✗ Pending'}</span></td>
+        <td><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span> Paid' : '✗ Pending'}</span></td>
         <td>
           <div class="action-icons">
-            <button class="icon-btn" onclick="viewTenant(${t.id})" title="View">👁️</button>
+            <button class="icon-btn" onclick="viewTenant(${t.id})" title="View"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">visibility</span></button>
             <button class="icon-btn" onclick="editTenant(${t.id})" title="Edit">✏️</button>
             <button class="icon-btn" onclick="deleteTenant(${t.id})" title="Delete">🗑️</button>
           </div>

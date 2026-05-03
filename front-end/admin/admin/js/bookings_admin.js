@@ -94,7 +94,7 @@ function renderBookings(search = '', statusF = 'all') {
         </td>
         <td style="font-size:12px">${b.property}</td>
         <td><span class="room-chip">${b.room}</span></td>
-        <td style="font-size:12px">📅 ${b.checkIn}</td>
+        <td style="font-size:12px"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">calendar_today</span> ${b.checkIn}</td>
         <td style="font-size:12px">⏱ ${b.duration}</td>
         <td style="font-size:12px">₹${b.rent.toLocaleString()}</td>
         <td><span class="badge badge-${b.status}">${getBookingStatusLabel(b.status)}</span></td>
@@ -121,29 +121,29 @@ function getBookingStatusLabel(status) {
 function getBookingActions(b) {
   if (b.status === 'pending') return `
     <div class="act-icons">
-      <button class="ico-btn" onclick="approveBooking('${b.id}')" title="Approve">✅</button>
-      <button class="ico-btn danger" onclick="rejectBooking('${b.id}')" title="Reject">❌</button>
+      <button class="ico-btn" onclick="approveBooking('${b.id}')" title="Approve"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span></button>
+      <button class="ico-btn danger" onclick="rejectBooking('${b.id}')" title="Reject"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">close</span></button>
     </div>`;
 
   if (b.status === 'active' || b.status === 'paid') return `
     <div class="act-icons">
-      <button class="ico-btn" onclick="viewBooking('${b.id}')" title="View Details">👁️</button>
-      <button class="ico-btn danger" onclick="forceTerminate('${b.id}')" title="Force Terminate">🔴</button>
+      <button class="ico-btn" onclick="viewBooking('${b.id}')" title="View Details"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">visibility</span></button>
+      <button class="ico-btn danger" onclick="forceTerminate('${b.id}')" title="Force Terminate"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">error_outline</span></button>
     </div>`;
 
   if (b.status === 'cancelled') return `
     <div class="act-icons">
-      <button class="ico-btn" onclick="viewBooking('${b.id}')" title="View Details">👁️</button>
+      <button class="ico-btn" onclick="viewBooking('${b.id}')" title="View Details"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">visibility</span></button>
     </div>`;
 
-  return `<div class="act-icons"><button class="ico-btn" onclick="viewBooking('${b.id}')" title="View">👁️</button></div>`;
+  return `<div class="act-icons"><button class="ico-btn" onclick="viewBooking('${b.id}')" title="View"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">visibility</span></button></div>`;
 }
 
 // ===== VIEW BOOKING =====
 function viewBooking(id) {
   const b = bookings.find(x => x.id.toString() === id.toString());
   if (!b) return;
-  showInfoModal('📅 Booking Details', `Room ${b.room} at ${b.property}`,
+  showInfoModal('<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">calendar_today</span> Booking Details', `Room ${b.room} at ${b.property}`,
     `<div style="display:grid;gap:10px;font-size:13px">
       <div><strong>Tenant:</strong> ${b.tenant}</div>
       <div><strong>Phone:</strong> ${b.phone}</div>

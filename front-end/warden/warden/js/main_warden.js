@@ -178,7 +178,7 @@ function navigateTo(section) {
     .catch(err => {
       document.getElementById('main-content-target').innerHTML =
         `<div style="padding:40px;color:#dc2626;text-align:center">
-           ⚠️ Failed to load section: <strong>${section}</strong><br>
+           <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">warning_amber</span> Failed to load section: <strong>${section}</strong><br>
            <small>${err.message}</small><br><br>
            <small>Make sure you are running this via a local server (not file://).</small>
          </div>`;
@@ -243,7 +243,7 @@ function renderSection(section) {
 let modalCallback = null;
 
 function showModal(title, content, onConfirm) {
-  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-title').innerHTML = title;
   document.getElementById('modal-body').innerHTML    = content;
   modalCallback = onConfirm || null;
   const confirmBtn = document.getElementById('modal-confirm');
@@ -283,9 +283,9 @@ function showToast(type, title, message) {
   const toast = document.getElementById('toast');
   if (!toast) return;
 
-  const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+  const icons = { success: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span>', error: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">close</span>', warning: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">warning_amber</span>', info: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">info_outline</span>' };
   toast.className = `toast ${type}`;
-  toast.querySelector('.toast-icon').textContent        = icons[type] || 'ℹ️';
+  toast.querySelector('.toast-icon').innerHTML = icons[type] || '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">info_outline</span>';
   toast.querySelector('.toast-text strong').textContent = title;
   toast.querySelector('.toast-text span').textContent   = message;
 

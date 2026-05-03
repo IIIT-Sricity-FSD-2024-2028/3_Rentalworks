@@ -68,7 +68,7 @@ function renderProfilePage(profile, totalProps, totalRevenue) {
           </div>
         </div>
         <div style="margin-top:20px;display:flex;gap:10px">
-          <button class="btn btn-primary" style="flex:1" onclick="saveProfile()">💾 Save Changes</button>
+          <button class="btn btn-primary" style="flex:1" onclick="saveProfile()"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">save</span> Save Changes</button>
         </div>
       </div>
 
@@ -108,14 +108,14 @@ function renderProfilePage(profile, totalProps, totalRevenue) {
               🔐 Change Password
             </button>
             <button class="btn btn-secondary" style="justify-content:flex-start;gap:12px" onclick="enableTwoFactor()">
-              📱 Enable Two-Factor Auth
+              <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">smartphone</span> Enable Two-Factor Auth
             </button>
             <button class="btn btn-secondary" style="justify-content:flex-start;gap:12px" onclick="downloadData()">
               📥 Download My Data
             </button>
             <hr class="divider">
             <button class="btn btn-danger" style="justify-content:flex-start;gap:12px" onclick="logoutAccount()">
-              🚪 Sign Out
+              <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">logout</span> Sign Out
             </button>
           </div>
         </div>
@@ -200,11 +200,11 @@ function submitChangePassword() {
 function enableTwoFactor() {
   openModal(`
     <div class="modal-header">
-      <span class="modal-title">📱 Two-Factor Authentication</span>
+      <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">smartphone</span> Two-Factor Authentication</span>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div style="text-align:center;padding:20px 0">
-      <div style="font-size:48px;margin-bottom:16px">📱</div>
+      <div style="font-size:48px;margin-bottom:16px"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">smartphone</span></div>
       <p style="font-size:14px;color:var(--text-body);margin-bottom:16px">Scan the QR code below with your authenticator app (Google Authenticator, Authy, etc.)</p>
       <div style="background:var(--bg-main);border-radius:12px;padding:20px;display:inline-block;margin-bottom:16px">
         <div style="font-size:11px;color:var(--text-muted);letter-spacing:3px">QR CODE PLACEHOLDER</div>
@@ -214,7 +214,7 @@ function enableTwoFactor() {
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="closeModal();showToast('2FA enabled!','success')">✅ Enable 2FA</button>
+      <button class="btn btn-primary" onclick="closeModal();showToast('2FA enabled!','success')"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span> Enable 2FA</button>
     </div>
   `);
 }

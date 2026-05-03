@@ -132,7 +132,7 @@ function getToastContainer() {
 }
 
 function showToast(message, type = 'info', duration = 3500) {
-  const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️', reminder: '🔔' };
+  const icons = { success: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span>', error: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">close</span>', warning: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">warning_amber</span>', info: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">info_outline</span>', reminder: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">notifications_none</span>' };
   const container = getToastContainer();
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
@@ -174,12 +174,12 @@ function closeModal() {
 // ===== SIDEBAR INJECTION =====
 function getSidebarHTML(activePage) {
   const navItems = [
-    { href: 'index.html', icon: '🏠', label: 'Dashboard', page: 'dashboard' },
-    { href: 'properties.html', icon: '🏢', label: 'Properties', page: 'properties' },
-    { href: 'issues.html', icon: '⚠️', label: 'Issues', page: 'issues' },
-    { href: 'notifications.html', icon: '🔔', label: 'Notifications', page: 'notifications' },
-    { href: 'policy.html', icon: '📋', label: 'Policy', page: 'policy' },
-    { href: 'profile.html', icon: '👤', label: 'Profile', page: 'profile' },
+    { href: 'index.html', icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">home</span>', label: 'Dashboard', page: 'dashboard' },
+    { href: 'properties.html', icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">apartment</span>', label: 'Properties', page: 'properties' },
+    { href: 'issues.html', icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">warning_amber</span>', label: 'Issues', page: 'issues' },
+    { href: 'notifications.html', icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">notifications_none</span>', label: 'Notifications', page: 'notifications' },
+    { href: 'policy.html', icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">assignment</span>', label: 'Policy', page: 'policy' },
+    { href: 'profile.html', icon: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">person_outline</span>', label: 'Profile', page: 'profile' },
   ];
 
   const navHTML = navItems.map(item => `
@@ -218,7 +218,7 @@ function getSidebarHTML(activePage) {
           </div>
         </div>
         <button class="btn btn-secondary btn-sm" onclick="logout()" style="width:100%;margin-top:10px;gap:8px;justify-content:center;">
-          <span>🚪</span> Logout
+          <span><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">logout</span></span> Logout
         </button>
       </div>
     </aside>
@@ -237,14 +237,14 @@ function getTopbarHTML(title, subtitle = '') {
       </div>
       <div class="topbar-right">
         <div class="topbar-search">
-          <span class="search-icon">🔍</span>
+          <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">search</span></span>
           <input type="text" placeholder="Search..." id="globalSearch">
         </div>
         <a href="notifications.html" class="icon-btn" title="Notifications" style="position:relative">
-          🔔
+          <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">notifications_none</span>
           <span class="notif-dot" id="topbarNotifDot" style="display:none"></span>
         </a>
-        <a href="profile.html" class="icon-btn" title="Profile">👤</a>
+        <a href="profile.html" class="icon-btn" title="Profile"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">person_outline</span></a>
       </div>
     </header>
   `;
@@ -345,22 +345,22 @@ function generateId(prefix) {
 }
 
 function getPriorityIcon(priority) {
-  if (priority === 'High') return '🔴';
+  if (priority === 'High') return '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">error_outline</span>';
   if (priority === 'Medium') return '🟡';
   return '🔵';
 }
 
 function getCategoryIcon(category) {
   const icons = {
-    Maintenance: '🔧', Internet: '📶', Appliance: '🖥️',
-    Housekeeping: '🧹', Security: '🔒', Electrical: '⚡', Plumbing: '🚿'
+    Maintenance: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">construction</span>', Internet: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">wifi</span>', Appliance: '🖥️',
+    Housekeeping: '🧹', Security: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">lock_outline</span>', Electrical: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">bolt</span>', Plumbing: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">shower</span>'
   };
   return icons[category] || '📌';
 }
 
 function getNotifIcon(type) {
-  const icons = { reminder: '🔔', alert: '⚠️', success: '✅', warning: '🟡', info: 'ℹ️' };
-  return icons[type] || 'ℹ️';
+  const icons = { reminder: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">notifications_none</span>', alert: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">warning_amber</span>', success: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span>', warning: '🟡', info: '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">info_outline</span>' };
+  return icons[type] || '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">info_outline</span>';
 }
 
 function getNotifIconBg(type) {

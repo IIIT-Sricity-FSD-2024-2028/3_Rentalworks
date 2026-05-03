@@ -24,7 +24,7 @@ function renderNotifications() {
   container.innerHTML = notifications.map(n => `
     <div class="notif-item ${n.read ? '' : 'unread'}" id="notif-${n.id}">
       <div class="notif-icon-wrap ${n.icon}">
-        ${n.icon === 'warning' ? '⚠️' : n.icon === 'check' ? '✅' : 'ℹ️'}
+        ${n.icon === 'warning' ? '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">warning_amber</span>' : n.icon === 'check' ? '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span>' : '<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">info_outline</span>'}
       </div>
       <div class="notif-content">
         <strong>${n.title}</strong>

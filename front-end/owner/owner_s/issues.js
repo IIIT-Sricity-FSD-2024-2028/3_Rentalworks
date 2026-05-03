@@ -41,7 +41,7 @@ function renderIssuesPage(issues) {
   document.getElementById('pageContent').innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
       <div class="stat-card">
-        <div class="stat-icon red">🔴</div>
+        <div class="stat-icon red"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">error_outline</span></div>
         <div class="stat-info">
           <div class="stat-value">${open}</div>
           <div class="stat-label">Open Issues</div>
@@ -55,7 +55,7 @@ function renderIssuesPage(issues) {
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon green">✅</div>
+        <div class="stat-icon green"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span></div>
         <div class="stat-info">
           <div class="stat-value">${resolved}</div>
           <div class="stat-label">Resolved</div>
@@ -65,7 +65,7 @@ function renderIssuesPage(issues) {
 
     <div class="filter-bar">
       <div class="filter-search">
-        <span>🔍</span>
+        <span><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">search</span></span>
         <input type="text" id="issueSearch" placeholder="Search issues..." oninput="filterIssues()">
       </div>
       <select class="filter-select" id="filterIssueStatus" onchange="filterIssues()">
@@ -100,7 +100,7 @@ function renderIssuesPage(issues) {
 function renderIssuesList(issues) {
   if (issues.length === 0) {
     return `<div class="empty-state">
-      <div class="empty-icon">✅</div>
+      <div class="empty-icon"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span></div>
       <h3>No Issues Found</h3>
       <p>Try adjusting your filters, or all issues are resolved!</p>
     </div>`;
@@ -115,12 +115,12 @@ function renderIssuesList(issues) {
         <div class="issue-title">${issue.title}</div>
         <div class="issue-meta">
           <span class="badge" style="background:var(--primary-light); color:var(--primary); border:1px solid #ddd8ff">
-            👤 Reported by: ${issue.reportedBy || 'Warden'}
+            <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">person_outline</span> Reported by: ${issue.reportedBy || 'Warden'}
           </span>
           <span>•</span>
-          <span>🏢 ${issue.propertyName}</span>
+          <span><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">apartment</span> ${issue.propertyName}</span>
           <span>•</span>
-          <span>📅 ${formatDate(issue.reportedDate)}</span>
+          <span><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">calendar_today</span> ${formatDate(issue.reportedDate)}</span>
           <span>•</span>
           <span class="badge badge-${issue.priority.toLowerCase()}">${getPriorityIcon(issue.priority)} ${issue.priority}</span>
           <span class="badge badge-${issue.status.toLowerCase().replace(' ', '')}">${issue.status}</span>
@@ -129,9 +129,9 @@ function renderIssuesList(issues) {
       </div>
       <div class="issue-actions">
         ${issue.status !== 'Resolved' ? `
-          <button class="btn btn-success btn-sm" onclick="updateIssueStatus('${issue.id}', 'Resolved')">✅ Resolve</button>
+          <button class="btn btn-success btn-sm" onclick="updateIssueStatus('${issue.id}', 'Resolved')"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span> Resolve</button>
           ${issue.status === 'Open' ? `<button class="btn btn-warning btn-sm" onclick="updateIssueStatus('${issue.id}', 'In Progress')">⏳ In Progress</button>` : ''}
-        ` : `<span class="badge badge-resolved">✅ Resolved</span>`}
+        ` : `<span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">check_circle_outline</span> Resolved</span>`}
         
         </div>
     </div>
@@ -208,7 +208,7 @@ function openAddIssueModal() {
   const propertyOptions = allProperties.map(p => `<option value="${p.id}" data-name="${p.name}">${p.name}</option>`).join('');
   openModal(`
     <div class="modal-header">
-      <span class="modal-title">⚠️ Report New Issue</span>
+      <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">warning_amber</span> Report New Issue</span>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px;max-height:65vh;overflow-y:auto;padding-right:4px">

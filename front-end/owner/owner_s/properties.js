@@ -24,7 +24,7 @@ function renderPropertiesPage(properties) {
     <!-- Filter Bar -->
     <div class="filter-bar">
       <div class="filter-search">
-        <span>🔍</span>
+        <span><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">search</span></span>
         <input type="text" id="propSearch" placeholder="Search by name, city..." oninput="filterProperties()">
       </div>
       <select class="filter-select" id="filterType" onchange="filterProperties()">
@@ -57,7 +57,7 @@ function renderPropertiesPage(properties) {
 function renderPropertyCards(properties) {
   if (properties.length === 0) {
     return `<div class="empty-state" style="grid-column:1/-1">
-      <div class="empty-icon">🏢</div>
+      <div class="empty-icon"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">apartment</span></div>
       <h3>No Properties Found</h3>
       <p>Try adjusting your filters or add a new property.</p>
       <a href="add-property.html" class="btn btn-primary">➕ Add Property</a>
@@ -78,11 +78,11 @@ function renderPropertyCards(properties) {
       </div>
       <div class="property-card-body">
         <div class="property-card-title">${p.name}</div>
-        <div class="property-card-addr">📍 ${p.address}, ${p.city}, ${p.state}</div>
+        <div class="property-card-addr"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">location_on</span> ${p.address}, ${p.city}, ${p.state}</div>
         <div class="property-meta">
-          <div class="property-meta-item">🏠 <span>${p.type}</span></div>
-          <div class="property-meta-item">🛏 <span>${p.totalRooms} rooms</span></div>
-          <div class="property-meta-item">💰 <span>${formatCurrency(p.monthlyRent)}/mo</span></div>
+          <div class="property-meta-item"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">home</span> <span>${p.type}</span></div>
+          <div class="property-meta-item"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">bed</span> <span>${p.totalRooms} rooms</span></div>
+          <div class="property-meta-item"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">payments</span> <span>${formatCurrency(p.monthlyRent)}/mo</span></div>
         </div>
         <div class="occupancy-bar-wrap">
           <div class="occupancy-bar-label">
@@ -98,7 +98,7 @@ function renderPropertyCards(properties) {
           ${extra > 0 ? `<span class="amenity-tag">+${extra} more</span>` : ''}
         </div>
         <div class="property-card-actions">
-          <button class="btn btn-secondary btn-sm" style="flex:1" onclick="viewProperty('${p.id}')">👁 View</button>
+          <button class="btn btn-secondary btn-sm" style="flex:1" onclick="viewProperty('${p.id}')"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">visibility</span> View</button>
           <button class="btn btn-secondary btn-sm" style="flex:1" onclick="editProperty('${p.id}')">✏️ Edit</button>
           <button class="btn btn-danger btn-sm" onclick="deleteProperty('${p.id}')">🗑</button>
         </div>
@@ -138,7 +138,7 @@ function viewProperty(id) {
   const pct = getOccupancyPercent(p.occupiedRooms, p.totalRooms);
   openModal(`
     <div class="modal-header">
-      <span class="modal-title">🏢 ${p.name}</span>
+      <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">apartment</span> ${p.name}</span>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:12px">
@@ -227,7 +227,7 @@ function editProperty(id) {
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="savePropertyEdit('${p.id}')">💾 Save Changes</button>
+      <button class="btn btn-primary" onclick="savePropertyEdit('${p.id}')"><span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; line-height:1;">save</span> Save Changes</button>
     </div>
   `);
 }

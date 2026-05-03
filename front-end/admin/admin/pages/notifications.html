@@ -2,7 +2,8 @@
   ANNOUNCEMENTS FRAGMENT
   Loaded by: navigateTo('notifications')
   Rendered by: notifications_admin.js
-================================= --><html><head></head><body><section id="notifications-sec" class="section active">
+================================= --><html><head>    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+</head><body><section id="notifications-sec" class="section active">
   <div class="sec-hdr">
     <h2>Platform Announcements</h2>
     <p>Broadcast system-wide updates to all users</p>
@@ -16,7 +17,7 @@
 
       <!-- Type buttons -->
       <div class="notif-type-btns">
-        <button class="type-btn active" data-type="announcement"><span class="material-icons-outlined" style="font-size:24px;">notifications</span> Announcement</button>
+        <button class="type-btn active" data-type="announcement"><span class="material-icons-outlined" style="font-size:24px;">notifications_none</span> Announcement</button>
         <button class="type-btn" data-type="alert">✉️ Alert</button>
         <button class="type-btn" data-type="update"><span class="material-icons-outlined" style="font-size:24px;">outbox</span> Update</button>
       </div>
@@ -27,7 +28,7 @@
         <div class="priority-btns">
           <button class="priority-btn active" data-priority="routine">🟢 Routine</button>
           <button class="priority-btn" data-priority="important">🟡 Important</button>
-          <button class="priority-btn" data-priority="urgent"><span class="material-icons-outlined" style="font-size:24px;">error</span> Urgent</button>
+          <button class="priority-btn" data-priority="urgent"><span class="material-icons-outlined" style="font-size:24px;">error_outline</span> Urgent</button>
         </div>
       </div>
 
@@ -78,7 +79,7 @@
           <span class="rec-count" id="rec-all-count">–</span>
         </div>
         <div class="recipient-item" data-recipient="tenants">
-          <div class="rec-left"><span class="material-icons-outlined" style="font-size:24px;">person</span> All Tenants</div>
+          <div class="rec-left"><span class="material-icons-outlined" style="font-size:24px;">person_outline</span> All Tenants</div>
           <span class="rec-count" id="rec-tenants-count" style="color:#16a34a">–</span>
         </div>
         <div class="recipient-item" data-recipient="owners">
