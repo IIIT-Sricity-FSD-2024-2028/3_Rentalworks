@@ -267,15 +267,14 @@ function escalateComplaint() {
     sentAt: new Date().toLocaleString()
   });
 
-  localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
-
   // === KEY FIX: Push the escalated complaint into global_issues ===
   // Owner's issues.js reads global_issues, so this will auto-appear in their Issues page.
   let globalIss = JSON.parse(localStorage.getItem('global_issues') || '[]');
-  const alreadyEscalated = globalIss.some(i => String(i.id) === String(complaint.id));
+  const escId = 'esc_' + complaint.id;
+  const alreadyEscalated = globalIss.some(i => String(i.id) === escId);
   if (!alreadyEscalated) {
     globalIss.unshift({
-      id: complaint.id,
+      id: escId,
       title: complaint.description || complaint.type || 'Escalated Complaint',
       desc: complaint.description || 'Escalated from Warden dashboard.',
       category: complaint.type || 'Maintenance',
@@ -289,6 +288,8 @@ function escalateComplaint() {
     });
     localStorage.setItem('global_issues', JSON.stringify(globalIss));
   }
+
+  localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
 
   saveToStorage();
   viewComplaintDetail(currentComplaintId);

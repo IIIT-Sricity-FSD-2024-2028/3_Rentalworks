@@ -100,10 +100,19 @@ function addUser() {
     if (!property)          { showFieldErr('f-property', 'Select a property');          ok = false; }
     if (!ok) return;
 
-    users.push({
+    const newUser = {
       id: Date.now(), name, email, phone, role, property,
       status: 'active', joinDate: new Date().toISOString().split('T')[0]
-    });
+    };
+    users.push(newUser);
+
+    // Save to backend
+    fetch('http://localhost:3000/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-role': 'admin' },
+      body: JSON.stringify(newUser)
+    }).catch(e => console.error('Error adding user:', e));
+
     saveData();
     renderUsers();
     closeModal();
@@ -162,6 +171,23 @@ function editUser(id) {
       }
     }
 
+    // Create a clean payload with only whitelisted fields
+    const payload = {
+      name: u.name,
+      email: u.email,
+      phone: u.phone,
+      role: u.role,
+      property: u.property,
+      status: u.status
+    };
+
+    // Sync to backend
+    fetch(`http://localhost:3000/users/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-role': 'admin' },
+      body: JSON.stringify(payload)
+    }).catch(e => console.error('Error updating user:', e));
+
     saveData(); renderUsers(); closeModal();
     showToast('success', 'User Updated', 'Changes saved successfully');
   }, 'btn-confirm-blue', 'Save Changes');
@@ -172,6 +198,15 @@ function toggleSuspend(id) {
   const u = users.find(x => x.id.toString() === id.toString());
   if (!u) return;
   u.status = u.status === 'suspended' ? 'active' : 'suspended';
+
+  // Sync to backend
+  const payload = { status: u.status };
+  fetch(`http://localhost:3000/users/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'x-role': 'admin' },
+    body: JSON.stringify(payload)
+  }).catch(e => console.error('Error toggling user status:', e));
+
   saveData(); renderUsers();
   showToast('success', u.status === 'active' ? 'User Activated' : 'User Suspended', u.name + ' status updated');
 }
@@ -191,6 +226,12 @@ function deleteUser(id) {
     let regO = JSON.parse(localStorage.getItem('registered_owners') || '[]');
     regO = regO.filter(o => o.email !== u.email && o.id !== u.id);
     localStorage.setItem('registered_owners', JSON.stringify(regO));
+
+    // Delete from backend
+    fetch(`http://localhost:3000/users/${id}`, {
+      method: 'DELETE',
+      headers: { 'x-role': 'admin' }
+    }).catch(e => console.error('Error deleting user:', e));
 
     saveData(); renderUsers(); closeModal();
     showToast('success', 'User Deleted', u.name + ' removed from system');

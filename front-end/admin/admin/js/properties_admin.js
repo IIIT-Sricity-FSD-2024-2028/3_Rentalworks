@@ -147,6 +147,14 @@ function verifyDocs(id) {
   const p = properties.find(x => String(x.id) === String(id));
   if (!p) return;
   p.docsVerified = true;
+  
+  // Sync to backend
+  fetch(`http://localhost:3000/properties/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'x-role': 'admin' },
+    body: JSON.stringify({ docsVerified: true })
+  }).catch(e => console.error(e));
+
   saveData(); renderProperties();
   showToast('success', 'Docs Verified', `Documentation for ${p.name} marked as verified`);
 }
@@ -155,6 +163,14 @@ function passInspection(id) {
   const p = properties.find(x => String(x.id) === String(id));
   if (!p) return;
   p.inspectionPassed = true;
+  
+  // Sync to backend
+  fetch(`http://localhost:3000/properties/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'x-role': 'admin' },
+    body: JSON.stringify({ inspectionPassed: true })
+  }).catch(e => console.error(e));
+
   saveData(); renderProperties();
   showToast('success', 'Inspection Passed', `${p.name} passed live inspection`);
 }
@@ -163,6 +179,14 @@ function approveProperty(id) {
   const p = properties.find(x => String(x.id) === String(id));
   if (!p) return;
   p.status = 'approved';
+  
+  // Sync to backend
+  fetch(`http://localhost:3000/properties/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'x-role': 'admin' },
+    body: JSON.stringify({ status: 'approved' })
+  }).catch(e => console.error(e));
+
   saveData(); renderProperties();
   showToast('success', 'Property Approved', `${p.name} is now live on the platform`);
 }
@@ -172,6 +196,14 @@ function rejectProperty(id) {
   if (!p) return;
   pendingAction = () => {
     p.status = 'rejected';
+    
+    // Sync to backend
+    fetch(`http://localhost:3000/properties/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-role': 'admin' },
+      body: JSON.stringify({ status: 'rejected' })
+    }).catch(e => console.error(e));
+
     saveData(); renderProperties(); closeModal();
     showToast('error', 'Property Rejected', `${p.name} has been rejected`);
   };
@@ -186,6 +218,14 @@ function initiateOffboarding(id) {
   if (!p) return;
   pendingAction = () => {
     p.status = 'offboarding';
+    
+    // Sync to backend
+    fetch(`http://localhost:3000/properties/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-role': 'admin' },
+      body: JSON.stringify({ status: 'offboarding' })
+    }).catch(e => console.error(e));
+
     saveData(); renderProperties(); closeModal();
     showToast('warning', 'Notice Period Initiated', `${p.name} has entered the offboarding notice period`);
   };
@@ -200,6 +240,13 @@ function finalRemoveProperty(id) {
   if (!p) return;
   pendingAction = () => {
     properties = properties.filter(x => String(x.id) !== String(id));
+    
+    // Delete from backend
+    fetch(`http://localhost:3000/properties/${id}`, {
+      method: 'DELETE',
+      headers: { 'x-role': 'admin' }
+    }).catch(e => console.error(e));
+
     saveData(); renderProperties(); closeModal();
     showToast('success', 'Property Removed', `${p.name} has been removed from the platform`);
   };
@@ -234,13 +281,22 @@ function addProperty() {
     if (isNaN(rentMax) || rentMax <= rentMin) { showFieldErr('p-rentmax', 'Max must be > min'); ok = false; }
     if (!ok) return;
 
-    properties.push({
+    const newProp = {
       id: Date.now(), name, location, owner, rentMin, rentMax,
       rooms, safetyScore: 8.0, occupancy: 0,
       amenities: ['WiFi'], status: 'pending',
       docsVerified: false, inspectionPassed: false,
       commissionRate: 10, compliance: 'Pending', fireSafety: 'Pending'
-    });
+    };
+    properties.push(newProp);
+
+    // Save to backend
+    fetch('http://localhost:3000/properties', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-role': 'admin' },
+      body: JSON.stringify(newProp)
+    }).catch(e => console.error(e));
+
     saveData(); renderProperties(); closeModal();
     showToast('success', 'Property Added', `${name} added and pending review`);
   }, 'btn-confirm-blue', 'Add Property');
@@ -292,6 +348,14 @@ function viewPropertyDocuments(id) {
   // Note: fields is passed as []
   showFormModal(`Verify Docs: ${p.name}`, docsHtml, [], () => {
     p.docsVerified = true;
+    
+    // Sync to backend
+    fetch(`http://localhost:3000/properties/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-role': 'admin' },
+      body: JSON.stringify({ docsVerified: true })
+    }).catch(e => console.error(e));
+
     saveData(); renderProperties();
     showToast('success', 'Verified', 'Documents marked as valid');
   }, 'btn-confirm-blue', 'Approve All Documents');
@@ -338,6 +402,14 @@ function openInspectionReport(id) {
     [], 
     () => {
       p.inspectionPassed = true;
+      
+      // Sync to backend
+      fetch(`http://localhost:3000/properties/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-role': 'admin' },
+        body: JSON.stringify({ inspectionPassed: true })
+      }).catch(e => console.error(e));
+
       saveData(); 
       renderProperties();
       showToast('success', 'Inspection Passed', 'Property has cleared the physical site audit.');

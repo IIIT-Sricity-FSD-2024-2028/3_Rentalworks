@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { BOOKINGS, getNextId } from '../data';
+import { BOOKINGS, getNextId, saveData } from '../data';
 import { CreateBookingDto, UpdateBookingDto } from './bookings.dto';
 
 @Injectable()
@@ -21,6 +21,7 @@ export class BookingsService {
       status: 'pending'
     };
     BOOKINGS.push(newBooking);
+    saveData();
     return newBooking;
   }
 
@@ -28,12 +29,15 @@ export class BookingsService {
     const idx = BOOKINGS.findIndex(b => b.id === id);
     if (idx === -1) throw new NotFoundException(`Booking with ID ${id} not found`);
     BOOKINGS[idx] = { ...BOOKINGS[idx], ...updateBookingDto };
+    saveData();
     return BOOKINGS[idx];
   }
 
   remove(id: number) {
     const idx = BOOKINGS.findIndex(b => b.id === id);
     if (idx === -1) throw new NotFoundException(`Booking with ID ${id} not found`);
-    return BOOKINGS.splice(idx, 1)[0];
+    const removed = BOOKINGS.splice(idx, 1)[0];
+    saveData();
+    return removed;
   }
 }

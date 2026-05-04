@@ -15,10 +15,10 @@ function renderProfile() {
   const phoneInput = document.getElementById('profile-phone');
   const propInput  = document.getElementById('profile-property');
 
-  if (nameInput)  nameInput.value  = MOCK_DATA.warden.name;
-  if (emailInput) emailInput.value = MOCK_DATA.warden.email;
-  if (phoneInput) phoneInput.value = MOCK_DATA.warden.phone;
-  if (propInput)  propInput.value  = MOCK_DATA.warden.property;
+  if (nameInput)  nameInput.value  = user.name || '';
+  if (emailInput) emailInput.value = user.email || '';
+  if (phoneInput) phoneInput.value = user.phone || '';
+  if (propInput)  propInput.value  = user.property || 'Default Property';
 }
 
 function saveProfile() {

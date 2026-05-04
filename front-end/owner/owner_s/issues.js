@@ -59,7 +59,8 @@ async function loadIssues() {
     propertyName: i.propertyName || 'Sunrise PG Residency',
     room: i.room || 'A-204',
     reportedDate: i.reportedDate || new Date().toISOString().split('T')[0],
-    _isGlobal: true
+    _isGlobal: true,
+    _escalatedByWarden: i._escalatedByWarden || false
   }));
   
   // Merge: tenant issues first (most recent), then static

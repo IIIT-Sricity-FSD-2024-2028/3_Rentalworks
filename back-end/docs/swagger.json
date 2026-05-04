@@ -1266,6 +1266,15 @@
           },
           "property": {
             "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
           }
         }
       },
@@ -1318,6 +1327,24 @@
           },
           "inspectionPassed": {
             "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "rentMin": {
+            "type": "number"
+          },
+          "rentMax": {
+            "type": "number"
+          },
+          "rooms": {
+            "type": "string"
           }
         }
       },

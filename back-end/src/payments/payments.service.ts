@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PAYMENTS, getNextId } from '../data';
+import { PAYMENTS, getNextId, saveData } from '../data';
 import { CreatePaymentDto, UpdatePaymentDto } from './payments.dto';
 
 @Injectable()
@@ -23,6 +23,7 @@ export class PaymentsService {
       clearance: 'Pending'
     };
     PAYMENTS.push(newPayment);
+    saveData();
     return newPayment;
   }
 
@@ -30,12 +31,15 @@ export class PaymentsService {
     const idx = PAYMENTS.findIndex(p => p.id === id);
     if (idx === -1) throw new NotFoundException(`Payment with ID ${id} not found`);
     PAYMENTS[idx] = { ...PAYMENTS[idx], ...updatePaymentDto };
+    saveData();
     return PAYMENTS[idx];
   }
 
   remove(id: number) {
     const idx = PAYMENTS.findIndex(p => p.id === id);
     if (idx === -1) throw new NotFoundException(`Payment with ID ${id} not found`);
-    return PAYMENTS.splice(idx, 1)[0];
+    const removed = PAYMENTS.splice(idx, 1)[0];
+    saveData();
+    return removed;
   }
 }

@@ -535,6 +535,22 @@ selectBank(element, bankName) {
       State.data.currentPayment = null;
       State.save();
       
+      // Save to global_payments for Admin dashboard
+      let globalPayments = JSON.parse(localStorage.getItem('global_payments') || '[]');
+      globalPayments.push({
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        tenant: State.data.profile.name,
+        property: State.data.profile.pgName || 'Unknown PG',
+        room: State.data.profile.roomNumber || '-',
+        amount: current.amount,
+        method: displayMethodName,
+        transactionId: newTxnId,
+        paidDate: todayDate,
+        status: 'verified',
+        clearance: 'Pending'
+      });
+      localStorage.setItem('global_payments', JSON.stringify(globalPayments));
+      
       // Push notification to Warden
       let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
       crossNotifs.push({

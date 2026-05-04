@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { NOTIFICATIONS, getNextId } from '../data';
+import { NOTIFICATIONS, getNextId, saveData } from '../data';
 import { CreateNotificationDto, UpdateNotificationDto } from './notifications.dto';
 
 @Injectable()
@@ -21,6 +21,7 @@ export class NotificationsService {
       sentAt: new Date().toISOString()
     };
     NOTIFICATIONS.push(newNotification);
+    saveData();
     return newNotification;
   }
 
@@ -28,12 +29,15 @@ export class NotificationsService {
     const idx = NOTIFICATIONS.findIndex(n => n.id === id);
     if (idx === -1) throw new NotFoundException(`Notification with ID ${id} not found`);
     NOTIFICATIONS[idx] = { ...NOTIFICATIONS[idx], ...updateNotificationDto };
+    saveData();
     return NOTIFICATIONS[idx];
   }
 
   remove(id: number) {
     const idx = NOTIFICATIONS.findIndex(n => n.id === id);
     if (idx === -1) throw new NotFoundException(`Notification with ID ${id} not found`);
-    return NOTIFICATIONS.splice(idx, 1)[0];
+    const removed = NOTIFICATIONS.splice(idx, 1)[0];
+    saveData();
+    return removed;
   }
 }

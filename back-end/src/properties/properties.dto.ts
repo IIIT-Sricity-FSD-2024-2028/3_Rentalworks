@@ -46,4 +46,34 @@ export class UpdatePropertyDto {
   @IsBoolean()
   @IsOptional()
   inspectionPassed?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  location?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  owner?: string;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  rentMin?: number;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  rentMax?: number;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  rooms?: string;
 }

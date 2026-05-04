@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { USERS, getNextId } from '../data';
+import { USERS, getNextId, saveData } from '../data';
 import { CreateUserDto, UpdateUserDto, LoginDto } from './users.dto';
 
 @Injectable()
@@ -24,20 +24,28 @@ export class UsersService {
       property: null
     };
     USERS.push(newUser);
+    saveData();
     return newUser;
   }
 
   update(id: number, updateUserDto: UpdateUserDto) {
     const idx = USERS.findIndex(u => u.id === id);
     if (idx === -1) throw new NotFoundException(`User with ID ${id} not found`);
-    USERS[idx] = { ...USERS[idx], ...updateUserDto };
+    
+    // Filter out undefined values to prevent overwriting
+    const cleanDto = Object.fromEntries(Object.entries(updateUserDto).filter(([_, v]) => v !== undefined));
+    
+    USERS[idx] = { ...USERS[idx], ...cleanDto };
+    saveData();
     return USERS[idx];
   }
 
   remove(id: number) {
     const idx = USERS.findIndex(u => u.id === id);
     if (idx === -1) throw new NotFoundException(`User with ID ${id} not found`);
-    return USERS.splice(idx, 1)[0];
+    const removed = USERS.splice(idx, 1)[0];
+    saveData();
+    return removed;
   }
 
   login(loginDto: LoginDto) {

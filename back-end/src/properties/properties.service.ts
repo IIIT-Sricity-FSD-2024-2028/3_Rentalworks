@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PROPERTIES, getNextId } from '../data';
+import { PROPERTIES, getNextId, saveData } from '../data';
 import { CreatePropertyDto, UpdatePropertyDto } from './properties.dto';
 
 @Injectable()
@@ -29,19 +29,27 @@ export class PropertiesService {
       changeRequestPending: false
     };
     PROPERTIES.push(newProperty);
+    saveData();
     return newProperty;
   }
 
   update(id: number, updatePropertyDto: UpdatePropertyDto) {
     const idx = PROPERTIES.findIndex(p => p.id === id);
     if (idx === -1) throw new NotFoundException(`Property with ID ${id} not found`);
-    PROPERTIES[idx] = { ...PROPERTIES[idx], ...updatePropertyDto };
+    
+    // Filter out undefined values to prevent overwriting
+    const cleanDto = Object.fromEntries(Object.entries(updatePropertyDto).filter(([_, v]) => v !== undefined));
+    
+    PROPERTIES[idx] = { ...PROPERTIES[idx], ...cleanDto };
+    saveData();
     return PROPERTIES[idx];
   }
 
   remove(id: number) {
     const idx = PROPERTIES.findIndex(p => p.id === id);
     if (idx === -1) throw new NotFoundException(`Property with ID ${id} not found`);
-    return PROPERTIES.splice(idx, 1)[0];
+    const removed = PROPERTIES.splice(idx, 1)[0];
+    saveData();
+    return removed;
   }
 }

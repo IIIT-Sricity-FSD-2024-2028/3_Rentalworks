@@ -56,6 +56,14 @@ async function fetchData() {
       if (!mergedNotifs.find(m => m.id === bn.id)) mergedNotifs.push(bn);
     });
     notifHistory = mergedNotifs;
+
+    // Merge global_payments
+    const localPayments = JSON.parse(localStorage.getItem('global_payments') || '[]');
+    const mergedPayments = [...payments];
+    localPayments.forEach(lp => {
+      if (!mergedPayments.find(m => m.id === lp.id)) mergedPayments.unshift(lp);
+    });
+    payments = mergedPayments;
   } catch(e) {
     console.error('API Error:', e);
   }

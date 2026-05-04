@@ -13,7 +13,7 @@ function requireAuth() {
   }
   try {
     const parsed = JSON.parse(session);
-    if(parsed.role !== 'owner') throw new Error('Not owner');
+    if (parsed.role !== 'owner') throw new Error('Not owner');
     return parsed;
   } catch (e) {
     sessionStorage.removeItem(SESSION_KEY);
@@ -44,7 +44,7 @@ window.addEventListener('storage', (e) => {
     const latest = notifs[notifs.length - 1];
     if (latest.targetRole === 'owner' || latest.targetRole === 'all') {
       showToast(latest.title + ': ' + latest.message, 'warning', 5000);
-      
+
       const data = getData();
       if (data) {
         if (!data.notifications) data.notifications = [];
@@ -62,7 +62,7 @@ window.addEventListener('storage', (e) => {
           updateData(data);
         }
       }
-      
+
       loadSidebarBadges();
       if (typeof loadNotifications === 'function' && window.location.pathname.includes('notifications.html')) {
         loadNotifications();
@@ -83,32 +83,52 @@ const STORAGE_KEY = 'pg_manager_data_storage';
 let _cachedData = null;
 
 async function fetchData() {
-  // 1. Return memory cache if already loaded
   if (_cachedData) return JSON.parse(JSON.stringify(_cachedData));
 
-  // 2. Check LocalStorage for existing user changes
   const localData = localStorage.getItem(STORAGE_KEY);
   if (localData) {
     _cachedData = JSON.parse(localData);
     console.log("Loaded data from LocalStorage (Persistent)");
-    return JSON.parse(JSON.stringify(_cachedData));
+  } else {
+    try {
+      const res = await fetch(DATA_URL);
+      if (!res.ok) throw new Error('Failed to load data.json');
+      _cachedData = await res.json();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(_cachedData));
+      console.log("Initialized data from data.json");
+    } catch (e) {
+      console.error('fetchData error:', e);
+      _cachedData = { properties: [], issues: [], notifications: [], policy: {}, profile: {} };
+    }
   }
 
-  // 3. Fallback to data.json for the very first load
-  try {
-    const res = await fetch(DATA_URL);
-    if (!res.ok) throw new Error('Failed to load data.json');
-    _cachedData = await res.json();
-    
-    // Save to LocalStorage immediately so future refreshes use this copy
+  // Merge cross_notifications intended for Owner
+  const crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
+  if (!_cachedData.notifications) _cachedData.notifications = [];
+
+  let mergedAny = false;
+  crossNotifs.forEach(cn => {
+    if (cn.targetRole === 'owner' || cn.targetRole === 'all') {
+      if (!_cachedData.notifications.find(n => String(n.id) === String(cn.id))) {
+        _cachedData.notifications.unshift({
+          id: cn.id,
+          type: cn.type || 'alert',
+          title: cn.title,
+          message: cn.message,
+          sender: cn.by || 'System',
+          date: cn.sentAt || new Date().toISOString().split('T')[0],
+          read: false
+        });
+        mergedAny = true;
+      }
+    }
+  });
+
+  if (mergedAny) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(_cachedData));
-    
-    console.log("Initialized data from data.json");
-    return JSON.parse(JSON.stringify(_cachedData));
-  } catch (e) {
-    console.error('fetchData error:', e);
-    return { properties: [], issues: [], notifications: [], policy: {}, profile: {} };
   }
+
+  return JSON.parse(JSON.stringify(_cachedData));
 }
 
 function updateData(newData) {
@@ -196,33 +216,16 @@ function getSidebarHTML(activePage) {
   return `
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo">
-        <div class="logo-icon">🏘</div>
+        <div class="logo-icon"><span class="material-icons-outlined" style="font-size:32px;">apartment</span></div>
         <div>
-          <div class="logo-text">PG Manager</div>
-          <div class="logo-sub">Owner Dashboard</div>
+          <div class="logo-text">Rent Bro</div>
+          <div class="logo-sub">Owner Portal</div>
         </div>
       </div>
       <nav class="sidebar-nav">
         <div class="nav-section-title">Main Menu</div>
         ${navHTML}
-        <div class="nav-section-title" style="margin-top:12px">Management</div>
-        <a href="add-property.html" class="nav-item ${activePage === 'add-property' ? 'active' : ''}">
-          <span class="nav-icon">➕</span>
-          <span>Add Property</span>
-        </a>
       </nav>
-      <div class="sidebar-footer">
-        <div class="sidebar-user" onclick="window.location.href='profile.html'">
-          <div class="user-avatar" id="sidebarAvatar">RI</div>
-          <div class="user-info">
-            <div class="user-name" id="sidebarUserName">Ramesh Iyer</div>
-            <div class="user-role" id="sidebarUserRole">Property Owner</div>
-          </div>
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="logout()" style="width:100%;margin-top:10px;gap:8px;justify-content:center;">
-          <span>🚪</span> Logout
-        </button>
-      </div>
     </aside>
   `;
 }
@@ -231,22 +234,26 @@ function getTopbarHTML(title, subtitle = '') {
   return `
     <header class="topbar">
       <div class="topbar-left">
-        <button class="icon-btn" id="sidebarToggle" title="Toggle Sidebar">☰</button>
         <div>
           <div class="topbar-title">${title}</div>
           ${subtitle ? `<div class="topbar-subtitle">${subtitle}</div>` : ''}
         </div>
       </div>
-      <div class="topbar-right">
+      <div class="topbar-right" style="display:flex; align-items:center; gap:10px;">
         <div class="topbar-search">
           <span class="search-icon">🔍</span>
           <input type="text" placeholder="Search..." id="globalSearch">
         </div>
         <a href="notifications.html" class="icon-btn" title="Notifications" style="position:relative">
-          🔔
+          <span class="material-icons-outlined" style="font-size:24px;">notifications</span>
           <span class="notif-dot" id="topbarNotifDot" style="display:none"></span>
         </a>
-        <a href="profile.html" class="icon-btn" title="Profile">👤</a>
+        <a href="profile.html" class="icon-btn" title="Settings & Profile">
+          <span class="material-icons-outlined" style="font-size:24px;">settings</span>
+        </a>
+        <button class="btn-logout" onclick="logout()" style="display:flex; align-items:center; gap:5px; padding:6px 13px; background:#fff5f5; color:#dc2626; border:1px solid #fecaca; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s;">
+          ↪ Logout
+        </button>
       </div>
     </header>
   `;
@@ -279,7 +286,6 @@ function injectLayout(activePage, title, subtitle = '') {
 
   // Load dynamic badge counts
   loadSidebarBadges();
-  loadSidebarUser();
 }
 
 async function loadSidebarBadges() {
@@ -303,22 +309,9 @@ async function loadSidebarBadges() {
     if (topNotifDot && unreadNotifs > 0) {
       topNotifDot.style.display = 'block';
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
-async function loadSidebarUser() {
-  try {
-    const data = await fetchData();
-    const profile = data.profile || {};
-    const nameEl = document.getElementById('sidebarUserName');
-    const avatarEl = document.getElementById('sidebarAvatar');
-    if (nameEl && profile.name) nameEl.textContent = profile.name;
-    if (avatarEl && profile.name) {
-      const initials = profile.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-      avatarEl.textContent = initials;
-    }
-  } catch (e) {}
-}
 
 // ===== HELPERS =====
 function formatCurrency(amount) {

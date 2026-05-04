@@ -407,6 +407,37 @@ const BookingLogic = {
             }
             
             State.save();
+            
+            // Save to global_payments for Admin dashboard
+            let globalPayments = JSON.parse(localStorage.getItem('global_payments') || '[]');
+            globalPayments.push({
+                id: Date.now() + Math.floor(Math.random() * 1000),
+                tenant: State.data.currentUser ? State.data.currentUser.name : 'Guest User',
+                property: b.pg || 'Unknown PG',
+                room: b.room || '-',
+                amount: total,
+                method: method === 'upi' ? 'UPI' : (method === 'card' ? 'Card' : 'Net Banking'),
+                transactionId: txnId,
+                paidDate: new Date().toLocaleDateString('en-CA'),
+                status: 'verified',
+                clearance: 'Pending'
+            });
+            localStorage.setItem('global_payments', JSON.stringify(globalPayments));
+
+            // Notify Owner
+            let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
+            crossNotifs.push({
+                id: Date.now(),
+                title: 'New Guest Booking Paid',
+                message: `${State.data.currentUser ? State.data.currentUser.name : 'A Guest'} has paid ₹${total.toLocaleString()} and confirmed booking for ${b.pg}.`,
+                type: 'update',
+                priority: 'important',
+                targetRole: 'owner',
+                by: 'Guest',
+                sentAt: new Date().toLocaleString()
+            });
+            localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
+            
             Navigation.navigate('booking-confirmed');
         }, 2500);
     },

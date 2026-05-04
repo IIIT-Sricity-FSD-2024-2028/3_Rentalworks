@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
               time: latest.sentAt || new Date().toLocaleString(),
               unread: true
             });
-            State.save();
+            localStorage.setItem('pgRentalState', JSON.stringify(State.data));
           }
           
           // Always refresh badge & notification list

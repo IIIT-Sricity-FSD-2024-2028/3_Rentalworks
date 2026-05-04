@@ -42,6 +42,21 @@ export class UpdateUserDto {
   @IsString()
   @IsOptional()
   property?: string;
+
+  @ApiProperty({ required: false })
+  @IsEmail()
+  @IsOptional()
+  email?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  phone?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  role?: string;
 }
 
 export class LoginDto {
