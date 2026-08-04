@@ -16,24 +16,6 @@ const Auth = {
             State.data.currentUser = null;
         }
 
-        // Seed mock data for guests checking out pending requests with no history
-        if (State.data.currentUser && (!State.data.bookings || State.data.bookings.length === 0)) {
-            const mockBk = { 
-                id: 'BK-' + Date.now().toString().slice(-6), 
-                pg: 'Demo Test PG', 
-                location: 'Indiranagar, Bangalore',
-                room: 'Private Single',
-                roommate: null, 
-                rent: 10000, 
-                deposit: 5000,
-                date: '05 April 2026',
-                img: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=500',
-                status: 'pending' 
-            };
-            State.data.bookings = [mockBk];
-            State.save();
-        }
-
         this.updateUI();
         // Unauthenticated guests should be allowed to browse the landing page
         Navigation.navigate('landing');

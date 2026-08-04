@@ -196,11 +196,8 @@ function rejectBooking(id) {
         const sunriseStr = localStorage.getItem(b._sunriseKey);
         if (sunriseStr) {
           const sState = JSON.parse(sunriseStr);
-          const sBk = sState.bookings.find(bk => bk.id.toString() === id.toString());
-          if (sBk) {
-            sBk.status = 'cancelled';
-            localStorage.setItem(b._sunriseKey, JSON.stringify(sState));
-          }
+          sState.bookings = (sState.bookings || []).filter(bk => bk.id.toString() !== id.toString() && bk.status !== 'cancelled');
+          localStorage.setItem(b._sunriseKey, JSON.stringify(sState));
         }
       } catch(e){}
     }
@@ -216,14 +213,27 @@ function rejectBooking(id) {
 
 // ===== FORCE TERMINATE =====
 function forceTerminate(id) {
-  const b = bookings.find(x => x.id === id);
+  const b = bookings.find(x => x.id === id || x.id.toString() === id.toString());
   if (!b) return;
   pendingAction = () => {
     b.status = 'cancelled';
     // Flag tenant as inactive
     const tenant = users.find(u => u.name === b.tenant);
     if (tenant) tenant.status = 'suspended';
-    saveData(); renderBookings(); closeModal();
+    saveData();
+
+    if (b._isSunrise && b._sunriseKey) {
+      try {
+        const sunriseStr = localStorage.getItem(b._sunriseKey);
+        if (sunriseStr) {
+          const sState = JSON.parse(sunriseStr);
+          sState.bookings = (sState.bookings || []).filter(bk => bk.id.toString() !== id.toString() && bk.status !== 'cancelled');
+          localStorage.setItem(b._sunriseKey, JSON.stringify(sState));
+        }
+      } catch(e){}
+    }
+
+    renderBookings(); closeModal();
     showToast('warning', 'Booking Terminated', `${b.tenant} booking forcefully terminated. Tenant account flagged.`);
   };
   openConfirmModal('Force Terminate Booking',

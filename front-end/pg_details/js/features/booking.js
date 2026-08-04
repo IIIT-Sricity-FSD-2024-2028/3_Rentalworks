@@ -1,4 +1,48 @@
 const BookingLogic = {
+    // 0a. Check room capacity against active/pending bookings
+    checkRoomCapacity(pgName, roomType) {
+        const targetPG = pgName || State.data.selectedPG || 'Sunrise PG Residency';
+        const activeRoom = roomType || State.data.activeRoomType || 'Double Sharing';
+        const capacity = State.getRoomCapacity(targetPG, activeRoom);
+        const currentOccupied = State.getOccupiedCount(targetPG, activeRoom);
+        // Calculate Occupied Beds + Pending Approved Bookings + Current Booking (1)
+        if (currentOccupied + 1 > capacity) {
+            return false;
+        }
+        return true;
+    },
+
+    // 0b. Dynamically update landing page room buttons based on current occupancy
+    updateRoomAvailabilityUI() {
+        const targetPG = State.data.selectedPG || 'Sunrise PG Residency';
+        const roomCards = document.querySelectorAll('.room-img-card');
+        roomCards.forEach(card => {
+            const titleEl = card.querySelector('h3');
+            const btn = card.querySelector('button');
+            if (!titleEl || !btn) return;
+            const roomType = titleEl.textContent.trim();
+            const capacity = State.getRoomCapacity(targetPG, roomType);
+            const currentOccupied = State.getOccupiedCount(targetPG, roomType);
+            if (currentOccupied >= capacity) {
+                btn.textContent = "No rooms available.";
+                btn.disabled = true;
+                btn.style.background = "#f1f5f9";
+                btn.style.color = "var(--text-light)";
+                btn.style.cursor = "not-allowed";
+                btn.onclick = null;
+                card.style.opacity = "0.7";
+            } else {
+                btn.textContent = "Book Now";
+                btn.disabled = false;
+                btn.style.background = "var(--primary)";
+                btn.style.color = "white";
+                btn.style.cursor = "pointer";
+                btn.onclick = () => BookingLogic.startBooking(roomType);
+                card.style.opacity = "1";
+            }
+        });
+    },
+
     // 1. GATEKEEPER: Forces login before booking
     startBooking(roomType) {
         if (!State.data.currentUser) {
@@ -9,21 +53,22 @@ const BookingLogic = {
             return;
         }
 
-        // Prevent redundant bookings early in the workflow
-        const targetPG = 'Sunrise PG Residency';
-        const hasExisting = State.data.bookings.find(b => b.pg === targetPG && ['pending', 'approved', 'confirmed'].includes(b.status));
-        if (hasExisting) {
-            let msg = `You already have an active request for ${targetPG}`;
-            if (hasExisting.status === 'confirmed') {
-                msg = `You have already successfully booked ${targetPG}. Enjoy your stay!`;
-            }
-            UI.showToast(msg, 'warning');
-            return Navigation.navigate('pending');
+        const targetPG = State.data.selectedPG || 'Sunrise PG Residency';
+        if (!BookingLogic.checkRoomCapacity(targetPG, roomType)) {
+            UI.showToast("No rooms available.", "error");
+            return;
         }
 
         State.data.activeRoomType = roomType;
+        State.data.selectedRm = null;
+        State.data.selectedRoomNumber = null;
         State.save();
-        Navigation.navigate('roommate-intro');
+
+        if ((roomType || '').toLowerCase().includes('single')) {
+            Navigation.navigate('booking-review');
+        } else {
+            Navigation.navigate('roommate-intro');
+        }
     },
 
     // 2. BYPASS AI MATCHING
@@ -33,19 +78,47 @@ const BookingLogic = {
         Navigation.navigate('booking-review');
     },
 
+    getRentAndDeposit(roomType) {
+        const cfg = State.getRoomConfig(roomType);
+        return { rent: cfg.rent, deposit: cfg.deposit };
+    },
+
+    toggleFriendDetails(isFriend) {
+        State.data.bookingFor = isFriend ? 'friend' : 'self';
+        const box = document.getElementById('friend-details-box');
+        if (box) box.style.display = isFriend ? 'grid' : 'none';
+    },
+
     // 3. RENDER INITIAL REVIEW (Before sending to admin)
     renderReview() {
         const rm = State.data.selectedRm;
+        const targetPG = State.data.selectedPG || 'Sunrise PG Residency';
+        const roomType = State.data.activeRoomType || 'Double Sharing';
+        const { rent, deposit } = BookingLogic.getRentAndDeposit(roomType);
+        const total = rent + deposit;
+
+        const setElTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+        setElTxt('br-pg', targetPG);
+        setElTxt('rev-left-pg', targetPG);
+        setElTxt('br-loc', State.data.selectedLocation || 'Koramangala, Bangalore');
+        setElTxt('br-room', roomType);
+        setElTxt('rev-left-room', roomType);
+        setElTxt('br-roommate', rm ? rm.name : 'None');
+        setElTxt('br-rent', `₹${rent.toLocaleString()}`);
+        setElTxt('rev-left-rent', `₹${rent.toLocaleString()}`);
+        setElTxt('br-deposit', `₹${deposit.toLocaleString()}`);
+        setElTxt('br-total', `₹${total.toLocaleString()}`);
+
         const reviewRmBox = document.getElementById('review-rm-box');
         const summaryRmBox = document.getElementById('summary-rm-name');
 
         if(rm && reviewRmBox) {
             reviewRmBox.innerHTML = `
                 <div style="display: flex; gap: 16px; align-items: center;">
-                    <img src="${rm.img}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
+                    <img src="${rm.img || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500'}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
                     <div>
-                        <strong style="font-size: 16px;">${rm.name} <span style="color: var(--text-gray); font-weight: 400; font-size: 14px;">${rm.age}</span></strong>
-                        <p style="font-size: 13px; color: var(--text-gray); margin-top: 2px;">${rm.job}</p>
+                        <strong style="font-size: 16px;">${rm.name} <span style="color: var(--text-gray); font-weight: 400; font-size: 14px;">${rm.age || ''}</span></strong>
+                        <p style="font-size: 13px; color: var(--text-gray); margin-top: 2px;">${rm.job || 'Tenant'}</p>
                     </div>
                 </div>
             `;
@@ -56,59 +129,120 @@ const BookingLogic = {
         }
     },
 
-    // 4. SUBMIT TO ADMIN (With Validation to prevent duplicates)
+    // 4. SUBMIT WITH MANDATORY VALIDATION & INSTANT 15-MIN RESERVATION
     submitRequest() {
-        const targetPG = 'Sunrise PG Residency';
-        const hasExisting = State.data.bookings.find(b => b.pg === targetPG && ['pending', 'approved', 'confirmed'].includes(b.status));
-        
-        if (hasExisting) {
-            UI.showToast(`You already have an active request for ${targetPG}`, 'error');
-            return Navigation.navigate('pending');
+        const targetPG = State.data.selectedPG || 'Sunrise PG Residency';
+        const roomType = State.data.activeRoomType || 'Double Sharing';
+        const errBanner = document.getElementById('bk-error-banner');
+        if (errBanner) {
+            errBanner.style.display = 'none';
+            errBanner.textContent = '';
+        }
+
+        // Reset borders
+        ['bk-date', 'bk-duration', 'bk-friend-name', 'bk-friend-email', 'bk-friend-phone'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.borderColor = 'var(--border)';
+        });
+
+        const showError = (msg, inputId) => {
+            if (errBanner) {
+                errBanner.style.display = 'block';
+                errBanner.textContent = msg;
+            }
+            if (inputId) {
+                const el = document.getElementById(inputId);
+                if (el) {
+                    el.style.borderColor = '#ef4444';
+                    el.focus();
+                }
+            }
+            UI.showToast(msg, "error");
+        };
+
+        const dateInput = document.getElementById('bk-date');
+        const durInput = document.getElementById('bk-duration');
+
+        if (!dateInput || !dateInput.value.trim()) {
+            return showError("Move-in Date is a mandatory field. Please select your move-in date.", 'bk-date');
+        }
+        if (!durInput || !durInput.value || durInput.value === '') {
+            return showError("Duration is a mandatory field. Please select your stay duration.", 'bk-duration');
+        }
+
+        const bookingFor = State.data.bookingFor || 'self';
+        let guestName = State.data.currentUser ? State.data.currentUser.name : 'Guest User';
+        let guestEmail = State.data.currentUser ? (State.data.currentUser.email || '') : '';
+        let guestPhone = State.data.currentUser ? (State.data.currentUser.phone || '') : '';
+
+        if (bookingFor === 'friend') {
+            const fName = document.getElementById('bk-friend-name')?.value?.trim();
+            const fEmail = document.getElementById('bk-friend-email')?.value?.trim();
+            const fPhone = document.getElementById('bk-friend-phone')?.value?.trim();
+
+            if (!fName) {
+                return showError("Guest / Friend's full name is required when booking for a friend.", 'bk-friend-name');
+            }
+            if (!fEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fEmail)) {
+                return showError("Please enter a valid email address for the guest / friend.", 'bk-friend-email');
+            }
+            if (!fPhone || !/^\+?[0-9\s\-]{10,15}$/.test(fPhone)) {
+                return showError("Please enter a valid 10-15 digit phone number for the guest / friend.", 'bk-friend-phone');
+            }
+            guestName = fName;
+            guestEmail = fEmail;
+            guestPhone = fPhone;
+        }
+
+        // Check duplicate active/reserved bookings
+        const duplicate = (State.data.bookings || []).find(b => b && b.pg === targetPG && b.room === roomType && (b.status === 'approved' || b.status === 'confirmed'));
+        if (duplicate) {
+            return showError("You already have an active booking for " + roomType + " at " + targetPG + ".");
+        }
+
+        const userId = State.data.currentUser ? (State.data.currentUser.email || State.data.currentUser.name) : 'guest';
+        const bookingId = 'BK-' + Date.now().toString().slice(-6);
+
+        // Try reserving a seat for 15 minutes
+        const res = State.RoomOccupancy.reserveSeat(roomType, userId, bookingId);
+        if (!res.success) {
+            return BookingLogic.showReservationBlockedModal(roomType, res);
         }
 
         UI.showLoader();
         setTimeout(() => {
-            const dateInput = document.getElementById('bk-date');
-            const durInput = document.getElementById('bk-duration');
-            const reqDate = (dateInput && dateInput.value) ? new Date(dateInput.value).toLocaleDateString('en-GB') : '20 March 2026';
-            const reqDur = (durInput && durInput.value) ? durInput.value : '11 Months';
+            const reqDate = new Date(dateInput.value).toLocaleDateString('en-GB');
+            const reqDur = durInput.value;
+            const { rent, deposit } = BookingLogic.getRentAndDeposit(roomType);
 
             const newBk = { 
-                id: 'BK-' + Date.now().toString().slice(-6), 
+                id: bookingId,
+                roomId: res.roomId,
                 pg: targetPG, 
-                location: 'Koramangala, Bangalore',
-                room: State.data.activeRoomType || 'Double Sharing',
+                location: State.data.selectedLocation || 'Koramangala, Bangalore',
+                room: roomType,
                 roommate: State.data.selectedRm, 
-                rent: 10000, 
-                deposit: 5000,
+                rent: rent, 
+                deposit: deposit,
                 date: reqDate,
                 duration: reqDur,
                 user: State.data.currentUser,
-                // Fallback string added to prevent 404 undefined errors
+                bookingFor: bookingFor,
+                guestName: guestName,
+                guestEmail: guestEmail,
+                guestPhone: guestPhone,
                 img: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=500',
-                status: 'pending' 
+                status: 'approved',
+                reservationExpiresAt: res.expiresAt
             };
             State.data.bookings.unshift(newBk);
             State.data.activeBooking = newBk;
             State.save();
             
-            // Push Notification to Admin Dashboard Database (cross_notifications)
-            let crossNotifs = [];
-            try { crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || "[]"); } catch(e){}
-            crossNotifs.push({
-                id: Date.now().toString(),
-                type: 'booking',
-                target: 'admin',
-                message: `New Booking Request from ${State.data.currentUser.name} for ${targetPG}`,
-                time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                read: false
-            });
-            localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
-
             UI.hideLoader();
-            UI.showToast("Request Submitted to Admin!", "success");
+            UI.showToast("Room Seat Reserved for 15 Minutes!", "success");
             Navigation.navigate('booking-details');
-        }, 1500);
+        }, 800);
     },
 
    // 5. RENDER PENDING LIST (Updated to handle Confirmed/Paid status)
@@ -116,12 +250,13 @@ const BookingLogic = {
         const cont = document.getElementById('pending-list');
         if (!cont) return;
 
-        if (State.data.bookings.length === 0) {
+        const activeList = State.data.bookings.filter(b => b && b.status !== 'cancelled');
+        if (activeList.length === 0) {
             cont.innerHTML = `<p class="text-gray">You have no active requests.</p>`;
             return;
         }
 
-        cont.innerHTML = State.data.bookings.map(b => `
+        cont.innerHTML = activeList.map(b => `
             <div class="modern-card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; cursor: pointer;" onclick="BookingLogic.viewDetails('${b.id}')">
                 <div style="position: relative;">
                     <img src="${b.img || 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=500'}" style="width: 100%; height: 180px; object-fit: cover;">
@@ -173,7 +308,7 @@ const BookingLogic = {
     deleteBooking(id) {
         if (!confirm("Are you sure you want to cancel and delete this booking request?")) return;
         
-        State.data.bookings = State.data.bookings.filter(b => b.id !== id);
+        State.data.bookings = State.data.bookings.filter(b => b.id !== id && b.status !== 'cancelled');
         
         // Update active booking if deleted
         if (State.data.activeBooking && State.data.activeBooking.id === id) {
@@ -182,6 +317,9 @@ const BookingLogic = {
 
         State.save();
         this.renderPending();
+        if (typeof this.updateRoomAvailabilityUI === 'function') {
+            this.updateRoomAvailabilityUI();
+        }
         UI.showToast("Booking request cancelled successfully.", "info");
     },
 
@@ -202,7 +340,7 @@ const BookingLogic = {
 
     // 8. RENDER BOOKING DETAILS PAGE
     renderBookingDetails() {
-        const b = State.data.activeBooking;
+        const b = State.data.activeBooking || (State.data.bookings && State.data.bookings.length > 0 ? State.data.bookings[0] : null);
         if (!b) return Navigation.navigate('pending');
 
         // Robust DOM selection with fallbacks
@@ -249,31 +387,109 @@ const BookingLogic = {
                 `;
             } else if (b.status === 'approved') {
                 statusBox.innerHTML = `
-                    <div style="background: var(--success-light); border: 1px solid var(--success); border-radius: 8px; padding: 12px; margin-bottom: 24px; text-align: center;">
-                        <strong style="color: var(--success); font-size: 14px;">✓ Admin Approved</strong>
+                    <div style="background: #eff6ff; border: 1px solid #3b82f6; border-radius: 12px; padding: 16px; margin-bottom: 24px; text-align: center;">
+                        <strong style="color: #1e3a8a; font-size: 15px; display: block; margin-bottom: 6px;">✓ Your Room Seat is RESERVED</strong>
+                        <p style="color: #1e40af; font-size: 13px; margin-bottom: 12px;">Please complete payment within 15 minutes to guarantee your room.</p>
+                        <div id="res-timer-${b.id}" style="font-size: 26px; font-weight: 800; color: #dc2626; background: white; padding: 8px 20px; border-radius: 8px; display: inline-block; border: 2px solid #fecaca; margin-bottom: 16px; font-family: monospace;">
+                            15:00
+                        </div>
+                        <div>
+                            <button class="btn btn-primary btn-full" onclick="BookingLogic.initPaymentUI('${b.id}')" style="padding: 14px; font-size: 15px;">Proceed to Payment</button>
+                        </div>
                     </div>
-
-                    <div style="background: var(--bg-main); padding: 16px; border-radius: 12px; margin-bottom: 24px;">
-                        <strong class="text-success" style="display: block; margin-bottom: 8px; font-size: 14px;">Booking Request Approved</strong>
-                        <p class="text-gray" style="font-size: 12px; line-height: 1.5;">Your request is verified. Please proceed to payment to secure your room.</p>
-                    </div>
-
-                    <button class="btn btn-primary btn-full" onclick="BookingLogic.initPaymentUI('${b.id}')">Proceed to Payment</button>
                 `;
+                BookingLogic.startReservationTimer(b);
             } else {
                 statusBox.innerHTML = `
                     <div style="background: #fef3c7; border: 1px solid #b45309; border-radius: 8px; padding: 12px; margin-bottom: 24px; text-align: center;">
-                        <strong style="color: #b45309; font-size: 14px;">⏳ Pending Admin Approval</strong>
+                        <strong style="color: #b45309; font-size: 14px;">⏳ Pending Admin Verification</strong>
                     </div>
-
                     <div style="background: var(--bg-main); padding: 16px; border-radius: 12px; margin-bottom: 24px;">
-                        <p class="text-gray" style="font-size: 12px; line-height: 1.5;">Your request is under review. You'll be able to proceed to payment once the admin approves it.</p>
+                        <p class="text-gray" style="font-size: 12px; line-height: 1.5;">Your request is under review. You'll be notified once verified.</p>
                     </div>
-                    
                     <button class="btn btn-full" style="background: #f1f5f9; color: var(--text-light); cursor: not-allowed;" disabled>Proceed to Payment</button>
                 `;
             }
         }
+    },
+
+    startReservationTimer(b) {
+        if (BookingLogic._timerInterval) clearInterval(BookingLogic._timerInterval);
+        const expiresAt = b.reservationExpiresAt || (Date.now() + 15 * 60 * 1000);
+        const update = () => {
+            const el = document.getElementById('res-timer-' + b.id);
+            if (!el) {
+                if (BookingLogic._timerInterval) clearInterval(BookingLogic._timerInterval);
+                return;
+            }
+            const diff = Math.max(0, expiresAt - Date.now());
+            if (diff <= 0) {
+                if (BookingLogic._timerInterval) clearInterval(BookingLogic._timerInterval);
+                el.textContent = "00:00";
+                el.style.color = "#991b1b";
+                UI.showToast("Your 15-minute room reservation has expired.", "error");
+                b.status = 'expired';
+                State.RoomOccupancy.releaseSeat(b.room, b.id);
+                State.save();
+                return;
+            }
+            const mins = Math.floor(diff / 60000);
+            const secs = Math.floor((diff % 60000) / 1000);
+            el.textContent = (mins < 10 ? '0' : '') + mins + ":" + (secs < 10 ? '0' : '') + secs;
+        };
+        update();
+        BookingLogic._timerInterval = setInterval(update, 1000);
+    },
+
+    showReservationBlockedModal(roomType, res) {
+        const existingModal = document.getElementById('reserved-blocked-modal');
+        if (existingModal) existingModal.remove();
+
+        const remainingMs = res ? Math.max(0, (res.expiresAt || Date.now() + 15 * 60 * 1000) - Date.now()) : 15 * 60 * 1000;
+        const rmMins = Math.floor(remainingMs / 60000);
+        const rmSecs = Math.floor((remainingMs % 60000) / 1000);
+        const timerStr = `${rmMins} min ${rmSecs} sec`;
+        const waitCount = res && res.waitingCount ? res.waitingCount : 0;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'reserved-blocked-modal';
+        overlay.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.65); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;';
+        overlay.innerHTML = `
+            <div class="modern-card" style="width: 100%; max-width: 440px; padding: 28px; background: white; border-radius: 16px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
+                <div style="width: 60px; height: 60px; background: #fff1f2; color: #e11d48; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 32px;">⏳</div>
+                <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 8px; color: var(--text-dark);">Room Temporarily Reserved</h3>
+                <p style="color: var(--text-gray); font-size: 14px; margin-bottom: 16px; line-height: 1.5;">
+                    The last available <strong>${roomType}</strong> seat is currently reserved by another user completing payment.
+                </p>
+                <div style="background: #fff1f2; border: 1px solid #fecdd3; padding: 16px; border-radius: 12px; margin-bottom: 24px;">
+                    <span style="font-size: 12px; color: #9f1239; font-weight: 700; display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Reservation Expires In</span>
+                    <div style="font-size: 24px; font-weight: 800; color: #e11d48; font-family: monospace;">${timerStr}</div>
+                    <div style="font-size: 12px; color: #881337; margin-top: 8px;">Waiting list count: <strong>${waitCount}</strong> person(s) in line</div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <button class="btn btn-primary btn-full" onclick="BookingLogic.handleJoinWaitingList('${roomType}')" style="padding: 14px; font-size: 15px;">
+                        <span class="material-icons-outlined" style="font-size:20px; vertical-align:middle; margin-right:4px;">group_add</span> Join Waiting List
+                    </button>
+                    <button class="btn btn-full" onclick="BookingLogic.closeReservedModal(); Navigation.navigate('landing');" style="background: #f1f5f9; color: var(--text-dark); padding: 12px; font-size: 14px; font-weight: 600;">
+                        View Similar Rooms
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    },
+
+    closeReservedModal() {
+        const modal = document.getElementById('reserved-blocked-modal');
+        if (modal) modal.remove();
+    },
+
+    handleJoinWaitingList(roomType) {
+        BookingLogic.closeReservedModal();
+        const userName = State.data.currentUser ? State.data.currentUser.name : 'Guest User';
+        const phone = State.data.currentUser ? State.data.currentUser.phone : '';
+        const waitRes = State.RoomOccupancy.joinWaitingList(roomType, userName, phone);
+        UI.showToast(`You are #${waitRes.position} on the Waiting List for ${roomType}! We will notify you when a room becomes available.`, "success");
     },
 
  // 9. PREPARE PAYMENT GATEWAY (Updated with Security Guard & Navigation)
@@ -404,11 +620,12 @@ const BookingLogic = {
             if (idx > -1) {
                 State.data.bookings[idx].status = 'confirmed';
                 State.data.bookings[idx].txnId = txnId;
+                State.RoomOccupancy.confirmSeat(b.room, b.id);
             }
             
             State.save();
             
-            // Save to global_payments for Admin dashboard
+            // Save to global_payments for Admin dashboard (status: pending so admin verifies and generates credentials)
             let globalPayments = JSON.parse(localStorage.getItem('global_payments') || '[]');
             globalPayments.push({
                 id: Date.now() + Math.floor(Math.random() * 1000),
@@ -419,15 +636,23 @@ const BookingLogic = {
                 method: method === 'upi' ? 'UPI' : (method === 'card' ? 'Card' : 'Net Banking'),
                 transactionId: txnId,
                 paidDate: new Date().toLocaleDateString('en-CA'),
-                status: 'verified',
+                status: 'pending',
                 clearance: 'Pending'
             });
             localStorage.setItem('global_payments', JSON.stringify(globalPayments));
 
-            // Notify Owner
+            // Notify Admin & Owner
             let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
             crossNotifs.push({
-                id: Date.now(),
+                id: Date.now().toString(),
+                type: 'payment',
+                target: 'admin',
+                message: `New Payment TXN ${txnId} from ${State.data.currentUser ? State.data.currentUser.name : 'Guest User'} for ${b.pg}. Ready for verification and tenant credential generation.`,
+                time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
+                read: false
+            });
+            crossNotifs.push({
+                id: Date.now() + 1,
                 title: 'New Guest Booking Paid',
                 message: `${State.data.currentUser ? State.data.currentUser.name : 'A Guest'} has paid ₹${total.toLocaleString()} and confirmed booking for ${b.pg}.`,
                 type: 'update',

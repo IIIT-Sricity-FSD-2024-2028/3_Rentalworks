@@ -13,14 +13,30 @@
         </div>
 
         <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 8px;">Smart Roommate Matching</h2>
-        <p style="color: var(--text-gray); font-size: 14px; margin-bottom: 32px;">Find compatible roommates with AI-powered matching.</p>
+        <p style="color: var(--text-gray); font-size: 14px; margin-bottom: 24px;">Find compatible roommates with AI-powered matching or choose an existing roommate.</p>
 
-        <div class="match-option-card active" onclick="Navigation.navigate('preferences')" style="border: 2px solid var(--primary); border-radius: 12px; padding: 20px; display: flex; gap: 16px; align-items: flex-start; text-align: left; cursor: pointer; margin-bottom: 16px; background: var(--primary-light);">
-            <div style="background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;"><span class="material-icons-outlined" style="font-size:24px;">flare</span></div>
-            <div>
-                <strong style="display: block; font-size: 16px; margin-bottom: 4px; color: var(--text-dark);">Yes, Find My Match</strong>
-                <p style="margin: 0; font-size: 13px; color: var(--text-gray);">Get matched with compatible roommates based on your preferences and lifestyle.</p>
+        <!-- AI Match Alert (Shown when no compatible profiles exist) -->
+        <div id="no-match-alert" style="display: none; background: #fef3c7; border: 1px solid #b45309; border-radius: 12px; padding: 16px; margin-bottom: 20px; text-align: left;">
+            <strong style="color: #b45309; font-size: 15px; display: block; margin-bottom: 4px;">No compatible roommate profiles are currently available.</strong>
+            <p style="margin: 0; font-size: 13px; color: var(--text-gray);">There are currently no tenants opted for AI roommate matching in this property/room.</p>
+        </div>
+
+        <!-- AI Match Option Card -->
+        <div id="ai-match-container">
+            <div class="match-option-card active" onclick="Navigation.navigate('preferences')" style="border: 2px solid var(--primary); border-radius: 12px; padding: 20px; display: flex; gap: 16px; align-items: flex-start; text-align: left; cursor: pointer; margin-bottom: 20px; background: var(--primary-light);">
+                <div style="background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;"><span class="material-icons-outlined" style="font-size:24px;">flare</span></div>
+                <div>
+                    <strong style="display: block; font-size: 16px; margin-bottom: 4px; color: var(--text-dark);">Yes, Find My Match</strong>
+                    <p style="margin: 0; font-size: 13px; color: var(--text-gray);">Get matched with compatible roommates based on your preferences and lifestyle.</p>
+                </div>
             </div>
+        </div>
+
+        <!-- Manual Roommate Selection Section ("Choose Existing Roommate") -->
+        <div id="manual-roommate-section" style="margin-top: 24px; margin-bottom: 24px; text-align: left;">
+            <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 12px; color: var(--text-dark);">Choose Existing Roommate</h3>
+            <p style="color: var(--text-gray); font-size: 13px; margin-bottom: 16px;">Select from existing tenants who currently have vacant sharing capacity:</p>
+            <div id="manual-roommate-list" style="display: flex; flex-direction: column; gap: 12px;"></div>
         </div>
 
         <div class="match-option-card" onclick="BookingLogic.skipMatching()" style="border: 2px solid var(--border); border-radius: 12px; padding: 20px; display: flex; gap: 16px; align-items: flex-start; text-align: left; cursor: pointer; margin-bottom: 24px; transition: 0.2s;">

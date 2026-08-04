@@ -16,15 +16,26 @@ if (typeof LOGIN_MOCK === 'undefined') {
   var LOGIN_MOCK = {
     credentials: {
       admin: [{ username: 'admin', password: 'password123', name: 'Admin' }],
-      warden: [], owner: [], tenant: [], guest: []
+      warden: [], 
+      owner: [], 
+      tenant: [
+        { username: 'tenant', email: 'tenant@gmail.com', password: 'password123', name: 'Demo Tenant', property: 'Sunrise PG Residency', room: '201' }
+      ], 
+      guest: [
+        { username: 'guest@gmail.com', email: 'guest@gmail.com', phone: '9876543210', password: 'guest123', name: 'Demo Guest', role: 'guest' },
+        { username: 'guest2@gmail.com', email: 'guest2@gmail.com', phone: '9123456789', password: 'guest123', name: 'Rohan Kumar', role: 'guest' }
+      ]
     },
-    registeredGuests: [],
+    registeredGuests: [
+      { id: 101, email: 'guest@gmail.com', phone: '9876543210', password: 'guest123', name: 'Demo Guest', role: 'guest', status: 'active' },
+      { id: 102, email: 'guest2@gmail.com', phone: '9123456789', password: 'guest123', name: 'Rohan Kumar', role: 'guest', status: 'active' }
+    ],
     registeredOwners: []
   };
 }
 
 // Load registered users from localStorage (persisted sign-ups)
-let registeredGuests = JSON.parse(localStorage.getItem('registered_guests')) || (typeof LOGIN_MOCK !== 'undefined' ? [...LOGIN_MOCK.registeredGuests] : []);
+let registeredGuests = JSON.parse(localStorage.getItem('registered_guests')) || [...LOGIN_MOCK.registeredGuests];
 let registeredOwners = JSON.parse(localStorage.getItem('registered_owners')) || (typeof LOGIN_MOCK !== 'undefined' ? [...LOGIN_MOCK.registeredOwners] : []);
 
 // ===== INIT =====
@@ -165,7 +176,7 @@ async function handleLogin(role) {
     let match = null;
     if (typeof LOGIN_MOCK !== 'undefined' && LOGIN_MOCK.credentials[role]) {
       const credList = LOGIN_MOCK.credentials[role] || [];
-      match = credList.find(c => (c.username === username || c.email === username) && c.password === password);
+      match = credList.find(c => (c.username === username || c.email === username || c.phone === username) && c.password === password);
     }
 
     user = match || registeredMatch;

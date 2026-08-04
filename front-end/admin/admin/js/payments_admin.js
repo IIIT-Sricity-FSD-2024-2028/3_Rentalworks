@@ -19,19 +19,19 @@ function renderPayments(search = '', statusF = 'verified') {
   setTxt('pay-pending-amt', '₹' + pendingAmt.toLocaleString('en-IN'));
   setTxt('pay-transactions', verifiedPayments.length);
 
-  // Ledger — show only verified, filter by search
-  let filtered = verifiedPayments.filter(p => {
+  // Ledger — show all payments (pending + verified), filter by search
+  let filtered = payments.filter(p => {
     return !search ||
-      p.tenant.toLowerCase().includes(search.toLowerCase()) ||
-      p.property.toLowerCase().includes(search.toLowerCase()) ||
-      p.transactionId.toLowerCase().includes(search.toLowerCase());
+      (p.tenant && p.tenant.toLowerCase().includes(search.toLowerCase())) ||
+      (p.property && p.property.toLowerCase().includes(search.toLowerCase())) ||
+      (p.transactionId && p.transactionId.toLowerCase().includes(search.toLowerCase()));
   });
 
   const tbody = document.getElementById('payments-tbody');
   if (!tbody) return;
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:24px">No verified transactions found</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;color:#94a3b8;padding:24px">No transactions found</td></tr>`;
   } else {
     tbody.innerHTML = filtered.map(p => {
       const clearance       = p.clearance || 'Pending';
@@ -41,21 +41,22 @@ function renderPayments(search = '', statusF = 'verified') {
         : '';
       return `
         <tr>
-          <td><strong>${p.tenant}</strong></td>
-          <td style="font-size:12px">${p.property}</td>
-          <td><span class="room-chip">${p.room}</span></td>
-          <td style="font-weight:600">₹${p.amount.toLocaleString()}</td>
-          <td style="font-size:12px">${p.method}</td>
-          <td style="font-size:11px;color:#475569">${p.transactionId}</td>
-          <td style="font-size:12px">${p.paidDate}</td>
-          <td><span class="badge badge-${p.status}">${cap(p.status)}</span></td>
+          <td><strong>${p.tenant || 'Guest'}</strong></td>
+          <td style="font-size:12px">${p.property || '-'}</td>
+          <td><span class="room-chip">${p.room || '-'}</span></td>
+          <td style="font-weight:600">₹${(p.amount || 0).toLocaleString()}</td>
+          <td style="font-size:12px">${p.method || '-'}</td>
+          <td style="font-size:11px;color:#475569">${p.transactionId || '-'}</td>
+          <td style="font-size:12px">${p.paidDate || '-'}</td>
+          <td><span class="badge badge-${p.status || 'pending'}">${cap(p.status || 'pending')}</span></td>
           <td>
             <span style="font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;background:${clearance === 'Approved' ? '#dcfce7' : '#fef9c3'};color:${clearance === 'Approved' ? '#15803d' : '#b45309'}">
               ${clearance}
             </span>
           </td>
           <td>
-            <div class="act-icons">
+            <div class="act-icons" style="display:flex;gap:4px;align-items:center;">
+              ${p.status === 'pending' ? `<button class="btn-verify-cred" style="background:#2563eb;color:#ffffff;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;border:none;cursor:pointer;" onclick="verifyPaymentAndGenerateCreds(${p.id})" title="Verify Payment & Generate Credentials">🔑 Verify & Gen Creds</button>` : ''}
               <button class="btn-issue-refund" style="${refundStyle}" onclick="issueRefund(${p.id})" title="${refundDisabled ? 'Clearance required' : 'Issue Refund'}">
                 ${refundDisabled ? '🔒 Refund' : '↩️ Refund'}
               </button>
@@ -71,6 +72,62 @@ function renderPayments(search = '', statusF = 'verified') {
   renderTopEarningProperties();
   renderPayRevChart();
   setupPaymentFilters();
+}
+
+// ===== PAYMENT VERIFICATION & CREDENTIAL GENERATION =====
+function verifyPaymentAndGenerateCreds(id) {
+  const p = payments.find(x => x.id === id);
+  if (!p) return;
+  p.status = 'verified';
+  p.clearance = 'Approved';
+
+  const cleanName = (p.tenant || 'tenant').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const tenantUsername = cleanName + Math.floor(100 + Math.random() * 900);
+  const tenantPassword = "PG" + Math.floor(100000 + Math.random() * 900000);
+
+  let tenantCreds = JSON.parse(localStorage.getItem('tenant_credentials') || '[]');
+  tenantCreds.unshift({
+    id: Date.now(),
+    tenant: p.tenant,
+    property: p.property,
+    room: p.room,
+    username: tenantUsername,
+    password: tenantPassword,
+    generatedAt: new Date().toLocaleString()
+  });
+  localStorage.setItem('tenant_credentials', JSON.stringify(tenantCreds));
+
+  localStorage.setItem('global_payments', JSON.stringify(payments));
+
+  let notifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
+  notifs.push({
+    id: Date.now().toString(),
+    type: 'credential',
+    target: 'guest',
+    message: `Payment Verified! Tenant Login Credentials for ${p.property}: Username: ${tenantUsername} | Password: ${tenantPassword}`,
+    time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
+    read: false
+  });
+  localStorage.setItem('cross_notifications', JSON.stringify(notifs));
+
+  saveData();
+  renderPayments();
+
+  showInfoModal(
+    '🔑 Tenant Credentials Generated',
+    `Payment TXN: ${p.transactionId} Verified`,
+    `<div style="display:grid;gap:12px;font-size:13px;text-align:left;">
+      <div style="background:#eff6ff;padding:12px;border-radius:8px;border:1px solid #bfdbfe;">
+        <strong style="color:#1e3a8a;display:block;margin-bottom:6px;">Login Credentials Generated & Sent to Tenant:</strong>
+        <div><strong>Username:</strong> <code style="background:#fff;padding:2px 6px;border-radius:4px;color:#1d4ed8;">${tenantUsername}</code></div>
+        <div style="margin-top:4px;"><strong>Password:</strong> <code style="background:#fff;padding:2px 6px;border-radius:4px;color:#1d4ed8;">${tenantPassword}</code></div>
+      </div>
+      <div><strong>Tenant Name:</strong> ${p.tenant}</div>
+      <div><strong>Property / Room:</strong> ${p.property} (${p.room})</div>
+      <div><strong>Amount Paid:</strong> ₹${p.amount.toLocaleString()}</div>
+      <div style="color:#15803d;font-weight:600;">✓ The tenant has been notified with these credentials.</div>
+    </div>`
+  );
 }
 
 // ===== TOP EARNING PROPERTIES =====

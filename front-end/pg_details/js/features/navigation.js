@@ -31,13 +31,6 @@ const Navigation = {
             return;
         }
 
-        // Prevent multiple bookings
-        const activeRequest = State.data.bookings?.find(b => b.status === 'pending');
-        if (activeRequest && page === 'booking-review') {
-            UI.showToast('You already have a pending request. Please wait for approval.', 'info');
-            return; 
-        }
-
         UI.showLoader();
 
         try {
@@ -54,10 +47,11 @@ const Navigation = {
             
             if (container) {
                 container.innerHTML = htmlContent;
+                window.scrollTo(0, 0);
             }
 
-            // 4. Reset scroll to top
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // 4. Highlight current link in Navbar
+            this.updateNavHighlight(page);
 
             // 5. Initialize the logic for this specific page
             this.initPageLogic(page);
@@ -79,7 +73,20 @@ const Navigation = {
         switch (page) {
             case 'landing':
                 // Scroll links are in the persistent navbar; re-init after page load
-                setTimeout(() => { this.initScrollLinks(); }, 100);
+                setTimeout(() => { 
+                    this.initScrollLinks(); 
+                    if (typeof BookingLogic !== 'undefined' && BookingLogic.updateRoomAvailabilityUI) {
+                        BookingLogic.updateRoomAvailabilityUI();
+                    }
+                }, 100);
+                break;
+
+            case 'roommate-intro':
+                setTimeout(() => {
+                    if (typeof RoommateLogic !== 'undefined' && RoommateLogic.initIntroPage) {
+                        RoommateLogic.initIntroPage();
+                    }
+                }, 50);
                 break;
 
             case 'matches':
@@ -112,6 +119,27 @@ const Navigation = {
 
             default:
                 break;
+        }
+    },
+
+    /**
+     * Highlights current active link in navbar safely without throwing exceptions
+     */
+    updateNavHighlight(page) {
+        try {
+            const links = document.querySelectorAll('.nav-links a, .nav-item');
+            links.forEach(link => {
+                link.classList.remove('active');
+                const href = link.getAttribute('href');
+                const datasetPage = link.getAttribute('data-page');
+                if (datasetPage && datasetPage === page) {
+                    link.classList.add('active');
+                } else if (href && (href.includes(page) || (page === 'landing' && (href === '#' || href === '#home')))) {
+                    link.classList.add('active');
+                }
+            });
+        } catch (e) {
+            console.warn("Error updating nav highlight:", e);
         }
     },
 
