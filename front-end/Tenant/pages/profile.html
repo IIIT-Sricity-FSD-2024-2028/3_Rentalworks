@@ -16,6 +16,11 @@
         <div class="section-card mb-16">
           <div class="section-header"><span class="section-title">Personal Information</span></div>
           <div class="section-body">
+            <div class="form-group">
+              <label>Username <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">(Used for login)</span></label>
+              <input type="text" id="profile-username" placeholder="e.g. rohan">
+              <small id="username-error-msg" style="color: #dc2626; display: none; margin-top: 4px; font-size: 12px; font-weight: 500;"></small>
+            </div>
             <div class="form-group"><label>Full Name</label><input type="text" id="profile-name" value="Rahul Sharma"></div>
             <div class="form-group"><label>Email Address</label><input type="email" value="rahul.sharma@email.com" readonly="" style="background:var(--bg-main)"></div>
             <div class="form-group"><label>Phone Number</label><input type="tel" id="profile-phone" value="+91 98765 43210"></div>

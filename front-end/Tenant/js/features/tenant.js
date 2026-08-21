@@ -633,16 +633,22 @@ selectBank(element, bankName) {
     if (pAvatar && profile.name) pAvatar.textContent = profile.name.charAt(0).toUpperCase();
 
     // Form fields
+    const fUsername = document.getElementById('profile-username');
     const fName = document.getElementById('profile-name');
     const fEmail = document.querySelector('input[type="email"]');
     const fPhone = document.getElementById('profile-phone');
     const fAddress = document.getElementById('profile-address');
 
+    if (fUsername) fUsername.value = profile.username || '';
     if (fName) fName.value = profile.name || '';
     if (fEmail) fEmail.value = profile.email || '';
     if (fPhone) fPhone.value = profile.phone || '';
     if (fAddress) fAddress.value = profile.address || '';
     
+    // Hide inline username error
+    const errEl = document.getElementById('username-error-msg');
+    if (errEl) errEl.style.display = 'none';
+
     // Stats (Room and Property)
     const pRoom = document.getElementById('profile-room-val');
     const pProp = document.getElementById('profile-prop-val');
@@ -653,34 +659,147 @@ selectBank(element, bankName) {
   },
 
   saveProfile() {
+    const usernameInput = document.getElementById('profile-username');
+    const username = usernameInput ? usernameInput.value.trim() : '';
     const name = document.getElementById('profile-name').value.trim();
     const phone = document.getElementById('profile-phone').value.trim();
     const address = document.getElementById('profile-address').value.trim();
+    const errEl = document.getElementById('username-error-msg');
     
-    if (!name) return UI.showToast('Name is required', 'error');
-    
+    if (errEl) errEl.style.display = 'none';
+
+    if (!username) {
+      if (errEl) { errEl.textContent = 'Username is required'; errEl.style.display = 'block'; }
+      return UI.showToast('Username is required', 'error');
+    }
+
+    if (!/^[a-zA-Z0-9_.-]{3,30}$/.test(username)) {
+      if (errEl) { errEl.textContent = 'Username must be 3-30 characters long and contain only letters, numbers, underscores, dashes, or dots.'; errEl.style.display = 'block'; }
+      return UI.showToast('Invalid username format', 'error');
+    }
+
+    if (!name) return UI.showToast('Full Name is required', 'error');
+
+    const currentEmail = State.data.profile.email;
+    const currentOldUsername = State.data.profile.username;
+
+    // --- UNIVERSALLY UNIQUE USERNAME VALIDATION ---
+    const accounts = JSON.parse(localStorage.getItem('pg_user_accounts') || '[]');
+    const regGuests = JSON.parse(localStorage.getItem('registered_guests') || '[]');
+    const regOwners = JSON.parse(localStorage.getItem('registered_owners') || '[]');
+
+    const isTakenInAccounts = accounts.some(a => 
+      a.username.toLowerCase() === username.toLowerCase() && 
+      ((a.email && a.email.toLowerCase() !== currentEmail.toLowerCase()) || a.username.toLowerCase() !== (currentOldUsername || '').toLowerCase())
+    );
+
+    const isTakenInGuests = regGuests.some(g => 
+      g.username && g.username.toLowerCase() === username.toLowerCase() && g.email?.toLowerCase() !== currentEmail.toLowerCase()
+    );
+
+    const isTakenInOwners = regOwners.some(o => 
+      o.username && o.username.toLowerCase() === username.toLowerCase() && o.email?.toLowerCase() !== currentEmail.toLowerCase()
+    );
+
+    if (isTakenInAccounts || isTakenInGuests || isTakenInOwners) {
+      if (errEl) { 
+        errEl.textContent = `Username "${username}" is already taken by another account. Please choose a unique username.`; 
+        errEl.style.display = 'block'; 
+      }
+      return UI.showToast(`Username "${username}" is already taken!`, 'error');
+    }
+
     const oldName = State.data.profile.name;
+    State.data.profile.username = username;
     State.data.profile.name = name;
     State.data.profile.phone = phone;
     State.data.profile.address = address;
     State.save();
+
+    // Update persistent user accounts store in localStorage
+    let updatedAccs = accounts.map(acc => {
+      if ((acc.email && acc.email.toLowerCase() === currentEmail.toLowerCase()) || 
+          (acc.username && acc.username.toLowerCase() === (currentOldUsername || '').toLowerCase())) {
+        return { ...acc, username, name, phone, address };
+      }
+      return acc;
+    });
+
+    // If not found in default list, add it
+    if (!updatedAccs.some(a => a.email?.toLowerCase() === currentEmail.toLowerCase())) {
+      updatedAccs.push({
+        username, name, email: currentEmail, phone, address, role: 'tenant', password: 'password123'
+      });
+    }
+
+    localStorage.setItem('pg_user_accounts', JSON.stringify(updatedAccs));
     
-    // Sync name change to Warden's tenant records
-    if (oldName !== name) {
+    // Cascade updated name and username to existing complaints, issues, service requests & warden records
+    if (oldName !== name || currentOldUsername !== username) {
+      // 1. Update complaints
+      let globalCmp = JSON.parse(localStorage.getItem('global_complaints') || '[]');
+      globalCmp.forEach(c => {
+        if (c.tenantName === oldName || c.tenantName === 'Rahul Sharma' || c.tenantName === 'Amit Sharma') {
+          c.tenantName = name;
+        }
+      });
+      localStorage.setItem('global_complaints', JSON.stringify(globalCmp));
+      if (State.data.complaints) {
+        State.data.complaints.forEach(c => {
+          if (c.tenantName === oldName || c.tenantName === 'Rahul Sharma' || c.tenantName === 'Amit Sharma') {
+            c.tenantName = name;
+          }
+        });
+      }
+
+      // 2. Update issues
+      let globalIss = JSON.parse(localStorage.getItem('global_issues') || '[]');
+      globalIss.forEach(i => {
+        if (i.tenantName === oldName || i.tenantName === 'Rahul Sharma' || i.tenantName === 'Amit Sharma') {
+          i.tenantName = name;
+        }
+      });
+      localStorage.setItem('global_issues', JSON.stringify(globalIss));
+      if (State.data.issues) {
+        State.data.issues.forEach(i => {
+          if (i.tenantName === oldName || i.tenantName === 'Rahul Sharma' || i.tenantName === 'Amit Sharma') {
+            i.tenantName = name;
+          }
+        });
+      }
+
+      // 3. Update service requests
+      let globalSrv = JSON.parse(localStorage.getItem('global_services') || '[]');
+      globalSrv.forEach(s => {
+        if (s.tenantName === oldName || s.tenantName === 'Rahul Sharma' || s.tenantName === 'Amit Sharma') {
+          s.tenantName = name;
+        }
+      });
+      localStorage.setItem('global_services', JSON.stringify(globalSrv));
+      if (State.data.serviceRequests) {
+        State.data.serviceRequests.forEach(s => {
+          if (s.tenantName === oldName || s.tenantName === 'Rahul Sharma' || s.tenantName === 'Amit Sharma') {
+            s.tenantName = name;
+          }
+        });
+      }
+
+      // 4. Update Warden's tenant records
       let wardenTenants = JSON.parse(localStorage.getItem('warden_tenants') || '[]');
       const room = State.data.profile.room || 'A-204';
-      let matched = wardenTenants.find(t => t.name === oldName || t.room === room);
+      let matched = wardenTenants.find(t => t.name === oldName || t.email === currentEmail || t.room === room);
       if (matched) {
         matched.name = name;
         matched.phone = phone || matched.phone;
+        matched.username = username;
         localStorage.setItem('warden_tenants', JSON.stringify(wardenTenants));
 
-        // Notify warden of name change
+        // Notify warden of profile change
         let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
         crossNotifs.push({
           id: Date.now(),
           title: 'Tenant Profile Updated',
-          message: `Tenant "${oldName}" has updated their profile name to "${name}".`,
+          message: `Tenant "${oldName}" updated their name to "${name}" (Username: @${username}).`,
           type: 'info',
           priority: 'routine',
           targetRole: 'warden',
@@ -691,19 +810,21 @@ selectBank(element, bankName) {
       }
     }
     
+    // Update current session & UI
     const sessionStr = sessionStorage.getItem('pg_user');
     if (sessionStr) {
       try {
         const user = JSON.parse(sessionStr);
+        user.username = username;
         user.name = name;
         user.phone = phone;
         sessionStorage.setItem('pg_user', JSON.stringify(user));
         State.data.currentUser = user;
-        if (typeof Auth !== 'undefined') Auth.applyRoleBasedUI();
       } catch(e) {}
     }
+    if (typeof Auth !== 'undefined') Auth.applyRoleBasedUI();
     
     this.renderProfile();
-    UI.showToast('Profile saved successfully!', 'success');
+    UI.showToast('Profile & Username saved permanently!', 'success');
   }
 };

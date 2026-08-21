@@ -15,8 +15,24 @@ let guestFormData = {};
 if (typeof LOGIN_MOCK === 'undefined') {
   var LOGIN_MOCK = {
     credentials: {
-      admin: [{ username: 'admin', password: 'password123', name: 'Admin' }],
-      warden: [], owner: [], tenant: [], guest: []
+      admin: [{ username: 'admin', password: 'admin123', name: 'Admin' }, { username: 'admin', password: 'password123', name: 'Admin' }],
+      warden: [
+        { username: 'warden', password: 'warden123', name: 'Sneha Gupta', property: 'Sunrise Heights' }
+      ],
+      owner: [
+        { username: 'owner1', password: 'owner123', name: 'Rajesh Kumar', property: 'Green Valley PG' },
+        { username: 'owner2', password: 'owner123', name: 'Priya Patel', property: 'Sunrise Heights' },
+        { username: 'owner3', password: 'owner123', name: 'Sunita Rao', property: 'Urban Nest' },
+        { username: 'owner4', password: 'owner123', name: 'Amit Verma', property: 'Comfort Stay' }
+      ],
+      tenant: [
+        { username: 'rohan', password: 'password123', name: 'Rohan Singh', property: 'Urban Nest', room: '102' },
+        { username: 'amit', password: 'password123', name: 'Amit Sharma', property: 'Green Valley PG', room: '101' },
+        { username: 'anita', password: 'password123', name: 'Anita Verma', property: 'Sunrise Heights', room: '202' },
+        { username: 'vikram', password: 'password123', name: 'Vikram Desai', property: 'Comfort Stay', room: '101' },
+        { username: 'neha', password: 'password123', name: 'Neha Kapoor', property: 'Sunrise Heights', room: '201' }
+      ],
+      guest: []
     },
     registeredGuests: [],
     registeredOwners: []
@@ -145,30 +161,66 @@ async function handleLogin(role) {
     submitBtn.disabled = true;
   }
 
+// ===== PERSISTENT ACCOUNTS STORE =====
+function getPersistentAccounts() {
+  const defaultAccounts = [
+    { username: 'admin', password: 'admin123', name: 'Admin', email: 'admin@pgrentals.com', role: 'admin' },
+    { username: 'warden', password: 'warden123', name: 'Sneha Gupta', email: 'sneha.g@email.com', phone: '+91 98765 43213', role: 'warden', property: 'Sunrise Heights' },
+    { username: 'owner1', password: 'owner123', name: 'Rajesh Kumar', email: 'rajesh.k@email.com', phone: '+91 98765 43214', role: 'owner', property: 'Green Valley PG' },
+    { username: 'owner2', password: 'owner123', name: 'Priya Patel', email: 'priya.p@email.com', phone: '+91 98765 43211', role: 'owner', property: 'Sunrise Heights' },
+    { username: 'owner3', password: 'owner123', name: 'Sunita Rao', email: 'sunita.r@email.com', phone: '+91 98765 43218', role: 'owner', property: 'Urban Nest' },
+    { username: 'owner4', password: 'owner123', name: 'Amit Verma', email: 'amit.v@email.com', phone: '+91 98765 43219', role: 'owner', property: 'Comfort Stay' },
+    { username: 'rohan', password: 'password123', name: 'Rohan Singh', email: 'rohan.s@email.com', phone: '+91 98765 43212', role: 'tenant', property: 'Urban Nest', room: '102' },
+    { username: 'amit', password: 'password123', name: 'Amit Sharma', email: 'amit.s@email.com', phone: '+91 98765 43210', role: 'tenant', property: 'Green Valley PG', room: '101' },
+    { username: 'anita', password: 'password123', name: 'Anita Verma', email: 'anita.v@email.com', phone: '+91 98765 43215', role: 'tenant', property: 'Sunrise Heights', room: '202' },
+    { username: 'vikram', password: 'password123', name: 'Vikram Desai', email: 'vikram.d@email.com', phone: '+91 98765 43216', role: 'tenant', property: 'Comfort Stay', room: '101' },
+    { username: 'neha', password: 'password123', name: 'Neha Kapoor', email: 'neha.k@email.com', phone: '+91 98765 43217', role: 'tenant', property: 'Sunrise Heights', room: '201' }
+  ];
+
+  const stored = localStorage.getItem('pg_user_accounts');
+  if (!stored) {
+    localStorage.setItem('pg_user_accounts', JSON.stringify(defaultAccounts));
+    return defaultAccounts;
+  }
+  try {
+    return JSON.parse(stored);
+  } catch (e) {
+    return defaultAccounts;
+  }
+}
+
   let user = null;
 
   try {
-    // Check registered guests/owners in localStorage
+    // 1. Check persistent accounts in localStorage first (includes edited profiles & usernames)
+    const persistentAccs = getPersistentAccounts();
+    let persistentMatch = persistentAccs.find(a => 
+      a.role === role && 
+      (a.username.toLowerCase() === username.toLowerCase() || (a.email && a.email.toLowerCase() === username.toLowerCase())) && 
+      a.password === password
+    );
+
+    // 2. Check registered guests/owners in localStorage
     let registeredMatch = null;
     if (role === 'guest') {
       registeredMatch = registeredGuests.find(
-        g => (g.email === username || g.phone === username) && g.password === password
+        g => ((g.username && g.username.toLowerCase() === username.toLowerCase()) || g.email === username || g.phone === username) && g.password === password
       );
     }
     if (role === 'owner') {
       registeredMatch = registeredOwners.find(
-        o => o.email === username && o.password === password
+        o => ((o.username && o.username.toLowerCase() === username.toLowerCase()) || o.email === username) && o.password === password
       );
     }
 
-    // Check mock credentials if available
+    // 3. Check mock credentials if available
     let match = null;
     if (typeof LOGIN_MOCK !== 'undefined' && LOGIN_MOCK.credentials[role]) {
       const credList = LOGIN_MOCK.credentials[role] || [];
-      match = credList.find(c => (c.username === username || c.email === username) && c.password === password);
+      match = credList.find(c => (c.username?.toLowerCase() === username.toLowerCase() || c.email?.toLowerCase() === username.toLowerCase()) && c.password === password);
     }
 
-    user = match || registeredMatch;
+    user = persistentMatch || match || registeredMatch;
 
     // If not found locally, call backend API
     if (!user && role !== 'guest') {
@@ -200,8 +252,9 @@ async function handleLogin(role) {
       return;
     }
 
-    // Save session
+    // Save session (including username)
     sessionStorage.setItem('pg_user', JSON.stringify({
+      username: user.username || username,
       name:     user.name,
       email:    user.email,
       phone:    user.phone || '',
@@ -209,6 +262,10 @@ async function handleLogin(role) {
       property: user.property || '',
       room:     user.room     || ''
     }));
+    
+    if (role === 'warden') {
+      sessionStorage.setItem('warden_user', JSON.stringify(user));
+    }
 
     showLoginBanner(`Welcome back, ${user.name}! Redirecting...`, 'success');
 

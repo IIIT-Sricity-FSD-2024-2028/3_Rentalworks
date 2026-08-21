@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PG Rental Property Management System</title>
+  <link rel="stylesheet" href="./rentalbros/css/style.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+  <style>
+    /* Portal Switcher Sub-Bar for Quick Access to all Roles */
+    .portal-switcher {
+      background: #1e293b;
+      color: #fff;
+      padding: 8px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-family: Arial, sans-serif;
+    }
+    .portal-switcher .links {
+      display: flex;
+      gap: 16px;
+    }
+    .portal-switcher a {
+      color: #94a3b8;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .portal-switcher a:hover {
+      color: #f8fafc;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP PORTAL SWITCHER BAR -->
+  <div class="portal-switcher">
+    <span><strong>RentalWorks Portals:</strong></span>
+    <div class="links">
+      <a href="./rentalbros/html/index.html">Home</a>
+      <a href="./login/login/login.html">Login / Register</a>
+      <a href="./Tenant/index.html">Tenant Portal</a>
+      <a href="./pg_details/index.html">PG Details</a>
+      <a href="./warden/warden/index_warden.html">Warden Portal</a>
+      <a href="./owner/owner_s/index.html">Owner Portal</a>
+      <a href="./admin/admin/index.html">Admin Portal</a>
+    </div>
+  </div>
+
+  <div id="fadeOverlay"></div>
+  
+  <!-- NAVBAR -->
+  <header class="navbar">
+    <div class="logo"><span class="material-icons-outlined" style="font-size:24px;">apartment</span></div>
+    <nav>
+      <a href="#home"><span class="material-icons-outlined" style="font-size:24px;">home</span>Home</a>
+      <a href="#about"><span class="material-icons-outlined" style="font-size:24px;">info</span>About</a>
+      <a href="#feature"><span class="material-icons-outlined" style="font-size:24px;">flare</span>Feature</a>
+      <a href="#contact"><span class="material-icons-outlined" style="font-size:24px;">mail</span>Contact</a>
+    </nav>
+    <div class="login" style="cursor: pointer;" onclick="window.location.href='./login/login/login.html'"><span class="material-icons-outlined" style="font-size:24px;">person</span>Log-in / Register</div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section id="home" class="hero">
+    <center>
+      <div class="hero-text">
+        <h1>Discover Your Next Home</h1>
+        <p>Browse safe, affordable, and comfortable PG accommodation</p>
+        <ul>
+          <li>Secure and trusted platform</li>
+          <li>300+ listed properties</li>
+          <li>Fully secured</li>
+        </ul>
+        <button id="exploreBtn">Explore Properties</button>
+      </div>
+    </center>
+
+    <div class="hero-img">
+      <img src="./rentalbros/public/room_images/house.png" id="houseImg" alt="house">
+    </div>
+  </section>
+
+  <!-- EXPLORE -->
+  <section id="about" class="explore">
+    <h2>Explore:</h2>
+    <div class="cards">
+
+      <div class="card pg-card-sunrise" style="cursor: pointer;" onclick="window.location.href='./pg_details/index.html'">
+        <img src="./rentalbros/public/room_images/1h.jpg" alt="Sunrise PG">
+        <h3 class="card-h3">Sunrise PG Residency</h3>
+        <p class="card-p">Single/Double Sharing</p>
+        <strong>Rs. 15,000</strong>
+      </div>
+
+      <div class="card" style="cursor: pointer;" onclick="window.location.href='./pg_details/index.html'">
+        <img src="./rentalbros/public/room_images/2h.webp" alt="Boys PG">
+        <h3 class="card-h3">Boys PG</h3>
+        <p class="card-p">Single Room</p>
+        <strong>Rs. 14,000</strong>
+      </div>
+
+      <div class="card" style="cursor: pointer;" onclick="window.location.href='./pg_details/index.html'">
+        <img src="./rentalbros/public/room_images/3h.jpg" alt="Urban Apartments">
+        <h3 class="card-h3">Urban Apartments</h3>
+        <p class="card-p">Private Room</p>
+        <strong>Rs. 14,000</strong>
+      </div>
+
+      <div class="card" style="cursor: pointer;" onclick="window.location.href='./pg_details/index.html'">
+        <img src="./rentalbros/public/room_images/4h.webp" alt="Girls PG">
+        <h3 class="card-h3">Girls PG</h3>
+        <p class="card-p">Triple Sharing</p>
+        <strong>Rs. 19,000</strong>
+      </div>
+
+      <div class="card" style="cursor: pointer;" onclick="window.location.href='./pg_details/index.html'">
+        <img src="./rentalbros/public/room_images/5h.webp" alt="Budget PG">
+        <h3 class="card-h3">Budget PG</h3>
+        <p class="card-p">Double Sharing</p>
+        <strong>Rs. 13,000</strong>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- NEW LISTINGS -->
+  <section class="listings">
+    <h2>New Listings:</h2>
+
+    <div class="listing-cards">
+
+      <!-- CARD 1 -->
+      <div class="listing">
+        <img src="./rentalbros/public/room_images/6h.webp" alt="Luxury PG">
+        <h3 class="title">Luxury PG : Koramangala</h3>
+        <div class="details" style="display:flex; flex-wrap:wrap; gap:6px; margin:10px 0;">
+          <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">Attached Kitchen</span>
+          <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">2 Bathrooms</span>
+          <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">Fully-furnished</span>
+          <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">WiFi</span>
+        </div>
+        <p class="location"><span class="material-icons-outlined" style="font-size:24px;">location_on</span> Near Hospital, Restaurants, Shopping Mall, Metro Station</p>
+        <div class="price-row">
+          <span class="price">Rs. 22,000/month</span>
+        </div>
+      </div>
+
+      <!-- CARD 2 -->
+      <div class="listing">
+        <img src="./rentalbros/public/room_images/7h.webp" alt="Student Flat">
+        <h3 class="title">Student Flat : Near University</h3>
+        <div class="details" style="display:flex; flex-wrap:wrap; gap:6px; margin:10px 0;">
+          <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">Shared Kitchen</span>
+          <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">2 Bathrooms</span>
+          <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">Semi-furnished</span>
+          <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">WiFi</span>
+        </div>
+        <p class="location"><span class="material-icons-outlined" style="font-size:24px;">location_on</span> Near Hospital, Restaurants, Shopping Mall, Metro Station</p>
+        <div class="price-row">
+          <span class="price">Rs. 12,000/month</span>
+        </div>
+      </div>
+
+      <!-- CARD 3 -->
+      <div class="listing">
+        <img src="./rentalbros/public/room_images/8h.jpg" alt="Working Professionals PG">
+        <h3 class="title">Working Professionals PG : BTM Layout</h3>
+        <div class="details" style="display:flex; flex-wrap:wrap; gap:6px; margin:10px 0;">
+          <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">Shared Kitchen</span>
+          <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">3 Bathrooms</span>
+          <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">Fully-furnished</span>
+          <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">WiFi</span>
+        </div>
+        <p class="location"><span class="material-icons-outlined" style="font-size:24px;">location_on</span> Near Hospital, Restaurants, Shopping Mall, Metro Station</p>
+        <div class="price-row">
+          <span class="price">Rs. 28,000/month</span>
+        </div>
+      </div>
+
+      <!-- CARD 4 -->
+      <div class="listing">
+        <img src="./rentalbros/public/room_images/9h.webp" alt="Premium Flat">
+        <h3 class="title">Premium Flat : Indiranagar</h3>
+        <div class="details" style="display:flex; flex-wrap:wrap; gap:6px; margin:10px 0;">
+          <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">Common Kitchen</span>
+          <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">2 Bathrooms</span>
+          <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">Fully-furnished</span>
+          <span style="background:#e2e8f0; color:#475569; padding:4px 8px; border-radius:6px; font-size:12px;">WiFi</span>
+        </div>
+        <p class="location"><span class="material-icons-outlined" style="font-size:24px;">location_on</span> Near Hospital, Restaurants, Shopping Mall, Metro Station</p>
+        <div class="price-row">
+          <span class="price">Rs. 22,000/month</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="feature" class="features">
+    <h2>Our Key Features</h2>
+    <div class="feature-grid">
+
+      <div class="feature">
+        <div class="icon-box">
+          <span class="material-icons-outlined" style="font-size:32px;">verified</span>
+        </div>
+        <h3>Verified PG Listings</h3>
+        <p>Browse a wide range of verified PG accommodations listed by trusted property owners.</p>
+      </div>
+
+      <div class="feature">
+        <div class="icon-box">
+          <span class="material-icons-outlined" style="font-size:32px;">manage_search</span>
+        </div>
+        <h3>Smart Search &amp; Filters</h3>
+        <p>Quickly discover PG accommodations using smart search and filtering options.</p>
+      </div>
+
+      <div class="feature">
+        <div class="icon-box">
+          <span class="material-icons-outlined" style="font-size:32px;">feed</span>
+        </div>
+        <h3>Detailed Property Info</h3>
+        <p>Access complete property details including rent, facilities, room types, images, and location.</p>
+      </div>
+
+      <div class="feature">
+        <div class="icon-box">
+          <span class="material-icons-outlined" style="font-size:32px;">star_rate</span>
+        </div>
+        <h3>Reviews &amp; Ratings</h3>
+        <p>View real user reviews and ratings to understand quality, safety, and comfort.</p>
+      </div>
+
+      <div class="feature">
+        <div class="icon-box">
+          <span class="material-icons-outlined" style="font-size:32px;">chat</span>
+        </div>
+        <h3>Direct Owner Communication</h3>
+        <p>Connect directly with property owners to ask questions and schedule visits easily.</p>
+      </div>
+
+      <div class="feature">
+        <div class="icon-box">
+          <span class="material-icons-outlined" style="font-size:32px;">add_home</span>
+        </div>
+        <h3>Easy Property Listing</h3>
+        <p>Owners can list properties easily with details, images, and pricing.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <footer id="contact" class="footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <h4>Support</h4>
+        <p>Blogs</p>
+        <p>Plans</p>
+        <p>About</p>
+        <p>Pricing</p>
+        <p>Contact</p>
+        <div class="footer-small">
+          <p>Privacy Policy</p>
+          <p>Terms &amp; Conditions</p>
+        </div>
+      </div>
+
+      <div class="footer-center">
+        <h4>24/7 Customer Support</h4>
+        <p>support@rentalworks.com</p>
+        <p>+91-9234567810</p>
+        <div class="social-icons">
+          <span class="material-icons-outlined" style="font-size:24px;">facebook</span>
+          <span class="material-icons-outlined" style="font-size:24px;">photo_camera</span>
+          <span class="material-icons-outlined" style="font-size:24px;">play_circle</span>
+        </div>
+      </div>
+
+      <div class="footer-right">
+        <h4>Need help?</h4>
+        <textarea id="helpMsg" placeholder="Type your message here..."></textarea>
+        <button id="helpSubmitBtn">Submit</button>
+      </div>
+    </div>
+
+    <p class="copyright">
+      @2026 RentBro / RentalWorks. All Rights Reserved
+    </p>
+  </footer>
+
+  <script src="./rentalbros/js/script.js"></script>
+</body>
+</html>

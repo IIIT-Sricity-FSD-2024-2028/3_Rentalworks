@@ -49,8 +49,15 @@ const Auth = {
       }
     });
 
-    // Update Topbar Email
+    // Update Topbar Greeting & Email
+    const profile = State.data.profile || {};
+    const displayName = profile.name || user.name || 'Tenant';
+    const displayEmail = profile.email || user.email || '';
+
+    const greetingEl = document.querySelector('.topbar-left .greeting');
+    if (greetingEl) greetingEl.textContent = 'Welcome back, ' + displayName;
+
     const emailEl = document.querySelector('.topbar-left .email');
-    if (emailEl) emailEl.textContent = user.email;
+    if (emailEl) emailEl.textContent = displayEmail;
   }
 };

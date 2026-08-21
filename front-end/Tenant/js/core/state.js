@@ -59,16 +59,35 @@ const State = {
       this.data = { ...this.data, ...parsed };
     }
 
-    // Always apply session user on top, but override Rahul → Amit
+    // Always apply session user and persistent account data
     const sessionStr = sessionStorage.getItem('pg_user');
     if (sessionStr) {
       try {
         const user = JSON.parse(sessionStr);
-        const displayName = (user.name === 'Rahul Sharma') ? 'Amit Sharma' : (user.name || this.data.profile.name);
-        const displayEmail = (user.name === 'Rahul Sharma') ? 'amit.s@email.com' : (user.email || this.data.profile.email);
-        this.data.profile.name  = displayName;
-        this.data.profile.phone = user.phone || this.data.profile.phone;
-        this.data.profile.email = displayEmail;
+        this.data.profile.username = user.username || this.data.profile.username || 'rohan';
+        this.data.profile.name     = user.name || this.data.profile.name;
+        this.data.profile.phone    = user.phone || this.data.profile.phone;
+        this.data.profile.email    = user.email || this.data.profile.email;
+        this.data.profile.room     = user.room || this.data.profile.room || 'A-204';
+        this.data.profile.property = user.property || this.data.profile.property || 'Urban Nest';
+      } catch(e) {}
+    }
+
+    // Cross-check persistent account store for latest edited info
+    const storedAccs = localStorage.getItem('pg_user_accounts');
+    if (storedAccs) {
+      try {
+        const accs = JSON.parse(storedAccs);
+        const match = accs.find(a => 
+          (this.data.profile.email && a.email?.toLowerCase() === this.data.profile.email.toLowerCase()) ||
+          (this.data.profile.username && a.username?.toLowerCase() === this.data.profile.username.toLowerCase())
+        );
+        if (match) {
+          if (match.name) this.data.profile.name = match.name;
+          if (match.username) this.data.profile.username = match.username;
+          if (match.phone) this.data.profile.phone = match.phone;
+          if (match.email) this.data.profile.email = match.email;
+        }
       } catch(e) {}
     }
 

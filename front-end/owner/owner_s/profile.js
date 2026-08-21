@@ -45,6 +45,11 @@ function renderProfilePage(profile, totalProps, totalRevenue) {
         </div>
         <div style="display:flex;flex-direction:column;gap:16px">
           <div class="form-group">
+            <label class="form-label">Username (Used for login) <span class="req">*</span></label>
+            <input class="form-input" id="profUsername" value="${profile.username || 'owner1'}" placeholder="Your username">
+            <span class="form-error" id="profUsernameErr" style="display:none; color:#dc2626; font-size:12px; margin-top:4px;">Username is required</span>
+          </div>
+          <div class="form-group">
             <label class="form-label">Full Name <span class="req">*</span></label>
             <input class="form-input" id="profName" value="${profile.name || ''}" placeholder="Your full name">
             <span class="form-error">Name is required</span>
@@ -125,12 +130,37 @@ function renderProfilePage(profile, totalProps, totalRevenue) {
 }
 
 async function saveProfile() {
+  const username = (document.getElementById('profUsername')?.value || '').trim();
   const name = document.getElementById('profName').value.trim();
   const email = document.getElementById('profEmail').value.trim();
+  const errEl = document.getElementById('profUsernameErr');
+
+  if (errEl) errEl.style.display = 'none';
+
+  if (!username) {
+    if (errEl) { errEl.textContent = 'Username is required'; errEl.style.display = 'block'; }
+    showToast('Username is required', 'error'); return;
+  }
+
+  if (!/^[a-zA-Z0-9_.-]{3,30}$/.test(username)) {
+    if (errEl) { errEl.textContent = 'Username must be 3-30 characters long'; errEl.style.display = 'block'; }
+    showToast('Invalid username format', 'error'); return;
+  }
 
   if (!name) { showToast('Name is required', 'error'); return; }
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     showToast('Valid email is required', 'error'); return;
+  }
+
+  // Universally unique username check
+  const accounts = JSON.parse(localStorage.getItem('pg_user_accounts') || '[]');
+  const isTaken = accounts.some(a => 
+    a.username.toLowerCase() === username.toLowerCase() && 
+    (a.email && a.email.toLowerCase() !== email.toLowerCase())
+  );
+  if (isTaken) {
+    if (errEl) { errEl.textContent = `Username "${username}" is already taken by another user`; errEl.style.display = 'block'; }
+    showToast(`Username "${username}" is already taken!`, 'error'); return;
   }
 
   const data = getData();
@@ -138,6 +168,7 @@ async function saveProfile() {
 
   data.profile = {
     ...data.profile,
+    username,
     name,
     email,
     phone: document.getElementById('profPhone').value.trim(),
@@ -149,7 +180,29 @@ async function saveProfile() {
   };
 
   updateData(data);
-  showToast('Profile updated successfully!', 'success');
+
+  // Sync to pg_user_accounts & session
+  let updatedAccs = accounts.map(acc => {
+    if ((acc.email && acc.email.toLowerCase() === email.toLowerCase()) || acc.role === 'owner') {
+      return { ...acc, username, name, email, phone: data.profile.phone };
+    }
+    return acc;
+  });
+  localStorage.setItem('pg_user_accounts', JSON.stringify(updatedAccs));
+
+  const sessionStr = sessionStorage.getItem('pg_user');
+  if (sessionStr) {
+    try {
+      const user = JSON.parse(sessionStr);
+      user.username = username;
+      user.name = name;
+      user.email = email;
+      user.phone = data.profile.phone;
+      sessionStorage.setItem('pg_user', JSON.stringify(user));
+    } catch(e) {}
+  }
+
+  showToast('Profile & Username updated permanently!', 'success');
   loadProfile();
   loadSidebarUser();
 
