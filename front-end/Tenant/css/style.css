@@ -958,3 +958,89 @@ body, button, input, select, textarea { font-family: 'Inter', sans-serif !import
 
 body, button, input, select, textarea { font-family: 'Inter', sans-serif !important; font-size: 14px !important; }
 
+
+/* ===== COMPLAINT FILTER CARDS ===== */
+.cmp-filter-card {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid var(--border) !important;
+  user-select: none;
+}
+.cmp-filter-card:hover {
+  border-color: var(--primary) !important;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.cmp-filter-card.active {
+  border-color: var(--primary) !important;
+  background: var(--primary-bg) !important;
+  box-shadow: 0 0 0 3px rgba(196,154,26,0.12), var(--shadow-md);
+}
+.cmp-filter-card.active .stat-label {
+  color: var(--primary) !important;
+  font-weight: 600;
+}
+/* ===== COMPLAINT SORT BAR ===== */
+.cmp-sort-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.cmp-sort-bar strong { color: var(--text-primary); font-family: 'Plus Jakarta Sans', sans-serif; }
+/* ===== ENHANCED COMPLAINT CARD ===== */
+.complaint-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 14px;
+  background: var(--bg-white);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.complaint-card:hover { border-color: var(--primary); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.complaint-card-header { padding: 16px 18px 10px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.complaint-card-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 15px; color: var(--text-primary); line-height: 1.3; }
+.complaint-card-desc { font-size: 13px; color: var(--text-secondary); padding: 0 18px 10px; line-height: 1.5; }
+.complaint-card-meta { display: flex; align-items: center; gap: 18px; padding: 8px 18px 12px; font-size: 12.5px; color: var(--text-secondary); flex-wrap: wrap; border-top: 1px solid var(--border); background: #fafbfc; }
+.complaint-card-meta-item { display: flex; align-items: center; gap: 5px; }
+.complaint-card-footer { border-top: 1px solid var(--border); padding: 10px 18px; display: flex; align-items: center; justify-content: space-between; background: var(--bg-white); }
+/* ===== COMPLAINT STATUS BADGE ===== */
+.cmp-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 11px; border-radius: 20px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 11px; white-space: nowrap; letter-spacing: 0.3px; flex-shrink: 0; }
+.cmp-badge.open { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
+.cmp-badge.in-progress { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+.cmp-badge.resolved { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+/* ===== COMPLAINT DETAILS MODAL ===== */
+.cmp-detail-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 18px; color: var(--text-primary); margin-bottom: 6px; line-height: 1.3; }
+.cmp-detail-section-label { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--text-muted); margin-bottom: 6px; margin-top: 18px; }
+.cmp-detail-desc { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; background: var(--bg-main); border-radius: var(--radius-sm); padding: 12px 14px; }
+.cmp-detail-filed { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text-secondary); padding: 10px 0 0; }
+/* ===== COMPLAINT TIMELINE ===== */
+.cmp-timeline { padding: 4px 0 0; }
+.cmp-timeline-item { display: flex; gap: 14px; position: relative; }
+.cmp-timeline-item:not(:last-child)::before { content: ''; position: absolute; left: 9px; top: 22px; width: 2px; bottom: 0; background: var(--border); }
+.cmp-timeline-dot { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+.cmp-timeline-dot.filed { background: var(--primary-bg); border: 2px solid var(--primary); }
+.cmp-timeline-dot.in-progress { background: #fffbeb; border: 2px solid var(--warning); }
+.cmp-timeline-dot.resolved { background: #f0fdf4; border: 2px solid var(--success); }
+.cmp-timeline-content { flex: 1; padding-bottom: 22px; }
+.cmp-timeline-event { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 13.5px; color: var(--text-primary); margin-bottom: 2px; }
+.cmp-timeline-time { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+.cmp-timeline-duration { font-size: 12.5px; color: var(--text-secondary); background: var(--bg-main); border-radius: var(--radius-sm); padding: 5px 10px; display: inline-flex; align-items: center; gap: 5px; margin-top: 4px; }
+.cmp-resolution-info { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); padding: 12px 14px; margin-top: 16px; }
+.cmp-resolution-info .res-label { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.5px; color: #16a34a; margin-bottom: 8px; }
+.cmp-resolution-info .res-row { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--text-secondary); padding: 3px 0; }
+.cmp-resolution-info .res-row strong { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600; color: var(--text-primary); }
+.cmp-empty-state { text-align: center; padding: 52px 20px; color: var(--text-muted); background: var(--bg-white); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.cmp-empty-state .empty-icon { font-size: 44px; margin-bottom: 12px; }
+.cmp-empty-state h3 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; color: var(--text-primary); margin-bottom: 6px; }
+.cmp-empty-state p { font-size: 13px; color: var(--text-muted); }
+@media (max-width: 768px) {
+  .cmp-sort-bar { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .complaint-card-meta { gap: 10px; }
+}

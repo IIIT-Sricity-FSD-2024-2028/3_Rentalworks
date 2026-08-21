@@ -4,12 +4,34 @@
       <div><h1>Complaints</h1><p>Manage and track your complaints</p></div>
       <button class="btn btn-primary" onclick="UI.openModal('complaint-modal')">+ File New Complaint</button>
     </div>
-    <div class="grid-4 mb-20">
-      <div class="stat-card"><div class="stat-label">Total Complaints</div><div class="stat-value" id="cmp-total">0</div></div>
-      <div class="stat-card"><div class="stat-label">Open <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px;">error</span></span></div><div class="stat-value" id="cmp-open" style="color:var(--danger)">0</div></div>
-      <div class="stat-card"><div class="stat-label">In Progress <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px;">schedule</span></span></div><div class="stat-value" id="cmp-inprog" style="color:var(--warning)">0</div></div>
-      <div class="stat-card"><div class="stat-label">Resolved <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px;">check_circle</span></span></div><div class="stat-value" id="cmp-resolved" style="color:var(--success)">0</div></div>
+
+    <!-- Summary Filter Cards -->
+    <div class="grid-4 mb-20" id="cmp-filter-cards">
+      <div class="stat-card cmp-filter-card active" id="cmp-card-all" onclick="TenantLogic.setComplaintFilter('all')" style="cursor:pointer;" title="Show all complaints">
+        <div class="stat-label">All Complaints</div>
+        <div class="stat-value" id="cmp-total">0</div>
+      </div>
+      <div class="stat-card cmp-filter-card" id="cmp-card-open" onclick="TenantLogic.setComplaintFilter('open')" style="cursor:pointer;" title="Show open complaints">
+        <div class="stat-label">Open <span class="stat-icon"><span class="material-icons-outlined" style="font-size:20px;color:var(--danger)">error</span></span></div>
+        <div class="stat-value" id="cmp-open" style="color:var(--danger)">0</div>
+      </div>
+      <div class="stat-card cmp-filter-card" id="cmp-card-in-progress" onclick="TenantLogic.setComplaintFilter('in-progress')" style="cursor:pointer;" title="Show in-progress complaints">
+        <div class="stat-label">In Progress <span class="stat-icon"><span class="material-icons-outlined" style="font-size:20px;color:var(--warning)">schedule</span></span></div>
+        <div class="stat-value" id="cmp-inprog" style="color:var(--warning)">0</div>
+      </div>
+      <div class="stat-card cmp-filter-card" id="cmp-card-resolved" onclick="TenantLogic.setComplaintFilter('resolved')" style="cursor:pointer;" title="Show resolved complaints">
+        <div class="stat-label">Resolved <span class="stat-icon"><span class="material-icons-outlined" style="font-size:20px;color:var(--success)">check_circle</span></span></div>
+        <div class="stat-value" id="cmp-resolved" style="color:var(--success)">0</div>
+      </div>
     </div>
+
+    <!-- Sort Info Bar -->
+    <div class="cmp-sort-bar mb-16">
+      <span class="cmp-sort-showing">Showing: <strong id="cmp-filter-label">All Complaints</strong></span>
+      <span class="cmp-sort-order">Sort: <strong>Newest first</strong></span>
+    </div>
+
+    <!-- Complaints List -->
     <div id="complaints-list"></div>
   </div>
 </div></body></html>

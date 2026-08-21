@@ -166,6 +166,23 @@
     </div>
   </div>
 
+  <!-- Complaint Details Modal -->
+  <div class="modal-overlay" id="complaint-details-modal">
+    <div class="modal" style="max-width:560px;">
+      <div class="modal-header">
+        <div class="modal-icon" style="background:var(--primary)"><span class="material-icons-outlined" style="font-size:22px;">receipt_long</span></div>
+        <div>
+          <div class="modal-title">Complaint Details</div>
+          <div class="modal-sub">Full timeline and history</div>
+        </div>
+        <button class="modal-close" onclick="UI.closeModal('complaint-details-modal')"><span class="material-icons-outlined" style="font-size:24px;">close</span></button>
+      </div>
+      <div class="modal-body" id="complaint-details-body">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+  </div>
+
   <script src="js/core/state.js?v=20260503"></script>
   <script src="js/core/auth.js?v=20260503"></script>
   <script src="js/features/ui.js?v=20260503"></script>

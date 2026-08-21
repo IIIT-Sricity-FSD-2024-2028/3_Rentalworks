@@ -25,10 +25,10 @@ const State = {
 
     // LOTS OF MOCK DATA ADDED HERE:
     complaints: [
-      { id: 1, title: 'AC not working', desc: 'No cooling in room A-204. Need it fixed urgently before summer hits.', priority: 'high', status: 'open', created: 'Mar 26, 2026' },
-      { id: 2, title: 'Noisy Neighbors', desc: 'Room 305 is playing loud music past midnight every day.', priority: 'medium', status: 'in-progress', created: 'Mar 24, 2026' },
-      { id: 3, title: 'Room not cleaned', desc: 'The housekeeping staff skipped my room yesterday and today.', priority: 'low', status: 'open', created: 'Mar 28, 2026' },
-      { id: 4, title: 'Main Gate locked early', desc: 'Guard locked the gate at 10 PM instead of 11 PM.', priority: 'medium', status: 'resolved', created: 'Mar 15, 2026' }
+      { id: 1, title: 'AC not working', desc: 'No cooling in room A-204. Need it fixed urgently before summer hits.', priority: 'high', status: 'open', created: 'Mar 26, 2026', createdAt: '2026-03-26T10:30:00.000Z', inProgressAt: null, resolvedAt: null, resolvedBy: null },
+      { id: 2, title: 'Noisy Neighbors', desc: 'Room 305 is playing loud music past midnight every day.', priority: 'medium', status: 'in-progress', created: 'Mar 24, 2026', createdAt: '2026-03-24T09:15:00.000Z', inProgressAt: '2026-03-25T11:00:00.000Z', resolvedAt: null, resolvedBy: null },
+      { id: 3, title: 'Room not cleaned', desc: 'The housekeeping staff skipped my room yesterday and today.', priority: 'low', status: 'open', created: 'Mar 28, 2026', createdAt: '2026-03-28T08:00:00.000Z', inProgressAt: null, resolvedAt: null, resolvedBy: null },
+      { id: 4, title: 'Main Gate locked early', desc: 'Guard locked the gate at 10 PM instead of 11 PM.', priority: 'medium', status: 'resolved', created: 'Mar 15, 2026', createdAt: '2026-03-15T20:42:00.000Z', inProgressAt: '2026-03-16T09:15:00.000Z', resolvedAt: '2026-03-18T18:20:00.000Z', resolvedBy: 'Warden' }
     ],
     issues: [
       { id: 1, title: 'Broken Window Lock', desc: 'Window in room 204 won\'t lock properly, feels unsafe.', category: 'Maintenance', priority: 'high', status: 'open' },
@@ -95,6 +95,25 @@ const State = {
     const globalCmp = localStorage.getItem('global_complaints');
     if (globalCmp) this.data.complaints = JSON.parse(globalCmp);
     else localStorage.setItem('global_complaints', JSON.stringify(this.data.complaints));
+
+    // Migrate old complaint data: add createdAt/inProgressAt/resolvedAt if missing
+    let migrated = false;
+    this.data.complaints.forEach(c => {
+      if (!c.createdAt) {
+        // Try to parse the 'created' string; fall back to a reasonable past date if it fails
+        const parsedCreated = c.created ? new Date(c.created) : null;
+        c.createdAt = (parsedCreated && !isNaN(parsedCreated.getTime()))
+          ? parsedCreated.toISOString()
+          : new Date(Date.now() - 7 * 24 * 3600000).toISOString(); // 7 days ago as fallback
+        migrated = true;
+      }
+      if (!('inProgressAt' in c)) { c.inProgressAt = null; migrated = true; }
+      if (!('resolvedAt' in c)) { c.resolvedAt = null; migrated = true; }
+      if (!('resolvedBy' in c)) { c.resolvedBy = null; migrated = true; }
+    });
+    if (migrated) {
+      localStorage.setItem('global_complaints', JSON.stringify(this.data.complaints));
+    }
 
     const globalIss = localStorage.getItem('global_issues');
     if (globalIss) this.data.issues = JSON.parse(globalIss);

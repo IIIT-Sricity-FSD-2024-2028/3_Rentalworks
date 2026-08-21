@@ -11,6 +11,62 @@ const TenantLogic = {
     if (servPageCount) servPageCount.textContent = State.data.serviceRequests.filter(s => s.status === 'pending').length;
   },
 
+  // --- DATE UTILITIES ---
+  _cmpRelativeTime(isoOrDateStr) {
+    if (!isoOrDateStr) return '';
+    const date = new Date(isoOrDateStr);
+    if (isNaN(date.getTime())) return isoOrDateStr;
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    const diffWeeks = Math.floor(diffDays / 7);
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays === 0) return 'today';
+    if (diffDays === 1) return '1 day ago';
+    if (diffDays < 14) return `${diffDays} days ago`;
+    if (diffWeeks < 5) return `${diffWeeks} week${diffWeeks > 1 ? 's' : ''} ago`;
+    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  },
+
+  _cmpDurationStr(ms) {
+    if (!ms || ms < 0) return 'a moment';
+    const days = Math.floor(ms / 86400000);
+    const hours = Math.floor((ms % 86400000) / 3600000);
+    if (days === 0 && hours === 0) return 'less than an hour';
+    if (days === 0) return `${hours} hour${hours > 1 ? 's' : ''}`;
+    if (hours === 0) return `${days} day${days > 1 ? 's' : ''}`;
+    return `${days} day${days > 1 ? 's' : ''} ${hours} hour${hours > 1 ? 's' : ''}`;
+  },
+
+  _cmpFormatDateTime(isoOrDateStr) {
+    if (!isoOrDateStr) return '';
+    const date = new Date(isoOrDateStr);
+    if (isNaN(date.getTime())) return isoOrDateStr;
+    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) +
+      ' · ' + date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+  },
+
+  _cmpFormatDate(isoOrDateStr) {
+    if (!isoOrDateStr) return '';
+    const date = new Date(isoOrDateStr);
+    if (isNaN(date.getTime())) return isoOrDateStr;
+    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  },
+
+  _cmpGetCreatedAt(c) {
+    // Returns a Date object for the complaint's creation time
+    if (c.createdAt) return new Date(c.createdAt);
+    if (c.created) {
+      const d = new Date(c.created);
+      if (!isNaN(d.getTime())) return d;
+    }
+    return new Date(0);
+  },
+
   // --- COMPLAINTS ---
   submitComplaint() {
     const title = document.getElementById('complaint-title').value.trim();
@@ -19,9 +75,20 @@ const TenantLogic = {
 
     if (!title || !desc) return UI.showToast('Please fill all fields', 'error');
 
+    const now = new Date().toISOString();
     State.data.complaints.unshift({
-      id: Date.now(), title, desc, priority, status: 'open', created: new Date().toLocaleDateString(),
-      tenantName: State.data.profile.name, room: State.data.profile.room || 'A-204'
+      id: Date.now(),
+      title,
+      desc,
+      priority,
+      status: 'open',
+      created: new Date().toLocaleDateString(),
+      createdAt: now,
+      inProgressAt: null,
+      resolvedAt: null,
+      resolvedBy: null,
+      tenantName: State.data.profile.name,
+      room: State.data.profile.room || 'A-204'
     });
     State.save();
     
@@ -49,40 +116,229 @@ const TenantLogic = {
     this.updateDashboardStats();
   },
 
+  _activeComplaintFilter: 'all',
+
+  setComplaintFilter(filter) {
+    this._activeComplaintFilter = filter;
+    // Update active card
+    document.querySelectorAll('.cmp-filter-card').forEach(el => el.classList.remove('active'));
+    const cardId = filter === 'all' ? 'cmp-card-all' :
+                   filter === 'open' ? 'cmp-card-open' :
+                   filter === 'in-progress' ? 'cmp-card-in-progress' : 'cmp-card-resolved';
+    const activeCard = document.getElementById(cardId);
+    if (activeCard) activeCard.classList.add('active');
+    // Update filter label
+    const labelEl = document.getElementById('cmp-filter-label');
+    if (labelEl) {
+      const labelMap = { all: 'All Complaints', open: 'Open', 'in-progress': 'In Progress', resolved: 'Resolved' };
+      labelEl.textContent = labelMap[filter] || 'All Complaints';
+    }
+    this._renderComplaintsList();
+  },
+
   renderComplaints() {
     const container = document.getElementById('complaints-list');
     if (!container) return;
 
-    document.getElementById('cmp-total').textContent = State.data.complaints.length;
-    document.getElementById('cmp-open').textContent = State.data.complaints.filter(c => c.status === 'open').length;
-    document.getElementById('cmp-inprog').textContent = State.data.complaints.filter(c => c.status === 'in-progress').length;
-    document.getElementById('cmp-resolved').textContent = State.data.complaints.filter(c => c.status === 'resolved').length;
+    // Update counts
+    const all = State.data.complaints;
+    const totalEl = document.getElementById('cmp-total');
+    const openEl = document.getElementById('cmp-open');
+    const inprogEl = document.getElementById('cmp-inprog');
+    const resolvedEl = document.getElementById('cmp-resolved');
+    if (totalEl) totalEl.textContent = all.length;
+    if (openEl) openEl.textContent = all.filter(c => c.status === 'open').length;
+    if (inprogEl) inprogEl.textContent = all.filter(c => c.status === 'in-progress').length;
+    if (resolvedEl) resolvedEl.textContent = all.filter(c => c.status === 'resolved').length;
 
-    if (State.data.complaints.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding: 40px; color: gray;">No complaints found.</div>`;
-        return;
+    // Re-apply active filter card styling
+    const filter = this._activeComplaintFilter || 'all';
+    document.querySelectorAll('.cmp-filter-card').forEach(el => el.classList.remove('active'));
+    const cardId = filter === 'all' ? 'cmp-card-all' :
+                   filter === 'open' ? 'cmp-card-open' :
+                   filter === 'in-progress' ? 'cmp-card-in-progress' : 'cmp-card-resolved';
+    const activeCard = document.getElementById(cardId);
+    if (activeCard) activeCard.classList.add('active');
+
+    this._renderComplaintsList();
+  },
+
+  _renderComplaintsList() {
+    const container = document.getElementById('complaints-list');
+    if (!container) return;
+
+    const filter = this._activeComplaintFilter || 'all';
+    const all = State.data.complaints || [];
+
+    // Filter
+    let filtered = filter === 'all' ? all : all.filter(c => c.status === filter);
+
+    // Sort newest first by createdAt or created date
+    filtered = [...filtered].sort((a, b) => {
+      return this._cmpGetCreatedAt(b) - this._cmpGetCreatedAt(a);
+    });
+
+    if (filtered.length === 0) {
+      const labelMap = { all: 'complaints', open: 'open complaints', 'in-progress': 'in-progress complaints', resolved: 'resolved complaints' };
+      const iconMap = { all: '📋', open: '🔓', 'in-progress': '⏳', resolved: '✅' };
+      container.innerHTML = `
+        <div class="cmp-empty-state">
+          <div class="empty-icon">${iconMap[filter] || '📋'}</div>
+          <h3>No ${labelMap[filter] || 'complaints'}</h3>
+          <p>There are currently no ${labelMap[filter] || 'complaints'} to display.</p>
+        </div>`;
+      return;
     }
 
-    container.innerHTML = State.data.complaints.map(c => {
-      let badgeBg = c.status === 'resolved' ? '#dcfce7' : c.status === 'in-progress' ? '#fef08a' : '#fee2e2';
-      let badgeColor = c.status === 'resolved' ? '#16a34a' : c.status === 'in-progress' ? '#b45309' : '#dc2626';
-      
-      let actionHtml = c.status === 'resolved' ? 
-        `<span style="color: #16a34a; font-size: 13px; font-weight:bold;">✔ Resolved by Warden</span>` : 
-        `<button class="btn btn-outline btn-sm" onclick="TenantLogic.deleteComplaint(${c.id})">Withdraw</button>`;
+    container.innerHTML = filtered.map(c => {
+      const badgeCls = c.status === 'resolved' ? 'resolved' : c.status === 'in-progress' ? 'in-progress' : 'open';
+      const badgeText = c.status === 'resolved' ? 'RESOLVED' : c.status === 'in-progress' ? 'IN PROGRESS' : 'OPEN';
+
+      const createdAtDate = this._cmpGetCreatedAt(c);
+      const filedDateStr = this._cmpFormatDate(createdAtDate.toISOString());
+      const filedAgo = this._cmpRelativeTime(createdAtDate.toISOString());
+
+      let durationHtml = '';
+      const now = new Date();
+      if (c.status === 'open') {
+        const openMs = now - createdAtDate;
+        durationHtml = `<div class="complaint-card-meta-item">🕐 Open for ${this._cmpDurationStr(openMs)}</div>`;
+      } else if (c.status === 'in-progress') {
+        const inProgDate = c.inProgressAt ? new Date(c.inProgressAt) : createdAtDate;
+        const inProgMs = now - inProgDate;
+        durationHtml = `<div class="complaint-card-meta-item">🕐 In progress for ${this._cmpDurationStr(inProgMs)}</div>`;
+      } else if (c.status === 'resolved') {
+        const resolvedDate = c.resolvedAt ? new Date(c.resolvedAt) : now;
+        durationHtml = `<div class="complaint-card-meta-item">✓ Resolved ${this._cmpRelativeTime(resolvedDate.toISOString())}</div>`;
+      }
+
+      const actionHtml = c.status === 'resolved'
+        ? `<span style="color:#16a34a;font-size:13px;font-weight:600;">✔ Resolved${c.resolvedBy ? ' by ' + c.resolvedBy : ' by Warden'}</span>`
+        : `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); TenantLogic.deleteComplaint(${c.id})">Withdraw</button>`;
 
       return `
-      <div class="complaint-item" style="border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 14px; background: white; padding: 16px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-          <strong>${c.title}</strong>
-          <span style="font-size: 12px; background: ${badgeBg}; color: ${badgeColor}; padding: 4px 10px; border-radius: 20px; font-weight:bold;">${c.status.toUpperCase()}</span>
+      <div class="complaint-card" onclick="TenantLogic.openComplaintDetails(${c.id})" id="complaint-card-${c.id}">
+        <div class="complaint-card-header">
+          <div class="complaint-card-title">${c.title}</div>
+          <span class="cmp-badge ${badgeCls}">${badgeText}</span>
         </div>
-        <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">${c.desc}</p>
-        <div style="border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px;">
+        <div class="complaint-card-desc">${c.desc}</div>
+        <div class="complaint-card-meta">
+          <div class="complaint-card-meta-item">📅 Filed ${filedDateStr} · ${filedAgo}</div>
+          ${durationHtml}
+        </div>
+        <div class="complaint-card-footer">
           ${actionHtml}
+          <span style="font-size:12px;color:var(--text-muted);">Click card for details →</span>
         </div>
-      </div>
-    `}).join('');
+      </div>`;
+    }).join('');
+  },
+
+  openComplaintDetails(id) {
+    const c = State.data.complaints.find(x => x.id === id);
+    if (!c) return;
+
+    const now = new Date();
+    const createdAtDate = this._cmpGetCreatedAt(c);
+    const filedStr = this._cmpFormatDateTime(createdAtDate.toISOString());
+    const filedAgo = this._cmpRelativeTime(createdAtDate.toISOString());
+
+    const badgeCls = c.status === 'resolved' ? 'resolved' : c.status === 'in-progress' ? 'in-progress' : 'open';
+    const badgeText = c.status === 'resolved' ? 'RESOLVED' : c.status === 'in-progress' ? 'IN PROGRESS' : 'OPEN';
+
+    // Build timeline
+    let timelineHtml = '';
+
+    // Event 1: Filed
+    timelineHtml += `
+      <div class="cmp-timeline-item">
+        <div class="cmp-timeline-dot filed">📋</div>
+        <div class="cmp-timeline-content">
+          <div class="cmp-timeline-event">Complaint Filed</div>
+          <div class="cmp-timeline-time">${filedStr}</div>
+        </div>
+      </div>`;
+
+    // Event 2: In Progress (if applicable)
+    if (c.status === 'in-progress' || c.status === 'resolved') {
+      const inProgDate = c.inProgressAt ? new Date(c.inProgressAt) : null;
+      const inProgStr = inProgDate ? this._cmpFormatDateTime(inProgDate.toISOString()) : 'Date unavailable';
+
+      let inProgDuration = '';
+      if (c.status === 'in-progress') {
+        const ms = now - (inProgDate || createdAtDate);
+        inProgDuration = `<div class="cmp-timeline-duration">🕐 In progress for ${this._cmpDurationStr(ms)}</div>`;
+      } else if (c.status === 'resolved' && c.resolvedAt && inProgDate) {
+        const ms = new Date(c.resolvedAt) - inProgDate;
+        inProgDuration = `<div class="cmp-timeline-duration">🕐 In progress for ${this._cmpDurationStr(ms)}</div>`;
+      }
+
+      timelineHtml += `
+        <div class="cmp-timeline-item">
+          <div class="cmp-timeline-dot in-progress">⏳</div>
+          <div class="cmp-timeline-content">
+            <div class="cmp-timeline-event">Moved to In Progress</div>
+            <div class="cmp-timeline-time">${inProgStr}</div>
+            ${inProgDuration}
+          </div>
+        </div>`;
+    }
+
+    // Event 3: Resolved (if applicable)
+    if (c.status === 'resolved') {
+      const resolvedDate = c.resolvedAt ? new Date(c.resolvedAt) : null;
+      const resolvedStr = resolvedDate ? this._cmpFormatDateTime(resolvedDate.toISOString()) : 'Date unavailable';
+      const resolvedBy = c.resolvedBy || 'Warden';
+
+      timelineHtml += `
+        <div class="cmp-timeline-item">
+          <div class="cmp-timeline-dot resolved">✓</div>
+          <div class="cmp-timeline-content">
+            <div class="cmp-timeline-event">Resolved ✓</div>
+            <div class="cmp-timeline-time">${resolvedStr}</div>
+            <div class="cmp-timeline-duration">✓ Resolved by ${resolvedBy}</div>
+          </div>
+        </div>`;
+    }
+
+    // Resolution summary (for resolved complaints)
+    let resolutionHtml = '';
+    if (c.status === 'resolved') {
+      const resolvedDate = c.resolvedAt ? new Date(c.resolvedAt) : now;
+      const totalMs = resolvedDate - createdAtDate;
+      resolutionHtml = `
+        <div class="cmp-resolution-info">
+          <div class="res-label">✓ Resolution Summary</div>
+          <div class="res-row"><span>Total resolution time</span><strong>${this._cmpDurationStr(totalMs)}</strong></div>
+          <div class="res-row"><span>Resolved by</span><strong>${c.resolvedBy || 'Warden'}</strong></div>
+        </div>`;
+    } else if (c.status === 'open') {
+      const openMs = now - createdAtDate;
+      resolutionHtml = `<div style="margin-top:14px;padding:10px 14px;background:var(--danger-bg);border:1px solid #fecaca;border-radius:var(--radius-md);font-size:13px;color:var(--danger);">🕐 Open for ${this._cmpDurationStr(openMs)}</div>`;
+    } else if (c.status === 'in-progress') {
+      const inProgDate = c.inProgressAt ? new Date(c.inProgressAt) : createdAtDate;
+      const inProgMs = now - inProgDate;
+      resolutionHtml = `<div style="margin-top:14px;padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:var(--radius-md);font-size:13px;color:#92400e;">🕐 In progress for ${this._cmpDurationStr(inProgMs)}</div>`;
+    }
+
+    const body = document.getElementById('complaint-details-body');
+    if (body) {
+      body.innerHTML = `
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:4px;">
+          <div class="cmp-detail-title">${c.title}</div>
+          <span class="cmp-badge ${badgeCls}">${badgeText}</span>
+        </div>
+        <div class="cmp-detail-section-label">Description</div>
+        <div class="cmp-detail-desc">${c.desc}</div>
+        <div class="cmp-detail-section-label">Filed</div>
+        <div class="cmp-detail-filed">📅 ${filedStr} &nbsp;·&nbsp; ${filedAgo}</div>
+        <div class="cmp-detail-section-label">Complaint Timeline</div>
+        <div class="cmp-timeline">${timelineHtml}</div>
+        ${resolutionHtml}
+      `;
+    }
+    UI.openModal('complaint-details-modal');
   },
 
   deleteComplaint(id) {
