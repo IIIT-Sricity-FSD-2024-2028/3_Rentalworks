@@ -4,10 +4,18 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as fs from 'fs';
 import * as path from 'path';
+import helmet from 'helmet';
+import { HttpErrorFilter } from './middleware/http-error.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
+  // Apply Helmet for security headers
+  app.use(helmet());
+
+  // Apply Global Exception Filter for error handling and logging
+  app.useGlobalFilters(new HttpErrorFilter());
+
   // Enable CORS for frontend integration
   app.enableCors({
     origin: '*', // For development

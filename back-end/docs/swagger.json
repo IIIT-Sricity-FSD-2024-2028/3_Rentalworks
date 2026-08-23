@@ -30,6 +30,52 @@
         ]
       }
     },
+    "/users/upload-avatar": {
+      "post": {
+        "operationId": "UsersController_uploadAvatar",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Upload user avatar (Router-level middleware)",
+        "tags": [
+          "users"
+        ]
+      }
+    },
     "/users/login": {
       "post": {
         "operationId": "UsersController_login",
@@ -255,6 +301,60 @@
         "summary": "Delete a user",
         "tags": [
           "users"
+        ]
+      }
+    },
+    "/properties/{id}/upload-image": {
+      "post": {
+        "operationId": "PropertiesController_uploadImage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Upload property image",
+        "tags": [
+          "properties"
         ]
       }
     },
@@ -819,6 +919,60 @@
         "summary": "Delete payment record",
         "tags": [
           "payments"
+        ]
+      }
+    },
+    "/complaints/{id}/upload-attachment": {
+      "post": {
+        "operationId": "ComplaintsController_uploadAttachment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Upload complaint attachment",
+        "tags": [
+          "complaints"
         ]
       }
     },
