@@ -40,10 +40,29 @@ const Auth = {
             const dropName = document.getElementById('drop-name');
             if (dropName) dropName.textContent = State.data.currentUser.name || 'Guest User';
             const navAvatar = document.getElementById('nav-avatar');
-            if (navAvatar) navAvatar.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(State.data.currentUser.name || 'User') + '&background=ca8a04&color=fff';
+            const storedPhoto = sessionStorage.getItem('pg_guest_photo');
+            if (navAvatar) navAvatar.src = storedPhoto || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(State.data.currentUser.name || 'User') + '&background=ca8a04&color=fff');
+            
+            const profileAvatar = document.getElementById('edit-profile-avatar');
+            if (profileAvatar) {
+                profileAvatar.src = storedPhoto || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(State.data.currentUser.name || 'User') + '&background=ca8a04&color=fff');
+            }
         } else {
             userMenu.classList.add('hidden');
             loginBtn.classList.remove('hidden');
+        }
+    },
+    handlePhotoSelect(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Photo = e.target.result;
+                sessionStorage.setItem('pg_guest_photo', base64Photo);
+                Auth.updateUI();
+                UI.showToast('Photo updated successfully!', 'success');
+            };
+            reader.readAsDataURL(file);
         }
     },
     saveProfile() {
@@ -78,8 +97,9 @@ const Auth = {
             
             // Update the edit-profile page avatar
             const profileAvatar = document.getElementById('edit-profile-avatar');
+            const storedPhoto = sessionStorage.getItem('pg_guest_photo');
             if (profileAvatar) {
-                profileAvatar.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(newName) + '&background=ca8a04&color=fff';
+                profileAvatar.src = storedPhoto || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(newName) + '&background=ca8a04&color=fff');
             }
             
             UI.showToast('Profile Saved successfully!', 'success');

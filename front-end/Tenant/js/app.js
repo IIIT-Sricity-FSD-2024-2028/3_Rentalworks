@@ -24,6 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (notifs.length === 0) return;
       const latest = notifs[notifs.length - 1];
       if (latest.targetRole === 'tenant' || latest.targetRole === 'all') {
+        // If a targetUser is specified, ensure it matches the current logged in tenant
+        if (latest.targetUser && State.data.profile.name && latest.targetUser.toLowerCase() !== State.data.profile.name.toLowerCase()) {
+            return;
+        }
+
         if (typeof UI !== 'undefined') UI.showToast('🔔 ' + latest.title + ': ' + latest.message, 'info');
         
         // Push to local notifications state (with deduplication)

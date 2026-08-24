@@ -95,7 +95,11 @@ const BookingLogic = {
         const targetPG = State.data.selectedPG || 'Sunrise PG Residency';
         const roomType = State.data.activeRoomType || 'Double Sharing';
         const { rent, deposit } = BookingLogic.getRentAndDeposit(roomType);
-        const total = rent + deposit;
+        
+        const durInput = document.getElementById('bk-duration');
+        const months = durInput ? parseInt(durInput.value) || 1 : 1;
+        const totalRent = rent * months;
+        const total = totalRent + deposit;
 
         const setElTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
         setElTxt('br-pg', targetPG);
@@ -104,8 +108,8 @@ const BookingLogic = {
         setElTxt('br-room', roomType);
         setElTxt('rev-left-room', roomType);
         setElTxt('br-roommate', rm ? rm.name : 'None');
-        setElTxt('br-rent', `₹${rent.toLocaleString()}`);
-        setElTxt('rev-left-rent', `₹${rent.toLocaleString()}`);
+        setElTxt('br-rent', `₹${totalRent.toLocaleString()}`);
+        setElTxt('rev-left-rent', `₹${totalRent.toLocaleString()}`);
         setElTxt('br-deposit', `₹${deposit.toLocaleString()}`);
         setElTxt('br-total', `₹${total.toLocaleString()}`);
 
@@ -213,7 +217,9 @@ const BookingLogic = {
         setTimeout(() => {
             const reqDate = new Date(dateInput.value).toLocaleDateString('en-GB');
             const reqDur = durInput.value;
+            const months = parseInt(reqDur) || 1;
             const { rent, deposit } = BookingLogic.getRentAndDeposit(roomType);
+            const totalRent = rent * months;
 
             const newBk = { 
                 id: bookingId,
@@ -221,12 +227,14 @@ const BookingLogic = {
                 pg: targetPG, 
                 location: State.data.selectedLocation || 'Koramangala, Bangalore',
                 room: roomType,
+                roomNumber: Math.floor(Math.random() * 400) + 101, // Random room number (e.g., 101-500)
                 roommate: State.data.selectedRm, 
-                rent: rent, 
+                rent: totalRent, 
                 deposit: deposit,
                 date: reqDate,
                 duration: reqDur,
                 user: State.data.currentUser,
+                bookedBy: State.data.currentUser ? State.data.currentUser.name : 'Guest User',
                 bookingFor: bookingFor,
                 guestName: guestName,
                 guestEmail: guestEmail,
@@ -627,9 +635,10 @@ const BookingLogic = {
             
             // Save to global_payments for Admin dashboard (status: pending so admin verifies and generates credentials)
             let globalPayments = JSON.parse(localStorage.getItem('global_payments') || '[]');
+            const finalTenantName = b.bookingFor === 'friend' ? b.guestName : (State.data.currentUser ? State.data.currentUser.name : 'Guest User');
             globalPayments.push({
                 id: Date.now() + Math.floor(Math.random() * 1000),
-                tenant: State.data.currentUser ? State.data.currentUser.name : 'Guest User',
+                tenant: finalTenantName,
                 property: b.pg || 'Unknown PG',
                 room: b.room || '-',
                 amount: total,
@@ -661,6 +670,21 @@ const BookingLogic = {
                 by: 'Guest',
                 sentAt: new Date().toLocaleString()
             });
+
+            if (b.roommate && b.roommate.name) {
+                crossNotifs.push({
+                    id: Date.now() + 2,
+                    title: 'New Roommate Alert',
+                    message: `${b.guestName || (State.data.currentUser ? State.data.currentUser.name : 'A new guest')} is joining your room (${b.room}) at ${b.pg}!`,
+                    type: 'announcement',
+                    priority: 'routine',
+                    targetRole: 'tenant', // Target specifically the tenant dashboard
+                    targetUser: b.roommate.name, // specifically targeted user
+                    by: 'System',
+                    sentAt: new Date().toLocaleString()
+                });
+            }
+
             localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
             
             Navigation.navigate('booking-confirmed');
@@ -692,13 +716,12 @@ const BookingLogic = {
         
         if(elPg) elPg.textContent = b.pg;
         if(elPgLoc) elPgLoc.textContent = b.location || 'Koramangala, Bangalore';
-        if(elRoom) elRoom.textContent = b.room;
+        if(elRoom) elRoom.textContent = b.room + (b.roomNumber ? ` (Room #${b.roomNumber})` : '');
         if(elDate) elDate.textContent = b.date || '20 March 2026';
         
-        const user = State.data.currentUser || {};
-        if(elUserName) elUserName.textContent = user.name || 'Guest User';
-        if(elUserEmail) elUserEmail.textContent = user.email || 'user@example.com';
-        if(elUserPhone) elUserPhone.textContent = user.phone || 'Not Provided';
+        if(elUserName) elUserName.textContent = b.guestName || 'Guest User';
+        if(elUserEmail) elUserEmail.textContent = b.guestEmail || 'user@example.com';
+        if(elUserPhone) elUserPhone.textContent = b.guestPhone || 'Not Provided';
 
         const rent = b.rent || 8500;
         const deposit = b.deposit || 3500;
@@ -710,7 +733,9 @@ const BookingLogic = {
         if(elTotal) elTotal.textContent = `₹${total.toLocaleString()}`;
 
         const rmBox = document.getElementById('conf-rm-box');
-        if (b.roommate && rmBox) {
+        if (b.room.toLowerCase().includes('single')) {
+            if (rmBox) rmBox.innerHTML = `<p class="text-gray mt-16" style="padding: 12px; background: var(--bg-main); border-radius: 8px;">Single Room selected. Private occupancy.</p>`;
+        } else if (b.roommate && rmBox) {
             rmBox.innerHTML = `
                 <div style="display: flex; gap: 16px; align-items: flex-start; margin-top: 16px;">
                     <img src="${b.roommate.img}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">

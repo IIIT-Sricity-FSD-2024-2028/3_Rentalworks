@@ -234,7 +234,40 @@ function forceTerminate(id) {
     }
 
     renderBookings(); closeModal();
-    showToast('warning', 'Booking Terminated', `${b.tenant} booking forcefully terminated. Tenant account flagged.`);
+
+    // Trigger Refund Flow if they had already paid
+    if (b.status === 'paid' || b.status === 'active') {
+        let globalPayments = JSON.parse(localStorage.getItem('global_payments') || '[]');
+        globalPayments.push({
+            id: Date.now() + Math.floor(Math.random() * 1000),
+            tenant: b.tenant,
+            property: b.property,
+            room: b.room,
+            amount: b.rent, // Refund amount
+            method: 'System Refund',
+            transactionId: 'REF-' + Date.now().toString().slice(-6),
+            paidDate: new Date().toLocaleDateString('en-CA'),
+            status: 'refunded',
+            clearance: 'Cleared'
+        });
+        localStorage.setItem('global_payments', JSON.stringify(globalPayments));
+        
+        let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
+        crossNotifs.push({
+            id: Date.now(),
+            title: 'Booking Terminated & Refund Initiated',
+            message: `Your booking at ${b.property} has been terminated by Admin. A refund of ₹${b.rent.toLocaleString()} has been initiated.`,
+            type: 'alert',
+            priority: 'urgent',
+            targetRole: 'tenant',
+            targetUser: b.tenant,
+            by: 'System',
+            sentAt: new Date().toLocaleString()
+        });
+        localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
+    }
+
+    showToast('warning', 'Booking Terminated', `${b.tenant} booking forcefully terminated and refund initiated. Tenant account flagged.`);
   };
   openConfirmModal('Force Terminate Booking',
     `This will immediately terminate <strong>${b.tenant}</strong>'s booking at ${b.property} and flag their account. This cannot be undone.`,

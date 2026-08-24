@@ -63,10 +63,10 @@ document.addEventListener("DOMContentLoaded", () => {
           house.style.width  = "100vw";
           house.style.height = "100vh";
 
-          // Step 5: After full screen → zoom into door
+          // Step 5: After full screen → zoom into center
           setTimeout(() => {
             house.style.transition     = "transform 2s ease-in-out";
-            house.style.transformOrigin = "55% 35%";
+            house.style.transformOrigin = "50% 50%";
             house.style.transform      = "scale(5)";
           }, 550);
 

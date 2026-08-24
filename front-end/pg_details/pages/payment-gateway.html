@@ -83,13 +83,13 @@
             </div>
 
             <div id="form-net" class="pay-form hidden">
-                <input type="text" placeholder="🔍 Search for your bank..." style="width: 100%; padding: 12px 14px; font-size: 14px; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 16px; box-sizing:border-box;">
+                <input type="text" id="net-bank" placeholder="🔍 Search for your bank..." style="width: 100%; padding: 12px 14px; font-size: 14px; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 16px; box-sizing:border-box;">
                 <p style="font-size:12px; font-weight:700; margin-bottom:12px;">Popular Banks</p>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;"><span class="material-icons-outlined" style="font-size:24px;">account_balance</span> State Bank of India</div>
-                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;"><span class="material-icons-outlined" style="font-size:24px;">account_balance</span> HDFC Bank</div>
-                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;"><span class="material-icons-outlined" style="font-size:24px;">account_balance</span> ICICI Bank</div>
-                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;"><span class="material-icons-outlined" style="font-size:24px;">account_balance</span> Axis Bank</div>
+                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;" onclick="document.getElementById('net-bank').value='State Bank of India'"><span class="material-icons-outlined" style="font-size:24px;">account_balance</span> State Bank of India</div>
+                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;" onclick="document.getElementById('net-bank').value='HDFC Bank'"><span class="material-icons-outlined" style="font-size:24px;">account_balance</span> HDFC Bank</div>
+                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;" onclick="document.getElementById('net-bank').value='ICICI Bank'"><span class="material-icons-outlined" style="font-size:24px;">account_balance</span> ICICI Bank</div>
+                    <div class="btn btn-outline btn-sm" style="font-size:12px; text-align:center; padding:8px; cursor:pointer;" onclick="document.getElementById('net-bank').value='Axis Bank'"><span class="material-icons-outlined" style="font-size:24px;">account_balance</span> Axis Bank</div>
                 </div>
             </div>
 

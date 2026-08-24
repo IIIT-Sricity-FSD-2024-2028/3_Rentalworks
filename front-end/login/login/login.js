@@ -221,7 +221,8 @@ async function handleLogin(role) {
       room:     user.room     || ''
     }));
 
-    showLoginBanner(`Welcome back, ${user.name}! Redirecting...`, 'success');
+    const formattedRole = role.charAt(0).toUpperCase() + role.slice(1);
+    showLoginBanner(`Directing ${user.name} to ${formattedRole} page...`, 'success');
 
     setTimeout(() => routeUser(role), 1200);
 

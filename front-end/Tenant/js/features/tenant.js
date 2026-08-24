@@ -599,23 +599,47 @@ selectBank(element, bankName) {
   },
 
   submitPasswordChange() {
+    const currentPass = document.getElementById('current-password').value;
     const newPass = document.getElementById('new-password').value;
     const confPass = document.getElementById('confirm-password').value;
 
-    if(!newPass || !confPass) return UI.showToast('Please fill all fields', 'error');
+    if(!currentPass || !newPass || !confPass) return UI.showToast('Please fill all fields', 'error');
     if(newPass !== confPass) return UI.showToast('New passwords do not match!', 'error');
     if(newPass.length < 6) return UI.showToast('Password too short', 'error');
+    
+    // Validate current password against localStorage login data
+    let foundCurrent = false;
+    try {
+        const storedUsers = JSON.parse(localStorage.getItem('users') || '[]');
+        const userRec = storedUsers.find(u => u.email === State.data.profile.email);
+        if (userRec && userRec.password) {
+            foundCurrent = true;
+            if (userRec.password !== currentPass) {
+                return UI.showToast('Current password is incorrect!', 'error');
+            }
+            // Update password
+            userRec.password = newPass;
+            localStorage.setItem('users', JSON.stringify(storedUsers));
+        } else if (currentPass !== 'password123') {
+            // Fallback for mock users
+            return UI.showToast('Current password is incorrect!', 'error');
+        }
+    } catch(e) {}
 
     UI.showLoader();
     setTimeout(() => {
       UI.hideLoader();
-      UI.showToast('Password updated successfully! 🔑', 'success');
-      Navigation.navigate('profile');
+      UI.showToast('Password updated successfully! Please login again.', 'success');
       
       // Clear fields
       document.getElementById('current-password').value = '';
       document.getElementById('new-password').value = '';
       document.getElementById('confirm-password').value = '';
+      
+      // Enforce logout
+      setTimeout(() => {
+          if (typeof Auth !== 'undefined') Auth.logout();
+      }, 1500);
     }, 1000);
   },
 
@@ -628,9 +652,20 @@ selectBank(element, bankName) {
     if (pName) pName.textContent = profile.name;
     if (pEmail) pEmail.textContent = profile.email;
     
-    // Initials avatar
-    const pAvatar = document.querySelector('.profile-avatar');
-    if (pAvatar && profile.name) pAvatar.textContent = profile.name.charAt(0).toUpperCase();
+    // Photo logic
+    const pAvatar = document.getElementById('tenant-profile-avatar');
+    const pInitials = document.getElementById('tenant-profile-initials');
+    
+    const storedPhoto = localStorage.getItem('tenant_profile_photo_' + profile.email);
+    if (storedPhoto && pAvatar && pInitials) {
+        pAvatar.src = storedPhoto;
+        pAvatar.style.display = 'block';
+        pInitials.style.display = 'none';
+    } else if (pInitials && profile.name) {
+        pInitials.textContent = profile.name.charAt(0).toUpperCase();
+        if(pAvatar) pAvatar.style.display = 'none';
+        pInitials.style.display = 'flex';
+    }
 
     // Form fields
     const fName = document.getElementById('profile-name');
@@ -705,5 +740,19 @@ selectBank(element, bankName) {
     
     this.renderProfile();
     UI.showToast('Profile saved successfully!', 'success');
+  },
+
+  handlePhotoSelect(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Photo = e.target.result;
+        localStorage.setItem('tenant_profile_photo_' + State.data.profile.email, base64Photo);
+        TenantLogic.renderProfile();
+        UI.showToast('Profile photo updated successfully!', 'success');
+      };
+      reader.readAsDataURL(file);
+    }
   }
 };
