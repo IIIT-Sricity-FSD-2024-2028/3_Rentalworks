@@ -23,8 +23,8 @@ export class CreateNotificationDto {
   recipients: number;
 
   @ApiProperty()
-  @IsString()
-  by: string;
+  @IsNumber()
+  byUserId: number;
 }
 
 export class UpdateNotificationDto {

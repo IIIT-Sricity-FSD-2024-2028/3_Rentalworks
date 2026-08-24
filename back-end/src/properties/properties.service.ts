@@ -1,22 +1,28 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PROPERTIES, getNextId, saveData } from '../data';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Property } from './property.entity';
 import { CreatePropertyDto, UpdatePropertyDto } from './properties.dto';
 
 @Injectable()
 export class PropertiesService {
+  constructor(
+    @InjectRepository(Property)
+    private propertiesRepository: Repository<Property>,
+  ) {}
+
   findAll() {
-    return PROPERTIES;
+    return this.propertiesRepository.find({ relations: { owner: true } });
   }
 
-  findOne(id: number) {
-    const property = PROPERTIES.find(p => p.id === id);
+  async findOne(id: number) {
+    const property = await this.propertiesRepository.findOne({ where: { id }, relations: { owner: true } });
     if (!property) throw new NotFoundException(`Property with ID ${id} not found`);
     return property;
   }
 
-  create(createPropertyDto: CreatePropertyDto) {
-    const newProperty = {
-      id: getNextId('property'),
+  async create(createPropertyDto: CreatePropertyDto) {
+    const newProperty = this.propertiesRepository.create({
       ...createPropertyDto,
       occupancy: 0,
       safetyScore: 8.0,
@@ -27,29 +33,21 @@ export class PropertiesService {
       compliance: 'Pending',
       fireSafety: 'Pending',
       changeRequestPending: false
-    };
-    PROPERTIES.push(newProperty);
-    saveData();
-    return newProperty;
+    });
+    return this.propertiesRepository.save(newProperty);
   }
 
-  update(id: number, updatePropertyDto: UpdatePropertyDto) {
-    const idx = PROPERTIES.findIndex(p => p.id === id);
-    if (idx === -1) throw new NotFoundException(`Property with ID ${id} not found`);
-    
-    // Filter out undefined values to prevent overwriting
+  async update(id: number, updatePropertyDto: UpdatePropertyDto) {
+    const property = await this.findOne(id);
     const cleanDto = Object.fromEntries(Object.entries(updatePropertyDto).filter(([_, v]) => v !== undefined));
-    
-    PROPERTIES[idx] = { ...PROPERTIES[idx], ...cleanDto };
-    saveData();
-    return PROPERTIES[idx];
+    Object.assign(property, cleanDto);
+    return this.propertiesRepository.save(property);
   }
 
-  remove(id: number) {
-    const idx = PROPERTIES.findIndex(p => p.id === id);
-    if (idx === -1) throw new NotFoundException(`Property with ID ${id} not found`);
-    const removed = PROPERTIES.splice(idx, 1)[0];
-    saveData();
+  async remove(id: number) {
+    const property = await this.findOne(id);
+    const removed = { ...property };
+    await this.propertiesRepository.remove(property);
     return removed;
   }
 }

@@ -1,43 +1,45 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { NOTIFICATIONS, getNextId, saveData } from '../data';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Notification } from './notification.entity';
 import { CreateNotificationDto, UpdateNotificationDto } from './notifications.dto';
 
 @Injectable()
 export class NotificationsService {
+  constructor(
+    @InjectRepository(Notification)
+    private notificationsRepository: Repository<Notification>,
+  ) {}
+
   findAll() {
-    return NOTIFICATIONS;
+    return this.notificationsRepository.find({ relations: { byUser: true } });
   }
 
-  findOne(id: number) {
-    const notification = NOTIFICATIONS.find(n => n.id === id);
+  async findOne(id: number) {
+    const notification = await this.notificationsRepository.findOne({ where: { id }, relations: { byUser: true } });
     if (!notification) throw new NotFoundException(`Notification with ID ${id} not found`);
     return notification;
   }
 
-  create(createNotificationDto: CreateNotificationDto) {
-    const newNotification = {
-      id: getNextId('notification'),
+  async create(createNotificationDto: CreateNotificationDto) {
+    const newNotification = this.notificationsRepository.create({
       ...createNotificationDto,
       sentAt: new Date().toISOString()
-    };
-    NOTIFICATIONS.push(newNotification);
-    saveData();
-    return newNotification;
+    });
+    return this.notificationsRepository.save(newNotification);
   }
 
-  update(id: number, updateNotificationDto: UpdateNotificationDto) {
-    const idx = NOTIFICATIONS.findIndex(n => n.id === id);
-    if (idx === -1) throw new NotFoundException(`Notification with ID ${id} not found`);
-    NOTIFICATIONS[idx] = { ...NOTIFICATIONS[idx], ...updateNotificationDto };
-    saveData();
-    return NOTIFICATIONS[idx];
+  async update(id: number, updateNotificationDto: UpdateNotificationDto) {
+    const notification = await this.findOne(id);
+    const cleanDto = Object.fromEntries(Object.entries(updateNotificationDto).filter(([_, v]) => v !== undefined));
+    Object.assign(notification, cleanDto);
+    return this.notificationsRepository.save(notification);
   }
 
-  remove(id: number) {
-    const idx = NOTIFICATIONS.findIndex(n => n.id === id);
-    if (idx === -1) throw new NotFoundException(`Notification with ID ${id} not found`);
-    const removed = NOTIFICATIONS.splice(idx, 1)[0];
-    saveData();
+  async remove(id: number) {
+    const notification = await this.findOne(id);
+    const removed = { ...notification };
+    await this.notificationsRepository.remove(notification);
     return removed;
   }
 }

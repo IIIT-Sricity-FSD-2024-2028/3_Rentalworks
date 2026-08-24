@@ -38,10 +38,6 @@ export class UpdateUserDto {
   @IsOptional()
   status?: string;
 
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  property?: string;
 
   @ApiProperty({ required: false })
   @IsEmail()

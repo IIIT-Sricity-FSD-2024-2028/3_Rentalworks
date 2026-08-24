@@ -1,44 +1,46 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { COMPLAINTS, getNextId, saveData } from '../data';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Complaint } from './complaint.entity';
 import { CreateComplaintDto, UpdateComplaintDto } from './complaints.dto';
 
 @Injectable()
 export class ComplaintsService {
+  constructor(
+    @InjectRepository(Complaint)
+    private complaintsRepository: Repository<Complaint>,
+  ) {}
+
   findAll() {
-    return COMPLAINTS;
+    return this.complaintsRepository.find({ relations: { tenant: true, property: true } });
   }
 
-  findOne(id: number) {
-    const complaint = COMPLAINTS.find(c => c.id === id);
+  async findOne(id: number) {
+    const complaint = await this.complaintsRepository.findOne({ where: { id }, relations: { tenant: true, property: true } });
     if (!complaint) throw new NotFoundException(`Complaint with ID ${id} not found`);
     return complaint;
   }
 
-  create(createComplaintDto: CreateComplaintDto) {
-    const newComplaint = {
-      id: getNextId('complaint'),
+  async create(createComplaintDto: CreateComplaintDto) {
+    const newComplaint = this.complaintsRepository.create({
       ...createComplaintDto,
       status: 'open',
       reportedAt: new Date().toISOString().split('T')[0]
-    };
-    COMPLAINTS.push(newComplaint);
-    saveData();
-    return newComplaint;
+    });
+    return this.complaintsRepository.save(newComplaint);
   }
 
-  update(id: number, updateComplaintDto: UpdateComplaintDto) {
-    const idx = COMPLAINTS.findIndex(c => c.id === id);
-    if (idx === -1) throw new NotFoundException(`Complaint with ID ${id} not found`);
-    COMPLAINTS[idx] = { ...COMPLAINTS[idx], ...updateComplaintDto };
-    saveData();
-    return COMPLAINTS[idx];
+  async update(id: number, updateComplaintDto: UpdateComplaintDto) {
+    const complaint = await this.findOne(id);
+    const cleanDto = Object.fromEntries(Object.entries(updateComplaintDto).filter(([_, v]) => v !== undefined));
+    Object.assign(complaint, cleanDto);
+    return this.complaintsRepository.save(complaint);
   }
 
-  remove(id: number) {
-    const idx = COMPLAINTS.findIndex(c => c.id === id);
-    if (idx === -1) throw new NotFoundException(`Complaint with ID ${id} not found`);
-    const removed = COMPLAINTS.splice(idx, 1)[0];
-    saveData();
+  async remove(id: number) {
+    const complaint = await this.findOne(id);
+    const removed = { ...complaint };
+    await this.complaintsRepository.remove(complaint);
     return removed;
   }
 }

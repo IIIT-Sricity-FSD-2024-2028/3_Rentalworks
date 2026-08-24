@@ -23,9 +23,41 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository for RentalWorks Backend.
 
 ## Project setup
+
+1. Install dependencies:
+```bash
+$ npm install
+```
+
+2. Setup Database Environment:
+Copy the provided `.env.example` to `.env`:
+```bash
+$ cp .env.example .env
+```
+
+3. Start PostgreSQL Database:
+If you have Docker installed, you can start the local PostgreSQL instance via docker-compose:
+```bash
+$ docker-compose up -d
+```
+
+4. Run Initial Migrations:
+We use TypeORM for database interactions. To create the tables in your database:
+```bash
+# If using TypeORM CLI
+$ npm run typeorm -- migration:run -d ./data-source.ts
+```
+
+5. Seed Database (Optional):
+To seed the database with initial dummy data from the original `data.json`:
+```bash
+$ npx ts-node scripts/seed.ts
+```
+
+## Running the app
 
 ```bash
 $ npm install

@@ -1,43 +1,45 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { BOOKINGS, getNextId, saveData } from '../data';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Booking } from './booking.entity';
 import { CreateBookingDto, UpdateBookingDto } from './bookings.dto';
 
 @Injectable()
 export class BookingsService {
+  constructor(
+    @InjectRepository(Booking)
+    private bookingsRepository: Repository<Booking>,
+  ) {}
+
   findAll() {
-    return BOOKINGS;
+    return this.bookingsRepository.find({ relations: { tenant: true, property: true } });
   }
 
-  findOne(id: number) {
-    const booking = BOOKINGS.find(b => b.id === id);
+  async findOne(id: number) {
+    const booking = await this.bookingsRepository.findOne({ where: { id }, relations: { tenant: true, property: true } });
     if (!booking) throw new NotFoundException(`Booking with ID ${id} not found`);
     return booking;
   }
 
-  create(createBookingDto: CreateBookingDto) {
-    const newBooking = {
-      id: getNextId('booking'),
+  async create(createBookingDto: CreateBookingDto) {
+    const newBooking = this.bookingsRepository.create({
       ...createBookingDto,
       status: 'pending'
-    };
-    BOOKINGS.push(newBooking);
-    saveData();
-    return newBooking;
+    });
+    return this.bookingsRepository.save(newBooking);
   }
 
-  update(id: number, updateBookingDto: UpdateBookingDto) {
-    const idx = BOOKINGS.findIndex(b => b.id === id);
-    if (idx === -1) throw new NotFoundException(`Booking with ID ${id} not found`);
-    BOOKINGS[idx] = { ...BOOKINGS[idx], ...updateBookingDto };
-    saveData();
-    return BOOKINGS[idx];
+  async update(id: number, updateBookingDto: UpdateBookingDto) {
+    const booking = await this.findOne(id);
+    const cleanDto = Object.fromEntries(Object.entries(updateBookingDto).filter(([_, v]) => v !== undefined));
+    Object.assign(booking, cleanDto);
+    return this.bookingsRepository.save(booking);
   }
 
-  remove(id: number) {
-    const idx = BOOKINGS.findIndex(b => b.id === id);
-    if (idx === -1) throw new NotFoundException(`Booking with ID ${id} not found`);
-    const removed = BOOKINGS.splice(idx, 1)[0];
-    saveData();
+  async remove(id: number) {
+    const booking = await this.findOne(id);
+    const removed = { ...booking };
+    await this.bookingsRepository.remove(booking);
     return removed;
   }
 }

@@ -11,8 +11,8 @@ export class CreatePropertyDto {
   location: string;
 
   @ApiProperty()
-  @IsString()
-  owner: string;
+  @IsNumber()
+  ownerId: number;
 
   @ApiProperty()
   @IsNumber()
@@ -58,9 +58,9 @@ export class UpdatePropertyDto {
   location?: string;
 
   @ApiProperty({ required: false })
-  @IsString()
+  @IsNumber()
   @IsOptional()
-  owner?: string;
+  ownerId?: number;
 
   @ApiProperty({ required: false })
   @IsNumber()

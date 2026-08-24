@@ -3,16 +3,16 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateBookingDto {
   @ApiProperty()
-  @IsString()
-  tenant: string;
+  @IsNumber()
+  tenantId: number;
 
   @ApiProperty()
   @IsString()
   phone: string;
 
   @ApiProperty()
-  @IsString()
-  property: string;
+  @IsNumber()
+  propertyId: number;
 
   @ApiProperty()
   @IsString()

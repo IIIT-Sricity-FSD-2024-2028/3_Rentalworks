@@ -1,14 +1,14 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsNumber, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateComplaintDto {
   @ApiProperty()
-  @IsString()
-  tenant: string;
+  @IsNumber()
+  tenantId: number;
 
   @ApiProperty()
-  @IsString()
-  property: string;
+  @IsNumber()
+  propertyId: number;
 
   @ApiProperty()
   @IsString()

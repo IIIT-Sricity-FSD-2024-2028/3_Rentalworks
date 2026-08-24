@@ -3,12 +3,12 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class CreatePaymentDto {
   @ApiProperty()
-  @IsString()
-  tenant: string;
+  @IsNumber()
+  tenantId: number;
 
   @ApiProperty()
-  @IsString()
-  property: string;
+  @IsNumber()
+  propertyId: number;
 
   @ApiProperty()
   @IsString()

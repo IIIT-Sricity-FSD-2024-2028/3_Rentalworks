@@ -1,58 +1,66 @@
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { USERS, getNextId, saveData } from '../data';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from './user.entity';
 import { CreateUserDto, UpdateUserDto, LoginDto } from './users.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
+  constructor(
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
+  ) {}
+
   findAll() {
-    return USERS;
+    return this.usersRepository.find();
   }
 
-  findOne(id: number) {
-    const user = USERS.find(u => u.id === id);
+  async findOne(id: number) {
+    const user = await this.usersRepository.findOneBy({ id });
     if (!user) throw new NotFoundException(`User with ID ${id} not found`);
     return user;
   }
 
-  create(createUserDto: CreateUserDto) {
-    const newUser = {
-      id: getNextId('user'),
+  async create(createUserDto: CreateUserDto) {
+    const hashedPassword = await bcrypt.hash(createUserDto.password || 'default123', 10);
+    const newUser = this.usersRepository.create({
       ...createUserDto,
-      password: createUserDto.password || 'default123',
+      password: hashedPassword,
       status: 'active',
       joinDate: new Date().toISOString().split('T')[0],
-      property: null
-    };
-    USERS.push(newUser);
-    saveData();
-    return newUser;
+    });
+    return this.usersRepository.save(newUser);
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    const idx = USERS.findIndex(u => u.id === id);
-    if (idx === -1) throw new NotFoundException(`User with ID ${id} not found`);
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    const user = await this.findOne(id);
     
     // Filter out undefined values to prevent overwriting
     const cleanDto = Object.fromEntries(Object.entries(updateUserDto).filter(([_, v]) => v !== undefined));
     
-    USERS[idx] = { ...USERS[idx], ...cleanDto };
-    saveData();
-    return USERS[idx];
+    if (cleanDto.password) {
+      cleanDto.password = await bcrypt.hash(cleanDto.password as string, 10);
+    }
+
+    Object.assign(user, cleanDto);
+    return this.usersRepository.save(user);
   }
 
-  remove(id: number) {
-    const idx = USERS.findIndex(u => u.id === id);
-    if (idx === -1) throw new NotFoundException(`User with ID ${id} not found`);
-    const removed = USERS.splice(idx, 1)[0];
-    saveData();
+  async remove(id: number) {
+    const user = await this.findOne(id);
+    const removed = { ...user };
+    await this.usersRepository.remove(user);
     return removed;
   }
 
-  login(loginDto: LoginDto) {
-    const user = USERS.find(u => u.username === loginDto.username && u.password === loginDto.password);
+  async login(loginDto: LoginDto) {
+    const user = await this.usersRepository.findOne({ where: { username: loginDto.username } });
     if (!user) throw new UnauthorizedException('Invalid credentials');
     
-    // Omit password from response
+    const isMatch = await bcrypt.compare(loginDto.password || '', user.password || '');
+    if (!isMatch) throw new UnauthorizedException('Invalid credentials');
+    
     const { password, ...result } = user;
     return result;
   }
