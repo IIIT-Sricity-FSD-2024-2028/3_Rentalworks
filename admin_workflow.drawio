@@ -1,0 +1,522 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3300" pageHeight="2200" math="0" shadow="0">
+  <root>
+    <mxCell id="0"/>
+    <mxCell id="1" parent="0"/>
+
+    <!-- ===== START ===== -->
+    <mxCell id="2" value="START" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+      <mxGeometry x="1530" y="20" width="100" height="50" as="geometry"/>
+    </mxCell>
+
+    <!-- ===== ADMIN LOGIN ===== -->
+    <mxCell id="3" value="Admin Login&#xa;(Central Login Page)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1490" y="110" width="180" height="50" as="geometry"/>
+    </mxCell>
+
+    <!-- ===== VALID CREDENTIALS? ===== -->
+    <mxCell id="4" value="Valid Credentials?&#xa;(role = admin)" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1490" y="200" width="180" height="70" as="geometry"/>
+    </mxCell>
+
+    <!-- ===== SHOW LOGIN ERROR ===== -->
+    <mxCell id="5" value="Show Login Error&#xa;Redirect to Login" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1720" y="215" width="160" height="50" as="geometry"/>
+    </mxCell>
+
+    <!-- ===== LOAD ADMIN DASHBOARD ===== -->
+    <mxCell id="6" value="Load Admin Dashboard&#xa;(showDashboardShell)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1490" y="310" width="180" height="50" as="geometry"/>
+    </mxCell>
+
+    <!-- ===== DASHBOARD STATS ===== -->
+    <mxCell id="7" value="Dashboard Displays:&#xa;• Total Users  • Properties&#xa;• Active Bookings  • GTV (₹)&#xa;• Platform Revenue (10%)&#xa;• Activity Feed&#xa;• System Health Panel&#xa;• Quick Action Counts&#xa;(Auto-refresh every 5s)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1460" y="400" width="240" height="140" as="geometry"/>
+    </mxCell>
+
+    <!-- ===== SELECT ACTIVITY ===== -->
+    <mxCell id="8" value="Select Activity?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1500" y="580" width="160" height="60" as="geometry"/>
+    </mxCell>
+
+    <!-- ============================================================ -->
+    <!-- MODULE HEADERS -->
+    <!-- ============================================================ -->
+
+    <!-- USER MANAGEMENT -->
+    <mxCell id="10" value="USER MANAGEMENT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="100" y="700" width="200" height="45" as="geometry"/>
+    </mxCell>
+
+    <!-- PG PROPERTIES -->
+    <mxCell id="11" value="PG PROPERTIES" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="380" y="700" width="200" height="45" as="geometry"/>
+    </mxCell>
+
+    <!-- BOOKINGS -->
+    <mxCell id="12" value="BOOKINGS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="660" y="700" width="200" height="45" as="geometry"/>
+    </mxCell>
+
+    <!-- PAYMENTS -->
+    <mxCell id="13" value="PAYMENTS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="940" y="700" width="200" height="45" as="geometry"/>
+    </mxCell>
+
+    <!-- ANNOUNCEMENTS -->
+    <mxCell id="14" value="ANNOUNCEMENTS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1220" y="700" width="200" height="45" as="geometry"/>
+    </mxCell>
+
+    <!-- PROFILE & SETTINGS -->
+    <mxCell id="15" value="PROFILE &amp; SETTINGS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1790" y="700" width="200" height="45" as="geometry"/>
+    </mxCell>
+
+    <!-- ============================================================ -->
+    <!-- MODULE 1: USER MANAGEMENT -->
+    <!-- ============================================================ -->
+
+    <mxCell id="20" value="View Users&#xa;(Search / Filter by Role / Status)" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="60" y="790" width="200" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="21" value="Action?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="85" y="880" width="150" height="55" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="22" value="View User Details&#xa;(Info Modal)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="10" y="990" width="150" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="23" value="Add User&#xa;(Name, Email, Phone,&#xa;Role, Property)" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="10" y="1080" width="150" height="60" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="24" value="Validate Fields?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="10" y="1180" width="150" height="55" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="25" value="Show Field Errors" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="175" y="1193" width="130" height="40" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="26" value="Save to Backend&#xa;POST /users" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="10" y="1270" width="150" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="27" value="Edit User&#xa;(Name, Email, Phone,&#xa;Role, Property)" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="175" y="990" width="150" height="60" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="28" value="Save Changes&#xa;PUT /users/:id&#xa;(Sync to Warden if tenant)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="175" y="1090" width="160" height="60" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="29" value="Suspend / Activate&#xa;Toggle Status&#xa;PUT /users/:id" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="10" y="1360" width="150" height="60" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="30" value="Status: active ↔ suspended" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="10" y="1445" width="150" height="35" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="31" value="Delete User?&#xa;(Confirm Modal)" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="175" y="1200" width="150" height="60" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="32" value="DELETE /users/:id&#xa;Remove from localStorage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="175" y="1300" width="160" height="50" as="geometry"/>
+    </mxCell>
+
+    <!-- ============================================================ -->
+    <!-- MODULE 2: PG PROPERTIES -->
+    <!-- ============================================================ -->
+
+    <mxCell id="40" value="View Properties&#xa;(Search by Name / Owner / Location)" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="350" y="790" width="200" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="41" value="Property Status?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="370" y="880" width="160" height="60" as="geometry"/>
+    </mxCell>
+
+    <!-- PENDING branch -->
+    <mxCell id="42" value="PENDING Property" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="320" y="985" width="160" height="40" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="43" value="Docs Verified?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="320" y="1060" width="140" height="55" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="44" value="View &amp; Verify Docs&#xa;(Ownership Deed,&#xa;Fire Safety NOC)&#xa;→ Mark docsVerified=true" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="270" y="1155" width="160" height="70" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="45" value="Inspection Passed?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="470" y="1060" width="150" height="55" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="46" value="Submit Live Inspection&#xa;Report&#xa;→ inspectionPassed=true" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="465" y="1155" width="160" height="60" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="47" value="Both Docs &amp; Inspection OK?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="350" y="1260" width="170" height="60" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="48" value="Approve Property&#xa;status → approved&#xa;PUT /properties/:id" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="320" y="1360" width="160" height="55" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="49" value="Reject Property&#xa;(Confirm Modal)&#xa;status → rejected&#xa;PUT /properties/:id" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="490" y="1360" width="160" height="60" as="geometry"/>
+    </mxCell>
+
+    <!-- APPROVED branch -->
+    <mxCell id="50" value="APPROVED Property" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="530" y="985" width="160" height="40" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="51" value="Edit Property&#xa;(Name, Owner, Safety,&#xa;Occupancy%)" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="530" y="1060" width="150" height="55" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="52" value="Initiate Notice Period&#xa;(Confirm Modal)&#xa;status → offboarding" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="530" y="1145" width="160" height="60" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="53" value="Finalize Removal&#xa;(Confirm Modal)&#xa;DELETE /properties/:id" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="530" y="1240" width="160" height="55" as="geometry"/>
+    </mxCell>
+
+    <!-- Add Property -->
+    <mxCell id="54" value="Add New Property&#xa;(Name, Location, Owner,&#xa;Rent Min/Max, Rooms)&#xa;→ status = pending" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="700" y="985" width="165" height="70" as="geometry"/>
+    </mxCell>
+
+    <!-- ============================================================ -->
+    <!-- MODULE 3: BOOKINGS -->
+    <!-- ============================================================ -->
+
+    <mxCell id="60" value="View Bookings&#xa;(Search / Filter by Status)" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="640" y="790" width="200" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="61" value="Booking Status?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="645" y="875" width="160" height="60" as="geometry"/>
+    </mxCell>
+
+    <!-- Pending booking -->
+    <mxCell id="62" value="Pending Booking" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="870" y="985" width="150" height="40" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="63" value="Approve or Reject?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="870" y="1060" width="150" height="55" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="64" value="Approve Booking&#xa;status → active&#xa;Sync to Guest Dashboard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="820" y="1160" width="155" height="60" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="65" value="Reject Booking&#xa;(Confirm Modal)&#xa;status → cancelled&#xa;Sync to Guest Dashboard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="990" y="1160" width="160" height="70" as="geometry"/>
+    </mxCell>
+
+    <!-- Active booking -->
+    <mxCell id="66" value="Active / Paid Booking" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1050" y="985" width="170" height="40" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="67" value="View Booking Details" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1050" y="1060" width="170" height="45" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="68" value="Force Terminate?&#xa;(Confirm Modal)" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1050" y="1140" width="160" height="60" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="69" value="status → cancelled&#xa;Tenant account → suspended" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1055" y="1240" width="160" height="50" as="geometry"/>
+    </mxCell>
+
+    <!-- ============================================================ -->
+    <!-- MODULE 4: PAYMENTS -->
+    <!-- ============================================================ -->
+
+    <mxCell id="70" value="View Payments Ledger&#xa;(Verified Only, Search)" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="910" y="790" width="200" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="71" value="View KPIs:&#xa;GTV / Platform Rev (10%) / Pending Amt&#xa;Top Earning Properties&#xa;Revenue Trend Chart" style="rounded=1;whiteSpace=wrap;html=1;fontSize=10;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+      <mxGeometry x="1250" y="985" width="190" height="75" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="72" value="Per Payment Action?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1260" y="1100" width="170" height="60" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="73" value="View Payment Details&#xa;(Info Modal)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1200" y="1210" width="155" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="74" value="Approve Clearance&#xa;clearance → Approved" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1200" y="1300" width="155" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="75" value="Issue Refund&#xa;(Clearance Required)" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1375" y="1210" width="155" height="60" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="76" value="Clearance = Approved?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1375" y="1300" width="155" height="55" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="77" value="Initiate Refund&#xa;(Toast Confirmation)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1375" y="1390" width="155" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="78" value="Show Error:&#xa;Clearance Required" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1550" y="1300" width="150" height="50" as="geometry"/>
+    </mxCell>
+
+    <!-- ============================================================ -->
+    <!-- MODULE 5: ANNOUNCEMENTS -->
+    <!-- ============================================================ -->
+
+    <mxCell id="80" value="View Announcements Page&#xa;(Recipient Counts / History)" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1190" y="790" width="200" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="81" value="Compose Announcement&#xa;(Title + Message)" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1730" y="790" width="190" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="82" value="Select Type&#xa;(Announcement / Update / Notice)" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1730" y="880" width="190" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="83" value="Select Priority&#xa;(Routine / Important / Urgent)" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1730" y="960" width="190" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="84" value="Target Recipients&#xa;(Role → PG → User)" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1730" y="1040" width="190" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="85" value="Recipients = 0?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1740" y="1120" width="170" height="55" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="86" value="Show Error:&#xa;No Recipients" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1940" y="1130" width="140" height="45" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="87" value="Send Now&#xa;or Schedule?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1740" y="1210" width="170" height="55" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="88" value="Send Immediately&#xa;→ Push to cross_notifications&#xa;→ Appears in History" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1690" y="1310" width="175" height="65" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="89" value="Schedule Send&#xa;(Pick Date/Time)&#xa;→ saved = scheduled:true" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1890" y="1310" width="175" height="65" as="geometry"/>
+    </mxCell>
+
+    <!-- ============================================================ -->
+    <!-- MODULE 6: PROFILE & SETTINGS -->
+    <!-- ============================================================ -->
+
+    <mxCell id="90" value="Open Profile &amp; Settings Modal&#xa;(Gear Icon)" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="2090" y="790" width="190" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="91" value="View Admin Info&#xa;(Role, Last Login, Status)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="2090" y="880" width="190" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="92" value="Change Password&#xa;(Current / New / Confirm)" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="2090" y="960" width="190" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="93" value="Passwords Valid?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="2100" y="1040" width="170" height="55" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="94" value="Password Updated" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="2100" y="1130" width="170" height="45" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="95" value="Show Error (Mismatch /&#xa;Too Short / Wrong Current)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="2290" y="1047" width="160" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="96" value="Toggle 2FA On/Off" style="rounded=1;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="2100" y="1210" width="170" height="45" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="97" value="View Session History&#xa;(Current + Previous)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="2100" y="1285" width="170" height="45" as="geometry"/>
+    </mxCell>
+
+    <!-- ============================================================ -->
+    <!-- RETURN TO DASHBOARD -->
+    <!-- ============================================================ -->
+
+    <mxCell id="100" value="Return to Dashboard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1490" y="1520" width="180" height="50" as="geometry"/>
+    </mxCell>
+
+    <mxCell id="101" value="Continue?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1505" y="1610" width="150" height="55" as="geometry"/>
+    </mxCell>
+
+    <!-- ===== LOGOUT ===== -->
+    <mxCell id="102" value="Logout&#xa;(Clear sessionStorage)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="1710" y="1623" width="160" height="50" as="geometry"/>
+    </mxCell>
+
+    <!-- ===== END ===== -->
+    <mxCell id="103" value="END" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+      <mxGeometry x="1728" y="1710" width="100" height="50" as="geometry"/>
+    </mxCell>
+
+    <!-- ============================================================ -->
+    <!-- EDGES / CONNECTORS -->
+    <!-- ============================================================ -->
+
+    <!-- Start → Login -->
+    <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="2" target="3" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <!-- Login → Valid Credentials? -->
+    <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="3" target="4" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <!-- Valid? Yes → Dashboard -->
+    <mxCell id="e3" value="Yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="4" target="6" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <!-- Valid? No → Error -->
+    <mxCell id="e4" value="No" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="4" target="5" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <!-- Error → Login -->
+    <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="5" target="3" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <!-- Dashboard → Stats Block -->
+    <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="6" target="7" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <!-- Stats → Select Activity -->
+    <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="7" target="8" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+    <!-- Select Activity → Module headers -->
+    <mxCell id="e8" value="Users" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="8" target="10" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e9" value="Properties" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="8" target="11" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e10" value="Bookings" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="8" target="12" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e11" value="Payments" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="8" target="13" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e12" value="Announcements" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="8" target="14" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e13" value="Profile" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="8" target="15" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+    <!-- USER MANAGEMENT flow -->
+    <mxCell id="e20" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="10" target="20" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e21" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="20" target="21" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e22" value="View" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="21" target="22" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e23" value="Add" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="21" target="23" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e24" value="Edit" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="21" target="27" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e25" value="Delete" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="21" target="31" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e26" value="Suspend" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="21" target="29" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e27" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="23" target="24" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e28" value="Invalid" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="24" target="25" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e29" value="Valid" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="24" target="26" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e30" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="27" target="28" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e31" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="29" target="30" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e32" value="Yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="31" target="32" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+    <!-- PG PROPERTIES flow -->
+    <mxCell id="e40" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="11" target="40" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e41" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="40" target="41" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e42" value="Pending" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="41" target="42" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e43" value="Approved" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="41" target="50" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e44" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="42" target="43" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e45" value="No" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="43" target="44" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e46" value="Yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="43" target="45" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e47" value="No" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="45" target="46" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e48" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="44" target="47" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e49" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="46" target="47" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e50" value="Yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="47" target="48" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e51" value="No/Reject" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="47" target="49" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e52" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="50" target="51" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e53" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="50" target="52" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e54" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="52" target="53" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e55" value="Add New" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="41" target="54" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+    <!-- BOOKINGS flow -->
+    <mxCell id="e60" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="12" target="60" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e61" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="60" target="61" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e62" value="Pending" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="61" target="62" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e63" value="Active/Paid" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="61" target="66" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e64" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="62" target="63" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e65" value="Approve" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="63" target="64" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e66" value="Reject" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="63" target="65" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e67" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="66" target="67" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e68" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="66" target="68" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e69" value="Yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="68" target="69" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+    <!-- PAYMENTS flow -->
+    <mxCell id="e70" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="13" target="70" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e71" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="70" target="71" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e72" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="71" target="72" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e73" value="View" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="72" target="73" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e74" value="Approve Clearance" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="72" target="74" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e75" value="Refund" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="72" target="75" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e76" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="75" target="76" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e77" value="Yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="76" target="77" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e78" value="No" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="76" target="78" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+    <!-- ANNOUNCEMENTS flow -->
+    <mxCell id="e80" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="14" target="80" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e81" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="14" target="81" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e82" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="81" target="82" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e83" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="82" target="83" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e84" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="83" target="84" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e85" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="84" target="85" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e86" value="Yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="85" target="86" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e87" value="No" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="85" target="87" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e88" value="Send Now" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="87" target="88" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e89" value="Schedule" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="87" target="89" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+    <!-- PROFILE flow -->
+    <mxCell id="e90" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="15" target="90" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e91" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="90" target="91" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e92" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="90" target="92" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e93" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="92" target="93" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e94" value="Valid" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="93" target="94" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e95" value="Invalid" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="93" target="95" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e96" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="90" target="96" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e97" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="90" target="97" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+    <!-- All modules → Return to Dashboard -->
+    <mxCell id="e100" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="22" target="100" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e101" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="26" target="100" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e102" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="28" target="100" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e103" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="30" target="100" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e104" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="32" target="100" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e105" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="48" target="100" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e106" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="49" target="100" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e107" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="53" target="100" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e108" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="54" target="100" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e109" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="64" target="100" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e110" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="65" target="100" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e111" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="69" target="100" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e112" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="73" target="100" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e113" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="77" target="100" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e114" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="88" target="100" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e115" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="89" target="100" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e116" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="94" target="100" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="e117" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="96" target="100" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+    <!-- Return to Dashboard → Continue? -->
+    <mxCell id="e120" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="100" target="101" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <!-- Continue? Yes → Select Activity -->
+    <mxCell id="e121" value="Yes" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="101" target="8" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <!-- Continue? No → Logout -->
+    <mxCell id="e122" value="No" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="101" target="102" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <!-- Logout → End -->
+    <mxCell id="e123" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="102" target="103" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+  </root>
+</mxGraphModel>
