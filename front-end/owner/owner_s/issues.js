@@ -76,21 +76,21 @@ function renderIssuesPage(issues) {
   document.getElementById('pageContent').innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
       <div class="stat-card">
-        <div class="stat-icon red">🔴</div>
+        <div class="stat-icon red"><span class="material-icons" style="font-size:22px;color:#ef4444">error</span></div>
         <div class="stat-info">
           <div class="stat-value">${open}</div>
           <div class="stat-label">Open Issues</div>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon orange">🟡</div>
+        <div class="stat-icon orange"><span class="material-icons" style="font-size:22px;color:#eab308">pending</span></div>
         <div class="stat-info">
           <div class="stat-value">${inProgress}</div>
           <div class="stat-label">In Progress</div>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon green">✅</div>
+        <div class="stat-icon green"><span class="material-icons" style="font-size:22px;color:#22c55e">check_circle</span></div>
         <div class="stat-info">
           <div class="stat-value">${resolved}</div>
           <div class="stat-label">Resolved</div>
@@ -100,7 +100,7 @@ function renderIssuesPage(issues) {
 
     <div class="filter-bar">
       <div class="filter-search">
-        <span>🔍</span>
+        <span class="material-icons" style="font-size:20px;color:#94a3b8">search</span>
         <input type="text" id="issueSearch" placeholder="Search issues..." oninput="filterIssues()">
       </div>
       <select class="filter-select" id="filterIssueStatus" onchange="filterIssues()">
@@ -135,7 +135,7 @@ function renderIssuesPage(issues) {
 function renderIssuesList(issues) {
   if (issues.length === 0) {
     return `<div class="empty-state">
-      <div class="empty-icon">✅</div>
+      <div class="empty-icon"><span class="material-icons" style="font-size:48px;color:#22c55e">check_circle</span></div>
       <h3>No Issues Found</h3>
       <p>Try adjusting your filters, or all issues are resolved!</p>
     </div>`;
@@ -150,25 +150,25 @@ function renderIssuesList(issues) {
         <div class="issue-title">${issue.title}</div>
         <div class="issue-meta">
           <span class="badge" style="background:var(--primary-light); color:var(--primary); border:1px solid #ddd8ff">
-            👤 Reported by: ${issue.reportedBy || 'Warden'}
+            <span class="material-icons" style="font-size:14px;vertical-align:middle">person</span> Reported by: ${issue.reportedBy || 'Warden'}
           </span>
           <span>•</span>
-          <span>🏢 ${issue.propertyName || 'Sunrise PG'}${issue.room ? ' — Room ' + issue.room : ''}</span>
+          <span><span class="material-icons" style="font-size:14px;vertical-align:middle">apartment</span> ${issue.propertyName || 'Sunrise PG'}${issue.room ? ' — Room ' + issue.room : ''}</span>
           <span>•</span>
-          <span>📅 ${formatDate(issue.reportedDate)}</span>
+          <span><span class="material-icons" style="font-size:14px;vertical-align:middle">calendar_today</span> ${formatDate(issue.reportedDate)}</span>
           <span>•</span>
           <span class="badge badge-${(issue.priority || 'medium').toLowerCase()}">${getPriorityIcon(issue.priority)} ${issue.priority}</span>
           <span class="badge badge-${(issue.status || 'open').toLowerCase().replace(' ', '')}">${issue.status}</span>
-          ${issue._escalatedByWarden ? '<span class="badge" style="background:#fce7f3;color:#9d174d;font-size:10px">⚠️ Escalated by Warden</span>' : (issue._isGlobal ? '<span class="badge" style="background:#fef9c3;color:#92400e;font-size:10px">📩 Reported by Tenant</span>' : '')}
+          ${issue._escalatedByWarden ? '<span class="badge" style="background:#fce7f3;color:#9d174d;font-size:10px"><span class="material-icons" style="font-size:12px;vertical-align:middle">warning</span> Escalated by Warden</span>' : (issue._isGlobal ? '<span class="badge" style="background:#fef9c3;color:#92400e;font-size:10px"><span class="material-icons" style="font-size:12px;vertical-align:middle">mail</span> Reported by Tenant</span>' : '')}
         </div>
         <div class="issue-desc">${issue.description || 'No description provided.'}</div>
       </div>
       <div class="issue-actions">
         ${issue.status !== 'Resolved' ? `
-          <button class="btn btn-success btn-sm" onclick="updateIssueStatus('${issue.id}', 'Resolved')">✅ Resolve</button>
-          ${issue.status === 'Open' ? `<button class="btn btn-warning btn-sm" onclick="updateIssueStatus('${issue.id}', 'In Progress')">⏳ In Progress</button>` : ''}
-        ` : `<span class="badge badge-resolved">✅ Resolved</span>`}
-        <button class="btn btn-danger btn-sm" onclick="deleteIssue('${issue.id}')">🗑 Delete</button>
+          <button class="btn btn-success btn-sm" onclick="updateIssueStatus('${issue.id}', 'Resolved')"><span class="material-icons" style="font-size:16px;vertical-align:middle">check</span> Resolve</button>
+          ${issue.status === 'Open' ? `<button class="btn btn-warning btn-sm" onclick="updateIssueStatus('${issue.id}', 'In Progress')"><span class="material-icons" style="font-size:16px;vertical-align:middle">schedule</span> In Progress</button>` : ''}
+        ` : `<span class="badge badge-resolved"><span class="material-icons" style="font-size:14px;vertical-align:middle">check_circle</span> Resolved</span>`}
+        <button class="btn btn-danger btn-sm" onclick="deleteIssue('${issue.id}')"><span class="material-icons" style="font-size:16px;vertical-align:middle">delete</span> Delete</button>
         </div>
     </div>
   `).join('');
@@ -283,7 +283,7 @@ function openAddIssueModal() {
   const propertyOptions = allProperties.map(p => `<option value="${p.id}" data-name="${p.name}">${p.name}</option>`).join('');
   openModal(`
     <div class="modal-header">
-      <span class="modal-title">⚠️ Report New Issue</span>
+      <span class="modal-title"><span class="material-icons" style="font-size:22px;vertical-align:middle">warning</span> Report New Issue</span>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px;max-height:65vh;overflow-y:auto;padding-right:4px">
@@ -322,7 +322,7 @@ function openAddIssueModal() {
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="submitNewIssue()">➕ Add Issue</button>
+      <button class="btn btn-primary" onclick="submitNewIssue()"><span class="material-icons" style="font-size:16px;vertical-align:middle">add</span> Add Issue</button>
     </div>
   `);
 }

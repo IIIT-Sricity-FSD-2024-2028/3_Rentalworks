@@ -18,13 +18,13 @@ function renderPropertiesPage(properties) {
       <div>
         <div style="font-size:15px;color:var(--text-muted)">${properties.length} properties found</div>
       </div>
-      <a href="add-property.html" class="btn btn-primary">➕ Add Property</a>
+      <a href="add-property.html" class="btn btn-primary"><span class="material-icons" style="font-size:18px;vertical-align:middle">add</span> Add Property</a>
     </div>
 
     <!-- Filter Bar -->
     <div class="filter-bar">
       <div class="filter-search">
-        <span>🔍</span>
+        <span class="material-icons" style="font-size:20px;color:#94a3b8">search</span>
         <input type="text" id="propSearch" placeholder="Search by name, city..." oninput="filterProperties()">
       </div>
       <select class="filter-select" id="filterType" onchange="filterProperties()">
@@ -57,10 +57,10 @@ function renderPropertiesPage(properties) {
 function renderPropertyCards(properties) {
   if (properties.length === 0) {
     return `<div class="empty-state" style="grid-column:1/-1">
-      <div class="empty-icon">🏢</div>
+      <div class="empty-icon"><span class="material-icons" style="font-size:48px;color:#d1d5db">apartment</span></div>
       <h3>No Properties Found</h3>
       <p>Try adjusting your filters or add a new property.</p>
-      <a href="add-property.html" class="btn btn-primary">➕ Add Property</a>
+      <a href="add-property.html" class="btn btn-primary"><span class="material-icons" style="font-size:18px;vertical-align:middle">add</span> Add Property</a>
     </div>`;
   }
   return properties.map(p => {
@@ -71,18 +71,18 @@ function renderPropertyCards(properties) {
     return `
     <div class="property-card" id="card-${p.id}">
       <div class="property-card-img">
-        🏘
+        <span class="material-icons" style="font-size:60px;color:var(--primary);opacity:0.15">apartment</span>
         <div class="property-card-status">
           <span class="badge badge-${p.status.toLowerCase()}">${p.status}</span>
         </div>
       </div>
       <div class="property-card-body">
         <div class="property-card-title">${p.name}</div>
-        <div class="property-card-addr">📍 ${p.address}, ${p.city}, ${p.state}</div>
+        <div class="property-card-addr"><span class="material-icons" style="font-size:14px;vertical-align:middle">location_on</span> ${p.address}, ${p.city}, ${p.state}</div>
         <div class="property-meta">
-          <div class="property-meta-item">🏠 <span>${p.type}</span></div>
-          <div class="property-meta-item">🛏 <span>${p.totalRooms} rooms</span></div>
-          <div class="property-meta-item">💰 <span>${formatCurrency(p.monthlyRent)}/mo</span></div>
+          <div class="property-meta-item"><span class="material-icons" style="font-size:14px;vertical-align:middle">home</span> <span>${p.type}</span></div>
+          <div class="property-meta-item"><span class="material-icons" style="font-size:14px;vertical-align:middle">bed</span> <span>${p.totalRooms} rooms</span></div>
+          <div class="property-meta-item"><span class="material-icons" style="font-size:14px;vertical-align:middle">payments</span> <span>${formatCurrency(p.monthlyRent)}/mo</span></div>
         </div>
         <div class="occupancy-bar-wrap">
           <div class="occupancy-bar-label">
@@ -98,9 +98,9 @@ function renderPropertyCards(properties) {
           ${extra > 0 ? `<span class="amenity-tag">+${extra} more</span>` : ''}
         </div>
         <div class="property-card-actions">
-          <button class="btn btn-secondary btn-sm" style="flex:1" onclick="viewProperty('${p.id}')">👁 View</button>
-          <button class="btn btn-secondary btn-sm" style="flex:1" onclick="editProperty('${p.id}')">✏️ Edit</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteProperty('${p.id}')">🗑</button>
+          <button class="btn btn-secondary btn-sm" style="flex:1" onclick="viewProperty('${p.id}')"><span class="material-icons" style="font-size:16px;vertical-align:middle">visibility</span> View</button>
+          <button class="btn btn-secondary btn-sm" style="flex:1" onclick="editProperty('${p.id}')"><span class="material-icons" style="font-size:16px;vertical-align:middle">edit</span> Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteProperty('${p.id}')"><span class="material-icons" style="font-size:16px;vertical-align:middle">delete</span></button>
         </div>
       </div>
     </div>`;
@@ -138,7 +138,7 @@ function viewProperty(id) {
   const pct = getOccupancyPercent(p.occupiedRooms, p.totalRooms);
   openModal(`
     <div class="modal-header">
-      <span class="modal-title">🏢 ${p.name}</span>
+      <span class="modal-title"><span class="material-icons" style="font-size:22px;vertical-align:middle">apartment</span> ${p.name}</span>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:12px">
@@ -163,7 +163,7 @@ function viewProperty(id) {
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal()">Close</button>
-      <button class="btn btn-primary" onclick="closeModal();editProperty('${p.id}')">✏️ Edit</button>
+      <button class="btn btn-primary" onclick="closeModal();editProperty('${p.id}')"><span class="material-icons" style="font-size:16px;vertical-align:middle">edit</span> Edit</button>
     </div>
   `);
 }
@@ -174,7 +174,7 @@ function editProperty(id) {
   const amenityList = ['WiFi', 'AC', 'Laundry', 'Parking', 'Gym', 'Mess', 'Power Backup', 'Security'];
   openModal(`
     <div class="modal-header">
-      <span class="modal-title">✏️ Edit Property</span>
+      <span class="modal-title"><span class="material-icons" style="font-size:22px;vertical-align:middle">edit</span> Edit Property</span>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px;max-height:60vh;overflow-y:auto;padding-right:4px">
@@ -227,7 +227,7 @@ function editProperty(id) {
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="savePropertyEdit('${p.id}')">💾 Save Changes</button>
+      <button class="btn btn-primary" onclick="savePropertyEdit('${p.id}')"><span class="material-icons" style="font-size:16px;vertical-align:middle">save</span> Save Changes</button>
     </div>
   `);
 }

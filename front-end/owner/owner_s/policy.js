@@ -127,8 +127,8 @@ function renderPolicyPage(policy) {
 
     <!-- Actions -->
     <div style="display:flex;gap:12px;justify-content:flex-end">
-      <button class="btn btn-secondary btn-lg" onclick="resetPolicy()">🔄 Reset to Default</button>
-      <button class="btn btn-primary btn-lg" onclick="savePolicy()">💾 Save Policy</button>
+      <button class="btn btn-secondary btn-lg" onclick="resetPolicy()"><span class="material-icons" style="font-size:18px;vertical-align:middle">restart_alt</span> Reset to Default</button>
+      <button class="btn btn-primary btn-lg" onclick="savePolicy()"><span class="material-icons" style="font-size:18px;vertical-align:middle">save</span> Save Policy</button>
     </div>
   `;
 

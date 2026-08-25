@@ -1,13 +1,13 @@
 // add-property.js
 const AMENITY_LIST = [
-  { label: 'WiFi', icon: '📶' },
-  { label: 'AC', icon: '❄️' },
-  { label: 'Laundry', icon: '🧺' },
-  { label: 'Parking', icon: '🚗' },
-  { label: 'Gym', icon: '💪' },
-  { label: 'Mess', icon: '🍽️' },
-  { label: 'Power Backup', icon: '⚡' },
-  { label: 'Security', icon: '🔒' },
+  { label: 'WiFi', icon: 'wifi' },
+  { label: 'AC', icon: 'ac_unit' },
+  { label: 'Laundry', icon: 'local_laundry_service' },
+  { label: 'Parking', icon: 'local_parking' },
+  { label: 'Gym', icon: 'fitness_center' },
+  { label: 'Mess', icon: 'restaurant' },
+  { label: 'Power Backup', icon: 'power' },
+  { label: 'Security', icon: 'lock' },
 ];
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -113,7 +113,7 @@ function renderAddPropertyPage() {
       <div class="amenities-grid" id="amenitiesGrid">
         ${AMENITY_LIST.map(a => `
           <div class="amenity-toggle" data-amenity="${a.label}" onclick="toggleAmenity(this)">
-            <span>${a.icon}</span> ${a.label}
+            <span class="material-icons" style="font-size:16px">${a.icon}</span> ${a.label}
           </div>`).join('')}
       </div>
     </div>
@@ -134,7 +134,7 @@ function renderAddPropertyPage() {
     <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px">
       <a href="properties.html" class="btn btn-secondary btn-lg">Cancel</a>
       <button class="btn btn-primary btn-lg" id="submitBtn" onclick="submitProperty()">
-        ✅ Submit for Verification
+        <span class="material-icons" style="font-size:18px;vertical-align:middle">check</span> Submit for Verification
       </button>
     </div>
   `;
