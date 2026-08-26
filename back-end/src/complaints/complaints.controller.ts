@@ -1,7 +1,6 @@
 import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { createUploadOptions } from '../middleware/file-upload.middleware';
 import { ComplaintsService } from './complaints.service';
 import { CreateComplaintDto, UpdateComplaintDto } from './complaints.dto';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -16,16 +15,7 @@ export class ComplaintsController {
 
   @Post(':id/upload-attachment')
   @Roles('admin', 'tenant', 'warden')
-  @UseInterceptors(FileInterceptor('file', {
-    storage: diskStorage({
-      destination: './uploads/complaints',
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        const ext = extname(file.originalname);
-        cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-      },
-    }),
-  }))
+  @UseInterceptors(FileInterceptor('file', createUploadOptions('./uploads/complaints')))
   @ApiOperation({ summary: 'Upload complaint attachment' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({

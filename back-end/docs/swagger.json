@@ -1418,9 +1418,6 @@
           "status": {
             "type": "string"
           },
-          "property": {
-            "type": "string"
-          },
           "email": {
             "type": "string"
           },
@@ -1441,8 +1438,8 @@
           "location": {
             "type": "string"
           },
-          "owner": {
-            "type": "string"
+          "ownerId": {
+            "type": "number"
           },
           "rentMin": {
             "type": "number"
@@ -1463,7 +1460,7 @@
         "required": [
           "name",
           "location",
-          "owner",
+          "ownerId",
           "rentMin",
           "rentMax",
           "rooms",
@@ -1488,8 +1485,8 @@
           "location": {
             "type": "string"
           },
-          "owner": {
-            "type": "string"
+          "ownerId": {
+            "type": "number"
           },
           "rentMin": {
             "type": "number"
@@ -1505,14 +1502,14 @@
       "CreateBookingDto": {
         "type": "object",
         "properties": {
-          "tenant": {
-            "type": "string"
+          "tenantId": {
+            "type": "number"
           },
           "phone": {
             "type": "string"
           },
-          "property": {
-            "type": "string"
+          "propertyId": {
+            "type": "number"
           },
           "room": {
             "type": "string"
@@ -1528,9 +1525,9 @@
           }
         },
         "required": [
-          "tenant",
+          "tenantId",
           "phone",
-          "property",
+          "propertyId",
           "room",
           "checkIn",
           "duration",
@@ -1551,11 +1548,11 @@
       "CreatePaymentDto": {
         "type": "object",
         "properties": {
-          "tenant": {
-            "type": "string"
+          "tenantId": {
+            "type": "number"
           },
-          "property": {
-            "type": "string"
+          "propertyId": {
+            "type": "number"
           },
           "room": {
             "type": "string"
@@ -1571,8 +1568,8 @@
           }
         },
         "required": [
-          "tenant",
-          "property",
+          "tenantId",
+          "propertyId",
           "room",
           "amount",
           "method",
@@ -1593,19 +1590,19 @@
       "CreateComplaintDto": {
         "type": "object",
         "properties": {
-          "tenant": {
-            "type": "string"
+          "tenantId": {
+            "type": "number"
           },
-          "property": {
-            "type": "string"
+          "propertyId": {
+            "type": "number"
           },
           "description": {
             "type": "string"
           }
         },
         "required": [
-          "tenant",
-          "property",
+          "tenantId",
+          "propertyId",
           "description"
         ]
       },
@@ -1638,8 +1635,8 @@
           "recipients": {
             "type": "number"
           },
-          "by": {
-            "type": "string"
+          "byUserId": {
+            "type": "number"
           }
         },
         "required": [
@@ -1648,7 +1645,7 @@
           "type",
           "priority",
           "recipients",
-          "by"
+          "byUserId"
         ]
       },
       "UpdateNotificationDto": {

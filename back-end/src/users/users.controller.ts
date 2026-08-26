@@ -1,7 +1,6 @@
 import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { createUploadOptions } from '../middleware/file-upload.middleware';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto, LoginDto } from './users.dto';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -12,19 +11,10 @@ import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
 @Controller('users')
 @UseGuards(RolesGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Post('upload-avatar')
-  @UseInterceptors(FileInterceptor('file', {
-    storage: diskStorage({
-      destination: './uploads',
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        const ext = extname(file.originalname);
-        cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-      },
-    }),
-  }))
+  @UseInterceptors(FileInterceptor('file', createUploadOptions('./uploads/avatars')))
   @ApiOperation({ summary: 'Upload user avatar (Router-level middleware)' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
