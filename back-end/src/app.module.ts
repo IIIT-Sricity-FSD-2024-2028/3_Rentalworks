@@ -24,15 +24,11 @@ import { Notification } from './notifications/notification.entity';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get<string>('DB_HOST', 'localhost'),
-        port: configService.get<number>('DB_PORT', 5432),
-        username: configService.get<string>('DB_USERNAME', 'rentalworks'),
-        password: configService.get<string>('DB_PASSWORD', 'rentalworks'),
-        database: configService.get<string>('DB_NAME', 'rentalworks_db'),
+        type: 'better-sqlite3',
+        database: 'db.sqlite',
         entities: [User, Property, Booking, Payment, Complaint, Notification],
-        synchronize: false,
-      }),
+        synchronize: true, // Use synchronize for local dev without migrations
+      } as any),
       inject: [ConfigService],
     }),
     UsersModule, PropertiesModule, BookingsModule, PaymentsModule, ComplaintsModule, NotificationsModule

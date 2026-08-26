@@ -15,8 +15,7 @@ export class User {
   phone: string;
 
   @Column({
-    type: 'enum',
-    enum: ['admin', 'warden', 'tenant', 'owner', 'guest'],
+    type: 'varchar',
     default: 'tenant',
   })
   role: string;

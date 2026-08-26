@@ -1,7 +1,6 @@
 import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Headers, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { createUploadOptions } from '../middleware/file-upload.middleware';
 import { PropertiesService } from './properties.service';
 import { CreatePropertyDto, UpdatePropertyDto } from './properties.dto';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -16,16 +15,7 @@ export class PropertiesController {
 
   @Post(':id/upload-image')
   @Roles('admin', 'owner')
-  @UseInterceptors(FileInterceptor('file', {
-    storage: diskStorage({
-      destination: './uploads/properties',
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        const ext = extname(file.originalname);
-        cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-      },
-    }),
-  }))
+  @UseInterceptors(FileInterceptor('file', createUploadOptions('./uploads/properties')))
   @ApiOperation({ summary: 'Upload property image' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
