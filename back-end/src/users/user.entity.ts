@@ -15,7 +15,7 @@ export class User {
   phone: string;
 
   @Column({
-    type: 'enum',
+    type: 'simple-enum',
     enum: ['admin', 'warden', 'tenant', 'owner', 'guest'],
     default: 'tenant',
   })

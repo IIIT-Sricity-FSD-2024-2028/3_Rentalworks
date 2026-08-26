@@ -37,7 +37,7 @@
                         <div><span style="color: var(--text-gray); font-size: 12px; display: block;">Gender</span><strong style="font-size: 14px;">Boys Only</strong></div>
                         <div>
                             <label style="color: var(--text-gray); font-size: 12px; display: block; margin-bottom: 4px;">Duration <span style="color:#ef4444;">*</span></label>
-                            <select id="bk-duration" style="padding: 8px; width: 100%; border: 1px solid var(--border); border-radius: 6px; font-family: inherit;">
+                            <select id="bk-duration" onchange="BookingLogic.renderReview()" style="padding: 8px; width: 100%; border: 1px solid var(--border); border-radius: 6px; font-family: inherit;">
                                 <option value="" disabled>Select Duration</option>
                                 <option value="3 Months">3 Months</option>
                                 <option value="6 Months">6 Months</option>

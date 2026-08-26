@@ -98,8 +98,11 @@ const BookingLogic = {
         
         const durInput = document.getElementById('bk-duration');
         const months = durInput ? parseInt(durInput.value) || 1 : 1;
-        const totalRent = rent * months;
-        const total = totalRent + deposit;
+        
+        // Monthly rent is flat. Security deposit uses the configured base deposit.
+        const finalRent = rent; 
+        const finalDeposit = deposit;
+        const total = finalRent + finalDeposit;
 
         const setElTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
         setElTxt('br-pg', targetPG);
@@ -108,9 +111,9 @@ const BookingLogic = {
         setElTxt('br-room', roomType);
         setElTxt('rev-left-room', roomType);
         setElTxt('br-roommate', rm ? rm.name : 'None');
-        setElTxt('br-rent', `₹${totalRent.toLocaleString()}`);
-        setElTxt('rev-left-rent', `₹${totalRent.toLocaleString()}`);
-        setElTxt('br-deposit', `₹${deposit.toLocaleString()}`);
+        setElTxt('br-rent', `₹${finalRent.toLocaleString()}`);
+        setElTxt('rev-left-rent', `₹${finalRent.toLocaleString()}`);
+        setElTxt('br-deposit', `₹${finalDeposit.toLocaleString()}`);
         setElTxt('br-total', `₹${total.toLocaleString()}`);
 
         const reviewRmBox = document.getElementById('review-rm-box');
@@ -219,7 +222,7 @@ const BookingLogic = {
             const reqDur = durInput.value;
             const months = parseInt(reqDur) || 1;
             const { rent, deposit } = BookingLogic.getRentAndDeposit(roomType);
-            const totalRent = rent * months;
+            const totalRent = rent;
 
             const newBk = { 
                 id: bookingId,

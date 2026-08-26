@@ -4,3 +4,5 @@ back-end/dist/
 .env
 back-end/logs/
 back-end/uploads/
+
+back-end/db.sqlite
