@@ -25,11 +25,8 @@ import { Notification } from './notifications/notification.entity';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: configService.get<string>('DB_HOST', 'localhost'),
-        port: configService.get<number>('DB_PORT', 5432),
-        username: configService.get<string>('DB_USERNAME', 'rentalworks'),
-        password: configService.get<string>('DB_PASSWORD', 'rentalworks'),
-        database: configService.get<string>('DB_NAME', 'rentalworks_db'),
+        url: configService.get<string>('DATABASE_URL'),
+        ssl: { rejectUnauthorized: false },
         entities: [User, Property, Booking, Payment, Complaint, Notification],
         synchronize: false,
       }),

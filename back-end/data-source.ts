@@ -11,11 +11,8 @@ config();
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  username: process.env.DB_USERNAME || 'rentalworks',
-  password: process.env.DB_PASSWORD || 'rentalworks',
-  database: process.env.DB_NAME || 'rentalworks_db',
+  url: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
   entities: [User, Property, Booking, Payment, Complaint, Notification],
   migrations: ['src/migrations/*.ts'],
   synchronize: false,
