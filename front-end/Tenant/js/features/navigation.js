@@ -29,7 +29,8 @@ const Navigation = {
       if (targetPage) targetPage.classList.add('active');
 
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      const navItem = document.querySelector(`[data-page="${fileName === 'Complaints' ? 'complaints' : fileName}"]`);
+      const navKey = fileName === 'Complaints' ? 'complaints' : fileName === 'notification' ? 'notifications' : fileName;
+      const navItem = document.querySelector(`[data-page="${navKey}"]`);
       if (navItem) navItem.classList.add('active');
 
       State.update('currentPage', page);

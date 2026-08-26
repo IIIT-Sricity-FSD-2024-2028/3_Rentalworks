@@ -1,0 +1,8 @@
+{
+  "name": "rentalworks-modernized",
+  "version": "2.0.0",
+  "description": "RentBro PG Rental & Property Management System",
+  "keywords": ["pg-rental", "morphism", "glassmorphism", "neumorphism"],
+  "author": "RentBro Engineering",
+  "license": "MIT"
+}

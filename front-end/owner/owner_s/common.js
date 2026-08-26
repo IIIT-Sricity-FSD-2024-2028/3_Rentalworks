@@ -154,12 +154,12 @@ function getToastContainer() {
 }
 
 function showToast(message, type = 'info', duration = 3500) {
-  const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️', reminder: '🔔' };
+  const icons = { success: 'check_circle', error: 'cancel', warning: 'warning', info: 'info', reminder: 'notifications' };
   const container = getToastContainer();
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
   toast.innerHTML = `
-    <span class="toast-icon">${icons[type] || icons.info}</span>
+    <span class="toast-icon material-icons" style="font-size:20px">${icons[type] || icons.info}</span>
     <span class="toast-msg">${message}</span>
     <button class="toast-close" onclick="removeToast(this.parentElement)">×</button>
   `;
@@ -196,17 +196,17 @@ function closeModal() {
 // ===== SIDEBAR INJECTION =====
 function getSidebarHTML(activePage) {
   const navItems = [
-    { href: 'index.html', icon: '🏠', label: 'Dashboard', page: 'dashboard' },
-    { href: 'properties.html', icon: '🏢', label: 'Properties', page: 'properties' },
-    { href: 'issues.html', icon: '⚠️', label: 'Issues', page: 'issues' },
-    { href: 'notifications.html', icon: '🔔', label: 'Notifications', page: 'notifications' },
-    { href: 'policy.html', icon: '📋', label: 'Policy', page: 'policy' },
-    { href: 'profile.html', icon: '👤', label: 'Profile', page: 'profile' },
+    { href: 'index.html', icon: 'dashboard', label: 'Dashboard', page: 'dashboard' },
+    { href: 'properties.html', icon: 'apartment', label: 'Properties', page: 'properties' },
+    { href: 'issues.html', icon: 'warning', label: 'Issues', page: 'issues' },
+    { href: 'notifications.html', icon: 'notifications', label: 'Notifications', page: 'notifications' },
+    { href: 'policy.html', icon: 'description', label: 'Policy', page: 'policy' },
+    { href: 'profile.html', icon: 'person', label: 'Profile', page: 'profile' },
   ];
 
   const navHTML = navItems.map(item => `
     <a href="${item.href}" class="nav-item ${activePage === item.page ? 'active' : ''}" id="nav-${item.page}">
-      <span class="nav-icon">${item.icon}</span>
+      <span class="nav-icon"><span class="material-icons-outlined" style="font-size:20px;">${item.icon}</span></span>
       <span>${item.label}</span>
       ${item.page === 'notifications' ? '<span class="nav-badge" id="notifBadge" style="display:none">0</span>' : ''}
       ${item.page === 'issues' ? '<span class="nav-badge" id="issuesBadge" style="display:none">0</span>' : ''}
@@ -216,14 +216,13 @@ function getSidebarHTML(activePage) {
   return `
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-logo">
-        <div class="logo-icon"><span class="material-icons-outlined" style="font-size:32px;">apartment</span></div>
+        <div class="logo-icon"><span class="material-icons-outlined" style="font-size:24px;">apartment</span></div>
         <div>
-          <div class="logo-text">Rent Bro</div>
+          <div class="logo-text">RentBro</div>
           <div class="logo-sub">Owner Portal</div>
         </div>
       </div>
       <nav class="sidebar-nav">
-        <div class="nav-section-title">Main Menu</div>
         ${navHTML}
       </nav>
     </aside>
@@ -241,7 +240,7 @@ function getTopbarHTML(title, subtitle = '') {
       </div>
       <div class="topbar-right" style="display:flex; align-items:center; gap:10px;">
         <div class="topbar-search">
-          <span class="search-icon">🔍</span>
+          <span class="search-icon material-icons" style="font-size:20px;color:#94a3b8">search</span>
           <input type="text" placeholder="Search..." id="globalSearch">
         </div>
         <a href="notifications.html" class="icon-btn" title="Notifications" style="position:relative">
@@ -340,22 +339,21 @@ function generateId(prefix) {
 }
 
 function getPriorityIcon(priority) {
-  if (priority === 'High') return '🔴';
-  if (priority === 'Medium') return '🟡';
-  return '🔵';
+  const colors = { High: '#ef4444', Medium: '#eab308', Low: '#3b82f6' };
+  return `<span class="material-icons" style="font-size:16px;color:${colors[priority] || '#3b82f6'}">circle</span>`;
 }
 
 function getCategoryIcon(category) {
   const icons = {
-    Maintenance: '🔧', Internet: '📶', Appliance: '🖥️',
-    Housekeeping: '🧹', Security: '🔒', Electrical: '⚡', Plumbing: '🚿'
+    Maintenance: 'build', Internet: 'wifi', Appliance: 'computer',
+    Housekeeping: 'cleaning_services', Security: 'lock', Electrical: 'flash_on', Plumbing: 'shower'
   };
-  return icons[category] || '📌';
+  return `<span class="material-icons" style="font-size:16px">${icons[category] || 'push_pin'}</span>`;
 }
 
 function getNotifIcon(type) {
-  const icons = { reminder: '🔔', alert: '⚠️', success: '✅', warning: '🟡', info: 'ℹ️' };
-  return icons[type] || 'ℹ️';
+  const icons = { reminder: 'notifications', alert: 'warning', success: 'check_circle', warning: 'error', info: 'info' };
+  return `<span class="material-icons" style="font-size:16px">${icons[type] || 'info'}</span>`;
 }
 
 function getNotifIconBg(type) {

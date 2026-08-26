@@ -23,9 +23,9 @@ function renderNotificationsPage(notifications) {
         ${unread > 0 ? `<span class="badge" style="background:var(--primary-light);color:var(--primary)">${unread} new</span>` : ''}
       </div>
       <div style="display:flex;gap:10px">
-        ${unread > 0 ? `<button class="btn btn-secondary" onclick="markAllRead()">✔️ Mark All Read</button>` : ''}
-        ${notifications.length > 0 ? `<button class="btn btn-danger btn-sm" onclick="clearAllNotifications()">🗑 Clear All</button>` : ''}
-        <button class="btn btn-primary" onclick="openAddNotifModal()">➕ Add</button>
+        ${unread > 0 ? `<button class="btn btn-secondary" onclick="markAllRead()"><span class="material-icons" style="font-size:16px;vertical-align:middle">done_all</span> Mark All Read</button>` : ''}
+        ${notifications.length > 0 ? `<button class="btn btn-danger btn-sm" onclick="clearAllNotifications()"><span class="material-icons" style="font-size:16px;vertical-align:middle">delete_sweep</span> Clear All</button>` : ''}
+        <button class="btn btn-primary" onclick="openAddNotifModal()"><span class="material-icons" style="font-size:16px;vertical-align:middle">add</span> Add</button>
       </div>
     </div>
 
@@ -56,10 +56,10 @@ function renderNotifList(notifications) {
           <div class="notif-title">${n.title}</div>
         </div>
         <div class="notif-msg">${n.message || n.desc || n.msg || 'No details available.'}</div>
-        <div class="notif-date">📅 ${formatDate(n.date || n.sentAt)}</div>
+        <div class="notif-date"><span class="material-icons" style="font-size:14px;vertical-align:middle">calendar_today</span> ${formatDate(n.date || n.sentAt)}</div>
       </div>
       <div class="notif-actions">
-        <button class="btn btn-secondary btn-sm btn-icon" onclick="deleteNotif('${n.id}')">🗑</button>
+        <button class="btn btn-secondary btn-sm btn-icon" onclick="deleteNotif('${n.id}')"><span class="material-icons" style="font-size:18px">delete</span></button>
       </div>
     </div>
   `).join('');
@@ -150,7 +150,7 @@ function clearAllNotifications() {
 function openAddNotifModal() {
   openModal(`
     <div class="modal-header">
-      <span class="modal-title">📣 Send Notification</span>
+      <span class="modal-title"><span class="material-icons" style="font-size:22px;vertical-align:middle">campaign</span> Send Notification</span>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px">
@@ -172,7 +172,7 @@ function openAddNotifModal() {
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="submitNewNotif()">🚀 Send Notification</button>
+      <button class="btn btn-primary" onclick="submitNewNotif()"><span class="material-icons" style="font-size:16px;vertical-align:middle">send</span> Send Notification</button>
     </div>
   `);
 }

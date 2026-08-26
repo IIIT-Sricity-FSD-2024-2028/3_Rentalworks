@@ -24,7 +24,7 @@ async function loadDashboard() {
     <!-- Stats -->
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-icon purple">🏢</div>
+        <div class="stat-icon purple"><span class="material-icons">apartment</span></div>
         <div class="stat-info">
           <div class="stat-value">${totalProps}</div>
           <div class="stat-label">Total Properties</div>
@@ -32,7 +32,7 @@ async function loadDashboard() {
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon green">🛏</div>
+        <div class="stat-icon green"><span class="material-icons">bed</span></div>
         <div class="stat-info">
           <div class="stat-value">${occupancyPct}%</div>
           <div class="stat-label">Occupancy Rate</div>
@@ -40,7 +40,7 @@ async function loadDashboard() {
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon orange">💰</div>
+        <div class="stat-icon orange"><span class="material-icons">payments</span></div>
         <div class="stat-info">
           <div class="stat-value">${formatCurrency(monthlyRevenue)}</div>
           <div class="stat-label">Monthly Revenue</div>
@@ -48,7 +48,7 @@ async function loadDashboard() {
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon red">⚠️</div>
+        <div class="stat-icon red"><span class="material-icons" style="font-size:22px;color:#ef4444">warning</span></div>
         <div class="stat-info">
           <div class="stat-value">${openIssues}</div>
           <div class="stat-label">Open Issues</div>
@@ -70,7 +70,7 @@ async function loadDashboard() {
         </div>
         ${recentIssues.length === 0 ? `
           <div class="empty-state" style="padding:30px 20px">
-            <div class="empty-icon">✅</div>
+            <div class="empty-icon"><span class="material-icons" style="font-size:48px;color:#22c55e">check_circle</span></div>
             <h3>No Issues</h3>
             <p>All properties are running smoothly</p>
           </div>` : recentIssues.map(issue => `
@@ -101,7 +101,7 @@ async function loadDashboard() {
         </div>
         ${properties.length === 0 ? `
           <div class="empty-state" style="padding:30px 20px">
-            <div class="empty-icon">🏢</div>
+            <div class="empty-icon"><span class="material-icons" style="font-size:48px;color:#d1d5db">apartment</span></div>
             <h3>No Properties</h3>
             <p><a href="add-property.html" style="color:var(--primary)">Add your first property</a></p>
           </div>` : properties.map(p => {
@@ -160,25 +160,25 @@ async function loadDashboard() {
         </div>
         <div style="display:flex;flex-direction:column;gap:12px">
           <a href="add-property.html" class="btn btn-primary" style="justify-content:flex-start;gap:12px">
-            <span>➕</span> Add New Property
+            <span class="material-icons" style="font-size:18px">add</span> Add New Property
           </a>
           <a href="issues.html" class="btn btn-secondary" style="justify-content:flex-start;gap:12px">
-            <span>⚠️</span> Manage Issues <span class="nav-badge" style="margin-left:auto;background:var(--danger)">${openIssues}</span>
+            <span class="material-icons" style="font-size:18px">warning</span> Manage Issues <span class="nav-badge" style="margin-left:auto;background:var(--danger)">${openIssues}</span>
           </a>
           <a href="policy.html" class="btn btn-secondary" style="justify-content:flex-start;gap:12px">
-            <span>📋</span> Review Policy
+            <span class="material-icons" style="font-size:18px">description</span> Review Policy
           </a>
           <a href="notifications.html" class="btn btn-secondary" style="justify-content:flex-start;gap:12px">
-            <span>🔔</span> Notifications <span class="nav-badge" style="margin-left:auto">${unreadNotifs}</span>
+            <span class="material-icons" style="font-size:18px">notifications</span> Notifications <span class="nav-badge" style="margin-left:auto">${unreadNotifs}</span>
           </a>
           <a href="profile.html" class="btn btn-secondary" style="justify-content:flex-start;gap:12px">
-            <span>👤</span> Update Profile
+            <span class="material-icons" style="font-size:18px">person</span> Update Profile
           </a>
         </div>
 
         <!-- Summary box -->
         <div style="margin-top:20px;padding:16px;background:var(--primary-light);border-radius:var(--radius-md);border:1px solid #ddd8ff">
-          <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:8px">📊 Monthly Summary</div>
+          <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:8px"><span class="material-icons" style="font-size:16px;vertical-align:middle">bar_chart</span> Monthly Summary</div>
           <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-body);margin-bottom:6px">
             <span>Total Tenants</span><span style="font-weight:600">${occupiedRooms}</span>
           </div>
