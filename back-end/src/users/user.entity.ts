@@ -40,4 +40,7 @@ export class User {
 
   @Column({ type: 'decimal', nullable: true })
   subscriptionFee?: number;
+
+  @Column({ nullable: true })
+  propertyId?: number;
 }

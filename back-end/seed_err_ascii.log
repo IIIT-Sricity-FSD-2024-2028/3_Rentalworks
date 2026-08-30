@@ -1,0 +1,65 @@
+
+> back-end@0.0.1 seed
+> ts-node scripts/seed.ts
+
+??? injected env (0) from .env // tip: ??? encrypted .env [www.dotenvx.com]
+node.exe : Seeding 
+failed: DataTypeNotSupport
+edError: Data type "enum" 
+in "User.role" is not 
+supported by 
+"better-sqlite3" database.
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (S  
+  eeding failed:...ite3   
+ " database.:String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+    at D:\Projects\3_Renta
+lworks\back-end\src\metada
+ta-builder\EntityMetadataV
+alidator.ts:130:31
+    at Array.forEach 
+(<anonymous>)
+    at EntityMetadataValid
+ator.validate (D:\Projects
+\3_Rentalworks\back-end\sr
+c\metadata-builder\EntityM
+etadataValidator.ts:125:18
+)
+    at D:\Projects\3_Renta
+lworks\back-end\src\metada
+ta-builder\EntityMetadataV
+alidator.ts:46:18
+    at Array.forEach 
+(<anonymous>)
+    at EntityMetadataValid
+ator.validateMany (D:\Proj
+ects\3_Rentalworks\back-en
+d\src\metadata-builder\Ent
+ityMetadataValidator.ts:45
+:25)
+    at 
+DataSource.buildMetadatas 
+(D:\Projects\3_Rentalworks
+\back-end\src\data-source\
+DataSource.ts:751:33)
+    at async 
+DataSource.initialize (D:\
+Projects\3_Rentalworks\bac
+k-end\src\data-source\Data
+Source.ts:258:13)
+    at async seed (D:\Proj
+ects\3_Rentalworks\back-en
+d\scripts\seed.ts:12:3)

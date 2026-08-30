@@ -20,7 +20,7 @@ export class CreateNotificationDto {
 
   @ApiProperty()
   @IsNumber()
-  recipients: number;
+  recipientId: number;
 
   @ApiProperty()
   @IsNumber()

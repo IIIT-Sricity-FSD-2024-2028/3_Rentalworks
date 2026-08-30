@@ -1,15 +1,86 @@
-<html><head></head><body><div id="page-complaints" class="page active">
+<html><head>
+<style>
+.stat-card { cursor: pointer; transition: all 0.2s ease; border: 2px solid transparent; }
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.stat-card.active { border-color: var(--primary); background: #f0f7ff; }
+.complaint-sort-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 14px; color: var(--text-secondary); }
+.complaint-item { cursor: pointer; transition: transform 0.2s ease; }
+.complaint-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.timeline-dot { position: absolute; left: 0; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--primary); }
+.timeline-item { position: relative; padding-left: 24px; padding-bottom: 24px; border-left: 2px solid var(--border); margin-left: 6px; }
+.timeline-item:last-child { border-left-color: transparent; }
+.timeline-item.resolved .timeline-dot { background: var(--success); }
+.timeline-date { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.timeline-duration { font-size: 13px; color: var(--text-secondary); margin-top: 6px; margin-bottom: 0px; }
+</style>
+</head><body><div id="page-complaints" class="page active">
   <div class="page-content">
     <div class="page-header page-header-row">
       <div><h1>Complaints</h1><p>Manage and track your complaints</p></div>
       <button class="btn btn-primary" onclick="UI.openModal('complaint-modal')">+ File New Complaint</button>
     </div>
     <div class="grid-4 mb-20">
-      <div class="stat-card"><div class="stat-label">Total Complaints</div><div class="stat-value" id="cmp-total">0</div></div>
-      <div class="stat-card"><div class="stat-label">Open <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px;">error</span></span></div><div class="stat-value" id="cmp-open" style="color:var(--danger)">0</div></div>
-      <div class="stat-card"><div class="stat-label">In Progress <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px;">schedule</span></span></div><div class="stat-value" id="cmp-inprog" style="color:var(--warning)">0</div></div>
-      <div class="stat-card"><div class="stat-label">Resolved <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px;">check_circle</span></span></div><div class="stat-value" id="cmp-resolved" style="color:var(--success)">0</div></div>
+      <div class="stat-card" id="filter-all" onclick="TenantLogic.setComplaintFilter('all')">
+        <div class="stat-label">All Complaints</div>
+        <div class="stat-value" id="cmp-total">0</div>
+      </div>
+      <div class="stat-card" id="filter-open" onclick="TenantLogic.setComplaintFilter('open')">
+        <div class="stat-label">Open <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px;">error</span></span></div>
+        <div class="stat-value" id="cmp-open" style="color:var(--danger)">0</div>
+      </div>
+      <div class="stat-card" id="filter-inprog" onclick="TenantLogic.setComplaintFilter('in-progress')">
+        <div class="stat-label">In Progress <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px;">schedule</span></span></div>
+        <div class="stat-value" id="cmp-inprog" style="color:var(--warning)">0</div>
+      </div>
+      <div class="stat-card" id="filter-resolved" onclick="TenantLogic.setComplaintFilter('resolved')">
+        <div class="stat-label">Resolved <span class="stat-icon"><span class="material-icons-outlined" style="font-size:32px;">check_circle</span></span></div>
+        <div class="stat-value" id="cmp-resolved" style="color:var(--success)">0</div>
+      </div>
     </div>
+    
+    <div class="complaint-sort-info">
+      <div>Showing: <strong id="cmp-showing-text">All Complaints</strong></div>
+      <div>Sort: <strong>Newest first</strong></div>
+    </div>
+
     <div id="complaints-list"></div>
   </div>
-</div></body></html>
+</div>
+
+<!-- COMPLAINT DETAILS MODAL -->
+<div class="modal-overlay" id="complaint-details-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Complaint Details</div>
+        <div class="modal-sub">View chronological events</div>
+      </div>
+      <button class="modal-close" onclick="UI.closeModal('complaint-details-modal')"><span class="material-icons-outlined" style="font-size:24px;">close</span></button>
+    </div>
+    <div class="modal-body" style="padding-top: 10px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 20px;">
+        <h3 id="cd-main-title" style="margin:0; font-size: 18px;"></h3>
+        <span id="cd-status-badge" style="font-size: 12px; padding: 4px 10px; border-radius: 20px; font-weight:bold;"></span>
+      </div>
+      
+      <div style="margin-bottom: 20px;">
+        <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px; color: var(--text-primary);">Description</div>
+        <p id="cd-desc" style="font-size: 14px; color: var(--text-secondary); margin: 0; line-height: 1.5;"></p>
+      </div>
+      
+      <div style="margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">
+        <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px; color: var(--text-primary);">Filed</div>
+        <div id="cd-filed" style="font-size: 14px; color: var(--text-secondary);"></div>
+      </div>
+      
+      <div style="font-size: 16px; font-weight: bold; margin-bottom: 15px; color: var(--text-primary);">Complaint Timeline</div>
+      <div id="cd-timeline" style="margin-left: 8px;"></div>
+      
+      <div id="cd-resolution-stats" style="margin-top:20px; border-top: 1px solid var(--border); padding-top:15px; display:none;">
+        <div style="font-size: 14px; font-weight:bold; color: var(--text-primary); margin-bottom:4px;">Total resolution time: <span id="cd-total-res-time" style="font-weight:normal; color:var(--text-secondary);"></span></div>
+        <div id="cd-resolved-by" style="font-size: 14px; font-weight:bold; color: var(--text-primary);">Resolved by: <span id="cd-resolver-name" style="font-weight:normal; color:var(--text-secondary);"></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>

@@ -22,6 +22,11 @@ export class RolesGuard implements CanActivate {
     if (!userRole) {
       return false; // Role header missing
     }
+
+    const userId = request.headers['x-user-id'];
+    if (userId) {
+      request.user = { id: userId, role: userRole };
+    }
     
     if (userRole === 'super_admin') {
       return true; // Super admin has access to everything

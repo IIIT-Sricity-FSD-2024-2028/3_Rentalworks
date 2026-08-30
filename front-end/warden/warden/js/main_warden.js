@@ -40,31 +40,56 @@ const PAGE_MAP = {
 };
 
 // ===== INIT =====
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   tenants       = JSON.parse(localStorage.getItem('warden_tenants'))       || [...MOCK_DATA.tenants];
   rooms         = JSON.parse(localStorage.getItem('warden_rooms'))         || [...MOCK_DATA.rooms];
   violations    = JSON.parse(localStorage.getItem('warden_violations'))    || [...MOCK_DATA.violations];
-  notifications = JSON.parse(localStorage.getItem('warden_notifications')) || [...MOCK_DATA.notifications];
+  
+  const user = JSON.parse(sessionStorage.getItem('pg_user') || '{}');
+  const userId = user.id || 1;
 
-  // Merge global complaints, issues, and services from Tenant into Warden's complaints view
-  let globalCmp = JSON.parse(localStorage.getItem('global_complaints')) || [];
-  let globalIss = JSON.parse(localStorage.getItem('global_issues')) || [];
-  let globalSrv = JSON.parse(localStorage.getItem('global_services')) || [];
+  try {
+    const notifRes = await fetch(`http://localhost:3000/notifications/user/${userId}`, {
+      headers: {
+        'x-role': user.role || 'warden',
+        'x-user-id': String(userId)
+      }
+    });
+    if (notifRes.ok) {
+      notifications = await notifRes.json();
+    } else {
+      notifications = [];
+    }
+  } catch (e) {
+    console.error('Failed to fetch notifications from backend', e);
+    notifications = JSON.parse(localStorage.getItem('warden_notifications')) || [...MOCK_DATA.notifications];
+  }
 
-  // Build unified complaints array
-  complaints = [
-    ...globalCmp.map(c => ({
-      id: c.id, tenant: c.tenantName || 'Amit Sharma', room: c.room || 'A-204', type: 'Complaint', priority: c.priority || 'medium', status: c.status === 'in-progress' ? 'in_progress' : c.status, date: c.created || new Date().toLocaleDateString(), description: c.desc, _source: 'complaints'
-    })),
-    ...globalIss.map(i => ({
-      id: i.id, tenant: i.tenantName || 'Amit Sharma', room: i.room || 'A-204', type: 'Issue: ' + i.category, priority: i.priority || 'medium', status: i.status === 'in-progress' ? 'in_progress' : i.status, date: new Date().toLocaleDateString(), description: i.desc, _source: 'issues'
-    })),
-    ...globalSrv.map(s => ({
-      id: s.id, tenant: s.tenantName || 'Amit Sharma', room: s.room || 'A-204', type: 'Service: ' + s.name, priority: 'low', status: s.status === 'pending' ? 'open' : s.status, date: s.date, description: 'Requested ' + s.name, _source: 'services'
-    }))
-  ];
-
-  if (complaints.length === 0) {
+  try {
+    const compRes = await fetch(`http://localhost:3000/complaints`, {
+      headers: {
+        'x-role': user.role || 'warden',
+        'x-user-id': String(userId)
+      }
+    });
+    if (compRes.ok) {
+      const rawComplaints = await compRes.json();
+      complaints = rawComplaints.map(c => ({
+        id: c.id,
+        tenant: c.tenant?.name || 'Tenant',
+        room: c.room || 'A-204',
+        type: c.category || 'Complaint',
+        priority: c.priority || 'medium',
+        severity: c.severity || 'Not Set',
+        status: c.status,
+        date: c.reportedAt,
+        description: c.description
+      }));
+    } else {
+      complaints = [];
+    }
+  } catch (e) {
+    console.error('Failed to fetch complaints from backend', e);
     complaints = JSON.parse(localStorage.getItem('warden_complaints')) || [...MOCK_DATA.complaints];
   }
 
@@ -72,6 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupLogout();         // from auth_warden.js
   setupNavigation();
   setupModalClose();
+  setupSidebarToggle();
 
   // Cross-actor live notifications listener
   window.addEventListener('storage', (e) => {
@@ -161,7 +187,37 @@ function setupNavigation() {
     item.addEventListener('click', () => {
       const section = item.dataset.section;
       if (section) navigateTo(section);
+      if (window.innerWidth <= 900) {
+        const sidebar = document.querySelector('.sidebar');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        if (sidebar) sidebar.classList.remove('open');
+        if (backdrop) backdrop.classList.remove('active');
+      }
     });
+  });
+}
+
+function setupSidebarToggle() {
+  let backdrop = document.getElementById('sidebarBackdrop');
+  if (!backdrop) {
+    backdrop = document.createElement('div');
+    backdrop.id = 'sidebarBackdrop';
+    backdrop.className = 'sidebar-backdrop';
+    document.body.appendChild(backdrop);
+  }
+
+  const sidebar = document.querySelector('.sidebar');
+  const toggleBtn = document.getElementById('sidebarToggle');
+
+  const toggleSidebar = () => {
+    if (sidebar) sidebar.classList.toggle('open');
+    if (backdrop) backdrop.classList.toggle('active');
+  };
+
+  if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
+  if (backdrop) backdrop.addEventListener('click', () => {
+    if (sidebar) sidebar.classList.remove('open');
+    backdrop.classList.remove('active');
   });
 }
 

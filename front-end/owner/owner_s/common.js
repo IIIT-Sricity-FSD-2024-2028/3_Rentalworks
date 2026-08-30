@@ -239,7 +239,10 @@ function getSidebarHTML(activePage) {
 function getTopbarHTML(title, subtitle = '') {
   return `
     <header class="topbar">
-      <div class="topbar-left">
+      <div class="topbar-left" style="display:flex; align-items:center; gap:12px;">
+        <button id="sidebarToggle" class="icon-btn sidebar-toggle-btn" title="Toggle Sidebar" style="font-size:20px;">
+          <span class="material-icons-outlined">menu</span>
+        </button>
         <div>
           <div class="topbar-title">${title}</div>
           ${subtitle ? `<div class="topbar-subtitle">${subtitle}</div>` : ''}
@@ -276,11 +279,44 @@ function injectLayout(activePage, title, subtitle = '') {
   if (sidebar) sidebar.outerHTML = getSidebarHTML(activePage);
   if (topbar) topbar.outerHTML = getTopbarHTML(title, subtitle);
 
+  // Ensure sidebar backdrop element exists
+  let backdrop = document.getElementById('sidebarBackdrop');
+  if (!backdrop) {
+    backdrop = document.createElement('div');
+    backdrop.id = 'sidebarBackdrop';
+    backdrop.className = 'sidebar-backdrop';
+    document.body.appendChild(backdrop);
+  }
+
   // Re-query after injection
   const sidebarEl = document.getElementById('sidebar');
   const toggleBtn = document.getElementById('sidebarToggle');
-  if (toggleBtn && sidebarEl) {
-    toggleBtn.addEventListener('click', () => sidebarEl.classList.toggle('open'));
+  
+  const toggleSidebarFunc = () => {
+    if (sidebarEl) sidebarEl.classList.toggle('open');
+    if (backdrop) backdrop.classList.toggle('active');
+  };
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', toggleSidebarFunc);
+  }
+  if (backdrop) {
+    backdrop.addEventListener('click', () => {
+      if (sidebarEl) sidebarEl.classList.remove('open');
+      backdrop.classList.remove('active');
+    });
+  }
+
+  // Close sidebar on item click (useful on mobile/half screen)
+  if (sidebarEl) {
+    sidebarEl.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        if (window.innerWidth <= 900) {
+          sidebarEl.classList.remove('open');
+          if (backdrop) backdrop.classList.remove('active');
+        }
+      });
+    });
   }
 
   // Show logged-in role in sidebar

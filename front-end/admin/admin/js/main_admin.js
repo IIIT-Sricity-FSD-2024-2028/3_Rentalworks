@@ -97,6 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupNav();
   setupModalEvents();
   setupGearIcon();
+  setupSidebarToggle();
   
   // Set up polling for real-time stats
   // setInterval(fetchData, 5000); // Polling removed to fix GET 304 spam
@@ -139,7 +140,37 @@ function setupNav() {
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => {
       if (item.dataset.sec) navigateTo(item.dataset.sec);
+      if (window.innerWidth <= 700) {
+        const sidebar = document.querySelector('.sidebar');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        if (sidebar) sidebar.classList.remove('open');
+        if (backdrop) backdrop.classList.remove('active');
+      }
     });
+  });
+}
+
+function setupSidebarToggle() {
+  let backdrop = document.getElementById('sidebarBackdrop');
+  if (!backdrop) {
+    backdrop = document.createElement('div');
+    backdrop.id = 'sidebarBackdrop';
+    backdrop.className = 'sidebar-backdrop';
+    document.body.appendChild(backdrop);
+  }
+
+  const sidebar = document.querySelector('.sidebar');
+  const toggleBtn = document.getElementById('sidebarToggle');
+
+  const toggleSidebar = () => {
+    if (sidebar) sidebar.classList.toggle('open');
+    if (backdrop) backdrop.classList.toggle('active');
+  };
+
+  if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
+  if (backdrop) backdrop.addEventListener('click', () => {
+    if (sidebar) sidebar.classList.remove('open');
+    backdrop.classList.remove('active');
   });
 }
 

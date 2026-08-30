@@ -18,8 +18,15 @@ export class Notification {
   @Column()
   priority: string;
 
-  @Column({ type: 'int' })
-  recipients: number;
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'recipientId' })
+  recipient: User;
+
+  @Column({ type: 'int', nullable: true })
+  recipientId: number;
+
+  @Column({ default: false })
+  isRead: boolean;
 
   @Column()
   sentAt: string;

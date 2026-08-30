@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Req, ForbiddenException } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto, UpdateNotificationDto } from './notifications.dto';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -23,6 +23,36 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Get notification by ID' })
   findOne(@Param('id') id: string) {
     return this.notificationsService.findOne(+id);
+  }
+
+  @Get('user/:userId')
+  @Roles('admin', 'warden', 'tenant', 'owner')
+  @ApiOperation({ summary: 'Get notifications for a user' })
+  findByUser(@Param('userId') userId: string, @Req() req: any) {
+    if (req.user?.role !== 'admin' && Number(req.user?.id) !== Number(userId)) {
+      throw new ForbiddenException('You can only access your own notifications');
+    }
+    return this.notificationsService.findByUser(+userId);
+  }
+
+  @Post('user/:userId/read')
+  @Roles('admin', 'warden', 'tenant', 'owner')
+  @ApiOperation({ summary: 'Mark all notifications for a user as read' })
+  markAsRead(@Param('userId') userId: string, @Req() req: any) {
+    if (req.user?.role !== 'admin' && Number(req.user?.id) !== Number(userId)) {
+      throw new ForbiddenException('You can only mark your own notifications as read');
+    }
+    return this.notificationsService.markAsRead(+userId);
+  }
+
+  @Post('owner-to-warden')
+  @Roles('owner')
+  @ApiOperation({ summary: 'Send notification to property warden' })
+  sendToWarden(@Body() createNotificationDto: CreateNotificationDto, @Body('ownerId') ownerId: number, @Req() req: any) {
+    if (Number(req.user?.id) !== Number(ownerId)) {
+      throw new ForbiddenException('You can only send notifications on your own behalf');
+    }
+    return this.notificationsService.sendToWarden(+ownerId, createNotificationDto);
   }
 
   @Post()

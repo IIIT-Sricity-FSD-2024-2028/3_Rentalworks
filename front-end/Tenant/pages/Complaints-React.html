@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tenant Complaints (React Version)</title>
+    
+    <!-- Load Original CSS to preserve styling exactly as requested -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <link rel="stylesheet" href="../css/variables.css">
+    <link rel="stylesheet" href="../css/style.css">
+
+    <!-- Load React and ReactDOM from CDN -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Load Babel for on-the-fly JSX transpilation -->
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+      body {
+        margin: 0;
+        background-color: var(--bg-main);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+      }
+      /* Ensure the react root takes up the full layout */
+      #react-root {
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+    </style>
+</head>
+<body>
+    
+    <!-- React Mount Node -->
+    <div id="react-root"></div>
+
+    <!-- Load Components using Babel text/babel type so it compiles JSX -->
+    <!-- Order matters since we are relying on global scope variables -->
+    <script type="text/babel" src="../components/FilterCards.jsx"></script>
+    <script type="text/babel" src="../components/ComplaintCard.jsx"></script>
+    <script type="text/babel" src="../components/ComplaintList.jsx"></script>
+    <script type="text/babel" src="../components/NewComplaintModal.jsx"></script>
+    <script type="text/babel" src="ComplaintsPage.jsx"></script>
+
+    <!-- Mount Phase -->
+    <script type="text/babel">
+        // Ensure all scripts are loaded by listening to window load (Babel compilation might be async but script tags block sequentially)
+        const rootElement = document.getElementById('react-root');
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<ComplaintsPage />);
+    </script>
+</body>
+</html>
