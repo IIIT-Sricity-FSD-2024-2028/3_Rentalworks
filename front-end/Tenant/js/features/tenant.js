@@ -12,41 +12,75 @@ const TenantLogic = {
   },
 
   // --- COMPLAINTS ---
-  submitComplaint() {
+  async fetchComplaints() {
+    const sessionStr = sessionStorage.getItem('pg_user');
+    if (!sessionStr) return;
+    const session = JSON.parse(sessionStr);
+    if (!session.id) return;
+
+    try {
+      const res = await fetch('http://localhost:3000/complaints', {
+        headers: {
+          'x-user-id': session.id,
+          'x-role': session.role
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        State.data.complaints = data.map(c => ({
+          id: c.id, 
+          title: c.type || 'Complaint', 
+          desc: c.description, 
+          priority: c.priority || 'medium', 
+          status: c.status, 
+          created: c.reportedAt,
+          tenantName: c.tenant ? c.tenant.name : State.data.profile.name, 
+          room: State.data.profile.room || 'A-204'
+        }));
+        this.renderComplaints();
+        this.updateDashboardStats();
+      }
+    } catch(err) { console.error('Failed to fetch complaints', err); }
+  },
+
+  async submitComplaint() {
     const title = document.getElementById('complaint-title').value.trim();
     const desc = document.getElementById('complaint-desc').value.trim();
     const priority = document.getElementById('complaint-priority').value;
 
     if (!title || !desc) return UI.showToast('Please fill all fields', 'error');
 
-    State.data.complaints.unshift({
-      id: Date.now(), title, desc, priority, status: 'open', created: new Date().toLocaleDateString(),
-      tenantName: State.data.profile.name, room: State.data.profile.room || 'A-204'
-    });
-    State.save();
+    const sessionStr = sessionStorage.getItem('pg_user');
+    const session = sessionStr ? JSON.parse(sessionStr) : {};
     
-    // Push notification to Warden
-    let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
-    crossNotifs.push({
-      id: Date.now(),
-      title: 'New Complaint',
-      message: `Tenant reported a complaint: ${title}.`,
-      type: 'warning',
-      priority: priority,
-      targetRole: 'warden',
-      by: 'Tenant',
-      sentAt: new Date().toLocaleString()
-    });
-    localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
-
-    UI.closeModal('complaint-modal');
-    UI.showToast('Complaint filed successfully!', 'success');
-    
-    document.getElementById('complaint-title').value = '';
-    document.getElementById('complaint-desc').value = '';
-    
-    this.renderComplaints();
-    this.updateDashboardStats();
+    try {
+      const res = await fetch('http://localhost:3000/complaints', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': session.id || 1,
+          'x-role': session.role || 'tenant'
+        },
+        body: JSON.stringify({
+          type: title,
+          description: desc,
+          priority: priority,
+          propertyId: 1 // hardcoded for now or fetch from session
+        })
+      });
+      if (res.ok) {
+        UI.closeModal('complaint-modal');
+        UI.showToast('Complaint filed successfully!', 'success');
+        
+        document.getElementById('complaint-title').value = '';
+        document.getElementById('complaint-desc').value = '';
+        
+        await this.fetchComplaints();
+      }
+    } catch(err) {
+      console.error(err);
+      UI.showToast('Error filing complaint', 'error');
+    }
   },
 
   renderComplaints() {
@@ -54,7 +88,7 @@ const TenantLogic = {
     if (!container) return;
 
     document.getElementById('cmp-total').textContent = State.data.complaints.length;
-    document.getElementById('cmp-open').textContent = State.data.complaints.filter(c => c.status === 'open').length;
+    document.getElementById('cmp-open').textContent = State.data.complaints.filter(c => c.status === 'pending' || c.status === 'open').length;
     document.getElementById('cmp-inprog').textContent = State.data.complaints.filter(c => c.status === 'in-progress').length;
     document.getElementById('cmp-resolved').textContent = State.data.complaints.filter(c => c.status === 'resolved').length;
 
@@ -85,13 +119,23 @@ const TenantLogic = {
     `}).join('');
   },
 
-  deleteComplaint(id) {
+  async deleteComplaint(id) {
     if(confirm("Withdraw this complaint?")) {
-      State.data.complaints = State.data.complaints.filter(c => c.id !== id);
-      State.save();
-      this.renderComplaints();
-      this.updateDashboardStats();
-      UI.showToast('Complaint withdrawn.', 'info');
+      const sessionStr = sessionStorage.getItem('pg_user');
+      const session = sessionStr ? JSON.parse(sessionStr) : {};
+      try {
+        await fetch('http://localhost:3000/complaints/' + id, {
+          method: 'DELETE',
+          headers: {
+            'x-user-id': session.id,
+            'x-role': session.role
+          }
+        });
+        await this.fetchComplaints();
+        UI.showToast('Complaint withdrawn.', 'info');
+      } catch(err) {
+        console.error(err);
+      }
     }
   },
 

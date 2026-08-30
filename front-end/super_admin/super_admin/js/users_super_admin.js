@@ -8,6 +8,7 @@ function renderUsers(search = '', roleF = 'all', statusF = 'all') {
   // Dynamic KPI counts
   const counts = {
     total:   users.length,
+    admins:  users.filter(u => u.role === 'admin').length,
     tenants: users.filter(u => u.role === 'tenant').length,
     owners:  users.filter(u => u.role === 'owner').length,
     wardens: users.filter(u => u.role === 'warden').length
@@ -16,7 +17,7 @@ function renderUsers(search = '', roleF = 'all', statusF = 'all') {
   setTxt('u-tenants', counts.tenants);
   setTxt('u-owners',  counts.owners);
   setTxt('u-wardens', counts.wardens);
-  setTxt('u-admins',  0);
+  setTxt('u-admins',  counts.admins);
 
   let filtered = users.filter(u => {
     const ms  = !search || u.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -84,7 +85,7 @@ function addUser() {
     { label: 'Full Name',   id: 'f-name',     type: 'text',   required: true },
     { label: 'Email',       id: 'f-email',    type: 'email',  required: true },
     { label: 'Phone',       id: 'f-phone',    type: 'text',   required: true, placeholder: '+91 98765 43210' },
-    { label: 'Role',        id: 'f-role',     type: 'select', options: ['tenant', 'owner', 'warden'], required: true },
+    { label: 'Role',        id: 'f-role',     type: 'select', options: ['admin', 'tenant', 'owner', 'warden'], required: true },
     { label: 'PG Property', id: 'f-property', type: 'select', options: propOptions, required: true }
   ], () => {
     const name     = g('f-name').value.trim();
@@ -129,7 +130,7 @@ function editUser(id) {
     { label: 'Full Name',   id: 'f-name',     type: 'text',   value: u.name,     required: true },
     { label: 'Email',       id: 'f-email',    type: 'email',  value: u.email,    required: true },
     { label: 'Phone',       id: 'f-phone',    type: 'text',   value: u.phone,    required: true },
-    { label: 'Role',        id: 'f-role',     type: 'select', value: u.role,     options: ['tenant', 'owner', 'warden'] },
+    { label: 'Role',        id: 'f-role',     type: 'select', value: u.role,     options: ['admin', 'tenant', 'owner', 'warden'] },
     { label: 'PG Property', id: 'f-property', type: 'select', value: u.property, options: propOptions }
   ], () => {
     const name     = g('f-name').value.trim();

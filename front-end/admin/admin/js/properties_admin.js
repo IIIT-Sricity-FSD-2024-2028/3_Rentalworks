@@ -180,15 +180,51 @@ function approveProperty(id) {
   if (!p) return;
   p.status = 'approved';
   
-  // Sync to backend
+  // Sync to Owner local storage (pg_manager_data_storage)
+  try {
+    const ownerData = JSON.parse(localStorage.getItem('pg_manager_data_storage') || '{}');
+    if (ownerData && Array.isArray(ownerData.properties)) {
+      const match = ownerData.properties.find(op => String(op.id) === String(id) || op.name.toLowerCase() === p.name.toLowerCase());
+      if (match) match.status = 'Active';
+      localStorage.setItem('pg_manager_data_storage', JSON.stringify(ownerData));
+    }
+  } catch (e) {}
+
+  // Sync to backend (Property)
   fetch(`http://localhost:3000/properties/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', 'x-role': 'admin' },
-    body: JSON.stringify({ status: 'approved' })
+    body: JSON.stringify({ status: 'active' })
   }).catch(e => console.error(e));
 
+  // Find Owner User and Activate, generating a random password
+  const ownerUser = users.find(u => u.name === p.owner && u.role === 'owner');
+  let newPassword = Math.random().toString(36).slice(-8) + 'A1!'; // Simple secure password
+  if (ownerUser) {
+    ownerUser.status = 'active';
+    fetch(`http://localhost:3000/users/${ownerUser.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-role': 'admin' },
+      body: JSON.stringify({ status: 'active', password: newPassword })
+    }).catch(e => console.error(e));
+  }
+
+  // Send cross notification to Owner with credentials
+  let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
+  crossNotifs.push({
+    id: Date.now(),
+    title: 'Property Approved & Account Activated',
+    message: `Your property "${p.name}" has been approved! You can now login. Username: ${ownerUser ? ownerUser.email : 'Your Email'}, Password: ${newPassword}`,
+    type: 'success',
+    priority: 'urgent',
+    targetRole: 'owner',
+    by: 'Admin',
+    sentAt: new Date().toLocaleString()
+  });
+  localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
+
   saveData(); renderProperties();
-  showToast('success', 'Property Approved', `${p.name} is now live on the platform`);
+  showToast('success', 'Property Approved', `${p.name} is now live and Owner credentials sent`);
 }
 
 function rejectProperty(id) {
@@ -196,6 +232,30 @@ function rejectProperty(id) {
   if (!p) return;
   pendingAction = () => {
     p.status = 'rejected';
+
+    // Sync to Owner local storage (pg_manager_data_storage)
+    try {
+      const ownerData = JSON.parse(localStorage.getItem('pg_manager_data_storage') || '{}');
+      if (ownerData && Array.isArray(ownerData.properties)) {
+        const match = ownerData.properties.find(op => String(op.id) === String(id) || op.name.toLowerCase() === p.name.toLowerCase());
+        if (match) match.status = 'Rejected';
+        localStorage.setItem('pg_manager_data_storage', JSON.stringify(ownerData));
+      }
+    } catch (e) {}
+
+    // Send cross notification to Owner
+    let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
+    crossNotifs.push({
+      id: Date.now(),
+      title: 'Property Rejected',
+      message: `Your property "${p.name}" application was reviewed and rejected by Admin.`,
+      type: 'warning',
+      priority: 'important',
+      targetRole: 'owner',
+      by: 'Admin',
+      sentAt: new Date().toLocaleString()
+    });
+    localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
     
     // Sync to backend
     fetch(`http://localhost:3000/properties/${id}`, {

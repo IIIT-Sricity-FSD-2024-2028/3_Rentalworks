@@ -24,10 +24,11 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(createUserDto.password || 'default123', 10);
+    const initialStatus = createUserDto.role === 'owner' ? 'pending' : 'active';
     const newUser = this.usersRepository.create({
       ...createUserDto,
       password: hashedPassword,
-      status: 'active',
+      status: initialStatus,
       joinDate: new Date().toISOString().split('T')[0],
     });
     return this.usersRepository.save(newUser);

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Cron } from '@nestjs/schedule';
 import { Booking } from './booking.entity';
 import { CreateBookingDto, UpdateBookingDto } from './bookings.dto';
 
@@ -41,5 +42,24 @@ export class BookingsService {
     const removed = { ...booking };
     await this.bookingsRepository.remove(booking);
     return removed;
+  }
+
+  @Cron('0 * * * * *') // Run every minute
+  async handleBookingExpiry() {
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+    
+    // Using string comparison for SQLite datetime (assuming format is comparable or we can just fetch all pending and filter)
+    const pendingBookings = await this.bookingsRepository.find({ where: { status: 'pending' } });
+    
+    for (const booking of pendingBookings) {
+      if (booking.createdAt) {
+        const createdAtDate = new Date(booking.createdAt);
+        if (createdAtDate < fifteenMinutesAgo) {
+          booking.status = 'expired';
+          await this.bookingsRepository.save(booking);
+          // Optional: Add notification to tenant that booking expired
+        }
+      }
+    }
   }
 }

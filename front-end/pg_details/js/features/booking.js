@@ -24,13 +24,13 @@ const BookingLogic = {
             const capacity = State.getRoomCapacity(targetPG, roomType);
             const currentOccupied = State.getOccupiedCount(targetPG, roomType);
             if (currentOccupied >= capacity) {
-                btn.textContent = "No rooms available.";
-                btn.disabled = true;
-                btn.style.background = "#f1f5f9";
-                btn.style.color = "var(--text-light)";
-                btn.style.cursor = "not-allowed";
-                btn.onclick = null;
-                card.style.opacity = "0.7";
+                btn.textContent = "Join Waiting List";
+                btn.disabled = false;
+                btn.style.background = "#f59e0b"; // Amber color to indicate waitlist
+                btn.style.color = "white";
+                btn.style.cursor = "pointer";
+                btn.onclick = () => BookingLogic.handleJoinWaitingList(roomType);
+                card.style.opacity = "1";
             } else {
                 btn.textContent = "Book Now";
                 btn.disabled = false;
@@ -240,16 +240,46 @@ const BookingLogic = {
                 guestEmail: guestEmail,
                 guestPhone: guestPhone,
                 img: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=500',
-                status: 'approved',
+                status: 'approved', // frontend status
                 reservationExpiresAt: res.expiresAt
             };
-            State.data.bookings.unshift(newBk);
-            State.data.activeBooking = newBk;
-            State.save();
-            
-            UI.hideLoader();
-            UI.showToast("Room Seat Reserved for 15 Minutes!", "success");
-            Navigation.navigate('booking-details');
+
+            // Post to backend API
+            const backendPayload = {
+              tenantId: State.data.currentUser ? State.data.currentUser.id : 1, // fallback to guest id if not logged in
+              propertyId: 1, // Fallback property ID (in real app, map targetPG to ID)
+              room: roomType,
+              checkIn: reqDate,
+              duration: reqDur,
+              rent: totalRent,
+              status: 'pending' // Backend starts as pending
+            };
+
+            fetch('http://localhost:3000/bookings', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'x-role': State.data.currentUser ? State.data.currentUser.role : 'guest'
+              },
+              body: JSON.stringify(backendPayload)
+            }).then(async backendRes => {
+                if (backendRes.ok) {
+                   const savedBk = await backendRes.json();
+                   newBk.backendId = savedBk.id; // Link to backend ID for future updates
+                }
+                State.data.bookings.unshift(newBk);
+                State.data.activeBooking = newBk;
+                State.save();
+                
+                UI.hideLoader();
+                UI.showToast("Room Seat Reserved for 15 Minutes!", "success");
+                Navigation.navigate('booking-details');
+            }).catch(e => {
+                console.error("Booking API error:", e);
+                UI.hideLoader();
+                UI.showToast("Failed to reserve seat. Try again.", "error");
+            });
+
         }, 800);
     },
 
@@ -316,6 +346,14 @@ const BookingLogic = {
     deleteBooking(id) {
         if (!confirm("Are you sure you want to cancel and delete this booking request?")) return;
         
+        const booking = State.data.bookings.find(b => b.id === id);
+        
+        if (booking && booking.status === 'confirmed') {
+            State.RoomOccupancy.releaseOccupiedSeat(booking.room, booking.id);
+        } else if (booking && booking.status === 'approved') {
+            State.RoomOccupancy.releaseSeat(booking.room, booking.id);
+        }
+
         State.data.bookings = State.data.bookings.filter(b => b.id !== id && b.status !== 'cancelled');
         
         // Update active booking if deleted
@@ -629,6 +667,18 @@ const BookingLogic = {
                 State.data.bookings[idx].status = 'confirmed';
                 State.data.bookings[idx].txnId = txnId;
                 State.RoomOccupancy.confirmSeat(b.room, b.id);
+
+                // Update backend if it has a backendId
+                if (b.backendId) {
+                    fetch(`http://localhost:3000/bookings/${b.backendId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-role': State.data.currentUser ? State.data.currentUser.role : 'guest'
+                        },
+                        body: JSON.stringify({ status: 'paid' })
+                    }).catch(e => console.error("Error updating backend booking status", e));
+                }
             }
             
             State.save();

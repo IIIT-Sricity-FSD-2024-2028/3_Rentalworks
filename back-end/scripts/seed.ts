@@ -21,6 +21,14 @@ async function seed() {
   const complaintRepository = AppDataSource.getRepository(Complaint);
   const notificationRepository = AppDataSource.getRepository(Notification);
 
+  console.log('Clearing existing data...');
+  await paymentRepository.clear();
+  await notificationRepository.clear();
+  await complaintRepository.clear();
+  await bookingRepository.clear();
+  await propertyRepository.clear();
+  await userRepository.clear();
+
   // Maps to store name-to-id mapping
   const userNameToId = new Map<string, number>();
   const propertyNameToId = new Map<string, number>();
@@ -38,6 +46,9 @@ async function seed() {
       status: u.status,
       joinDate: u.joinDate
     });
+    
+    // We will update assignedPropertyId in a second pass since properties are seeded after users,
+    // OR we can change the seeding order. Let's do a second pass for user properties.
     const saved = await userRepository.save(user);
     userNameToId.set(saved.name, saved.id);
   }
@@ -69,6 +80,17 @@ async function seed() {
     });
     const saved = await propertyRepository.save(property);
     propertyNameToId.set(saved.name, saved.id);
+  }
+
+  console.log('Linking Users to Properties (Second Pass)...');
+  for (const u of data.USERS) {
+    if (u.property) {
+      const propertyId = propertyNameToId.get(u.property);
+      const userId = userNameToId.get(u.name);
+      if (propertyId && userId) {
+        await userRepository.update(userId, { assignedPropertyId: propertyId });
+      }
+    }
   }
 
   console.log('Seeding Bookings...');

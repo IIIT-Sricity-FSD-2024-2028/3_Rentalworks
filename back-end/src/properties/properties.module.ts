@@ -3,9 +3,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PropertiesController } from './properties.controller';
 import { PropertiesService } from './properties.service';
 import { Property } from './property.entity';
+import { Notification } from '../notifications/notification.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Property])],
+  imports: [TypeOrmModule.forFeature([Property, Notification])],
   controllers: [PropertiesController],
   providers: [PropertiesService]
 })

@@ -26,7 +26,7 @@ export class BookingsController {
   }
 
   @Post()
-  @Roles('admin', 'tenant', 'warden')
+  @Roles('admin', 'tenant', 'warden', 'guest')
   @ApiOperation({ summary: 'Create new booking' })
   create(@Body() createBookingDto: CreateBookingDto) {
     return this.bookingsService.create(createBookingDto);

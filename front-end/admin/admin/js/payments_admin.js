@@ -98,7 +98,10 @@ function renderPayments(search = '', statusF = 'verified') {
           </td>
           <td>
             <div class="act-icons" style="display:flex;gap:4px;align-items:center;">
-              ${p.status === 'pending' ? `<button class="btn-verify-cred" style="background:#2563eb;color:#ffffff;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;border:none;cursor:pointer;" onclick="verifyPaymentAndGenerateCreds(${p.id})" title="Verify Payment & Generate Credentials">🔑 Verify & Gen Creds</button>` : ''}
+              ${p.status === 'pending' ? `
+                <button class="btn-verify-cred" style="background:#2563eb;color:#ffffff;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;border:none;cursor:pointer;" onclick="verifyPaymentAndGenerateCreds(${p.id})" title="Verify Payment & Generate Credentials">🔑 Verify & Gen Creds</button>
+                <button class="btn-reject-pay" style="background:#dc2626;color:#ffffff;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;border:none;cursor:pointer;" onclick="rejectPayment(${p.id})" title="Reject Payment">❌ Reject</button>
+              ` : ''}
               <button class="btn-issue-refund" style="${refundStyle}" onclick="issueRefund(${p.id})" title="${refundDisabled ? 'Clearance required' : 'Issue Refund'}">
                 ${refundDisabled ? '🔒 Refund' : '↩️ Refund'}
               </button>
@@ -114,6 +117,35 @@ function renderPayments(search = '', statusF = 'verified') {
   renderTopEarningProperties();
   renderPayRevChart();
   setupPaymentFilters();
+}
+
+// ===== PAYMENT REJECTION =====
+function rejectPayment(id) {
+  const p = payments.find(x => x.id === id);
+  if (!p) return;
+  p.status = 'rejected';
+  p.clearance = 'Rejected';
+
+  localStorage.setItem('global_payments', JSON.stringify(payments));
+
+  let notifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
+  notifs.push({
+    id: Date.now().toString(),
+    title: 'Payment Verification Failed',
+    type: 'warning',
+    priority: 'important',
+    targetRole: 'tenant',
+    targetUser: p.tenant,
+    by: 'Admin',
+    message: `Payment transaction ${p.transactionId} of ₹${(p.amount || 0).toLocaleString()} for ${p.property} was rejected by Admin. Please re-check your payment details.`,
+    sentAt: new Date().toLocaleString()
+  });
+  localStorage.setItem('cross_notifications', JSON.stringify(notifs));
+
+  saveData();
+  renderPayments();
+
+  showToast('error', 'Payment Rejected', `Transaction ${p.transactionId} marked as rejected and tenant notified.`);
 }
 
 // ===== PAYMENT VERIFICATION & CREDENTIAL GENERATION =====
@@ -144,11 +176,14 @@ function verifyPaymentAndGenerateCreds(id) {
   let notifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
   notifs.push({
     id: Date.now().toString(),
-    type: 'credential',
-    target: 'guest',
+    title: 'Tenant Credentials Generated',
+    type: 'update',
+    priority: 'important',
+    targetRole: 'tenant',
+    targetUser: p.tenant,
+    by: 'Admin',
     message: `Payment Verified! Tenant Login Credentials for ${p.property}: Username: ${tenantUsername} | Password: ${tenantPassword}`,
-    time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
-    read: false
+    sentAt: new Date().toLocaleString()
   });
   localStorage.setItem('cross_notifications', JSON.stringify(notifs));
 

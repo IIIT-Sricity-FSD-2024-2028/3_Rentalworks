@@ -39,8 +39,14 @@ const Navigation = {
       Auth.applyRoleBasedUI();
       
       // TRIGGER THE NEW DYNAMIC RENDERS
-      if (page === 'dashboard' && State.data.currentUser) TenantLogic.updateDashboardStats();
-      if (fileName === 'Complaints' && State.data.currentUser) TenantLogic.renderComplaints();
+      if (page === 'dashboard' && State.data.currentUser) {
+        if(typeof TenantLogic.fetchComplaints === 'function') await TenantLogic.fetchComplaints();
+        TenantLogic.updateDashboardStats();
+      }
+      if (fileName === 'Complaints' && State.data.currentUser) {
+        if(typeof TenantLogic.fetchComplaints === 'function') await TenantLogic.fetchComplaints();
+        TenantLogic.renderComplaints();
+      }
       if (fileName === 'issues' && State.data.currentUser) TenantLogic.renderIssues();
       if (fileName === 'services' && State.data.currentUser) TenantLogic.renderServices();
       if (fileName === 'notification' && State.data.currentUser) TenantLogic.renderNotifications();

@@ -230,6 +230,35 @@ const State = {
             this._save(data);
             this.cleanExpired();
         },
+        releaseOccupiedSeat(roomType, bookingId) {
+            const cfg = State.getRoomConfig(roomType);
+            const data = this._load();
+            let room = data[cfg.roomId];
+            if (!room) return;
+            room.occupied = Math.max(0, (room.occupied || 0) - 1);
+            
+            // Check if there are people on the waiting list
+            if (room.waitingList && room.waitingList.length > 0) {
+                const nextUser = room.waitingList.shift();
+                const expiresAt = Date.now() + 15 * 60 * 1000;
+                
+                room.activeReservations.push({
+                    bookingId: 'RES-' + Date.now(),
+                    userId: nextUser.userId,
+                    userName: nextUser.userName,
+                    timestamp: Date.now(),
+                    expiresAt: expiresAt
+                });
+                
+                this._notifyUser(nextUser.userId, "Good news! A room has become available. Please complete payment within 15 minutes.");
+            }
+            
+            room.reserved = room.activeReservations.length;
+            room.available = Math.max(0, room.capacity - room.occupied - room.reserved);
+            
+            data[cfg.roomId] = room;
+            this._save(data);
+        },
         joinWaitingList(roomType, user, phone) {
             const cfg = State.getRoomConfig(roomType);
             const data = this._load();
