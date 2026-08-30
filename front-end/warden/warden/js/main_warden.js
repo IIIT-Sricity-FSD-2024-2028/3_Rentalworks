@@ -302,8 +302,14 @@ function setupModalClose() {
   if (closeBtn)   closeBtn.addEventListener('click', closeModal);
   if (cancelBtn)  cancelBtn.addEventListener('click', closeModal);
   if (confirmBtn) confirmBtn.addEventListener('click', () => {
-    if (modalCallback) modalCallback();
-    closeModal();
+    if (modalCallback) {
+      const result = modalCallback();
+      if (result !== false) {
+        closeModal();
+      }
+    } else {
+      closeModal();
+    }
   });
 }
 
