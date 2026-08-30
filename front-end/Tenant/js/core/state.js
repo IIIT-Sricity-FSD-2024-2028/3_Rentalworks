@@ -23,12 +23,14 @@ const State = {
       { id: 901, type: 'Monthly Rent', amount: 12000, date: 'Feb 5, 2026', method: 'UPI', txn: 'TXN123456789' }
     ],
 
+    complaintFilter: 'all',
+    
     // LOTS OF MOCK DATA ADDED HERE:
     complaints: [
-      { id: 1, title: 'AC not working', desc: 'No cooling in room A-204. Need it fixed urgently before summer hits.', priority: 'high', status: 'open', created: 'Mar 26, 2026' },
-      { id: 2, title: 'Noisy Neighbors', desc: 'Room 305 is playing loud music past midnight every day.', priority: 'medium', status: 'in-progress', created: 'Mar 24, 2026' },
-      { id: 3, title: 'Room not cleaned', desc: 'The housekeeping staff skipped my room yesterday and today.', priority: 'low', status: 'open', created: 'Mar 28, 2026' },
-      { id: 4, title: 'Main Gate locked early', desc: 'Guard locked the gate at 10 PM instead of 11 PM.', priority: 'medium', status: 'resolved', created: 'Mar 15, 2026' }
+      { id: 1, title: 'AC not working', desc: 'No cooling in room A-204. Need it fixed urgently before summer hits.', priority: 'high', status: 'open', filedAt: new Date(Date.now() - 3 * 86400000).toISOString() },
+      { id: 2, title: 'Noisy Neighbors', desc: 'Room 305 is playing loud music past midnight every day.', priority: 'medium', status: 'in-progress', filedAt: new Date(Date.now() - 6 * 86400000).toISOString(), inProgressAt: new Date(Date.now() - 2 * 86400000).toISOString() },
+      { id: 3, title: 'Room not cleaned', desc: 'The housekeeping staff skipped my room yesterday and today.', priority: 'low', status: 'open', filedAt: new Date(Date.now() - 1 * 86400000).toISOString() },
+      { id: 4, title: 'Main Gate locked early', desc: 'Guard locked the gate at 10 PM instead of 11 PM.', priority: 'medium', status: 'resolved', filedAt: new Date(Date.now() - 11 * 86400000).toISOString(), inProgressAt: new Date(Date.now() - 10 * 86400000).toISOString(), resolvedAt: new Date(Date.now() - 7 * 86400000).toISOString(), resolvedBy: 'Warden' }
     ],
     issues: [
       { id: 1, title: 'Broken Window Lock', desc: 'Window in room 204 won\'t lock properly, feels unsafe.', category: 'Maintenance', priority: 'high', status: 'open' },

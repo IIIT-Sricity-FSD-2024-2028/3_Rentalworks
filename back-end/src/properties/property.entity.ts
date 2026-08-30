@@ -40,7 +40,7 @@ export class Property {
   @Column({ type: 'int' })
   occupancy: number;
 
-  @Column({ type: 'jsonb' })
+  @Column({ type: 'simple-json' })
   amenities: string[];
 
   @Column()

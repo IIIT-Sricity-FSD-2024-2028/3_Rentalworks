@@ -27,19 +27,22 @@ async function seed() {
 
   console.log('Seeding Users...');
   for (const u of data.USERS) {
-    const hashedPassword = await bcrypt.hash(u.password || 'default123', 10);
-    const user = userRepository.create({
-      name: u.name,
-      email: u.email,
-      phone: u.phone,
-      role: u.role,
-      username: u.username,
-      password: hashedPassword,
-      status: u.status,
-      joinDate: u.joinDate
-    });
-    const saved = await userRepository.save(user);
-    userNameToId.set(saved.name, saved.id);
+    let user = await userRepository.findOne({ where: { username: u.username } });
+    if (!user) {
+      const hashedPassword = await bcrypt.hash(u.password || 'default123', 10);
+      user = userRepository.create({
+        name: u.name,
+        email: u.email,
+        phone: u.phone,
+        role: u.role,
+        username: u.username,
+        password: hashedPassword,
+        status: u.status,
+        joinDate: u.joinDate
+      });
+      user = await userRepository.save(user);
+    }
+    userNameToId.set(user.name, user.id);
   }
 
   console.log('Seeding Properties...');
@@ -49,26 +52,29 @@ async function seed() {
       console.warn(`Owner ${p.owner} not found for property ${p.name}`);
       continue;
     }
-    const property = propertyRepository.create({
-      name: p.name,
-      location: p.location,
-      ownerId: ownerId,
-      rentMin: p.rentMin,
-      rentMax: p.rentMax,
-      safetyScore: p.safetyScore,
-      rooms: p.rooms,
-      occupancy: p.occupancy,
-      amenities: p.amenities,
-      status: p.status,
-      docsVerified: p.docsVerified,
-      inspectionPassed: p.inspectionPassed,
-      commissionRate: p.commissionRate,
-      compliance: p.compliance,
-      fireSafety: p.fireSafety,
-      changeRequestPending: p.changeRequestPending
-    });
-    const saved = await propertyRepository.save(property);
-    propertyNameToId.set(saved.name, saved.id);
+    let property = await propertyRepository.findOne({ where: { name: p.name, ownerId } });
+    if (!property) {
+      property = propertyRepository.create({
+        name: p.name,
+        location: p.location,
+        ownerId: ownerId,
+        rentMin: p.rentMin,
+        rentMax: p.rentMax,
+        safetyScore: p.safetyScore,
+        rooms: p.rooms,
+        occupancy: p.occupancy,
+        amenities: p.amenities,
+        status: p.status,
+        docsVerified: p.docsVerified,
+        inspectionPassed: p.inspectionPassed,
+        commissionRate: p.commissionRate,
+        compliance: p.compliance,
+        fireSafety: p.fireSafety,
+        changeRequestPending: p.changeRequestPending
+      });
+      property = await propertyRepository.save(property);
+    }
+    propertyNameToId.set(property.name, property.id);
   }
 
   console.log('Seeding Bookings...');
@@ -77,16 +83,19 @@ async function seed() {
     const propertyId = propertyNameToId.get(b.property);
     if (!tenantId || !propertyId) continue;
 
-    const booking = bookingRepository.create({
-      tenantId,
-      propertyId,
-      room: b.room,
-      checkIn: b.checkIn,
-      duration: b.duration,
-      rent: b.rent,
-      status: b.status
-    });
-    await bookingRepository.save(booking);
+    let booking = await bookingRepository.findOne({ where: { tenantId, propertyId, room: b.room, checkIn: b.checkIn } });
+    if (!booking) {
+      booking = bookingRepository.create({
+        tenantId,
+        propertyId,
+        room: b.room,
+        checkIn: b.checkIn,
+        duration: b.duration,
+        rent: b.rent,
+        status: b.status
+      });
+      await bookingRepository.save(booking);
+    }
   }
 
   console.log('Seeding Payments...');
@@ -95,18 +104,21 @@ async function seed() {
     const propertyId = propertyNameToId.get(p.property);
     if (!tenantId || !propertyId) continue;
 
-    const payment = paymentRepository.create({
-      tenantId,
-      propertyId,
-      room: p.room,
-      amount: p.amount,
-      method: p.method,
-      transactionId: p.transactionId,
-      paidDate: p.paidDate,
-      status: p.status,
-      clearance: p.clearance
-    });
-    await paymentRepository.save(payment);
+    let payment = await paymentRepository.findOne({ where: { transactionId: p.transactionId } });
+    if (!payment) {
+      payment = paymentRepository.create({
+        tenantId,
+        propertyId,
+        room: p.room,
+        amount: p.amount,
+        method: p.method,
+        transactionId: p.transactionId,
+        paidDate: p.paidDate,
+        status: p.status,
+        clearance: p.clearance
+      });
+      await paymentRepository.save(payment);
+    }
   }
 
   console.log('Seeding Complaints...');
@@ -115,14 +127,17 @@ async function seed() {
     const propertyId = propertyNameToId.get(c.property);
     if (!tenantId || !propertyId) continue;
 
-    const complaint = complaintRepository.create({
-      tenantId,
-      propertyId,
-      description: c.description,
-      status: c.status,
-      reportedAt: c.reportedAt
-    });
-    await complaintRepository.save(complaint);
+    let complaint = await complaintRepository.findOne({ where: { tenantId, propertyId, description: c.description, reportedAt: c.reportedAt } });
+    if (!complaint) {
+      complaint = complaintRepository.create({
+        tenantId,
+        propertyId,
+        description: c.description,
+        status: c.status,
+        reportedAt: c.reportedAt
+      });
+      await complaintRepository.save(complaint);
+    }
   }
 
   console.log('Seeding Notifications...');
@@ -130,16 +145,20 @@ async function seed() {
     const byUserId = userNameToId.get(n.by);
     if (!byUserId) continue;
 
-    const notification = notificationRepository.create({
-      title: n.title,
-      message: n.message,
-      type: n.type,
-      priority: n.priority,
-      recipients: n.recipients,
-      sentAt: n.sentAt,
-      byUserId: byUserId
-    });
-    await notificationRepository.save(notification);
+    let notification = await notificationRepository.findOne({ where: { title: n.title, sentAt: n.sentAt, byUserId } });
+    if (!notification) {
+      notification = notificationRepository.create({
+        title: n.title,
+        message: n.message,
+        type: n.type,
+        priority: n.priority,
+        recipientId: byUserId, // For mock seed
+        isRead: false,
+        sentAt: n.sentAt,
+        byUserId: byUserId
+      });
+      await notificationRepository.save(notification);
+    }
   }
 
   console.log('Seeding completed successfully!');

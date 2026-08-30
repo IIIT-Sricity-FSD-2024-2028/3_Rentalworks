@@ -40,6 +40,7 @@ const PAGE_MAP = {
 };
 
 // ===== INIT =====
+<<<<<<< HEAD
 document.addEventListener('DOMContentLoaded', () => {
   tenants = JSON.parse(localStorage.getItem('warden_tenants')) || [];
   if (tenants.length < 17) {
@@ -85,12 +86,34 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   notifications = JSON.parse(localStorage.getItem('warden_notifications')) || [...MOCK_DATA.notifications];
+=======
+document.addEventListener('DOMContentLoaded', async () => {
+  tenants       = JSON.parse(localStorage.getItem('warden_tenants'))       || [...MOCK_DATA.tenants];
+  rooms         = JSON.parse(localStorage.getItem('warden_rooms'))         || [...MOCK_DATA.rooms];
+  violations    = JSON.parse(localStorage.getItem('warden_violations'))    || [...MOCK_DATA.violations];
+  
+  const user = JSON.parse(sessionStorage.getItem('pg_user') || '{}');
+  const userId = user.id || 1;
+>>>>>>> bb460233e4a02a259714c6eefceba8397348038a
 
-  // Merge global complaints, issues, and services from Tenant into Warden's complaints view
-  let globalCmp = JSON.parse(localStorage.getItem('global_complaints')) || [];
-  let globalIss = JSON.parse(localStorage.getItem('global_issues')) || [];
-  let globalSrv = JSON.parse(localStorage.getItem('global_services')) || [];
+  try {
+    const notifRes = await fetch(`http://localhost:3000/notifications/user/${userId}`, {
+      headers: {
+        'x-role': user.role || 'warden',
+        'x-user-id': String(userId)
+      }
+    });
+    if (notifRes.ok) {
+      notifications = await notifRes.json();
+    } else {
+      notifications = [];
+    }
+  } catch (e) {
+    console.error('Failed to fetch notifications from backend', e);
+    notifications = JSON.parse(localStorage.getItem('warden_notifications')) || [...MOCK_DATA.notifications];
+  }
 
+<<<<<<< HEAD
   const fbName = tenants.length > 0 ? tenants[0].name : 'Amit Sharma';
   const fbRoom = tenants.length > 0 ? tenants[0].room : '101';
 
@@ -108,6 +131,33 @@ document.addEventListener('DOMContentLoaded', () => {
   ];
 
   if (complaints.length === 0) {
+=======
+  try {
+    const compRes = await fetch(`http://localhost:3000/complaints`, {
+      headers: {
+        'x-role': user.role || 'warden',
+        'x-user-id': String(userId)
+      }
+    });
+    if (compRes.ok) {
+      const rawComplaints = await compRes.json();
+      complaints = rawComplaints.map(c => ({
+        id: c.id,
+        tenant: c.tenant?.name || 'Tenant',
+        room: c.room || 'A-204',
+        type: c.category || 'Complaint',
+        priority: c.priority || 'medium',
+        severity: c.severity || 'Not Set',
+        status: c.status,
+        date: c.reportedAt,
+        description: c.description
+      }));
+    } else {
+      complaints = [];
+    }
+  } catch (e) {
+    console.error('Failed to fetch complaints from backend', e);
+>>>>>>> bb460233e4a02a259714c6eefceba8397348038a
     complaints = JSON.parse(localStorage.getItem('warden_complaints')) || [...MOCK_DATA.complaints];
   }
 
@@ -115,6 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupLogout();         // from auth_warden.js
   setupNavigation();
   setupModalClose();
+  setupSidebarToggle();
 
   // Cross-actor live notifications listener
   window.addEventListener('storage', (e) => {
@@ -204,7 +255,37 @@ function setupNavigation() {
     item.addEventListener('click', () => {
       const section = item.dataset.section;
       if (section) navigateTo(section);
+      if (window.innerWidth <= 900) {
+        const sidebar = document.querySelector('.sidebar');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        if (sidebar) sidebar.classList.remove('open');
+        if (backdrop) backdrop.classList.remove('active');
+      }
     });
+  });
+}
+
+function setupSidebarToggle() {
+  let backdrop = document.getElementById('sidebarBackdrop');
+  if (!backdrop) {
+    backdrop = document.createElement('div');
+    backdrop.id = 'sidebarBackdrop';
+    backdrop.className = 'sidebar-backdrop';
+    document.body.appendChild(backdrop);
+  }
+
+  const sidebar = document.querySelector('.sidebar');
+  const toggleBtn = document.getElementById('sidebarToggle');
+
+  const toggleSidebar = () => {
+    if (sidebar) sidebar.classList.toggle('open');
+    if (backdrop) backdrop.classList.toggle('active');
+  };
+
+  if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
+  if (backdrop) backdrop.addEventListener('click', () => {
+    if (sidebar) sidebar.classList.remove('open');
+    backdrop.classList.remove('active');
   });
 }
 

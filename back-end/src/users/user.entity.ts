@@ -1,9 +1,13 @@
+<<<<<<< HEAD
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
 } from 'typeorm';
+=======
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+>>>>>>> bb460233e4a02a259714c6eefceba8397348038a
 
 @Entity('users')
 export class User {
@@ -45,4 +49,22 @@ export class User {
 
   @Column({ type: 'decimal', nullable: true })
   subscriptionFee?: number;
+
+  @Column({ nullable: true })
+  propertyId?: number;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @Column({ type: 'datetime', nullable: true })
+  lastLoginAt?: Date;
+
+  @Column({ nullable: true })
+  resetToken?: string;
+
+  @Column({ type: 'datetime', nullable: true })
+  resetTokenExpiry?: Date;
+
+  @Column({ type: 'datetime', nullable: true })
+  sessionValidSince?: Date;
 }

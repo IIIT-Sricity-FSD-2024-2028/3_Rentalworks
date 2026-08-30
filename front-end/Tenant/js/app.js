@@ -9,12 +9,41 @@ document.addEventListener('DOMContentLoaded', () => {
     Auth.login();
   }
 
+  // Sidebar toggle & backdrop overlay setup
+  let backdrop = document.getElementById('sidebarBackdrop');
+  if (!backdrop) {
+    backdrop = document.createElement('div');
+    backdrop.id = 'sidebarBackdrop';
+    backdrop.className = 'sidebar-backdrop';
+    document.body.appendChild(backdrop);
+  }
+
+  const sidebar = document.getElementById('sidebar');
+  const toggleBtn = document.getElementById('sidebarToggle');
+  
+  const toggleSidebar = () => {
+    if (sidebar) sidebar.classList.toggle('open');
+    if (backdrop) backdrop.classList.toggle('active');
+  };
+
+  if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
+  if (backdrop) backdrop.addEventListener('click', () => {
+    if (sidebar) sidebar.classList.remove('open');
+    backdrop.classList.remove('active');
+  });
+
   // Global Click Listeners
   document.body.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal-overlay')) UI.closeModal(e.target.id);
     if (e.target.id === 'login-btn') Auth.login();
     if (e.target.closest('.logout-btn')) Auth.logout();
     if (e.target.closest('#save-profile-btn')) TenantLogic.saveProfile();
+    if (e.target.closest('.nav-item')) {
+      if (window.innerWidth <= 768 && sidebar) {
+        sidebar.classList.remove('open');
+        if (backdrop) backdrop.classList.remove('active');
+      }
+    }
   });
 
   // Cross-actor live notifications listener

@@ -83,20 +83,40 @@ function viewComplaintDetail(id) {
 
   const timeline = document.getElementById('detail-timeline');
   if (timeline) {
-    if (!complaint.timeline || complaint.timeline.length === 0) {
-      timeline.innerHTML = '<p style="color:#6b7280;font-size:13px">No timeline events yet</p>';
-    } else {
-      timeline.innerHTML = complaint.timeline.map(t => `
-        <div class="timeline-item">
-          <div class="timeline-dot"></div>
-          <div class="timeline-content">
-            <time>${t.time}</time>
-            <strong>${t.event}</strong>
-            <span>by ${t.by}</span>
-          </div>
-        </div>
-      `).join('');
-    }
+    fetch(`http://localhost:3000/remarks/complaint/${id}`)
+      .then(res => res.ok ? res.json() : [])
+      .then(remarks => {
+        let events = [...(complaint.timeline || [])];
+        remarks.forEach(r => {
+          events.push({
+            time: new Date(r.createdAt).toLocaleString(),
+            event: r.text,
+            by: r.authorRole || 'Warden'
+          });
+        });
+
+        // Ensure chronological order
+        events.sort((a, b) => new Date(a.time) - new Date(b.time));
+
+        if (events.length === 0) {
+          timeline.innerHTML = '<p style="color:#6b7280;font-size:13px">No timeline events yet</p>';
+        } else {
+          timeline.innerHTML = events.map(t => `
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="timeline-content">
+                <time>${t.time}</time>
+                <strong>${t.event}</strong>
+                <span>by ${t.by}</span>
+              </div>
+            </div>
+          `).join('');
+        }
+      })
+      .catch(e => {
+        console.error('Failed to load remarks:', e);
+        timeline.innerHTML = '<p style="color:#dc2626;font-size:13px">Failed to load timeline.</p>';
+      });
   }
 }
 
@@ -141,19 +161,22 @@ function setSeverity(level) {
   const complaint = complaints.find(c => String(c.id) === String(currentComplaintId));
   if (!complaint) return;
 
-  complaint.severity = level;
-  complaint.timeline = complaint.timeline || [];
-  complaint.timeline.push({
-    time: new Date().toLocaleString(),
-    event: `Severity set to ${level}`,
-    by: 'Warden'
+  fetch(`http://localhost:3000/complaints/${currentComplaintId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'x-role': 'warden' },
+    body: JSON.stringify({ severity: level })
+  }).then(res => {
+    if (res.ok) {
+      complaint.severity = level;
+      fetch(`http://localhost:3000/remarks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ complaintId: Number(currentComplaintId), authorId: 1, text: `Severity set to ${level}` })
+      }).then(() => viewComplaintDetail(currentComplaintId));
+      renderComplaints();
+      showToast('success', 'Severity Set', `Complaint severity updated to ${level}`);
+    }
   });
-
-  saveToStorage();
-  closeModal();
-  viewComplaintDetail(currentComplaintId);
-  renderComplaints();
-  showToast('success', 'Severity Set', `Complaint severity updated to ${level}`);
 }
 
 function backToComplaints() {
@@ -167,32 +190,22 @@ function updateComplaintStatus(newStatus) {
   const complaint = complaints.find(c => String(c.id) === String(currentComplaintId));
   if (!complaint) return;
 
-  complaint.status = newStatus;
-  complaint.timeline = complaint.timeline || [];
-  complaint.timeline.push({
-    time: new Date().toLocaleString(),
-    event: `Status changed to ${getStatusLabel(newStatus)}`,
-    by: 'Warden'
+  fetch(`http://localhost:3000/complaints/${currentComplaintId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'x-role': 'warden' },
+    body: JSON.stringify({ status: newStatus })
+  }).then(res => {
+    if (res.ok) {
+      complaint.status = newStatus;
+      fetch(`http://localhost:3000/remarks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ complaintId: Number(currentComplaintId), authorId: 1, text: `Status changed to ${getStatusLabel(newStatus)}` })
+      }).then(() => viewComplaintDetail(currentComplaintId));
+      renderComplaints();
+      showToast('success', 'Status Updated', `Complaint marked as ${newStatus.replace('_', ' ')}`);
+    }
   });
-
-  saveToStorage();
-  viewComplaintDetail(currentComplaintId);
-  renderComplaints();
-  showToast('success', 'Status Updated', `Complaint marked as ${newStatus.replace('_', ' ')}`);
-
-  // Notify Tenant of status change
-  let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
-  crossNotifs.push({
-    id: Date.now(),
-    title: 'Complaint Status Updated',
-    message: `Your complaint "${complaint.description || complaint.type}" is now ${getStatusLabel(newStatus)}.`,
-    type: newStatus === 'resolved' ? 'success' : 'update',
-    priority: 'important',
-    targetRole: 'tenant',
-    by: 'Warden',
-    sentAt: new Date().toLocaleString()
-  });
-  localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
 }
 
 function addRemark() {
@@ -203,20 +216,17 @@ function addRemark() {
   }
   if (!currentComplaintId) return;
 
-  const complaint = complaints.find(c => String(c.id) === String(currentComplaintId));
-  if (!complaint) return;
-
-  complaint.timeline = complaint.timeline || [];
-  complaint.timeline.push({
-    time: new Date().toLocaleString(),
-    event: remark,
-    by: 'Warden (Remark)'
+  fetch(`http://localhost:3000/remarks`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-role': 'warden' },
+    body: JSON.stringify({ complaintId: Number(currentComplaintId), authorId: 1, text: remark })
+  }).then(res => {
+    if (res.ok) {
+      document.getElementById('detail-remark').value = '';
+      viewComplaintDetail(currentComplaintId);
+      showToast('success', 'Remark Added', 'Your remark has been saved');
+    }
   });
-
-  saveToStorage();
-  document.getElementById('detail-remark').value = '';
-  viewComplaintDetail(currentComplaintId);
-  showToast('success', 'Remark Added', 'Your remark has been saved');
 }
 
 function escalateComplaint() {

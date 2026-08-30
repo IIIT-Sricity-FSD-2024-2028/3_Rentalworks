@@ -54,9 +54,14 @@
 
       <!-- NAVBAR -->
       <header class="navbar">
-        <div class="navbar-left">
-          <h4 id="navbar-user-name">Welcome back, Warden</h4>
-          <p id="navbar-user-email">warden@pgrentals.com</p>
+        <div class="navbar-left" style="display:flex; align-items:center; gap:12px;">
+          <button id="sidebarToggle" class="nav-icon-btn sidebar-toggle-btn" title="Toggle Sidebar" style="display:none; background:none; border:none; color:inherit; cursor:pointer;">
+            <span class="material-icons-outlined" style="font-size:24px;">menu</span>
+          </button>
+          <div>
+            <h4 id="navbar-user-name">Welcome back, Warden</h4>
+            <p id="navbar-user-email">warden@pgrentals.com</p>
+          </div>
         </div>
         <div class="navbar-right">
           <div class="nav-icon-btn" onclick="navigateTo('notifications')">

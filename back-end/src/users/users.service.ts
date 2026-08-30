@@ -6,14 +6,18 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
-import { CreateUserDto, UpdateUserDto, LoginDto } from './users.dto';
+import { UserActivity } from './user-activity.entity';
+import { CreateUserDto, UpdateUserDto, LoginDto, ForgotPasswordDto, ResetPasswordDto } from './users.dto';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(UserActivity)
+    private activityRepository: Repository<UserActivity>,
   ) {}
 
   findAll() {
@@ -63,10 +67,15 @@ export class UsersService {
     return removed;
   }
 
+<<<<<<< HEAD
   async login(loginDto: LoginDto) {
     const user = await this.usersRepository.findOne({
       where: { username: loginDto.username },
     });
+=======
+  async login(loginDto: LoginDto, clientMetadata: any = {}) {
+    const user = await this.usersRepository.findOne({ where: { username: loginDto.username } });
+>>>>>>> bb460233e4a02a259714c6eefceba8397348038a
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
     const isMatch = await bcrypt.compare(
@@ -74,8 +83,75 @@ export class UsersService {
       user.password || '',
     );
     if (!isMatch) throw new UnauthorizedException('Invalid credentials');
+<<<<<<< HEAD
+=======
+    
+    user.lastLoginAt = new Date();
+    await this.usersRepository.save(user);
+
+    await this.logActivity(user.id, 'login', 'Successfully logged in', clientMetadata);
+>>>>>>> bb460233e4a02a259714c6eefceba8397348038a
 
     const { password, ...result } = user;
     return result;
+  }
+
+  async logActivity(userId: number, type: 'login' | 'account_action', description: string, metadata?: any) {
+    const activity = this.activityRepository.create({
+      userId,
+      type,
+      description,
+      metadata,
+    });
+    await this.activityRepository.save(activity);
+  }
+
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+    const user = await this.usersRepository.findOneBy({ email: forgotPasswordDto.email });
+    if (!user) {
+      // Return fake success to prevent email enumeration
+      return { message: 'If an account exists, a reset link was sent.' };
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.resetToken = resetToken;
+    user.resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour
+    await this.usersRepository.save(user);
+
+    console.log(`[DEBUG] Password reset token for ${user.email}: ${resetToken}`);
+    return { message: 'If an account exists, a reset link was sent.', devToken: resetToken };
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    const { token, newPassword } = resetPasswordDto;
+    const user = await this.usersRepository.findOneBy({ resetToken: token });
+    if (!user || !user.resetTokenExpiry || user.resetTokenExpiry < new Date()) {
+      throw new UnauthorizedException('Invalid or expired reset token');
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.resetToken = undefined;
+    user.resetTokenExpiry = undefined;
+    user.sessionValidSince = new Date(); // Automatically invalidate old sessions on password reset
+    await this.usersRepository.save(user);
+    
+    await this.logActivity(user.id, 'account_action', 'Password reset successfully');
+    return { message: 'Password reset successfully' };
+  }
+
+  async logoutAll(userId: number) {
+    const user = await this.findOne(userId);
+    user.sessionValidSince = new Date();
+    await this.usersRepository.save(user);
+    await this.logActivity(user.id, 'account_action', 'Signed out from all devices');
+    return { message: 'Signed out from all devices successfully' };
+  }
+
+  async getUserActivity(userId: number) {
+    return this.activityRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      take: 20
+    });
   }
 }
