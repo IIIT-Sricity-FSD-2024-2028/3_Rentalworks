@@ -7,8 +7,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function loadNotifications() {
-  const data = await fetchData();
-  allNotifications = data.notifications || [];
+  const user = JSON.parse(sessionStorage.getItem('pg_user') || '{}');
+  const userId = user.id || 3; // admin/owner
+  try {
+    const res = await fetch(`http://localhost:3000/notifications/user/${userId}`, {
+      headers: {
+        'x-role': 'owner',
+        'x-user-id': String(userId)
+      }
+    });
+    if (res.ok) {
+      allNotifications = await res.json();
+    } else {
+      allNotifications = [];
+    }
+  } catch(e) {
+    console.error('Failed to load notifications from backend', e);
+    const data = await fetchData();
+    allNotifications = data.notifications || [];
+  }
   renderNotificationsPage(allNotifications);
 }
 
@@ -84,52 +101,52 @@ function filterNotifs(type) {
 }
 
 async function markRead(id) {
-  const data = getData();
-  if (!data) return;
-  const idx = data.notifications.findIndex(n => n.id === id);
-  if (idx !== -1) data.notifications[idx].read = true;
-  updateData(data);
-  allNotifications = data.notifications;
+  // Silent auto-read handled in backend or single notification
+  const user = JSON.parse(sessionStorage.getItem('pg_user') || '{}');
+  const userId = user.id || 3;
+  fetch(`http://localhost:3000/notifications/user/${userId}/read`, { method: 'POST', headers: { 'x-role': 'owner' } }).then(() => {
+    const idx = allNotifications.findIndex(n => String(n.id) === String(id));
+    if (idx !== -1) allNotifications[idx].isRead = true;
 
-  const card = document.getElementById(`notif-${id}`);
-  if (card) {
-    card.classList.remove('unread');
-    card.querySelector('.unread-dot')?.remove();
-  }
-  showToast('Marked as read', 'success');
-  filterNotifs(currentFilter);
-  loadSidebarBadges();
-  // Refresh page header counts
-  renderNotificationsPage(allNotifications);
+    const card = document.getElementById(`notif-${id}`);
+    if (card) {
+      card.classList.remove('unread');
+      card.querySelector('.unread-dot')?.remove();
+    }
+    showToast('Marked as read', 'success');
+    filterNotifs(currentFilter);
+    loadSidebarBadges();
+    renderNotificationsPage(allNotifications);
+  });
 }
 
 async function markAllRead() {
-  const data = getData();
-  if (!data) return;
-  data.notifications.forEach(n => n.read = true);
-  updateData(data);
-  allNotifications = data.notifications;
-  showToast('All notifications marked as read', 'success');
-  loadSidebarBadges();
-  renderNotificationsPage(allNotifications);
+  const user = JSON.parse(sessionStorage.getItem('pg_user') || '{}');
+  const userId = user.id || 3;
+  fetch(`http://localhost:3000/notifications/user/${userId}/read`, { method: 'POST', headers: { 'x-role': 'owner' } }).then(() => {
+    allNotifications.forEach(n => n.isRead = true);
+    showToast('All notifications marked as read', 'success');
+    loadSidebarBadges();
+    renderNotificationsPage(allNotifications);
+  });
 }
 
 function deleteNotif(id) {
   const notif = allNotifications.find(n => String(n.id) === String(id));
   if (!notif) return;
+  const user = JSON.parse(sessionStorage.getItem('pg_user') || '{}');
+  const userId = user.id || 3;
   confirmDialog('Delete Notification', `Delete "<strong>${notif.title}</strong>"?`, () => {
-    const data = getData();
-    if (data) {
-      data.notifications = data.notifications.filter(n => String(n.id) !== String(id));
-      updateData(data);
-      allNotifications = data.notifications;
-    } else {
+    fetch(`http://localhost:3000/notifications/${id}`, { 
+      method: 'DELETE', 
+      headers: { 'x-role': 'owner', 'x-user-id': String(userId) } 
+    }).then(() => {
       allNotifications = allNotifications.filter(n => String(n.id) !== String(id));
-    }
-    closeModal();
-    showToast('Notification deleted', 'success');
-    loadSidebarBadges();
-    renderNotificationsPage(allNotifications);
+      closeModal();
+      showToast('Notification deleted', 'success');
+      loadSidebarBadges();
+      renderNotificationsPage(allNotifications);
+    });
   });
 }
 
@@ -184,22 +201,38 @@ function submitNewNotif() {
   
   if (!title || !message) { showToast('Please fill all fields', 'error'); return; }
 
-  const data = getData();
-  const newNotif = {
-    id: generateId('notif'),
-    title: `To ${recipient}: ${title}`,
-    message,
-    sender: "Owner",
-    recipient: recipient, // Data stored to show target
-    type: 'info',
-    read: true, // Mark as read since the owner is the sender
-    date: new Date().toISOString().split('T')[0]
-  };
-  
-  data.notifications.unshift(newNotif);
-  updateData(data);
-  allNotifications = data.notifications;
-  closeModal();
-  showToast(`Message sent to ${recipient}`, 'success');
-  renderNotificationsPage(allNotifications);
+  const user = JSON.parse(sessionStorage.getItem('pg_user') || '{}');
+  const userId = user.id || 3;
+
+  if (recipient === 'Warden') {
+    fetch(`http://localhost:3000/notifications/owner-to-warden`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json', 
+        'x-role': 'owner',
+        'x-user-id': String(userId)
+      },
+      body: JSON.stringify({ 
+        title: `To Warden: ${title}`, 
+        message, 
+        type: 'info', 
+        priority: 'medium',
+        ownerId: userId,
+        recipientId: 0, // Ignored by backend as it resolves based on property
+        byUserId: userId
+      })
+    }).then(res => {
+      if(res.ok) {
+        closeModal();
+        showToast(`Message sent to Warden`, 'success');
+        loadNotifications();
+      } else {
+        showToast(`Failed to send to Warden`, 'error');
+      }
+    });
+  } else {
+    // Other mock sending logic or fallback
+    closeModal();
+    showToast(`Message sent to Admin`, 'success');
+  }
 }

@@ -20,7 +20,7 @@ const TenantLogic = {
     if (!title || !desc) return UI.showToast('Please fill all fields', 'error');
 
     State.data.complaints.unshift({
-      id: Date.now(), title, desc, priority, status: 'open', created: new Date().toLocaleDateString(),
+      id: Date.now(), title, desc, priority, status: 'open', filedAt: new Date().toISOString(),
       tenantName: State.data.profile.name, room: State.data.profile.room || 'A-204'
     });
     State.save();
@@ -49,36 +49,170 @@ const TenantLogic = {
     this.updateDashboardStats();
   },
 
+  formatRelativeTime(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffDays = Math.floor(diffMs / 86400000);
+    if (diffDays === 0) return 'today';
+    if (diffDays === 1) return '1 day ago';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays/7)} weeks ago`;
+    return `${Math.floor(diffDays/30)} months ago`;
+  },
+  formatDuration(startStr, endStr) {
+    const start = new Date(startStr || Date.now());
+    const end = endStr ? new Date(endStr) : new Date();
+    const ms = end - start;
+    if (ms < 0) return '0 hours';
+    const hrs = Math.floor(ms / 3600000);
+    if (hrs < 24) return `${hrs} hours`;
+    const days = Math.floor(hrs / 24);
+    const remHrs = hrs % 24;
+    return `${days} days${remHrs > 0 ? ` ${remHrs} hours` : ''}`;
+  },
+  formatReadableDate(dateString) {
+    if(!dateString) return '';
+    return new Date(dateString).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  },
+
+  setComplaintFilter(filterType) {
+    State.data.complaintFilter = filterType;
+    State.save();
+    
+    // UI active state updates
+    ['all', 'open', 'in-progress', 'resolved'].forEach(f => {
+      const el = document.getElementById(f === 'in-progress' ? 'filter-inprog' : `filter-${f}`);
+      if(el) el.classList.remove('active');
+    });
+    
+    const activeEl = document.getElementById(filterType === 'in-progress' ? 'filter-inprog' : `filter-${filterType}`);
+    if(activeEl) activeEl.classList.add('active');
+
+    // Update Showing text
+    const displayMap = { 'all': 'All Complaints', 'open': 'Open', 'in-progress': 'In Progress', 'resolved': 'Resolved' };
+    const showingText = document.getElementById('cmp-showing-text');
+    if(showingText) showingText.textContent = displayMap[filterType];
+
+    this.renderComplaints();
+  },
+
+  openComplaintDetailsModal(id) {
+    const c = State.data.complaints.find(comp => comp.id === id);
+    if (!c) return;
+    
+    document.getElementById('cd-main-title').textContent = c.title;
+    document.getElementById('cd-desc').textContent = c.desc;
+    
+    const badgeMap = { 'resolved': ['#dcfce7', '#16a34a', 'RESOLVED'], 'in-progress': ['#fef08a', '#b45309', 'IN PROGRESS'], 'open': ['#fee2e2', '#dc2626', 'OPEN'] };
+    const badge = document.getElementById('cd-status-badge');
+    if (badge) {
+      badge.style.background = badgeMap[c.status][0];
+      badge.style.color = badgeMap[c.status][1];
+      badge.textContent = badgeMap[c.status][2];
+    }
+    
+    document.getElementById('cd-filed').innerHTML = `📅 ${this.formatReadableDate(c.filedAt)}`;
+
+    let timelineHtml = `
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div style="font-size:14px; font-weight:bold; color:var(--text-primary);">Complaint Filed</div>
+        <div class="timeline-date">${this.formatReadableDate(c.filedAt)}</div>
+    `;
+
+    if (c.status === 'open') {
+       timelineHtml += `<div class="timeline-duration">🕐 Open for ${this.formatDuration(c.filedAt)}</div></div>`;
+       document.getElementById('cd-resolution-stats').style.display = 'none';
+    } 
+    else if (c.status === 'in-progress') {
+       timelineHtml += `</div>
+       <div class="timeline-item">
+         <div class="timeline-dot"></div>
+         <div style="font-size:14px; font-weight:bold; color:var(--text-primary);">Moved to In Progress</div>
+         <div class="timeline-date">${this.formatReadableDate(c.inProgressAt)}</div>
+         <div class="timeline-duration">🕐 In progress for ${this.formatDuration(c.inProgressAt)}</div>
+       </div>`;
+       document.getElementById('cd-resolution-stats').style.display = 'none';
+    } 
+    else if (c.status === 'resolved') {
+       timelineHtml += `</div>
+       <div class="timeline-item">
+         <div class="timeline-dot"></div>
+         <div style="font-size:14px; font-weight:bold; color:var(--text-primary);">Moved to In Progress</div>
+         <div class="timeline-date">${this.formatReadableDate(c.inProgressAt)}</div>
+       </div>
+       <div class="timeline-item resolved">
+         <div class="timeline-dot"></div>
+         <div style="font-size:14px; font-weight:bold; color:var(--text-primary);">Resolved ✓</div>
+         <div class="timeline-date">${this.formatReadableDate(c.resolvedAt)}</div>
+       </div>`;
+       
+       document.getElementById('cd-total-res-time').textContent = this.formatDuration(c.filedAt, c.resolvedAt);
+       document.getElementById('cd-resolver-name').textContent = c.resolvedBy || 'Maintenance';
+       document.getElementById('cd-resolution-stats').style.display = 'block';
+    }
+    
+    document.getElementById('cd-timeline').innerHTML = timelineHtml;
+    
+    UI.openModal('complaint-details-modal');
+  },
+
   renderComplaints() {
     const container = document.getElementById('complaints-list');
     if (!container) return;
 
+    // Update Counts dynamically
     document.getElementById('cmp-total').textContent = State.data.complaints.length;
     document.getElementById('cmp-open').textContent = State.data.complaints.filter(c => c.status === 'open').length;
     document.getElementById('cmp-inprog').textContent = State.data.complaints.filter(c => c.status === 'in-progress').length;
     document.getElementById('cmp-resolved').textContent = State.data.complaints.filter(c => c.status === 'resolved').length;
 
-    if (State.data.complaints.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding: 40px; color: gray;">No complaints found.</div>`;
+    // Default Filter if missing
+    if (!State.data.complaintFilter) State.data.complaintFilter = 'all';
+
+    let filtered = State.data.complaints;
+    if (State.data.complaintFilter !== 'all') {
+      filtered = filtered.filter(c => c.status === State.data.complaintFilter);
+    }
+    
+    // Sort Newest Filed First (DESC)
+    filtered.sort((a,b) => new Date(b.filedAt || 0) - new Date(a.filedAt || 0));
+
+    if (filtered.length === 0) {
+        const titleMap = { 'all': 'complaints found', 'open': 'open complaints', 'in-progress': 'complaints in progress', 'resolved': 'resolved complaints' };
+        container.innerHTML = `<div style="text-align:center; padding: 40px; color: gray;">
+          <h4>No ${titleMap[State.data.complaintFilter]}</h4>
+          <p>There are currently no ${titleMap[State.data.complaintFilter]}.</p>
+        </div>`;
         return;
     }
 
-    container.innerHTML = State.data.complaints.map(c => {
+    container.innerHTML = filtered.map(c => {
       let badgeBg = c.status === 'resolved' ? '#dcfce7' : c.status === 'in-progress' ? '#fef08a' : '#fee2e2';
       let badgeColor = c.status === 'resolved' ? '#16a34a' : c.status === 'in-progress' ? '#b45309' : '#dc2626';
       
-      let actionHtml = c.status === 'resolved' ? 
-        `<span style="color: #16a34a; font-size: 13px; font-weight:bold;">✔ Resolved by Warden</span>` : 
-        `<button class="btn btn-outline btn-sm" onclick="TenantLogic.deleteComplaint(${c.id})">Withdraw</button>`;
+      let durationHtml = '';
+      if(c.status === 'open') durationHtml = `🕐 Open for ${this.formatDuration(c.filedAt)}`;
+      if(c.status === 'in-progress') durationHtml = `🕐 In progress for ${this.formatDuration(c.inProgressAt)}`;
+      if(c.status === 'resolved') durationHtml = `✓ Resolved ${this.formatRelativeTime(c.resolvedAt)}`;
+
+      let actionHtml = c.status === 'resolved' ? '' : `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); TenantLogic.deleteComplaint(${c.id})">Withdraw</button>`;
 
       return `
-      <div class="complaint-item" style="border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 14px; background: white; padding: 16px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-          <strong>${c.title}</strong>
-          <span style="font-size: 12px; background: ${badgeBg}; color: ${badgeColor}; padding: 4px 10px; border-radius: 20px; font-weight:bold;">${c.status.toUpperCase()}</span>
+      <div class="complaint-item" onclick="TenantLogic.openComplaintDetailsModal(${c.id})" style="border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 14px; background: white; padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+          <strong style="font-size:15px; color:var(--text-primary);">${c.title}</strong>
+          <span style="font-size: 11px; background: ${badgeBg}; color: ${badgeColor}; padding: 4px 10px; border-radius: 20px; font-weight:bold;">${c.status.toUpperCase()}</span>
         </div>
-        <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">${c.desc}</p>
-        <div style="border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px;">
+        <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px; margin-top:2px;">${c.desc}</p>
+        
+        <div style="border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-size: 12px; color: var(--text-muted);">
+            <div style="margin-bottom: 4px;">📅 Filed ${new Date(c.filedAt).toLocaleDateString('en-US', {day:'2-digit', month:'short', year:'numeric'})} · ${this.formatRelativeTime(c.filedAt)}</div>
+            <div style="font-size:13px; color:var(--text-secondary); font-weight:600;">${durationHtml}</div>
+          </div>
           ${actionHtml}
         </div>
       </div>

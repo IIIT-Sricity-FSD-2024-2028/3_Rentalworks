@@ -1381,6 +1381,200 @@
           "notifications"
         ]
       }
+    },
+    "/notifications/user/{userId}": {
+      "get": {
+        "operationId": "NotificationsController_findByUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get notifications for a user",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/notifications/user/{userId}/read": {
+      "post": {
+        "operationId": "NotificationsController_markAsRead",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Mark all notifications for a user as read",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/notifications/owner-to-warden": {
+      "post": {
+        "operationId": "NotificationsController_sendToWarden",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNotificationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Send notification to property warden",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/remarks/complaint/{id}": {
+      "get": {
+        "operationId": "RemarksController_findByComplaint",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get remarks for a specific complaint",
+        "tags": [
+          "remarks"
+        ]
+      }
+    },
+    "/remarks": {
+      "post": {
+        "operationId": "RemarksController_create",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRemarkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Create new remark",
+        "tags": [
+          "remarks"
+        ]
+      }
     }
   },
   "info": {
@@ -1668,7 +1862,7 @@
           "priority": {
             "type": "string"
           },
-          "recipients": {
+          "recipientId": {
             "type": "number"
           },
           "byUserId": {
@@ -1680,7 +1874,7 @@
           "message",
           "type",
           "priority",
-          "recipients",
+          "recipientId",
           "byUserId"
         ]
       },
@@ -1691,6 +1885,28 @@
             "type": "string"
           }
         }
+      },
+      "CreateRemarkDto": {
+        "type": "object",
+        "properties": {
+          "complaintId": {
+            "type": "number"
+          },
+          "authorId": {
+            "type": "number"
+          },
+          "text": {
+            "type": "string"
+          },
+          "authorRole": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "complaintId",
+          "authorId",
+          "text"
+        ]
       }
     }
   }

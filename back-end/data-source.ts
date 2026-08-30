@@ -10,8 +10,8 @@ import { Notification } from './src/notifications/notification.entity';
 config();
 
 export const AppDataSource = new DataSource({
-  type: 'better-sqlite3',
-  database: 'db.sqlite',
+  type: 'better-sqlite3' as any,
+  database: process.env.DB_NAME || 'rentalworks.sqlite',
   entities: [User, Property, Booking, Payment, Complaint, Notification],
   migrations: ['src/migrations/*.ts'],
   synchronize: true,

@@ -54,9 +54,14 @@
     <div class="main-content">
 
       <header class="topbar">
-        <div class="topbar-left">
-          <div class="greeting">Welcome back, Tenant</div>
-          <div class="email">tenant@pgrentals.com</div>
+        <div class="topbar-left" style="display:flex; align-items:center; gap:12px;">
+          <button id="sidebarToggle" class="topbar-btn sidebar-toggle-btn" title="Toggle Sidebar" style="display:none;">
+            <span class="material-icons-outlined" style="font-size:24px;">menu</span>
+          </button>
+          <div>
+            <div class="greeting">Welcome back, Tenant</div>
+            <div class="email">tenant@pgrentals.com</div>
+          </div>
         </div>
         <div class="topbar-actions">
           <button class="topbar-btn" onclick="Navigation.navigate('notifications')" title="Notifications">

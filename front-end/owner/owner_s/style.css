@@ -888,13 +888,30 @@ tbody td { padding: 12px 16px; font-size: 14px; color: var(--text-body); vertica
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
+/* ===== SIDEBAR BACKDROP & TOGGLE ===== */
+.sidebar-toggle-btn { display: none; }
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 90;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.sidebar-backdrop.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1200px) {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .properties-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 900px) {
-  .sidebar { transform: translateX(-100%); }
+  .sidebar-toggle-btn { display: flex; align-items: center; justify-content: center; }
+  .sidebar { transform: translateX(-100%); z-index: 1000; }
   .sidebar.open { transform: translateX(0); }
   .main-content { margin-left: 0; }
   .grid-2 { grid-template-columns: 1fr; }

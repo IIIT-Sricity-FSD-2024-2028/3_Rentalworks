@@ -1,0 +1,79 @@
+
+> back-end@0.0.1 seed
+> ts-node scripts/seed.ts
+
+??? injected env (0) from .env // tip: ??? override existing { override: true }
+node.exe : D:\Projects\3_R
+entalworks\back-end\src\dr
+iver\DriverFactory.ts:72
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (D  
+  :\Projects\3_R...erFa   
+ ctory.ts:72:String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+                throw new 
+MissingDriverError(type, [
+                      ^
+MissingDriverError: Wrong 
+driver: "sqlite" given. 
+Supported drivers are: 
+"aurora-mysql", 
+"aurora-postgres", 
+"better-sqlite3", 
+"capacitor", 
+"cockroachdb", "cordova", 
+"expo", "mariadb", 
+"mongodb", "mssql", 
+"mysql", "nativescript", 
+"oracle", "postgres", 
+"react-native", "sap", 
+"spanner", "sqljs".
+    at 
+DriverFactory.create (D:\P
+rojects\3_Rentalworks\back
+-end\src\driver\DriverFact
+ory.ts:72:23)
+    at new DataSource (D:\
+Projects\3_Rentalworks\bac
+k-end\src\data-source\Data
+Source.ts:142:43)
+    at Object.<anonymous> 
+(D:\Projects\3_Rentalworks
+\back-end\data-source.ts:1
+2:30)
+    at Module._compile (no
+de:internal/modules/cjs/lo
+ader:1812:14)
+    at Module.m._compile (
+D:\Projects\3_Rentalworks\
+back-end\node_modules\ts-n
+ode\src\index.ts:1618:23)
+    at node:internal/modul
+es/cjs/loader:1943:10
+    at Object.require.exte
+nsions.<computed> [as 
+.ts] (D:\Projects\3_Rental
+works\back-end\node_module
+s\ts-node\src\index.ts:162
+1:12)
+    at Module.load (node:i
+nternal/modules/cjs/loader
+:1533:32)
+    at Module._load (node:
+internal/modules/cjs/loade
+r:1335:12)
+    at wrapModuleLoad (nod
+e:internal/modules/cjs/loa
+der:255:19)
