@@ -1011,18 +1011,20 @@
         "operationId": "ComplaintsController_findAll",
         "parameters": [
           {
-            "name": "x-role",
+            "name": "x-user-id",
+            "required": true,
             "in": "header",
-            "required": false,
-            "description": "The role of the requesting user (admin, warden, owner, tenant)",
-            "schema": {}
+            "schema": {
+              "type": "string"
+            }
           },
           {
-            "name": "x-user-id",
+            "name": "x-role",
+            "required": true,
             "in": "header",
-            "required": false,
-            "description": "The ID of the requesting user",
-            "schema": {}
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1039,17 +1041,18 @@
         "operationId": "ComplaintsController_create",
         "parameters": [
           {
+            "name": "x-user-id",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "x-role",
             "in": "header",
             "required": false,
             "description": "The role of the requesting user (admin, warden, owner, tenant)",
-            "schema": {}
-          },
-          {
-            "name": "x-user-id",
-            "in": "header",
-            "required": false,
-            "description": "The ID of the requesting user",
             "schema": {}
           }
         ],
@@ -1087,18 +1090,20 @@
             }
           },
           {
-            "name": "x-role",
+            "name": "x-user-id",
+            "required": true,
             "in": "header",
-            "required": false,
-            "description": "The role of the requesting user (admin, warden, owner, tenant)",
-            "schema": {}
+            "schema": {
+              "type": "string"
+            }
           },
           {
-            "name": "x-user-id",
+            "name": "x-role",
+            "required": true,
             "in": "header",
-            "required": false,
-            "description": "The ID of the requesting user",
-            "schema": {}
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1123,18 +1128,20 @@
             }
           },
           {
-            "name": "x-role",
+            "name": "x-user-id",
+            "required": true,
             "in": "header",
-            "required": false,
-            "description": "The role of the requesting user (admin, warden, owner, tenant)",
-            "schema": {}
+            "schema": {
+              "type": "string"
+            }
           },
           {
-            "name": "x-user-id",
+            "name": "x-role",
+            "required": true,
             "in": "header",
-            "required": false,
-            "description": "The ID of the requesting user",
-            "schema": {}
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -1169,18 +1176,20 @@
             }
           },
           {
-            "name": "x-role",
+            "name": "x-user-id",
+            "required": true,
             "in": "header",
-            "required": false,
-            "description": "The role of the requesting user (admin, warden, owner, tenant)",
-            "schema": {}
+            "schema": {
+              "type": "string"
+            }
           },
           {
-            "name": "x-user-id",
+            "name": "x-role",
+            "required": true,
             "in": "header",
-            "required": false,
-            "description": "The ID of the requesting user",
-            "schema": {}
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {

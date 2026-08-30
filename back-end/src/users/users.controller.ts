@@ -43,7 +43,7 @@ export class UsersController {
   }
 
   @Post()
-  @Roles('admin')
+  @Roles('admin', 'owner', 'warden', 'guest')
   @ApiOperation({ summary: 'Create new user' })
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);

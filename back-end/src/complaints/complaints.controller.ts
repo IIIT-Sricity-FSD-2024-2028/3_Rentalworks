@@ -1,11 +1,11 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, UseInterceptors, UploadedFile, Headers, ParseIntPipe } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { createUploadOptions } from '../middleware/file-upload.middleware';
 import { ComplaintsService } from './complaints.service';
 import { CreateComplaintDto, UpdateComplaintDto } from './complaints.dto';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
-import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiHeader } from '@nestjs/swagger';
 
 @ApiTags('complaints')
 @Controller('complaints')
@@ -38,35 +38,44 @@ export class ComplaintsController {
   @Get()
   @Roles('admin', 'warden', 'tenant', 'owner')
   @ApiOperation({ summary: 'Get all complaints' })
-  findAll() {
-    return this.complaintsService.findAll();
+  @ApiHeader({ name: 'x-user-id', required: true })
+  @ApiHeader({ name: 'x-role', required: true })
+  findAll(@Headers('x-user-id') userId: string, @Headers('x-role') role: string) {
+    return this.complaintsService.findAll(+userId, role);
   }
 
   @Get(':id')
   @Roles('admin', 'warden', 'tenant', 'owner')
   @ApiOperation({ summary: 'Get complaint by ID' })
-  findOne(@Param('id') id: string) {
-    return this.complaintsService.findOne(+id);
+  @ApiHeader({ name: 'x-user-id', required: true })
+  @ApiHeader({ name: 'x-role', required: true })
+  findOne(@Param('id') id: string, @Headers('x-user-id') userId: string, @Headers('x-role') role: string) {
+    return this.complaintsService.findOne(+id, +userId, role);
   }
 
   @Post()
   @Roles('admin', 'tenant')
   @ApiOperation({ summary: 'Submit new complaint' })
-  create(@Body() createComplaintDto: CreateComplaintDto) {
-    return this.complaintsService.create(createComplaintDto);
+  @ApiHeader({ name: 'x-user-id', required: true })
+  create(@Body() createComplaintDto: CreateComplaintDto, @Headers('x-user-id') userId: string) {
+    return this.complaintsService.create(createComplaintDto, +userId);
   }
 
   @Put(':id')
   @Roles('admin', 'warden', 'owner')
   @ApiOperation({ summary: 'Update complaint status' })
-  update(@Param('id') id: string, @Body() updateComplaintDto: UpdateComplaintDto) {
-    return this.complaintsService.update(+id, updateComplaintDto);
+  @ApiHeader({ name: 'x-user-id', required: true })
+  @ApiHeader({ name: 'x-role', required: true })
+  update(@Param('id') id: string, @Body() updateComplaintDto: UpdateComplaintDto, @Headers('x-user-id') userId: string, @Headers('x-role') role: string) {
+    return this.complaintsService.update(+id, updateComplaintDto, +userId, role);
   }
 
   @Delete(':id')
   @Roles('admin', 'tenant')
   @ApiOperation({ summary: 'Delete complaint' })
-  remove(@Param('id') id: string) {
-    return this.complaintsService.remove(+id);
+  @ApiHeader({ name: 'x-user-id', required: true })
+  @ApiHeader({ name: 'x-role', required: true })
+  remove(@Param('id') id: string, @Headers('x-user-id') userId: string, @Headers('x-role') role: string) {
+    return this.complaintsService.remove(+id, +userId, role);
   }
 }

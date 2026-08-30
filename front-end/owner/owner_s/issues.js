@@ -18,53 +18,39 @@ async function loadIssues() {
   const data = await fetchData();
   allProperties = data.properties || [];
   
-  // Only keep 2 meaningful static issues (clean data)
-  const staticIssues = [
-    {
-      id: 'issue_001',
-      propertyId: 'prop_001',
-      propertyName: 'Sunrise PG',
-      title: 'Water leakage in Room 3',
-      description: 'There is a water leakage from the roof in Room 3 which is causing inconvenience to tenants.',
-      category: 'Maintenance',
-      priority: 'High',
-      status: 'Open',
-      reportedBy: 'Rahul Sharma',
-      reportedDate: '2025-03-20'
-    },
-    {
-      id: 'issue_002',
-      propertyId: 'prop_001',
-      propertyName: 'Sunrise PG',
-      title: 'WiFi not working in Block B',
-      description: 'The WiFi router in Block B stopped working since yesterday morning.',
-      category: 'Internet',
-      priority: 'Medium',
-      status: 'Open',
-      reportedBy: 'Priya Nair',
-      reportedDate: '2025-03-22'
-    }
-  ];
+  const sessionStr = sessionStorage.getItem('pg_user');
+  if (!sessionStr) return;
+  const session = JSON.parse(sessionStr);
 
-  // Merge tenant-submitted issues from global_issues
-  let globalIss = JSON.parse(localStorage.getItem('global_issues')) || [];
-  let tenantIssues = globalIss.map(i => ({
-    id: i.id,
-    title: i.title,
-    description: i.desc || i.description || 'No description provided.',
-    category: i.category || 'Maintenance',
-    priority: i.priority ? (i.priority.charAt(0).toUpperCase() + i.priority.slice(1)) : 'Medium',
-    status: i.status === 'open' ? 'Open' : i.status === 'in-progress' ? 'In Progress' : 'Resolved',
-    reportedBy: i.tenantName || 'Amit Sharma (Tenant)',
-    propertyName: i.propertyName || 'Sunrise PG Residency',
-    room: i.room || 'A-204',
-    reportedDate: i.reportedDate || new Date().toISOString().split('T')[0],
-    _isGlobal: true,
-    _escalatedByWarden: i._escalatedByWarden || false
-  }));
-  
-  // Merge: tenant issues first (most recent), then static
-  allIssues = [...tenantIssues, ...staticIssues];
+  try {
+    const res = await fetch('http://localhost:3000/complaints', {
+      headers: {
+        'x-user-id': session.id || 1, // fallback to 1 if no session ID
+        'x-role': session.role || 'owner'
+      }
+    });
+    if (res.ok) {
+      const dbComplaints = await res.json();
+      allIssues = dbComplaints.map(i => ({
+        id: i.id,
+        title: i.type || 'Issue',
+        description: i.description || 'No description provided.',
+        category: 'Maintenance',
+        priority: i.priority ? (i.priority.charAt(0).toUpperCase() + i.priority.slice(1)) : 'Medium',
+        status: i.status === 'open' || i.status === 'pending' ? 'Open' : i.status === 'in_progress' ? 'In Progress' : i.status === 'escalated' ? 'Escalated' : 'Resolved',
+        reportedBy: i.tenant ? i.tenant.name : 'Unknown Tenant',
+        propertyName: i.property ? i.property.name : 'Sunrise PG Residency',
+        room: 'Unknown',
+        reportedDate: i.reportedAt || new Date().toISOString().split('T')[0],
+        _isGlobal: true,
+        _escalatedByWarden: i.status === 'escalated'
+      }));
+    }
+  } catch(err) {
+    console.error('Failed to fetch issues:', err);
+    allIssues = [];
+  }
+
   renderIssuesPage(allIssues);
 }
 
@@ -195,86 +181,55 @@ function filterIssues() {
 async function updateIssueStatus(id, newStatus) {
   const issueRef = allIssues.find(i => String(i.id) === String(id));
   if (!issueRef) return;
-  
-  if (issueRef._isGlobal) {
-    // Update in global_issues (Tenant's data store)
-    let globalIss = JSON.parse(localStorage.getItem('global_issues')) || [];
-    let match = globalIss.find(i => String(i.id) === String(id));
-    if (match) {
-      match.status = newStatus === 'Open' ? 'open' : newStatus === 'In Progress' ? 'in-progress' : 'resolved';
-      localStorage.setItem('global_issues', JSON.stringify(globalIss));
-    }
-    issueRef.status = newStatus;
-  } else {
-    // Update in owner's own data.json storage
-    const data = getData();
-    if (data) {
-      const idx = data.issues.findIndex(i => String(i.id) === String(id));
-      if (idx !== -1) {
-        data.issues[idx].status = newStatus;
-        updateData(data);
-      }
-    }
-    issueRef.status = newStatus;
-  }
 
-  // Fire cross_notification to Tenant when resolved
-  if (newStatus === 'Resolved') {
-    let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
-    crossNotifs.push({
-      id: Date.now(),
-      title: 'Issue Resolved by Owner',
-      message: `Your issue "${issueRef.title}" at ${issueRef.propertyName || 'Sunrise PG'} has been resolved by the Property Owner.`,
-      type: 'success',
-      priority: 'important',
-      targetRole: 'tenant',
-      by: 'Owner',
-      sentAt: new Date().toLocaleString()
-    });
-    // Also notify Warden
-    crossNotifs.push({
-      id: Date.now() + 1,
-      title: 'Issue Resolved by Owner',
-      message: `Issue "${issueRef.title}" has been marked resolved by the Property Owner.`,
-      type: 'success',
-      priority: 'important',
-      targetRole: 'warden',
-      by: 'Owner',
-      sentAt: new Date().toLocaleString()
-    });
-    localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
-  }
+  const sessionStr = sessionStorage.getItem('pg_user');
+  const session = sessionStr ? JSON.parse(sessionStr) : {};
+  const statusPayload = newStatus === 'Open' ? 'pending' : newStatus === 'In Progress' ? 'in_progress' : newStatus === 'Escalated' ? 'escalated' : 'resolved';
 
-  const card = document.getElementById(`issue-card-${id}`);
-  if (card) { card.style.opacity = '0.5'; card.style.transform = 'scale(0.98)'; card.style.transition = '0.2s'; }
-  await new Promise(r => setTimeout(r, 200));
+  try {
+    const res = await fetch(`http://localhost:3000/complaints/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': session.id || 1,
+        'x-role': session.role || 'owner'
+      },
+      body: JSON.stringify({ status: statusPayload })
+    });
+    if(res.ok) {
+       await loadIssues();
+    }
+  } catch(err) {
+    console.error(err);
+  }
 
   showToast(`Issue marked as "${newStatus}"`, 'success');
-  renderIssuesPage(allIssues);
   loadSidebarBadges();
 }
 
-function deleteIssue(id) {
+async function deleteIssue(id) {
   const issue = allIssues.find(i => String(i.id) === String(id));
   if (!issue) return;
-  confirmDialog('Delete Issue', `Delete "<strong>${issue.title}</strong>"? This cannot be undone.`, () => {
-    if (issue._isGlobal) {
-      // Remove from global_issues (Tenant's store)
-      let globalIss = JSON.parse(localStorage.getItem('global_issues')) || [];
-      globalIss = globalIss.filter(i => String(i.id) !== String(id));
-      localStorage.setItem('global_issues', JSON.stringify(globalIss));
-    } else {
-      // Remove from owner's own data store
-      const data = getData();
-      if (data) {
-        data.issues = data.issues.filter(i => String(i.id) !== String(id));
-        updateData(data);
-      }
+  confirmDialog('Delete Issue', `Delete "<strong>${issue.title}</strong>"? This cannot be undone.`, async () => {
+    
+    const sessionStr = sessionStorage.getItem('pg_user');
+    const session = sessionStr ? JSON.parse(sessionStr) : {};
+
+    try {
+      await fetch(`http://localhost:3000/complaints/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'x-user-id': session.id || 1,
+          'x-role': session.role || 'owner'
+        }
+      });
+      await loadIssues();
+    } catch(err) {
+      console.error(err);
     }
-    allIssues = allIssues.filter(i => String(i.id) !== String(id));
+
     closeModal();
     showToast('Issue deleted', 'success');
-    renderIssuesPage(allIssues);
     loadSidebarBadges();
   });
 }
@@ -333,27 +288,34 @@ async function submitNewIssue() {
 
   const propSelect = document.getElementById('newIssueProp');
   const propId = propSelect.value;
-  const propName = propSelect.options[propSelect.selectedIndex]?.dataset.name || '';
 
-  const data = getData();
-  const newIssue = {
-    id: generateId('issue'),
-    propertyId: propId,
-    propertyName: propName,
-    title,
-    description: document.getElementById('newIssueDesc').value.trim(),
-    category: document.getElementById('newIssueCat').value,
-    priority: document.getElementById('newIssuePriority').value,
-    status: 'Open',
-    reportedBy: document.getElementById('newIssueBy').value.trim() || 'Owner',
-    reportedDate: new Date().toISOString().split('T')[0]
-  };
+  const sessionStr = sessionStorage.getItem('pg_user');
+  const session = sessionStr ? JSON.parse(sessionStr) : {};
 
-  data.issues.unshift(newIssue);
-  updateData(data);
-  allIssues = data.issues;
-  closeModal();
-  showToast('Issue reported successfully!', 'success');
-  filterIssues();
-  loadSidebarBadges();
+  try {
+    const res = await fetch('http://localhost:3000/complaints', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': session.id || 1,
+        'x-role': session.role || 'owner'
+      },
+      body: JSON.stringify({
+        type: title,
+        description: document.getElementById('newIssueDesc').value.trim(),
+        priority: document.getElementById('newIssuePriority').value,
+        propertyId: propId || 1 // parse it correctly based on actual id
+      })
+    });
+    if (res.ok) {
+       await loadIssues();
+       closeModal();
+       showToast('Issue reported successfully!', 'success');
+       loadSidebarBadges();
+    } else {
+       showToast('Failed to report issue', 'error');
+    }
+  } catch(err) {
+    console.error(err);
+  }
 }

@@ -40,120 +40,56 @@ const PAGE_MAP = {
 };
 
 // ===== INIT =====
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   tenants       = JSON.parse(localStorage.getItem('warden_tenants'))       || [...MOCK_DATA.tenants];
   rooms         = JSON.parse(localStorage.getItem('warden_rooms'))         || [...MOCK_DATA.rooms];
   violations    = JSON.parse(localStorage.getItem('warden_violations'))    || [...MOCK_DATA.violations];
   notifications = JSON.parse(localStorage.getItem('warden_notifications')) || [...MOCK_DATA.notifications];
 
-  // Merge global complaints, issues, and services from Tenant into Warden's complaints view
-  let globalCmp = JSON.parse(localStorage.getItem('global_complaints')) || [];
-  let globalIss = JSON.parse(localStorage.getItem('global_issues')) || [];
-  let globalSrv = JSON.parse(localStorage.getItem('global_services')) || [];
-
-  // Build unified complaints array
-  complaints = [
-    ...globalCmp.map(c => ({
-      id: c.id, tenant: c.tenantName || 'Amit Sharma', room: c.room || 'A-204', type: 'Complaint', priority: c.priority || 'medium', status: c.status === 'in-progress' ? 'in_progress' : c.status, date: c.created || new Date().toLocaleDateString(), description: c.desc, _source: 'complaints'
-    })),
-    ...globalIss.map(i => ({
-      id: i.id, tenant: i.tenantName || 'Amit Sharma', room: i.room || 'A-204', type: 'Issue: ' + i.category, priority: i.priority || 'medium', status: i.status === 'in-progress' ? 'in_progress' : i.status, date: new Date().toLocaleDateString(), description: i.desc, _source: 'issues'
-    })),
-    ...globalSrv.map(s => ({
-      id: s.id, tenant: s.tenantName || 'Amit Sharma', room: s.room || 'A-204', type: 'Service: ' + s.name, priority: 'low', status: s.status === 'pending' ? 'open' : s.status, date: s.date, description: 'Requested ' + s.name, _source: 'services'
-    }))
-  ];
-
-  if (complaints.length === 0) {
-    complaints = JSON.parse(localStorage.getItem('warden_complaints')) || [...MOCK_DATA.complaints];
-  }
-
   checkAuth();           // from auth_warden.js
   setupLogout();         // from auth_warden.js
   setupNavigation();
   setupModalClose();
+  
+  await fetchComplaints();
 
-  // Cross-actor live notifications listener
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'cross_notifications') {
-      const notifs = JSON.parse(e.newValue || '[]');
-      if (notifs.length === 0) return;
-      const latest = notifs[notifs.length - 1];
-
-      // Warden receives notifications if targetRole is 'warden' or 'all'
-      if (latest.by !== 'Warden' && (latest.targetRole === 'warden' || latest.targetRole === 'all')) {
-        showToast('info', 'Incoming Update', latest.title + ': ' + latest.message);
-
-        // Deduplicate before adding
-        const alreadyExists = notifications.some(n => n.id === latest.id);
-        if (!alreadyExists) {
-          notifications.unshift({
-            id: latest.id,
-            type: latest.type || 'info',
-            title: latest.title,
-            desc: latest.message,
-            time: latest.sentAt || 'Just now',
-            unread: true
-          });
-          saveToStorage();
-        }
-
-        // Map tenant complaints/issues/services into warden complaints
-        const isTenantAction = ['New Complaint', 'New Issue Reported', 'New Service Request'].includes(latest.title);
-        if (isTenantAction) {
-          let complaintType = 'General';
-          if (latest.title === 'New Issue Reported') complaintType = 'Issue';
-          if (latest.title === 'New Service Request') complaintType = 'Service Request';
-
-          const compAlreadyExists = complaints.some(c => String(c.id) === String(latest.id));
-          if (!compAlreadyExists) {
-            complaints.unshift({
-              id: latest.id || Date.now(),
-              tenant: latest.tenantName || 'Tenant',
-              room: latest.room || 'A-204',
-              type: complaintType,
-              description: latest.message,
-              priority: latest.priority || 'medium',
-              status: 'open',
-              date: new Date().toLocaleDateString('en-US'),
-              timeline: [{ time: new Date().toLocaleString(), event: `${latest.title} filed`, by: 'Tenant' }],
-              _source: latest.title === 'New Complaint' ? 'complaints' : (latest.title === 'New Issue Reported' ? 'issues' : 'services')
-            });
-            saveToStorage();
-          }
-        }
-
-        if (typeof updateNotifBadge === 'function') updateNotifBadge();
-        if (currentSection === 'complaints' && typeof renderComplaints === 'function') renderComplaints();
-        if (currentSection === 'dashboard' && typeof renderDashboard === 'function') renderDashboard();
-        if (currentSection === 'notifications' && typeof renderNotifications === 'function') renderNotifications();
-      }
-    }
-
-    if (['global_complaints', 'global_issues', 'global_services'].includes(e.key)) {
-      // Rebuild unified complaints array
-      let gc = JSON.parse(localStorage.getItem('global_complaints')) || [];
-      let gi = JSON.parse(localStorage.getItem('global_issues')) || [];
-      let gs = JSON.parse(localStorage.getItem('global_services')) || [];
-      
-      complaints = [
-        ...gc.map(c => ({
-          id: c.id, tenant: c.tenantName || 'Amit Sharma', room: c.room || 'A-204', type: 'Complaint', priority: c.priority || 'medium', status: c.status === 'in-progress' ? 'in_progress' : c.status, date: c.created || new Date().toLocaleDateString(), description: c.desc, _source: 'complaints'
-        })),
-        ...gi.map(i => ({
-          id: i.id, tenant: i.tenantName || 'Amit Sharma', room: i.room || 'A-204', type: 'Issue: ' + i.category, priority: i.priority || 'medium', status: i.status === 'in-progress' ? 'in_progress' : i.status, date: new Date().toLocaleDateString(), description: i.desc, _source: 'issues'
-        })),
-        ...gs.map(s => ({
-          id: s.id, tenant: s.tenantName || 'Amit Sharma', room: s.room || 'A-204', type: 'Service: ' + s.name, priority: 'low', status: s.status === 'pending' ? 'open' : s.status, date: s.date, description: 'Requested ' + s.name, _source: 'services'
-        }))
-      ];
-      
-      if (currentSection === 'complaints' && typeof renderComplaints === 'function') {
-        renderComplaints();
-      }
-    }
-  });
+  // Polling for updates since WebSockets aren't implemented in the backend yet
+  setInterval(fetchComplaints, 10000);
 });
+
+async function fetchComplaints() {
+  const sessionStr = sessionStorage.getItem('pg_user');
+  if (!sessionStr) return;
+  const session = JSON.parse(sessionStr);
+  if (!session.id) return; // Need user ID for headers
+
+  try {
+    const res = await fetch('http://localhost:3000/complaints', {
+      headers: {
+        'x-user-id': session.id,
+        'x-role': session.role
+      }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      complaints = data.map(c => ({
+        id: c.id,
+        tenant: c.tenant ? c.tenant.name : 'Unknown',
+        room: 'Unknown', // Room is in booking, not complaint directly
+        type: 'Complaint',
+        priority: 'medium',
+        status: c.status,
+        date: c.reportedAt,
+        description: c.description,
+        _source: 'complaints'
+      }));
+      if (currentSection === 'complaints' && typeof renderComplaints === 'function') renderComplaints();
+      if (currentSection === 'dashboard' && typeof renderDashboard === 'function') renderDashboard();
+    }
+  } catch (err) {
+    console.error('Failed to fetch complaints:', err);
+  }
+}
 
 // ===== NAVIGATION =====
 function setupNavigation() {

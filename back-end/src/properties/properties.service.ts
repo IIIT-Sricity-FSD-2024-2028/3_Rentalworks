@@ -3,12 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Property } from './property.entity';
 import { CreatePropertyDto, UpdatePropertyDto } from './properties.dto';
+import { Notification } from '../notifications/notification.entity';
 
 @Injectable()
 export class PropertiesService {
   constructor(
     @InjectRepository(Property)
     private propertiesRepository: Repository<Property>,
+    @InjectRepository(Notification)
+    private notificationsRepository: Repository<Notification>,
   ) {}
 
   findAll() {
@@ -39,9 +42,37 @@ export class PropertiesService {
 
   async update(id: number, updatePropertyDto: UpdatePropertyDto) {
     const property = await this.findOne(id);
+    const oldStatus = property.status;
     const cleanDto = Object.fromEntries(Object.entries(updatePropertyDto).filter(([_, v]) => v !== undefined));
     Object.assign(property, cleanDto);
-    return this.propertiesRepository.save(property);
+    
+    const saved = await this.propertiesRepository.save(property);
+
+    if (oldStatus !== saved.status && property.ownerId) {
+       let msg = '';
+       let type = 'info';
+       if (saved.status === 'active') {
+         msg = `Your property "${saved.name}" has been approved and is now active.`;
+         type = 'success';
+       } else if (saved.status === 'rejected') {
+         msg = `Your property "${saved.name}" has been rejected.`;
+         type = 'alert';
+       }
+
+       if (msg) {
+         await this.notificationsRepository.save({
+           title: 'Property Status Update',
+           message: msg,
+           type: type,
+           priority: 'high',
+           recipients: 1, // 1 user
+           userId: property.ownerId,
+           sentAt: new Date().toISOString()
+         });
+       }
+    }
+
+    return saved;
   }
 
   async remove(id: number) {

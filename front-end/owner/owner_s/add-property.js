@@ -201,7 +201,7 @@ async function submitProperty() {
     occupiedRooms: occupied,
     monthlyRent: parseInt(document.getElementById('propRent').value),
     amenities: selectedAmenities,
-    status: document.getElementById('propStatus').value,
+    status: 'Pending',
     addedDate: new Date().toISOString().split('T')[0],
     description: document.getElementById('propDesc').value.trim()
   };

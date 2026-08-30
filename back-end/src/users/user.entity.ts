@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Property } from '../properties/property.entity';
 
 @Entity('users')
 export class User {
@@ -40,4 +41,11 @@ export class User {
 
   @Column({ type: 'decimal', nullable: true })
   subscriptionFee?: number;
+
+  @ManyToOne(() => Property, { nullable: true })
+  @JoinColumn({ name: 'assignedPropertyId' })
+  assignedProperty?: Property;
+
+  @Column({ nullable: true })
+  assignedPropertyId?: number;
 }

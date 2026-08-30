@@ -216,6 +216,7 @@ async function handleLogin(role) {
 
     // Save session
     sessionStorage.setItem('pg_user', JSON.stringify({
+      id:       user.id,
       name:     user.name,
       email:    user.email,
       phone:    user.phone || '',
@@ -771,8 +772,42 @@ function submitOwnerRegistration() {
     inspectionPassed: false
   };
 
+  // Save to LocalStorage for fallback
   registeredOwners.push(newOwner);
   localStorage.setItem('registered_owners', JSON.stringify(registeredOwners));
+
+  // Push to backend API
+  fetch('http://localhost:3000/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-role': 'guest' },
+    body: JSON.stringify({
+      name, email, phone,
+      role: 'owner',
+      username: email,
+      status: 'pending'
+    })
+  }).then(async res => {
+    let ownerId = null;
+    if(res.ok) {
+      const dbUser = await res.json();
+      ownerId = dbUser.id;
+    }
+    
+    // Create property in backend
+    fetch('http://localhost:3000/properties', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-role': 'owner' },
+      body: JSON.stringify({
+        name: propname,
+        location: `${propaddr}, ${city}, ${state}`,
+        rooms: rooms.toString(),
+        ownerId: ownerId,
+        rentMin: 5000,
+        rentMax: 10000,
+        amenities: amenities
+      })
+    }).catch(e => console.error(e));
+  }).catch(e => console.error(e));
 
   // Push notification to Admin for real-time verification alert
   let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
@@ -790,7 +825,7 @@ function submitOwnerRegistration() {
 
   showSuccessScreen(
     'Registration Submitted',
-    `Thank you, ${name}. Your property "${propname}" has been submitted for admin review. You will be notified once your documents are verified and the property inspection is complete.`
+    `Thank you, ${name}. Your property "${propname}" has been submitted for admin review. You will be notified with your credentials once your documents are verified and the property inspection is complete.`
   );
 }
 

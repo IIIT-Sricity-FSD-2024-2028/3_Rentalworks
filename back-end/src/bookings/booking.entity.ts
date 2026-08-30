@@ -35,4 +35,7 @@ export class Booking {
 
   @Column()
   status: string;
+
+  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt: string;
 }
