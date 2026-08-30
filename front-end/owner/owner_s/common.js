@@ -14,6 +14,13 @@ function requireAuth() {
   try {
     const parsed = JSON.parse(session);
     if (parsed.role !== 'owner') throw new Error('Not owner');
+    
+    // Check if subscription plan exists, redirect to payment wall if not
+    if (!parsed.subscriptionPlan && !window.location.pathname.includes('subscription.html')) {
+       window.location.href = 'subscription.html';
+       return null;
+    }
+
     return parsed;
   } catch (e) {
     sessionStorage.removeItem(SESSION_KEY);

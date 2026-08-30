@@ -13,14 +13,46 @@ function renderDashboard() {
 
   // GTV = sum of all verified payments
   const gtv            = payments.filter(p => p.status === 'verified').reduce((s, p) => s + p.amount, 0);
-  const platformRev    = Math.round(gtv * 0.10);
+  
+  // Subscription Revenue
+  const registeredOwners = JSON.parse(localStorage.getItem('registered_owners') || '[]');
+  
+  const processedOwners = new Set();
+  const subsRev = properties.reduce((acc, p) => {
+    let ownerName = p.owner?.name || p.owner;
+    let ownerEmail = p.owner?.email || p.ownerEmail;
+    
+    const ownerKey = ownerEmail || ownerName || 'unknown';
+    
+    if (processedOwners.has(ownerKey) && ownerKey !== 'unknown') {
+      return acc;
+    }
+    processedOwners.add(ownerKey);
+    
+    let ownerObj = registeredOwners.find(o => (ownerName && o.name === ownerName) || (ownerEmail && o.email === ownerEmail));
+    if (!ownerObj) ownerObj = users.find(u => (ownerName && u.name === ownerName) || (ownerEmail && u.email === ownerEmail));
+    
+    if (!ownerObj && p.owner && typeof p.owner === 'object') {
+      ownerObj = p.owner;
+    }
+    
+    let rev = 0;
+    if (ownerObj && ownerObj.subscriptionPlan) {
+      rev = Number(ownerObj.subscriptionFee) || 0;
+    } else if (p.status === 'verified' || p.status === 'approved') {
+      rev = 5000;
+    }
+    return acc + rev;
+  }, 0);
+
+  const platformRev    = Math.round(gtv * 0.10) + subsRev;
 
   setTxt('d-total-users',  totalUsers.toLocaleString());
   setTxt('d-properties',   totalProps);
   setTxt('d-bookings',     activeBookings);
   setTxt('d-complaints',   pendingComps);
-  setTxt('d-gtv',         '₹' + (gtv / 1000).toFixed(0) + 'K');
-  setTxt('d-platform-rev','₹' + (platformRev / 1000).toFixed(0) + 'K');
+  setTxt('d-gtv',         '₹' + (gtv / 1000).toFixed(1) + 'K');
+  setTxt('d-platform-rev','₹' + (platformRev / 1000).toFixed(1) + 'K');
 
   renderActivityFeed();
   renderRevenueChart();

@@ -734,6 +734,36 @@
         ]
       }
     },
+    "/payments/revenue": {
+      "get": {
+        "operationId": "PaymentsController_getRevenue",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get total platform revenue",
+        "tags": [
+          "payments"
+        ]
+      }
+    },
     "/payments": {
       "get": {
         "operationId": "PaymentsController_findAll",
@@ -1398,6 +1428,9 @@
           },
           "password": {
             "type": "string"
+          },
+          "region": {
+            "type": "string"
           }
         },
         "required": [
@@ -1425,6 +1458,9 @@
             "type": "string"
           },
           "role": {
+            "type": "string"
+          },
+          "region": {
             "type": "string"
           }
         }

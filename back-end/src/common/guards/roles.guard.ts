@@ -23,6 +23,10 @@ export class RolesGuard implements CanActivate {
       return false; // Role header missing
     }
     
+    if (userRole === 'super_admin') {
+      return true; // Super admin has access to everything
+    }
+    
     return requiredRoles.includes(userRole as string);
   }
 }

@@ -12,9 +12,16 @@
       "totalRooms": 20,
       "occupiedRooms": 17,
       "monthlyRent": 8500,
-      "amenities": ["WiFi", "AC", "Laundry", "Mess"],
+      "amenities": [
+        "WiFi",
+        "AC",
+        "Laundry",
+        "Mess"
+      ],
       "status": "Active",
-      "addedDate": "2024-01-15"
+      "addedDate": "2024-01-15",
+      "owner": "Rajesh Kumar",
+      "ownerEmail": "rajesh.k@email.com"
     },
     {
       "id": "prop_002",
@@ -28,9 +35,15 @@
       "totalRooms": 15,
       "occupiedRooms": 12,
       "monthlyRent": 7500,
-      "amenities": ["WiFi", "Mess", "Security"],
+      "amenities": [
+        "WiFi",
+        "Mess",
+        "Security"
+      ],
       "status": "Active",
-      "addedDate": "2024-02-20"
+      "addedDate": "2024-02-20",
+      "owner": "Rajesh Kumar",
+      "ownerEmail": "rajesh.k@email.com"
     },
     {
       "id": "prop_003",
@@ -44,9 +57,16 @@
       "totalRooms": 25,
       "occupiedRooms": 18,
       "monthlyRent": 6500,
-      "amenities": ["WiFi", "Gym", "Parking", "Power Backup"],
+      "amenities": [
+        "WiFi",
+        "Gym",
+        "Parking",
+        "Power Backup"
+      ],
       "status": "Active",
-      "addedDate": "2024-03-10"
+      "addedDate": "2024-03-10",
+      "owner": "Rajesh Kumar",
+      "ownerEmail": "rajesh.k@email.com"
     },
     {
       "id": "prop_004",
@@ -60,9 +80,15 @@
       "totalRooms": 10,
       "occupiedRooms": 4,
       "monthlyRent": 9000,
-      "amenities": ["WiFi", "AC", "Mess"],
+      "amenities": [
+        "WiFi",
+        "AC",
+        "Mess"
+      ],
       "status": "Inactive",
-      "addedDate": "2024-04-05"
+      "addedDate": "2024-04-05",
+      "owner": "Rajesh Kumar",
+      "ownerEmail": "rajesh.k@email.com"
     }
   ],
   "issues": [
@@ -185,8 +211,8 @@
     "leaseTermMonths": 11
   },
   "profile": {
-    "name": "Ramesh Iyer",
-    "email": "ramesh.iyer@email.com",
+    "name": "Rajesh Kumar",
+    "email": "rajesh.k@email.com",
     "phone": "+91 98765 43210",
     "company": "Iyer Properties Pvt Ltd",
     "city": "Chennai",

@@ -1,0 +1,88 @@
+<!-- ================================
+  PROFILE FRAGMENT (SUPER ADMIN)
+  Loaded by: navigateTo('profile')
+================================= -->
+<section id="profile-sec" class="section active">
+  <div class="sec-hdr">
+    <h2>Profile</h2>
+    <p>Manage your account security and preferences</p>
+  </div>
+
+  <div style="background:#fff; border-radius:8px; border:1px solid #e2e8f0; padding:24px; margin-bottom:24px; max-width: 800px;">
+    <div class="profile-avatar-wrap" style="display:flex; align-items:center; gap:16px; margin-bottom: 24px;">
+      <div class="profile-avatar-circle" style="width:64px; height:64px; border-radius:50%; background:#2563eb; color:#fff; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:bold;">A</div>
+      <div>
+        <strong style="font-size:18px; display:block;" id="profile-name-disp">Super Admin</strong>
+        <div style="font-size:14px; color:#64748b; margin-top:4px;" id="profile-email-disp">admin@pgrentals.com</div>
+        <span class="badge badge-admin" style="margin-top:8px; display:inline-flex; padding:4px 8px; background:#eff6ff; color:#1d4ed8; border-radius:4px; font-size:12px; font-weight:600;">Super Administrator</span>
+      </div>
+    </div>
+    
+    <div class="profile-meta-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom: 32px; padding-bottom:24px; border-bottom:1px solid #e2e8f0;">
+      <div class="profile-meta-item">
+        <span style="display:block; font-size:12px; color:#64748b;">Role</span>
+        <strong style="font-size:14px;">Super Admin</strong>
+      </div>
+      <div class="profile-meta-item">
+        <span style="display:block; font-size:12px; color:#64748b;">Last Login</span>
+        <strong style="font-size:14px;">Today at 10:45 AM</strong>
+      </div>
+      <div class="profile-meta-item">
+        <span style="display:block; font-size:12px; color:#64748b;">Status</span>
+        <strong style="font-size:14px; color:#16a34a;">Active</strong>
+      </div>
+    </div>
+
+    <h4 style="font-size:16px; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+      <span class="material-icons-outlined">manage_accounts</span> Personal Information
+    </h4>
+    <div style="display:grid; gap:16px; max-width:400px; margin-bottom: 32px; padding-bottom:24px; border-bottom:1px solid #e2e8f0;">
+      <div>
+        <label style="display:block; font-size:13px; font-weight:500; margin-bottom:6px;">Full Name</label>
+        <input type="text" id="pg-prof-name" placeholder="Enter full name" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+      </div>
+      <div>
+        <label style="display:block; font-size:13px; font-weight:500; margin-bottom:6px;">Email Address</label>
+        <input type="email" id="pg-prof-email" placeholder="Enter email address" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+      </div>
+      <div>
+        <label style="display:block; font-size:13px; font-weight:500; margin-bottom:6px;">Phone Number</label>
+        <input type="text" id="pg-prof-phone" placeholder="Enter phone number" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+      </div>
+      <button class="btn-confirm-blue" style="padding:10px 16px; margin-top:8px;" onclick="updateProfileDetails()">Update Details</button>
+    </div>
+
+    <h4 style="font-size:16px; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+      <span class="material-icons-outlined">lock</span> Security Settings
+    </h4>
+    <div style="display:grid; gap:16px; max-width:400px; margin-bottom: 32px; padding-bottom:24px; border-bottom:1px solid #e2e8f0;">
+      <div>
+        <label style="display:block; font-size:13px; font-weight:500; margin-bottom:6px;">Current Password</label>
+        <input type="password" id="pg-curr-pass" placeholder="Enter current password" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+      </div>
+      <div>
+        <label style="display:block; font-size:13px; font-weight:500; margin-bottom:6px;">New Password</label>
+        <input type="password" id="pg-new-pass" placeholder="Min 6 characters" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+      </div>
+      <div>
+        <label style="display:block; font-size:13px; font-weight:500; margin-bottom:6px;">Confirm New Password</label>
+        <input type="password" id="pg-conf-pass" placeholder="Repeat new password" style="width:100%; padding:10px; border-radius:6px; border:1px solid #cbd5e1;">
+      </div>
+      <button class="btn-confirm-blue" style="padding:10px 16px; margin-top:8px;" onclick="updatePagePassword()">Update Password</button>
+    </div>
+
+    <h4 style="font-size:16px; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+      <span class="material-icons-outlined">security</span> System Security
+    </h4>
+    <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:16px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:32px;">
+      <div>
+        <strong style="font-size:14px; display:block;">Two-Factor Authentication (2FA)</strong>
+        <span style="font-size:13px; color:#64748b;">Add an extra layer of security</span>
+      </div>
+      <label class="toggle-switch" style="position:relative; display:inline-block; width:44px; height:24px;">
+        <input type="checkbox" id="page-twofa-toggle" onchange="togglePage2FA()" style="opacity:0; width:0; height:0;">
+        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#cbd5e1; transition:.4s; border-radius:34px;"></span>
+      </label>
+    </div>
+  </div>
+</section>

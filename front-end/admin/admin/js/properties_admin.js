@@ -101,7 +101,7 @@ function buildPropertyCard(p) {
         <span class="badge badge-${p.status}">${cap(p.status)}</span>
       </div>
       <div class="prop-location">📍 ${p.location}</div>
-      <div class="prop-owner">Owner: <span>${p.owner}</span></div>
+      <div class="prop-owner">Owner: <span>${typeof p.owner === 'object' ? (p.owner.name || 'Unknown') : (p.owner || 'Unknown')}</span></div>
       ${pipelineBadges}
       ${changeReqAlert}
       <div class="prop-details">

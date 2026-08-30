@@ -64,6 +64,16 @@ async function fetchData() {
       if (!mergedPayments.find(m => m.id === lp.id)) mergedPayments.unshift(lp);
     });
     payments = mergedPayments;
+
+    // Filter by Region for Regional Admin
+    const user = JSON.parse(sessionStorage.getItem('pg_user'));
+    if (user && user.region) {
+      properties = properties.filter(p => p.location && p.location.includes(user.region));
+      const validPropNames = properties.map(p => p.name);
+      bookings = bookings.filter(b => validPropNames.includes(b.property));
+      payments = payments.filter(p => validPropNames.includes(p.property));
+    }
+    
   } catch(e) {
     console.error('API Error:', e);
   }
@@ -89,7 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupGearIcon();
   
   // Set up polling for real-time stats
-  setInterval(fetchData, 5000);
+  // setInterval(fetchData, 5000); // Polling removed to fix GET 304 spam
 
   // Cross-actor live notifications listener
   window.addEventListener('storage', (e) => {
@@ -198,6 +208,15 @@ function showDashboardShell(user) {
 
   setTxt('nb-name',  'Welcome back, ' + user.name);
   setTxt('nb-email', user.email);
+  
+  if (user.region) {
+    const rb = document.getElementById('nb-region-badge');
+    if (rb) {
+      rb.textContent = 'Region: ' + user.region;
+      rb.style.display = 'inline-block';
+    }
+  }
+
   navigateTo('dashboard');
 }
 
@@ -289,7 +308,7 @@ function g(id)          { return document.getElementById(id); }
 function setTxt(id, v)  { const e = document.getElementById(id); if (e) e.textContent = v; }
 function cap(s)         { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
 function validEmail(e)  { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
-function validPhone(p)  { return /^\+?[\d\s\-]{10,}$/.test(p); }
+function validPhone(p)  { return /^\+?[\d\s\-]{9,}$/.test(p); }
 function deepClone(o)   { return JSON.parse(JSON.stringify(o)); }
 function fmtCurrency(n) { return '₹' + n.toLocaleString('en-IN'); }
 
@@ -337,7 +356,8 @@ function syncOwnerProperties() {
           id: ownerProp.id || Date.now(),
           name: ownerProp.name || ownerProp.propertyName || 'Unknown',
           location: ownerProp.city || ownerProp.address || 'Unknown Location',
-          owner: ownerProp.owner || (ownerProp.name ? ownerProp.name : 'Registered Owner'),
+          owner: ownerProp.owner || 'Rajesh Kumar',
+          ownerEmail: ownerProp.ownerEmail || 'rajesh.k@email.com',
           rentMin: ownerProp.monthlyRent || 5000,
           rentMax: ownerProp.monthlyRent || 8000,
           safetyScore: 8.0,

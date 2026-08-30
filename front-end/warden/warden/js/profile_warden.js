@@ -35,7 +35,7 @@ function saveProfile() {
     showToast('error', 'Invalid Email', 'Please enter a valid email address');
     return;
   }
-  if (!/^\+?[\d\s\-]{10,}$/.test(phone)) {
+  if (!/^\+?[\d\s\-]{9,}$/.test(phone)) {
     showToast('error', 'Invalid Phone', 'Please enter a valid phone number');
     return;
   }

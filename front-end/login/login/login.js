@@ -15,7 +15,8 @@ let guestFormData = {};
 if (typeof LOGIN_MOCK === 'undefined') {
   var LOGIN_MOCK = {
     credentials: {
-      admin: [{ username: 'admin', password: 'password123', name: 'Admin' }],
+      super_admin: [{ username: 'superadmin', password: 'admin123', name: 'Super Admin', role: 'super_admin' }],
+      admin: [{ username: 'admin', password: 'admin123', name: 'Admin', role: 'admin' }],
       warden: [], 
       owner: [], 
       tenant: [
@@ -86,12 +87,14 @@ function showLoginForm(role) {
 
   // Role-specific title and subtitle
   const titles = {
+    super_admin: 'Super Admin Login',
     admin:  'Admin Login',
     warden: 'Warden Login',
     owner:  'Owner Login',
     tenant: 'Tenant Login'
   };
   const subs = {
+    super_admin: 'Global system administration access',
     admin:  'System administration access',
     warden: 'PG operations management',
     owner:  'Property owner portal',
@@ -234,6 +237,7 @@ async function handleLogin(role) {
 function routeUser(role) {
   const routes = {
     admin:  '../../admin/admin/index.html',
+    super_admin: '../../super_admin/super_admin/index.html',
     warden: '../../warden/warden/index_warden.html',
     owner:  '../../owner/owner_s/index.html',
     tenant: '../../Tenant/index.html',
@@ -435,8 +439,8 @@ function guestNext() {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       showRegErr('err-g-email', 'Enter a valid email address'); valid = false;
     }
-    if (!phone || !/^\+?[\d\s\-]{10,}$/.test(phone)) {
-      showRegErr('err-g-phone', 'Enter a valid phone number (min 10 digits)'); valid = false;
+    if (!phone || !/^\+?[\d\s\-]{9,}$/.test(phone)) {
+      showRegErr('err-g-phone', 'Enter a valid phone number (min 9 digits)'); valid = false;
     }
     // Duplicate email/phone check
     if (valid) {
@@ -727,7 +731,7 @@ function submitOwnerRegistration() {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     showRegErr('err-o-email', 'Enter a valid email address'); valid = false;
   }
-  if (!phone || !/^\+?[\d\s\-]{10,}$/.test(phone)) {
+  if (!phone || !/^\+?[\d\s\-]{9,}$/.test(phone)) {
     showRegErr('err-o-phone', 'Enter a valid phone number'); valid = false;
   }
   if (!propname) { showRegErr('err-o-propname', 'Property name is required');        valid = false; }

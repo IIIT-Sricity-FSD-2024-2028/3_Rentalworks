@@ -5,7 +5,49 @@
 //           Refund clearance logic
 // ===================================================
 
+function syncSunrisePayments() {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sunrise_pg_state_')) {
+        const sunriseStateStr = localStorage.getItem(key);
+        if (!sunriseStateStr) continue;
+        const sunriseState = JSON.parse(sunriseStateStr);
+        const guestBookings = sunriseState.bookings || [];
+
+        guestBookings.forEach(gbk => {
+          if (gbk.status === 'confirmed' || gbk.status === 'approved') {
+             const txnId = `TXN-${gbk.id}`;
+             const existingIdx = payments.findIndex(p => p.id.toString() === gbk.id.toString() || p.transactionId === txnId);
+             if (existingIdx === -1) {
+                const tenantName = gbk.user?.name || gbk.user || "Guest Viewer";
+                const adminPayPayload = {
+                  id: gbk.id,
+                  tenant: tenantName,
+                  property: gbk.pg || 'Sunrise PG Residency',
+                  room: gbk.room || 'Single',
+                  amount: gbk.rent || 10000,
+                  method: 'UPI',
+                  transactionId: txnId,
+                  paidDate: gbk.date || new Date().toLocaleDateString('en-CA'),
+                  status: 'verified',
+                  clearance: 'Approved'
+                };
+                payments.unshift(adminPayPayload);
+             }
+          }
+        });
+      }
+    }
+    saveData();
+  } catch (e) {
+    console.error("Failed to sync Sunrise PG payments", e);
+  }
+}
+
 function renderPayments(search = '', statusF = 'verified') {
+  syncSunrisePayments();
+
   // Only verified payments in ledger
   const verifiedPayments = payments.filter(p => p.status === 'verified');
   const pendingPayments  = payments.filter(p => p.status === 'pending');

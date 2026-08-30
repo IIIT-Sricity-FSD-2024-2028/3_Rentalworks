@@ -1,0 +1,54 @@
+<!-- ================================
+  REGIONAL ADMINS FRAGMENT (SUPER ADMIN)
+  Loaded by: navigateTo('regional_admins')
+================================= -->
+<section id="regional-admins-sec" class="section active">
+  <div class="sec-hdr">
+    <h2>Regional Admins</h2>
+    <p>Manage administrative accounts and their assigned regions</p>
+    <div class="hdr-actions">
+      <button class="btn-confirm-blue" style="margin-top: 12px; padding: 10px 16px; border-radius: 6px; font-weight: 600;" onclick="openAddAdminModal()">+ Add Regional Admin</button>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="pay-summary">
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-blue"><span class="material-icons-outlined" style="font-size:32px;">supervisor_account</span></div></div>
+      <div class="stat-val" id="radmin-total">–</div>
+      <div class="stat-lbl">Total Admins</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-green"><span class="material-icons-outlined" style="font-size:32px;">map</span></div></div>
+      <div class="stat-val" id="radmin-regions">–</div>
+      <div class="stat-lbl">Active Regions</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-purple"><span class="material-icons-outlined" style="font-size:32px;">verified_user</span></div></div>
+      <div class="stat-val" id="radmin-active">–</div>
+      <div class="stat-lbl">Active Accounts</div>
+    </div>
+  </div>
+
+  <div class="tbl-wrap">
+    <div class="tbl-hdr">
+      <div class="search-wrap">
+        <span class="s-ico"><span class="material-icons-outlined" style="font-size:24px;">search</span></span>
+        <input type="text" id="radmin-search" placeholder="Search by name, email, or region...">
+      </div>
+    </div>
+    <table class="data-tbl">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Assigned Region</th>
+          <th>Status</th>
+          <th class="ta-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="regional-admins-table-body">
+      </tbody>
+    </table>
+  </div>
+</section>

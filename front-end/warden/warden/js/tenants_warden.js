@@ -90,7 +90,7 @@ function addTenant() {
     let valid = true;
     if (!name) { showFieldError('err-add-name', 'Name is required'); valid = false; }
     if (!room) { showFieldError('err-add-room', 'Room number is required'); valid = false; }
-    if (!phone || !/^\+?[\d\s\-]{10,}$/.test(phone)) { showFieldError('err-add-phone', 'Enter a valid phone number'); valid = false; }
+    if (!phone || !/^\+?[\d\s\-]{9,}$/.test(phone)) { showFieldError('err-add-phone', 'Enter a valid phone number'); valid = false; }
     if (!checkin) { showFieldError('err-add-checkin', 'Check-in date is required'); valid = false; }
     if (!rent || isNaN(rent) || rent <= 0) { showFieldError('err-add-rent', 'Enter a valid rent amount'); valid = false; }
     if (!valid) return;
@@ -155,7 +155,7 @@ function editTenant(id) {
 
     let valid = true;
     if (!room) { showFieldError('err-edit-room', 'Room number is required'); valid = false; }
-    if (!phone || !/^\+?[\d\s\-]{10,}$/.test(phone)) { showFieldError('err-edit-phone', 'Enter a valid phone number'); valid = false; }
+    if (!phone || !/^\+?[\d\s\-]{9,}$/.test(phone)) { showFieldError('err-edit-phone', 'Enter a valid phone number'); valid = false; }
     if (!rent || isNaN(rent) || rent <= 0) { showFieldError('err-edit-rent', 'Enter a valid rent amount'); valid = false; }
     if (!valid) return;
 

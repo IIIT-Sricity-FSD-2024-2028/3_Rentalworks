@@ -31,4 +31,13 @@ export class User {
 
   @CreateDateColumn({ type: 'date' })
   joinDate: string;
+
+  @Column({ nullable: true })
+  region?: string;
+
+  @Column({ nullable: true })
+  subscriptionPlan?: string;
+
+  @Column({ type: 'decimal', nullable: true })
+  subscriptionFee?: number;
 }

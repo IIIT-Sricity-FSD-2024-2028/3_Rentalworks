@@ -15,7 +15,7 @@ export class CreateUserDto {
   phone: string;
 
   @ApiProperty()
-  @IsEnum(['admin', 'warden', 'tenant', 'owner', 'guest'])
+  @IsEnum(['super_admin', 'admin', 'warden', 'tenant', 'owner', 'guest'])
   role: string;
 
   @ApiProperty()
@@ -25,6 +25,11 @@ export class CreateUserDto {
   @ApiProperty()
   @IsString()
   password?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  region?: string;
 }
 
 export class UpdateUserDto {
@@ -53,6 +58,11 @@ export class UpdateUserDto {
   @IsString()
   @IsOptional()
   role?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  region?: string;
 }
 
 export class LoginDto {

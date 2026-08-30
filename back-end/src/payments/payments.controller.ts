@@ -11,36 +11,43 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
+  @Get('revenue')
+  @Roles('super_admin')
+  @ApiOperation({ summary: 'Get total platform revenue' })
+  getRevenue() {
+    return this.paymentsService.getRevenue();
+  }
+
   @Get()
-  @Roles('admin', 'warden', 'tenant', 'owner')
+  @Roles('super_admin', 'admin', 'warden', 'tenant', 'owner')
   @ApiOperation({ summary: 'Get all payments' })
   findAll() {
     return this.paymentsService.findAll();
   }
 
   @Get(':id')
-  @Roles('admin', 'warden', 'tenant', 'owner')
+  @Roles('super_admin', 'admin', 'warden', 'tenant', 'owner')
   @ApiOperation({ summary: 'Get payment by ID' })
   findOne(@Param('id') id: string) {
     return this.paymentsService.findOne(+id);
   }
 
   @Post()
-  @Roles('admin', 'tenant')
+  @Roles('super_admin', 'admin', 'tenant')
   @ApiOperation({ summary: 'Submit new payment' })
   create(@Body() createPaymentDto: CreatePaymentDto) {
     return this.paymentsService.create(createPaymentDto);
   }
 
   @Put(':id')
-  @Roles('admin', 'owner')
+  @Roles('super_admin', 'admin', 'owner')
   @ApiOperation({ summary: 'Update payment status' })
   update(@Param('id') id: string, @Body() updatePaymentDto: UpdatePaymentDto) {
     return this.paymentsService.update(+id, updatePaymentDto);
   }
 
   @Delete(':id')
-  @Roles('admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: 'Delete payment record' })
   remove(@Param('id') id: string) {
     return this.paymentsService.remove(+id);
