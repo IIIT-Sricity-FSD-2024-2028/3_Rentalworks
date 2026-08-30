@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { createUploadOptions } from '../middleware/file-upload.middleware';
 import { ComplaintsService } from './complaints.service';
@@ -15,7 +26,9 @@ export class ComplaintsController {
 
   @Post(':id/upload-attachment')
   @Roles('admin', 'tenant', 'warden')
-  @UseInterceptors(FileInterceptor('file', createUploadOptions('./uploads/complaints')))
+  @UseInterceptors(
+    FileInterceptor('file', createUploadOptions('./uploads/complaints')),
+  )
   @ApiOperation({ summary: 'Upload complaint attachment' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -26,7 +39,10 @@ export class ComplaintsController {
       },
     },
   })
-  uploadAttachment(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
+  uploadAttachment(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
     return {
       message: 'Complaint attachment uploaded successfully',
       complaintId: id,
@@ -59,7 +75,10 @@ export class ComplaintsController {
   @Put(':id')
   @Roles('admin', 'warden', 'owner')
   @ApiOperation({ summary: 'Update complaint status' })
-  update(@Param('id') id: string, @Body() updateComplaintDto: UpdateComplaintDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateComplaintDto: UpdateComplaintDto,
+  ) {
     return this.complaintsService.update(+id, updateComplaintDto);
   }
 

@@ -1,4 +1,10 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
 import { logger } from './winston.config';
 
@@ -8,8 +14,8 @@ export class HttpErrorFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
-    
-    const status = 
+
+    const status =
       exception instanceof HttpException
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
@@ -19,16 +25,16 @@ export class HttpErrorFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: request.url,
       method: request.method,
-      message: 
-        exception instanceof HttpException 
-          ? exception.message || exception.getResponse() 
+      message:
+        exception instanceof HttpException
+          ? exception.message || exception.getResponse()
           : 'Internal server error',
     };
 
     // Log the error using Winston
     logger.error(
       `${request.method} ${request.url} ${status} - Error: ${JSON.stringify(errorResponse)}`,
-      exception instanceof Error ? exception.stack : ''
+      exception instanceof Error ? exception.stack : '',
     );
 
     response.status(status).json(errorResponse);

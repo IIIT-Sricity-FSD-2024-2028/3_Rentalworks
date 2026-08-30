@@ -11,4 +11,3 @@ export const createUploadOptions = (destination: string = './uploads') => ({
     },
   }),
 });
-

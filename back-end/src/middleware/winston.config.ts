@@ -13,7 +13,7 @@ const options = {
     maxFiles: '14d',
     format: winston.format.combine(
       winston.format.timestamp(),
-      winston.format.json()
+      winston.format.json(),
     ),
   },
   errorFile: {
@@ -26,7 +26,7 @@ const options = {
     maxFiles: '14d',
     format: winston.format.combine(
       winston.format.timestamp(),
-      winston.format.json()
+      winston.format.json(),
     ),
   },
   console: {
@@ -34,7 +34,7 @@ const options = {
     handleExceptions: true,
     format: winston.format.combine(
       winston.format.colorize(),
-      winston.format.simple()
+      winston.format.simple(),
     ),
   },
 };

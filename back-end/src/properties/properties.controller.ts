@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Headers, UseInterceptors, UploadedFile } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
+  UseGuards,
+  Headers,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { createUploadOptions } from '../middleware/file-upload.middleware';
 import { PropertiesService } from './properties.service';
@@ -11,11 +23,13 @@ import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
 @Controller('properties')
 @UseGuards(RolesGuard)
 export class PropertiesController {
-  constructor(private readonly propertiesService: PropertiesService) { }
+  constructor(private readonly propertiesService: PropertiesService) {}
 
   @Post(':id/upload-image')
   @Roles('admin', 'owner')
-  @UseInterceptors(FileInterceptor('file', createUploadOptions('./uploads/properties')))
+  @UseInterceptors(
+    FileInterceptor('file', createUploadOptions('./uploads/properties')),
+  )
   @ApiOperation({ summary: 'Upload property image' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -26,7 +40,10 @@ export class PropertiesController {
       },
     },
   })
-  uploadImage(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
+  uploadImage(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
     return {
       message: 'Property image uploaded successfully',
       propertyId: id,
@@ -58,7 +75,10 @@ export class PropertiesController {
   @Put(':id')
   @Roles('admin', 'owner')
   @ApiOperation({ summary: 'Update property' })
-  update(@Param('id') id: string, @Body() updatePropertyDto: UpdatePropertyDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updatePropertyDto: UpdatePropertyDto,
+  ) {
     return this.propertiesService.update(+id, updatePropertyDto);
   }
 

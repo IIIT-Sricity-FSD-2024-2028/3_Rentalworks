@@ -12,26 +12,34 @@ export class BookingsService {
   ) {}
 
   findAll() {
-    return this.bookingsRepository.find({ relations: { tenant: true, property: true } });
+    return this.bookingsRepository.find({
+      relations: { tenant: true, property: true },
+    });
   }
 
   async findOne(id: number) {
-    const booking = await this.bookingsRepository.findOne({ where: { id }, relations: { tenant: true, property: true } });
-    if (!booking) throw new NotFoundException(`Booking with ID ${id} not found`);
+    const booking = await this.bookingsRepository.findOne({
+      where: { id },
+      relations: { tenant: true, property: true },
+    });
+    if (!booking)
+      throw new NotFoundException(`Booking with ID ${id} not found`);
     return booking;
   }
 
   async create(createBookingDto: CreateBookingDto) {
     const newBooking = this.bookingsRepository.create({
       ...createBookingDto,
-      status: 'pending'
+      status: 'pending',
     });
     return this.bookingsRepository.save(newBooking);
   }
 
   async update(id: number, updateBookingDto: UpdateBookingDto) {
     const booking = await this.findOne(id);
-    const cleanDto = Object.fromEntries(Object.entries(updateBookingDto).filter(([_, v]) => v !== undefined));
+    const cleanDto = Object.fromEntries(
+      Object.entries(updateBookingDto).filter(([_, v]) => v !== undefined),
+    );
     Object.assign(booking, cleanDto);
     return this.bookingsRepository.save(booking);
   }

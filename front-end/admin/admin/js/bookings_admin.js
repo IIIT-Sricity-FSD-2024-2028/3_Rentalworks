@@ -55,8 +55,46 @@ function syncSunriseBookings() {
   }
 }
 
+function syncWardenTenants() {
+  try {
+    const wardenTenantsStr = localStorage.getItem('warden_tenants');
+    if (!wardenTenantsStr) return;
+    const wardenTenants = JSON.parse(wardenTenantsStr);
+    
+    wardenTenants.forEach(wt => {
+      // Find if we already mapped this tenant into admin bookings array
+      const existingIdx = bookings.findIndex(b => b.id.toString() === wt.id.toString() || b.tenant === wt.name);
+      
+      const adminBkPayload = {
+        id: wt.id,
+        tenant: wt.name,
+        phone: wt.phone || 'N/A', 
+        property: 'Sunrise PG',
+        room: wt.room || 'N/A',
+        checkIn: wt.checkIn || '-',
+        duration: '11 Months',
+        rent: wt.rent || 0,
+        status: 'active', // Force active since they are already in the PG
+        _isWarden: true
+      };
+
+      if (existingIdx > -1) {
+         bookings[existingIdx].status = adminBkPayload.status;
+         bookings[existingIdx].rent = adminBkPayload.rent;
+         bookings[existingIdx].room = adminBkPayload.room;
+      } else {
+        bookings.push(adminBkPayload);
+      }
+    });
+    saveData();
+  } catch (e) {
+    console.error("Failed to sync Warden tenants", e);
+  }
+}
+
 function renderBookings(search = '', statusF = 'all') {
   syncSunriseBookings();
+  syncWardenTenants();
   
 
   // Dynamic KPIs — no Completed in active view

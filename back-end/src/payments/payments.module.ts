@@ -8,6 +8,6 @@ import { Property } from '../properties/property.entity';
 @Module({
   imports: [TypeOrmModule.forFeature([Payment, Property])],
   controllers: [PaymentsController],
-  providers: [PaymentsService]
+  providers: [PaymentsService],
 })
 export class PaymentsModule {}

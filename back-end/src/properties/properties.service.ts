@@ -16,8 +16,12 @@ export class PropertiesService {
   }
 
   async findOne(id: number) {
-    const property = await this.propertiesRepository.findOne({ where: { id }, relations: { owner: true } });
-    if (!property) throw new NotFoundException(`Property with ID ${id} not found`);
+    const property = await this.propertiesRepository.findOne({
+      where: { id },
+      relations: { owner: true },
+    });
+    if (!property)
+      throw new NotFoundException(`Property with ID ${id} not found`);
     return property;
   }
 
@@ -32,14 +36,16 @@ export class PropertiesService {
       commissionRate: 10,
       compliance: 'Pending',
       fireSafety: 'Pending',
-      changeRequestPending: false
+      changeRequestPending: false,
     });
     return this.propertiesRepository.save(newProperty);
   }
 
   async update(id: number, updatePropertyDto: UpdatePropertyDto) {
     const property = await this.findOne(id);
-    const cleanDto = Object.fromEntries(Object.entries(updatePropertyDto).filter(([_, v]) => v !== undefined));
+    const cleanDto = Object.fromEntries(
+      Object.entries(updatePropertyDto).filter(([_, v]) => v !== undefined),
+    );
     Object.assign(property, cleanDto);
     return this.propertiesRepository.save(property);
   }

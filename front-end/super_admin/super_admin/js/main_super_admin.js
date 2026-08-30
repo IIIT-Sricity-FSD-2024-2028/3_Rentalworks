@@ -313,10 +313,32 @@ function renderGlobalReports(search = '') {
 
   const registeredOwners = JSON.parse(localStorage.getItem('registered_owners') || '[]');
   
+  // Pre-calculate owner plans based on their properties or explicit subscriptionPlan
+  let ownerPlans = new Map();
+  properties.forEach(p => {
+    let ownerName = p.owner?.name || p.owner;
+    let ownerEmail = p.owner?.email || p.ownerEmail || 'Unknown';
+    let ownerObj = registeredOwners.find(o => (ownerName && o.name === ownerName) || (ownerEmail !== 'Unknown' && o.email === ownerEmail));
+    if (!ownerObj) ownerObj = users.find(u => (ownerName && u.name === ownerName) || (ownerEmail !== 'Unknown' && u.email === ownerEmail));
+    if (!ownerObj && p.owner && typeof p.owner === 'object') ownerObj = p.owner;
+    
+    let ownerKey = ownerObj ? (ownerObj.email || ownerObj.id || ownerName) : (ownerEmail || ownerName);
+
+    if (ownerObj && ownerObj.subscriptionPlan && ownerObj.subscriptionPlan !== 'Pending Approval') {
+      ownerPlans.set(ownerKey, { plan: ownerObj.subscriptionPlan, rev: Number(ownerObj.subscriptionFee) || 0 });
+    } else if (p.status === 'verified' || p.status === 'approved') {
+      // Legacy Standard fallback for verified owners
+      if (!ownerPlans.has(ownerKey)) {
+        ownerPlans.set(ownerKey, { plan: 'Standard (Legacy)', rev: 5000 });
+      }
+    }
+  });
+
   let totalProps = 0;
   let activeProps = 0;
   let pendingProps = 0;
   let totalRev = 0;
+  let countedOwners = new Set();
 
   properties.forEach(p => {
     totalProps++;
@@ -329,12 +351,13 @@ function renderGlobalReports(search = '') {
     if (!ownerObj) ownerObj = users.find(u => (ownerName && u.name === ownerName) || (ownerEmail !== 'Unknown' && u.email === ownerEmail));
     if (!ownerObj && p.owner && typeof p.owner === 'object') ownerObj = p.owner;
     
-    let rev = 0;
-    if (ownerObj && ownerObj.subscriptionPlan) rev = Number(ownerObj.subscriptionFee) || 0;
-    else if (p.status === 'verified' || p.status === 'approved') rev = 5000;
-    
-    if (p.status === 'pending') rev = 0;
-    totalRev += rev;
+    let ownerKey = ownerObj ? (ownerObj.email || ownerObj.id || ownerName) : (ownerEmail || ownerName);
+
+    let planData = ownerPlans.get(ownerKey);
+    if (planData && !countedOwners.has(ownerKey)) {
+      totalRev += planData.rev;
+      countedOwners.add(ownerKey);
+    }
   });
 
   setTxt('rep-total-props', totalProps);
@@ -354,6 +377,8 @@ function renderGlobalReports(search = '') {
     });
   }
 
+  let countedOwnersForTable = new Set();
+  
   if (filteredProps.length === 0) {
     tbody.innerHTML = '<tr><td colspan="6" class="ta-center" style="padding:40px;color:#94a3b8">No properties found.</td></tr>';
   } else {
@@ -369,20 +394,20 @@ function renderGlobalReports(search = '') {
         ownerObj = p.owner;
       }
 
-      let planName = 'None';
-      let rev = 0;
+      let ownerKey = ownerObj ? (ownerObj.email || ownerObj.id || ownerName) : (ownerEmail || ownerName);
       
-      if (ownerObj && ownerObj.subscriptionPlan) {
-        planName = ownerObj.subscriptionPlan;
-        rev = Number(ownerObj.subscriptionFee) || 0;
-      } else if (p.status === 'verified' || p.status === 'approved') {
-        planName = 'Standard (Legacy)';
-        rev = 5000;
-      }
+      let planName = 'Pending Approval';
+      let displayRev = '₹0';
+      let planData = ownerPlans.get(ownerKey);
 
-      if (p.status === 'pending') {
-        planName = 'Pending Approval';
-        rev = 0;
+      if (planData) {
+        planName = planData.plan;
+        if (!countedOwnersForTable.has(ownerKey)) {
+          displayRev = '₹' + planData.rev.toLocaleString('en-IN');
+          countedOwnersForTable.add(ownerKey);
+        } else {
+          displayRev = 'Included';
+        }
       }
 
       const stClass = (p.status === 'verified' || p.status === 'approved') ? 'status-active' : 'status-pending';
@@ -396,7 +421,7 @@ function renderGlobalReports(search = '') {
           <td style="padding:16px 20px;">${region}</td>
           <td style="padding:16px 20px;"><span style="background:${stBg}; color:${stColor}; padding:4px 8px; border-radius:12px; font-size:12px; font-weight:600;">${p.status.toUpperCase()}</span></td>
           <td style="padding:16px 20px;">${planName}</td>
-          <td class="ta-right" style="padding:16px 20px;"><strong>₹${rev.toLocaleString('en-IN')}</strong></td>
+          <td class="ta-right" style="padding:16px 20px;"><strong style="${displayRev === 'Included' ? 'color:#64748b; font-size:13px; font-weight:500;' : ''}">${displayRev}</strong></td>
         </tr>
       `;
     }).join('');
@@ -568,7 +593,7 @@ function syncOwnerProperties() {
           rooms: (ownerProp.occupiedRooms || 0) + '/' + (ownerProp.totalRooms || 0),
           occupancy: ownerProp.totalRooms ? Math.round(((ownerProp.occupiedRooms||0) / ownerProp.totalRooms) * 100) : 0,
           amenities: ownerProp.amenities || [],
-          status: 'pending', // Key piece: needs verification
+          status: 'approved', // Automatically approve synced properties
           docsVerified: false,
           inspectionPassed: false,
           commissionRate: 10,

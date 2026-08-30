@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
@@ -23,7 +27,10 @@ export class UsersService {
   }
 
   async create(createUserDto: CreateUserDto) {
-    const hashedPassword = await bcrypt.hash(createUserDto.password || 'default123', 10);
+    const hashedPassword = await bcrypt.hash(
+      createUserDto.password || 'default123',
+      10,
+    );
     const newUser = this.usersRepository.create({
       ...createUserDto,
       password: hashedPassword,
@@ -35,10 +42,12 @@ export class UsersService {
 
   async update(id: number, updateUserDto: UpdateUserDto) {
     const user = await this.findOne(id);
-    
+
     // Filter out undefined values to prevent overwriting
-    const cleanDto = Object.fromEntries(Object.entries(updateUserDto).filter(([_, v]) => v !== undefined));
-    
+    const cleanDto = Object.fromEntries(
+      Object.entries(updateUserDto).filter(([_, v]) => v !== undefined),
+    );
+
     if (cleanDto.password) {
       cleanDto.password = await bcrypt.hash(cleanDto.password as string, 10);
     }
@@ -55,12 +64,17 @@ export class UsersService {
   }
 
   async login(loginDto: LoginDto) {
-    const user = await this.usersRepository.findOne({ where: { username: loginDto.username } });
+    const user = await this.usersRepository.findOne({
+      where: { username: loginDto.username },
+    });
     if (!user) throw new UnauthorizedException('Invalid credentials');
-    
-    const isMatch = await bcrypt.compare(loginDto.password || '', user.password || '');
+
+    const isMatch = await bcrypt.compare(
+      loginDto.password || '',
+      user.password || '',
+    );
     if (!isMatch) throw new UnauthorizedException('Invalid credentials');
-    
+
     const { password, ...result } = user;
     return result;
   }

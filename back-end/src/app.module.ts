@@ -23,23 +23,27 @@ import { Notification } from './notifications/notification.entity';
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'better-sqlite3',
-        database: 'db.sqlite',
-        entities: [User, Property, Booking, Payment, Complaint, Notification],
-        synchronize: true, // Use synchronize for local dev without migrations
-      } as any),
+      useFactory: (configService: ConfigService) =>
+        ({
+          type: 'better-sqlite3',
+          database: 'db.sqlite',
+          entities: [User, Property, Booking, Payment, Complaint, Notification],
+          synchronize: true, // Use synchronize for local dev without migrations
+        }) as any,
       inject: [ConfigService],
     }),
-    UsersModule, PropertiesModule, BookingsModule, PaymentsModule, ComplaintsModule, NotificationsModule
+    UsersModule,
+    PropertiesModule,
+    BookingsModule,
+    PaymentsModule,
+    ComplaintsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(SecurityMiddleware, LoggerMiddleware)
-      .forRoutes('*'); // Apply globally to all routes
+    consumer.apply(SecurityMiddleware, LoggerMiddleware).forRoutes('*'); // Apply globally to all routes
   }
 }

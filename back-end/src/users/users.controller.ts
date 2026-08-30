@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  Put,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { createUploadOptions } from '../middleware/file-upload.middleware';
 import { UsersService } from './users.service';
@@ -11,10 +22,12 @@ import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
 @Controller('users')
 @UseGuards(RolesGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+  constructor(private readonly usersService: UsersService) {}
 
   @Post('upload-avatar')
-  @UseInterceptors(FileInterceptor('file', createUploadOptions('./uploads/avatars')))
+  @UseInterceptors(
+    FileInterceptor('file', createUploadOptions('./uploads/avatars')),
+  )
   @ApiOperation({ summary: 'Upload user avatar (Router-level middleware)' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({

@@ -1,6 +1,18 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
-import { CreateNotificationDto, UpdateNotificationDto } from './notifications.dto';
+import {
+  CreateNotificationDto,
+  UpdateNotificationDto,
+} from './notifications.dto';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
@@ -35,7 +47,10 @@ export class NotificationsController {
   @Put(':id')
   @Roles('admin', 'warden')
   @ApiOperation({ summary: 'Update a notification' })
-  update(@Param('id') id: string, @Body() updateNotificationDto: UpdateNotificationDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateNotificationDto: UpdateNotificationDto,
+  ) {
     return this.notificationsService.update(+id, updateNotificationDto);
   }
 

@@ -15,18 +15,26 @@ export class PaymentsService {
   ) {}
 
   findAll() {
-    return this.paymentsRepository.find({ relations: { tenant: true, property: true } });
+    return this.paymentsRepository.find({
+      relations: { tenant: true, property: true },
+    });
   }
 
   async findOne(id: number) {
-    const payment = await this.paymentsRepository.findOne({ where: { id }, relations: { tenant: true, property: true } });
-    if (!payment) throw new NotFoundException(`Payment with ID ${id} not found`);
+    const payment = await this.paymentsRepository.findOne({
+      where: { id },
+      relations: { tenant: true, property: true },
+    });
+    if (!payment)
+      throw new NotFoundException(`Payment with ID ${id} not found`);
     return payment;
   }
 
   async create(createPaymentDto: CreatePaymentDto) {
-    const property = await this.propertiesRepository.findOne({ where: { id: createPaymentDto.propertyId } });
-    
+    const property = await this.propertiesRepository.findOne({
+      where: { id: createPaymentDto.propertyId },
+    });
+
     let platformFee = 0;
     if (property && property.commissionRate) {
       platformFee = (createPaymentDto.amount * property.commissionRate) / 100;
@@ -37,14 +45,16 @@ export class PaymentsService {
       paidDate: new Date().toISOString().split('T')[0],
       status: 'pending',
       clearance: 'Pending',
-      platformFee
+      platformFee,
     });
     return this.paymentsRepository.save(newPayment);
   }
 
   async update(id: number, updatePaymentDto: UpdatePaymentDto) {
     const payment = await this.findOne(id);
-    const cleanDto = Object.fromEntries(Object.entries(updatePaymentDto).filter(([_, v]) => v !== undefined));
+    const cleanDto = Object.fromEntries(
+      Object.entries(updatePaymentDto).filter(([_, v]) => v !== undefined),
+    );
     Object.assign(payment, cleanDto);
     return this.paymentsRepository.save(payment);
   }
@@ -58,23 +68,24 @@ export class PaymentsService {
 
   async getRevenue() {
     const payments = await this.findAll();
-    
+
     // Group revenue by region
     const revenueByRegion: Record<string, number> = {};
     let totalRevenue = 0;
 
-    payments.forEach(payment => {
+    payments.forEach((payment) => {
       if (payment.status === 'verified' && payment.platformFee) {
         totalRevenue += payment.platformFee;
-        
+
         const region = payment.property?.location || 'Unknown';
-        revenueByRegion[region] = (revenueByRegion[region] || 0) + payment.platformFee;
+        revenueByRegion[region] =
+          (revenueByRegion[region] || 0) + payment.platformFee;
       }
     });
 
     return {
       totalRevenue,
-      revenueByRegion
+      revenueByRegion,
     };
   }
 }

@@ -9,7 +9,7 @@ import { HttpErrorFilter } from './middleware/http-error.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Apply Helmet for security headers
   app.use(helmet());
 
@@ -25,22 +25,27 @@ async function bootstrap() {
   });
 
   // Enable validation globally
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-    forbidNonWhitelisted: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
 
   // Setup Swagger
   const config = new DocumentBuilder()
     .setTitle('PG Rental Management API')
-    .setDescription('The PG Rental Management System using in-memory structures')
+    .setDescription(
+      'The PG Rental Management System using in-memory structures',
+    )
     .setVersion('1.0')
     .addGlobalParameters({
       name: 'x-role',
       in: 'header',
       required: false,
-      description: 'The role of the requesting user (admin, warden, owner, tenant)',
+      description:
+        'The role of the requesting user (admin, warden, owner, tenant)',
     })
     .addGlobalParameters({
       name: 'x-user-id',
@@ -49,7 +54,7 @@ async function bootstrap() {
       description: 'The ID of the requesting user',
     })
     .build();
-    
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
@@ -58,7 +63,10 @@ async function bootstrap() {
   if (!fs.existsSync(docsDir)) {
     fs.mkdirSync(docsDir);
   }
-  fs.writeFileSync(path.join(docsDir, 'swagger.json'), JSON.stringify(document, null, 2));
+  fs.writeFileSync(
+    path.join(docsDir, 'swagger.json'),
+    JSON.stringify(document, null, 2),
+  );
 
   // Note: user specifically asked to use port 3000
   await app.listen(3000);

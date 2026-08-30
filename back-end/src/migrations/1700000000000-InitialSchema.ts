@@ -1,10 +1,10 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class InitialSchema1700000000000 implements MigrationInterface {
-    name = 'InitialSchema1700000000000'
+  name = 'InitialSchema1700000000000';
 
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`
             CREATE TABLE "users" (
                 "id" SERIAL NOT NULL,
                 "name" character varying NOT NULL,
@@ -20,7 +20,7 @@ export class InitialSchema1700000000000 implements MigrationInterface {
                 CONSTRAINT "PK_a3ffb1c0c8416b9fc6f907b7433" PRIMARY KEY ("id")
             )
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             CREATE TABLE "properties" (
                 "id" SERIAL NOT NULL,
                 "name" character varying NOT NULL,
@@ -42,7 +42,7 @@ export class InitialSchema1700000000000 implements MigrationInterface {
                 CONSTRAINT "PK_2d83bfa0b9fcd45dee1785af44d" PRIMARY KEY ("id")
             )
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             CREATE TABLE "bookings" (
                 "id" SERIAL NOT NULL,
                 "tenantId" integer NOT NULL,
@@ -55,7 +55,7 @@ export class InitialSchema1700000000000 implements MigrationInterface {
                 CONSTRAINT "PK_ee0a442a54f50ac1e43c139c8fb" PRIMARY KEY ("id")
             )
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             CREATE TABLE "payments" (
                 "id" SERIAL NOT NULL,
                 "tenantId" integer NOT NULL,
@@ -70,7 +70,7 @@ export class InitialSchema1700000000000 implements MigrationInterface {
                 CONSTRAINT "PK_197ab7af18c93fbb0c9b28b4a59" PRIMARY KEY ("id")
             )
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             CREATE TABLE "complaints" (
                 "id" SERIAL NOT NULL,
                 "tenantId" integer NOT NULL,
@@ -81,7 +81,7 @@ export class InitialSchema1700000000000 implements MigrationInterface {
                 CONSTRAINT "PK_8340d99dc7f8c09a80b001d8353" PRIMARY KEY ("id")
             )
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             CREATE TABLE "notifications" (
                 "id" SERIAL NOT NULL,
                 "title" character varying NOT NULL,
@@ -94,46 +94,62 @@ export class InitialSchema1700000000000 implements MigrationInterface {
                 CONSTRAINT "PK_6a72c3c0f683f6462415e653c3a" PRIMARY KEY ("id")
             )
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             ALTER TABLE "properties" ADD CONSTRAINT "FK_owner_id" FOREIGN KEY ("ownerId") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             ALTER TABLE "bookings" ADD CONSTRAINT "FK_booking_tenant" FOREIGN KEY ("tenantId") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             ALTER TABLE "bookings" ADD CONSTRAINT "FK_booking_property" FOREIGN KEY ("propertyId") REFERENCES "properties"("id") ON DELETE NO ACTION ON UPDATE NO ACTION
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             ALTER TABLE "payments" ADD CONSTRAINT "FK_payment_tenant" FOREIGN KEY ("tenantId") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             ALTER TABLE "payments" ADD CONSTRAINT "FK_payment_property" FOREIGN KEY ("propertyId") REFERENCES "properties"("id") ON DELETE NO ACTION ON UPDATE NO ACTION
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             ALTER TABLE "complaints" ADD CONSTRAINT "FK_complaint_tenant" FOREIGN KEY ("tenantId") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             ALTER TABLE "complaints" ADD CONSTRAINT "FK_complaint_property" FOREIGN KEY ("propertyId") REFERENCES "properties"("id") ON DELETE NO ACTION ON UPDATE NO ACTION
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             ALTER TABLE "notifications" ADD CONSTRAINT "FK_notification_user" FOREIGN KEY ("byUserId") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION
         `);
-    }
+  }
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE "notifications" DROP CONSTRAINT "FK_notification_user"`);
-        await queryRunner.query(`ALTER TABLE "complaints" DROP CONSTRAINT "FK_complaint_property"`);
-        await queryRunner.query(`ALTER TABLE "complaints" DROP CONSTRAINT "FK_complaint_tenant"`);
-        await queryRunner.query(`ALTER TABLE "payments" DROP CONSTRAINT "FK_payment_property"`);
-        await queryRunner.query(`ALTER TABLE "payments" DROP CONSTRAINT "FK_payment_tenant"`);
-        await queryRunner.query(`ALTER TABLE "bookings" DROP CONSTRAINT "FK_booking_property"`);
-        await queryRunner.query(`ALTER TABLE "bookings" DROP CONSTRAINT "FK_booking_tenant"`);
-        await queryRunner.query(`ALTER TABLE "properties" DROP CONSTRAINT "FK_owner_id"`);
-        await queryRunner.query(`DROP TABLE "notifications"`);
-        await queryRunner.query(`DROP TABLE "complaints"`);
-        await queryRunner.query(`DROP TABLE "payments"`);
-        await queryRunner.query(`DROP TABLE "bookings"`);
-        await queryRunner.query(`DROP TABLE "properties"`);
-        await queryRunner.query(`DROP TABLE "users"`);
-    }
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(
+      `ALTER TABLE "notifications" DROP CONSTRAINT "FK_notification_user"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "complaints" DROP CONSTRAINT "FK_complaint_property"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "complaints" DROP CONSTRAINT "FK_complaint_tenant"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "payments" DROP CONSTRAINT "FK_payment_property"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "payments" DROP CONSTRAINT "FK_payment_tenant"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "bookings" DROP CONSTRAINT "FK_booking_property"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "bookings" DROP CONSTRAINT "FK_booking_tenant"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "properties" DROP CONSTRAINT "FK_owner_id"`,
+    );
+    await queryRunner.query(`DROP TABLE "notifications"`);
+    await queryRunner.query(`DROP TABLE "complaints"`);
+    await queryRunner.query(`DROP TABLE "payments"`);
+    await queryRunner.query(`DROP TABLE "bookings"`);
+    await queryRunner.query(`DROP TABLE "properties"`);
+    await queryRunner.query(`DROP TABLE "users"`);
+  }
 }

@@ -41,9 +41,49 @@ const PAGE_MAP = {
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
-  tenants       = JSON.parse(localStorage.getItem('warden_tenants'))       || [...MOCK_DATA.tenants];
-  rooms         = JSON.parse(localStorage.getItem('warden_rooms'))         || [...MOCK_DATA.rooms];
-  violations    = JSON.parse(localStorage.getItem('warden_violations'))    || [...MOCK_DATA.violations];
+  tenants = JSON.parse(localStorage.getItem('warden_tenants')) || [];
+  if (tenants.length < 17) {
+    const names = ['Amit Sharma', 'Priya Shah', 'Rahul Kumar', 'Sneha Patil', 'Vikram Singh', 'Anita Desai', 'Karan Patel', 'Neha Sharma', 'Rohan Mehta', 'Pooja Verma', 'Aditya Singh', 'Kavya Rao', 'Siddharth Jain', 'Anjali Gupta', 'Manish Tiwari', 'Priyanka Chopra', 'Rakesh Roshan'];
+    tenants = names.map((name, i) => ({
+      id: i + 1,
+      name: name,
+      room: `1${(i + 1).toString().padStart(2, '0')}`,
+      phone: `+91 98765 432${(10 + i).toString().slice(-2)}`,
+      checkIn: new Date(2023 + (i%2), i%12, (i%28)+1).toLocaleDateString('en-US'),
+      rent: i < 5 ? 12500 : (i < 15 ? 9000 : 7500),
+      paymentStatus: i % 3 === 0 ? 'pending' : 'paid'
+    }));
+    localStorage.setItem('warden_tenants', JSON.stringify(tenants));
+
+    violations = [
+      { id: 1, tenant: tenants[0].name, room: tenants[0].room, type: 'Late Night Entry', severity: 'Medium', warningCount: 3, date: '3/5/2026' },
+      { id: 2, tenant: tenants[2].name, room: tenants[2].room, type: 'Noise Complaint', severity: 'Low', warningCount: 1, date: '3/4/2026' },
+      { id: 3, tenant: tenants[6].name, room: tenants[6].room, type: 'Unauthorized Guest', severity: 'High', warningCount: 3, date: '3/6/2026' },
+      { id: 4, tenant: tenants[7].name, room: tenants[7].room, type: 'Smoking Indoors', severity: 'High', warningCount: 2, date: '3/3/2026' },
+      { id: 5, tenant: tenants[8].name, room: tenants[8].room, type: 'Common Area Misuse', severity: 'Low', warningCount: 1, date: '3/2/2026' }
+    ];
+    localStorage.setItem('warden_violations', JSON.stringify(violations));
+  } else {
+    violations = JSON.parse(localStorage.getItem('warden_violations')) || [...MOCK_DATA.violations];
+  }
+
+  rooms = JSON.parse(localStorage.getItem('warden_rooms')) || [];
+  if (rooms.length < 20) {
+    const generatedRooms = [];
+    for(let i=1; i<=20; i++) {
+      generatedRooms.push({
+        id: Date.now() + i,
+        number: `1${i.toString().padStart(2, '0')}`,
+        type: i <= 5 ? 'Single' : (i <= 15 ? 'Double' : 'Triple'),
+        occupancy: i <= 17 ? 'Occupied' : 'Vacant',
+        maintenance: i <= 17 ? 'Ready' : (i === 18 ? 'Under Maintenance' : 'Cleaned'),
+        lastUpdated: new Date().toLocaleDateString('en-US')
+      });
+    }
+    rooms = generatedRooms;
+    localStorage.setItem('warden_rooms', JSON.stringify(rooms));
+  }
+
   notifications = JSON.parse(localStorage.getItem('warden_notifications')) || [...MOCK_DATA.notifications];
 
   // Merge global complaints, issues, and services from Tenant into Warden's complaints view
@@ -51,16 +91,19 @@ document.addEventListener('DOMContentLoaded', () => {
   let globalIss = JSON.parse(localStorage.getItem('global_issues')) || [];
   let globalSrv = JSON.parse(localStorage.getItem('global_services')) || [];
 
+  const fbName = tenants.length > 0 ? tenants[0].name : 'Amit Sharma';
+  const fbRoom = tenants.length > 0 ? tenants[0].room : '101';
+
   // Build unified complaints array
   complaints = [
     ...globalCmp.map(c => ({
-      id: c.id, tenant: c.tenantName || 'Amit Sharma', room: c.room || 'A-204', type: 'Complaint', priority: c.priority || 'medium', status: c.status === 'in-progress' ? 'in_progress' : c.status, date: c.created || new Date().toLocaleDateString(), description: c.desc, _source: 'complaints'
+      id: c.id, tenant: c.tenantName || fbName, room: c.room || fbRoom, type: 'Complaint', priority: c.priority || 'medium', status: c.status === 'in-progress' ? 'in_progress' : c.status, date: c.created || new Date().toLocaleDateString(), description: c.desc, _source: 'complaints'
     })),
     ...globalIss.map(i => ({
-      id: i.id, tenant: i.tenantName || 'Amit Sharma', room: i.room || 'A-204', type: 'Issue: ' + i.category, priority: i.priority || 'medium', status: i.status === 'in-progress' ? 'in_progress' : i.status, date: new Date().toLocaleDateString(), description: i.desc, _source: 'issues'
+      id: i.id, tenant: i.tenantName || fbName, room: i.room || fbRoom, type: 'Issue: ' + i.category, priority: i.priority || 'medium', status: i.status === 'in-progress' ? 'in_progress' : i.status, date: new Date().toLocaleDateString(), description: i.desc, _source: 'issues'
     })),
     ...globalSrv.map(s => ({
-      id: s.id, tenant: s.tenantName || 'Amit Sharma', room: s.room || 'A-204', type: 'Service: ' + s.name, priority: 'low', status: s.status === 'pending' ? 'open' : s.status, date: s.date, description: 'Requested ' + s.name, _source: 'services'
+      id: s.id, tenant: s.tenantName || fbName, room: s.room || fbRoom, type: 'Service: ' + s.name, priority: 'low', status: s.status === 'pending' ? 'open' : s.status, date: s.date, description: 'Requested ' + s.name, _source: 'services'
     }))
   ];
 
