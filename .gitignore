@@ -4,3 +4,5 @@ back-end/dist/
 .env
 back-end/logs/
 back-end/uploads/
+front-end/react-notifications/
+back-end/logs/
