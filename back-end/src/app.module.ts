@@ -12,6 +12,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { LoggerMiddleware } from './middleware/logger.middleware';
 import { SecurityMiddleware } from './middleware/security.middleware';
 import { User } from './users/user.entity';
+import { UserActivity } from './users/user-activity.entity';
 import { Property } from './properties/property.entity';
 import { Booking } from './bookings/booking.entity';
 import { Payment } from './payments/payment.entity';
@@ -28,7 +29,7 @@ import { RemarksModule } from './remarks/remarks.module';
       useFactory: (configService: ConfigService): TypeOrmModuleOptions => ({
         type: 'better-sqlite3' as any,
         database: configService.get<string>('DB_NAME', 'rentalworks.sqlite'),
-        entities: [User, Property, Booking, Payment, Complaint, Notification, Remark],
+        entities: [User, UserActivity, Property, Booking, Payment, Complaint, Notification, Remark],
         synchronize: true,
       }),
       inject: [ConfigService],
