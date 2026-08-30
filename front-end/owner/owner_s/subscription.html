@@ -3,134 +3,1087 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RentBro - Select Subscription Plan</title>
+  <title>RentBro - Owner Subscription & Plans</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="../../shared/morphism-effects.css">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <style>
-    body { background: #f8fafc; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-    .subs-container { max-width: 900px; width: 100%; padding: 40px; }
-    .subs-header { text-align: center; margin-bottom: 40px; }
-    .subs-header h1 { font-size: 32px; color: #1e293b; margin-bottom: 12px; }
-    .subs-header p { color: #64748b; font-size: 16px; }
-    .plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
-    .plan-card { background: white; border-radius: 16px; padding: 40px; border: 1px solid #e2e8f0; text-align: center; transition: transform 0.3s, box-shadow 0.3s; position: relative; }
-    .plan-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
-    .plan-card.premium { border-color: #3b82f6; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1); }
-    .plan-badge { position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%); background: #3b82f6; color: white; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-    .plan-name { font-size: 24px; font-weight: 700; color: #1e293b; margin-bottom: 16px; }
-    .plan-price { font-size: 48px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
-    .plan-price span { font-size: 16px; font-weight: 500; color: #64748b; }
-    .plan-features { list-style: none; padding: 0; margin: 30px 0; text-align: left; }
-    .plan-features li { display: flex; align-items: center; margin-bottom: 16px; color: #475569; font-size: 15px; }
-    .plan-features li .material-icons-outlined { color: #10b981; margin-right: 12px; font-size: 20px; }
-    .btn-subscribe { display: inline-block; width: 100%; padding: 14px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; text-decoration: none; }
-    .btn-subscribe:hover { background: #2563eb; }
-    .plan-card.basic .btn-subscribe { background: #f1f5f9; color: #475569; }
-    .plan-card.basic .btn-subscribe:hover { background: #e2e8f0; }
+    :root {
+      --primary-color: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success-color: #10b981;
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+    }
 
-    /* Mock Checkout Modal */
-    .checkout-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-    .checkout-box { background: white; padding: 40px; border-radius: 16px; width: 400px; text-align: center; }
-    .checkout-box h3 { margin-bottom: 20px; color: #1e293b; }
-    .mock-spinner { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    body {
+      background: #f8fafc;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top-nav {
+      background: white;
+      border-bottom: 1px solid var(--border-color);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text-main);
+      font-weight: 700;
+      font-size: 20px;
+    }
+
+    .brand-icon {
+      background: #eff6ff;
+      color: var(--primary-color);
+      padding: 8px;
+      border-radius: 8px;
+      display: flex;
+    }
+
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .subs-container {
+      max-width: 1180px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+      flex: 1;
+    }
+
+    .subs-header {
+      text-align: center;
+      max-width: 650px;
+      margin: 0 auto 36px;
+    }
+
+    .subs-header h1 {
+      font-size: 36px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.025em;
+      margin-bottom: 12px;
+    }
+
+    .subs-header p {
+      color: var(--text-muted);
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    /* Notice Banners */
+    .notice-banner {
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 14px;
+      font-weight: 500;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .notice-banner.warning {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #92400e;
+    }
+
+    .notice-banner.info {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+    }
+
+    .notice-banner.success {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
+    }
+
+    /* Plans Grid */
+    .plans-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 960px) {
+      .plans-grid {
+        grid-template-columns: 1fr;
+        max-width: 480px;
+        margin: 0 auto;
+      }
+    }
+
+    .plan-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(20px) saturate(1.3);
+      -webkit-backdrop-filter: blur(20px) saturate(1.3);
+      border-radius: 24px;
+      padding: 38px 32px;
+      border: 1.5px solid rgba(255, 255, 255, 0.8);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    }
+
+    .plan-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 45%;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, transparent 100%);
+      pointer-events: none;
+      border-radius: inherit;
+    }
+
+    .plan-card:hover {
+      transform: translateY(-8px) scale(1.015);
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.1);
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    .plan-card.featured {
+      border-color: rgba(37, 99, 235, 0.5);
+      box-shadow: 0 16px 36px rgba(37, 99, 235, 0.15);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(239, 246, 255, 0.8) 100%);
+    }
+
+    .plan-card.current {
+      border-color: rgba(16, 185, 129, 0.6);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 253, 244, 0.8) 100%);
+      box-shadow: 0 16px 36px rgba(16, 185, 129, 0.12);
+    }
+
+    .plan-badge {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--primary-color);
+      color: white;
+      padding: 6px 18px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+    }
+
+    .plan-badge.green {
+      background: #10b981;
+      box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+    }
+
+    .plan-name {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+
+    .plan-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      min-height: 38px;
+      line-height: 1.4;
+      margin-bottom: 20px;
+    }
+
+    .plan-price-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .plan-currency {
+      font-size: 24px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .plan-price {
+      font-size: 42px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.03em;
+    }
+
+    .plan-period {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .plan-features {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 32px;
+      flex: 1;
+    }
+
+    .plan-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 14px;
+      font-size: 14px;
+      color: #334155;
+      line-height: 1.4;
+    }
+
+    .plan-features li .material-icons-outlined {
+      color: #10b981;
+      font-size: 18px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .btn-plan-action {
+      width: 100%;
+      padding: 14px 20px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .btn-plan-action.primary {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .btn-plan-action.primary:hover {
+      background: var(--primary-hover);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-plan-action.secondary {
+      background: #f1f5f9;
+      color: #334155;
+    }
+
+    .btn-plan-action.secondary:hover {
+      background: #e2e8f0;
+    }
+
+    .btn-plan-action.active-current {
+      background: #dcfce7;
+      color: #166534;
+      cursor: default;
+    }
+
+    .btn-plan-action:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(6px);
+      padding: 20px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .modal-box {
+      background: white;
+      border-radius: 20px;
+      max-width: 520px;
+      width: 100%;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 20px;
+      display: flex;
+      padding: 4px;
+      border-radius: 6px;
+    }
+
+    .modal-close:hover {
+      background: #f1f5f9;
+    }
+
+    .modal-body {
+      padding: 24px;
+      max-height: 75vh;
+      overflow-y: auto;
+    }
+
+    /* Gateway Elements */
+    .gateway-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      background: #f1f5f9;
+      padding: 4px;
+      border-radius: 10px;
+    }
+
+    .gateway-tab {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .gateway-tab.active {
+      background: white;
+      color: var(--primary-color);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+    }
+
+    .order-summary-box {
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .summary-row.total {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border-color);
+      font-size: 17px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 0;
+    }
+
+    .field-group {
+      margin-bottom: 14px;
+    }
+
+    .field-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .field-input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 14px;
+      color: #0f172a;
+      box-sizing: border-box;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .field-input:focus {
+      border-color: var(--primary-color);
+    }
+
+    /* Receipt Styling */
+    .receipt-card {
+      background: #ffffff;
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    .receipt-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .receipt-badge {
+      background: #dcfce7;
+      color: #15803d;
+      font-weight: 700;
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+    }
+
+    .receipt-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .receipt-item span {
+      display: block;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .receipt-item strong {
+      color: #0f172a;
+      font-size: 14px;
+    }
+
+    .mock-spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #e2e8f0;
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 20px auto;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1); }
+    }
   </style>
 </head>
 <body>
 
+  <header class="top-nav">
+    <a href="index.html" class="brand">
+      <div class="brand-icon">
+        <span class="material-icons-outlined">apartment</span>
+      </div>
+      <span>RentBro</span>
+    </a>
+    <div class="user-pill">
+      <span id="owner-name-display">Loading account...</span>
+      <button onclick="logoutOwner()" style="background:none;border:none;color:#dc2626;cursor:pointer;font-weight:600;font-size:13px;display:flex;align-items:center;gap:4px">
+        <span class="material-icons-outlined" style="font-size:18px">logout</span> Logout
+      </button>
+    </div>
+  </header>
+
   <div class="subs-container">
+    
+    <div id="notice-container"></div>
+
     <div class="subs-header">
-      <h1>Choose Your Subscription Plan</h1>
-      <p>Select a plan to activate your Owner Dashboard and list your properties on RentBro.</p>
+      <h1>Subscription Plans for Owners</h1>
+      <p>Choose the right plan to publish, manage, and verify your PG properties on the RentBro platform.</p>
     </div>
 
-    <div class="plans-grid">
-      <!-- Basic Plan -->
-      <div class="plan-card basic">
-        <div class="plan-name">Standard</div>
-        <div class="plan-price">₹5,000<span>/year</span></div>
-        <p style="color:#64748b; font-size:14px;">Perfect for single property owners.</p>
-        <ul class="plan-features">
-          <li><span class="material-icons-outlined">check_circle</span> List 1 PG Property</li>
-          <li><span class="material-icons-outlined">check_circle</span> Basic Dashboard Analytics</li>
-          <li><span class="material-icons-outlined">check_circle</span> Tenant Management Tools</li>
-          <li><span class="material-icons-outlined" style="color:#cbd5e1">cancel</span> Priority Support</li>
-        </ul>
-        <button class="btn-subscribe" onclick="selectPlan('Standard', 5000)">Get Standard</button>
+    <!-- Dynamic Plans Grid -->
+    <div class="plans-grid" id="plans-grid">
+      <div style="grid-column: 1 / -1; text-align:center; padding: 60px 0;">
+        <div class="mock-spinner"></div>
+        <p style="color:var(--text-muted)">Loading subscription plans from server...</p>
       </div>
+    </div>
 
-      <!-- Premium Plan -->
-      <div class="plan-card premium">
-        <div class="plan-badge">Most Popular</div>
-        <div class="plan-name">Premium</div>
-        <div class="plan-price">₹8,000<span>/year</span></div>
-        <p style="color:#64748b; font-size:14px;">For owners with multiple properties.</p>
-        <ul class="plan-features">
-          <li><span class="material-icons-outlined">check_circle</span> List Unlimited Properties</li>
-          <li><span class="material-icons-outlined">check_circle</span> Advanced Analytics & Reports</li>
-          <li><span class="material-icons-outlined">check_circle</span> Tenant Management Tools</li>
-          <li><span class="material-icons-outlined">check_circle</span> 24/7 Priority Support</li>
-        </ul>
-        <button class="btn-subscribe" onclick="selectPlan('Premium', 8000)">Get Premium</button>
+  </div>
+
+  <!-- CHECKOUT MODAL (Mock Payment Gateway) -->
+  <div class="modal-overlay" id="checkoutModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><span class="material-icons-outlined" style="vertical-align:middle;color:var(--primary-color)">lock</span> Secure Checkout</h3>
+        <button class="modal-close" onclick="closeCheckoutModal()">
+          <span class="material-icons-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- Processing State -->
+        <div id="checkout-processing" style="display:none; text-align:center; padding:30px 0;">
+          <div class="mock-spinner"></div>
+          <h3 style="margin-top:16px;color:#0f172a;">Processing Secure Payment...</h3>
+          <p style="color:var(--text-muted);font-size:14px;margin-top:6px;">Communicating with payment gateway. Please do not close or refresh this tab.</p>
+        </div>
+
+        <!-- Checkout Form -->
+        <div id="checkout-form-content">
+          <div class="order-summary-box">
+            <div class="summary-row">
+              <span id="co-plan-name">Selected Plan</span>
+              <strong id="co-plan-price">₹0</strong>
+            </div>
+            <div class="summary-row">
+              <span>Platform & Listing Fee</span>
+              <span>Included (₹0)</span>
+            </div>
+            <div class="summary-row">
+              <span>GST / Taxes</span>
+              <span>Included</span>
+            </div>
+            <div class="summary-row total">
+              <span>Total Payable</span>
+              <span id="co-total-amount" style="color:var(--primary-color)">₹0</span>
+            </div>
+          </div>
+
+          <div class="gateway-tabs">
+            <button class="gateway-tab active" onclick="switchGatewayTab('upi')">UPI / QR</button>
+            <button class="gateway-tab" onclick="switchGatewayTab('card')">Card (Debit/Credit)</button>
+            <button class="gateway-tab" onclick="switchGatewayTab('netbanking')">NetBanking</button>
+          </div>
+
+          <div id="tab-upi">
+            <div class="field-group">
+              <label>Enter UPI ID / VPA</label>
+              <input type="text" class="field-input" id="upi-id" placeholder="yourname@okhdfcbank" value="owner@okaxis">
+            </div>
+            <div style="background:#f1f5f9;border-radius:8px;padding:12px;display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+              <span class="material-icons-outlined" style="color:var(--primary-color)">qr_code_2</span>
+              <span style="font-size:12px;color:var(--text-muted)">Mock sandbox gateway mode active — test payment instant approval</span>
+            </div>
+          </div>
+
+          <div id="tab-card" style="display:none;">
+            <div class="field-group">
+              <label>Card Number</label>
+              <input type="text" class="field-input" placeholder="4532 •••• •••• 8890" value="4532 8900 1234 8890">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="field-group">
+                <label>Expiry Date</label>
+                <input type="text" class="field-input" placeholder="MM/YY" value="12/28">
+              </div>
+              <div class="field-group">
+                <label>CVV</label>
+                <input type="password" class="field-input" placeholder="•••" value="123" maxlength="3">
+              </div>
+            </div>
+          </div>
+
+          <div id="tab-netbanking" style="display:none;">
+            <div class="field-group">
+              <label>Select Bank</label>
+              <select class="field-input">
+                <option>HDFC Bank</option>
+                <option>State Bank of India</option>
+                <option>ICICI Bank</option>
+                <option>Axis Bank</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Simulate Failure Option for Testing Edge Cases -->
+          <div style="margin: 14px 0; display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" id="chk-simulate-failure">
+            <label for="chk-simulate-failure" style="font-size:12px; color:#64748b; cursor:pointer;">
+              Simulate payment failure (Test Edge Case)
+            </label>
+          </div>
+
+          <button class="btn-plan-action primary" id="btn-pay-confirm" onclick="processPayment()">
+            <span class="material-icons-outlined" style="font-size:18px">verified_user</span> Pay Now
+          </button>
+        </div>
+
       </div>
     </div>
   </div>
 
-  <!-- Mock Checkout Modal -->
-  <div class="checkout-modal" id="checkoutModal">
-    <div class="checkout-box">
-      <div id="checkout-loading">
-        <div class="mock-spinner"></div>
-        <h3>Processing Payment...</h3>
-        <p style="color:#64748b">Please do not close this window.</p>
+  <!-- PAYMENT SUCCESS & RECEIPT MODAL -->
+  <div class="modal-overlay" id="receiptModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3><span class="material-icons-outlined" style="vertical-align:middle;color:#10b981">task_alt</span> Payment Successful</h3>
+        <button class="modal-close" onclick="closeReceiptModalAndRedirect()">
+          <span class="material-icons-outlined">close</span>
+        </button>
       </div>
-      <div id="checkout-success" style="display:none;">
-        <span class="material-icons-outlined" style="font-size:64px; color:#10b981; margin-bottom:16px;">check_circle</span>
-        <h3>Payment Successful!</h3>
-        <p style="color:#64748b; margin-bottom:24px;">Your subscription is now active.</p>
-        <button class="btn-subscribe" onclick="proceedToDashboard()">Go to Dashboard</button>
+      <div class="modal-body" id="receipt-modal-body">
+        <!-- Injected dynamically -->
       </div>
     </div>
   </div>
 
   <script>
-    // Redirect if not logged in
-    const session = JSON.parse(sessionStorage.getItem('pg_user'));
-    if (!session || session.role !== 'owner') {
-      window.location.href = '../../login/login/login.html';
-    }
+    const API_BASE = 'http://localhost:3000';
+    let currentSession = null;
+    let availablePlans = [];
+    let currentSubData = null;
+    let pendingCheckout = null;
+    let selectedPaymentMethod = 'UPI';
 
-    let selectedPlanData = null;
-
-    function selectPlan(planName, price) {
-      selectedPlanData = { plan: planName, price: price };
-      document.getElementById('checkoutModal').style.display = 'flex';
-      
-      // Simulate API payment delay
-      setTimeout(() => {
-        document.getElementById('checkout-loading').style.display = 'none';
-        document.getElementById('checkout-success').style.display = 'block';
-      }, 2000);
-    }
-
-    function proceedToDashboard() {
-      // 1. Update session
-      session.subscriptionPlan = selectedPlanData.plan;
-      session.subscriptionFee = selectedPlanData.price;
-      sessionStorage.setItem('pg_user', JSON.stringify(session));
-
-      // 2. Update registered_owners so Super Admin can see it
-      const owners = JSON.parse(localStorage.getItem('registered_owners') || '[]');
-      const ownerIdx = owners.findIndex(o => o.email === session.email);
-      if (ownerIdx !== -1) {
-        owners[ownerIdx].subscriptionPlan = selectedPlanData.plan;
-        owners[ownerIdx].subscriptionFee = selectedPlanData.price;
-        localStorage.setItem('registered_owners', JSON.stringify(owners));
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Check session
+      const sessionStr = sessionStorage.getItem('pg_user');
+      if (!sessionStr) {
+        window.location.href = '../../login/login/login.html';
+        return;
       }
 
-      // Redirect
+      try {
+        currentSession = JSON.parse(sessionStr);
+        if (currentSession.role !== 'owner') {
+          window.location.href = '../../login/login/login.html';
+          return;
+        }
+      } catch (e) {
+        window.location.href = '../../login/login/login.html';
+        return;
+      }
+
+      document.getElementById('owner-name-display').textContent = currentSession.name || currentSession.email;
+
+      handleUrlParams();
+      await loadSubscriptionData();
+    });
+
+    function handleUrlParams() {
+      const params = new URLSearchParams(window.location.search);
+      const reason = params.get('reason');
+      const noticeContainer = document.getElementById('notice-container');
+
+      if (reason === 'required') {
+        noticeContainer.innerHTML = `
+          <div class="notice-banner info">
+            <span class="material-icons-outlined">info</span>
+            <div><strong>Active Subscription Required:</strong> Please choose a plan below to activate your account and start listing properties.</div>
+          </div>
+        `;
+      } else if (reason === 'expired') {
+        noticeContainer.innerHTML = `
+          <div class="notice-banner warning">
+            <span class="material-icons-outlined">warning</span>
+            <div><strong>Subscription Expired:</strong> Your previous subscription has expired. Please select a plan below to renew and continue managing properties.</div>
+          </div>
+        `;
+      } else if (reason === 'upgrade') {
+        noticeContainer.innerHTML = `
+          <div class="notice-banner success">
+            <span class="material-icons-outlined">upgrade</span>
+            <div><strong>Upgrade Plan:</strong> Choose a higher tier plan below to upgrade your subscription benefits.</div>
+          </div>
+        `;
+      }
+    }
+
+    async function loadSubscriptionData() {
+      const headers = { 'x-role': 'owner' };
+      if (currentSession.id) headers['x-user-id'] = String(currentSession.id);
+
+      try {
+        // 1. Fetch plans
+        const plansRes = await fetch(`${API_BASE}/subscriptions/plans`, { headers });
+        if (plansRes.ok) {
+          availablePlans = await plansRes.json();
+        }
+
+        // 2. Fetch current subscription
+        const subRes = await fetch(`${API_BASE}/subscriptions/current?ownerId=${currentSession.id || ''}`, { headers });
+        if (subRes.ok) {
+          currentSubData = await subRes.json();
+        }
+
+        renderPlans();
+      } catch (err) {
+        console.error('Error fetching subscription data:', err);
+        renderFallbackPlans();
+      }
+    }
+
+    function renderPlans() {
+      const grid = document.getElementById('plans-grid');
+      if (!grid) return;
+
+      if (!availablePlans || availablePlans.length === 0) {
+        renderFallbackPlans();
+        return;
+      }
+
+      grid.innerHTML = availablePlans.map(plan => {
+        const isCurrent = currentSubData?.isActive && currentSubData?.subscription?.planType === plan.name;
+        const isLifetime = plan.name === 'LIFETIME';
+        const isYearly = plan.name === 'YEARLY';
+        
+        let badgeHtml = '';
+        if (isCurrent) {
+          badgeHtml = `<div class="plan-badge green">Current Plan</div>`;
+        } else if (plan.badge) {
+          badgeHtml = `<div class="plan-badge">${plan.badge}</div>`;
+        }
+
+        // Button logic
+        let buttonHtml = '';
+        if (isCurrent) {
+          buttonHtml = `<button class="btn-plan-action active-current" disabled><span class="material-icons-outlined" style="font-size:18px">check_circle</span> Active Plan</button>`;
+        } else if (currentSubData?.isActive) {
+          // Check if upgrade is allowed
+          const canUpgradeToThis = currentSubData.upgradePlans?.some(p => p.id === plan.id);
+          if (canUpgradeToThis) {
+            buttonHtml = `<button class="btn-plan-action primary" onclick="initiateCheckout(${plan.id})">Upgrade to ${plan.displayName} →</button>`;
+          } else {
+            buttonHtml = `<button class="btn-plan-action secondary" disabled>Not Available</button>`;
+          }
+        } else {
+          // New or expired owner
+          const actionText = currentSubData?.status === 'EXPIRED' ? `Renew with ${plan.displayName}` : `Get ${plan.displayName}`;
+          buttonHtml = `<button class="btn-plan-action primary" onclick="initiateCheckout(${plan.id})">${actionText} →</button>`;
+        }
+
+        const durationText = plan.durationMonths 
+          ? (plan.durationMonths === 12 ? '/year' : '/month') 
+          : 'one-time';
+
+        const featuresList = (plan.features || []).map(f => `
+          <li><span class="material-icons-outlined">check_circle</span> ${f}</li>
+        `).join('');
+
+        return `
+          <div class="plan-card ${isYearly ? 'featured' : ''} ${isCurrent ? 'current' : ''}">
+            ${badgeHtml}
+            <div class="plan-name">${plan.displayName}</div>
+            <div class="plan-desc">${plan.description || ''}</div>
+            
+            <div class="plan-price-wrap">
+              <span class="plan-currency">₹</span>
+              <span class="plan-price">${Number(plan.price).toLocaleString('en-IN')}</span>
+              <span class="plan-period">${durationText}</span>
+            </div>
+
+            <ul class="plan-features">
+              ${featuresList}
+            </ul>
+
+            ${buttonHtml}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderFallbackPlans() {
+      // Fallback in case of server connection issue
+      availablePlans = [
+        { id: 1, name: 'MONTHLY', displayName: 'Monthly', price: 499, durationMonths: 1, features: ['List PG Properties', 'Tenant Management Tools', 'Basic Analytics', 'Standard Email Support'] },
+        { id: 2, name: 'YEARLY', displayName: 'Yearly', price: 4999, durationMonths: 12, badge: 'Most Popular', features: ['List PG Properties', 'Tenant Allocation Tools', 'Advanced Revenue Analytics', 'Priority Support 24/7', 'Featured PG Listing Badge'] },
+        { id: 3, name: 'LIFETIME', displayName: 'Lifetime', price: 14999, durationMonths: null, badge: 'Best Value', features: ['List Unlimited PG Properties', 'All Advanced Analytics', 'VIP Account Manager', 'Top Search Placement', 'Lifetime Free Updates', 'Zero Renewal Fees'] }
+      ];
+      renderPlans();
+    }
+
+    async function initiateCheckout(planId) {
+      const plan = availablePlans.find(p => p.id === planId);
+      if (!plan) return;
+
+      const headers = { 'Content-Type': 'application/json', 'x-role': 'owner' };
+      if (currentSession.id) headers['x-user-id'] = String(currentSession.id);
+
+      try {
+        const res = await fetch(`${API_BASE}/subscriptions/checkout`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ planId, ownerId: currentSession.id })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          alert(err.message || 'Checkout failed');
+          return;
+        }
+
+        pendingCheckout = await res.json();
+
+        // Populate modal
+        document.getElementById('co-plan-name').textContent = `${plan.displayName} Plan`;
+        document.getElementById('co-plan-price').textContent = `₹${Number(plan.price).toLocaleString('en-IN')}`;
+        document.getElementById('co-total-amount').textContent = `₹${Number(plan.price).toLocaleString('en-IN')}`;
+        document.getElementById('btn-pay-confirm').textContent = `Pay ₹${Number(plan.price).toLocaleString('en-IN')} Now`;
+
+        // Reset UI state
+        document.getElementById('checkout-processing').style.display = 'none';
+        document.getElementById('checkout-form-content').style.display = 'block';
+        document.getElementById('chk-simulate-failure').checked = false;
+
+        document.getElementById('checkoutModal').style.display = 'flex';
+      } catch (e) {
+        console.error('Checkout error:', e);
+        alert('Could not initiate checkout. Please try again.');
+      }
+    }
+
+    function switchGatewayTab(tab) {
+      document.querySelectorAll('.gateway-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('tab-upi').style.display = 'none';
+      document.getElementById('tab-card').style.display = 'none';
+      document.getElementById('tab-netbanking').style.display = 'none';
+
+      if (tab === 'upi') {
+        document.getElementById('tab-upi').style.display = 'block';
+        selectedPaymentMethod = 'UPI';
+      } else if (tab === 'card') {
+        document.getElementById('tab-card').style.display = 'block';
+        selectedPaymentMethod = 'Card';
+      } else if (tab === 'netbanking') {
+        document.getElementById('tab-netbanking').style.display = 'block';
+        selectedPaymentMethod = 'NetBanking';
+      }
+      event.target.classList.add('active');
+    }
+
+    function closeCheckoutModal() {
+      document.getElementById('checkoutModal').style.display = 'none';
+    }
+
+    async function processPayment() {
+      if (!pendingCheckout) return;
+
+      const simulateFailure = document.getElementById('chk-simulate-failure').checked;
+
+      // Show processing spinner
+      document.getElementById('checkout-form-content').style.display = 'none';
+      document.getElementById('checkout-processing').style.display = 'block';
+
+      const headers = { 'Content-Type': 'application/json', 'x-role': 'owner' };
+      if (currentSession.id) headers['x-user-id'] = String(currentSession.id);
+
+      // Simulate network verification delay
+      setTimeout(async () => {
+        try {
+          const res = await fetch(`${API_BASE}/subscriptions/verify-payment`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              orderId: pendingCheckout.orderId,
+              transactionId: `TX_${Date.now()}_${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+              planId: pendingCheckout.plan.id,
+              paymentMethod: selectedPaymentMethod,
+              simulateFailure,
+              ownerId: currentSession.id
+            })
+          });
+
+          if (!res.ok) {
+            const err = await res.json();
+            alert(`Payment Failed: ${err.message || 'Verification failed.'}`);
+            document.getElementById('checkout-processing').style.display = 'none';
+            document.getElementById('checkout-form-content').style.display = 'block';
+            return;
+          }
+
+          const verifyData = await res.json();
+
+          // Close checkout modal
+          closeCheckoutModal();
+
+          // Update Session
+          currentSession.hasActiveSubscription = true;
+          currentSession.subscriptionStatus = 'ACTIVE';
+          currentSession.subscriptionPlan = verifyData.subscription.plan.displayName;
+          currentSession.subscriptionFee = verifyData.subscription.amount;
+          currentSession.subscriptionEndDate = verifyData.subscription.endDate;
+          sessionStorage.setItem('pg_user', JSON.stringify(currentSession));
+
+          // Auto-create pending property from registration if any
+          const pendingPropKey = `owner_pending_prop_${currentSession.id}`;
+          const pendingPropRaw = localStorage.getItem(pendingPropKey);
+          if (pendingPropRaw) {
+            try {
+              const pendingProp = JSON.parse(pendingPropRaw);
+              const propRes = await fetch('http://localhost:3000/properties', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'x-role': 'owner',
+                  'x-user-id': String(currentSession.id)
+                },
+                body: JSON.stringify(pendingProp)
+              });
+              if (propRes.ok) {
+                const createdProp = await propRes.json();
+                currentSession.property = createdProp.name;
+                sessionStorage.setItem('pg_user', JSON.stringify(currentSession));
+                localStorage.removeItem(pendingPropKey);
+              }
+            } catch (propErr) {
+              console.warn('Could not auto-create registered property:', propErr);
+            }
+          }
+
+          // Also update local registered owners if any
+          const localOwners = JSON.parse(localStorage.getItem('registered_owners') || '[]');
+          const idx = localOwners.findIndex(o => o.email === currentSession.email);
+          if (idx !== -1) {
+            localOwners[idx].subscriptionPlan = currentSession.subscriptionPlan;
+            localOwners[idx].subscriptionFee = currentSession.subscriptionFee;
+            localOwners[idx].hasActiveSubscription = true;
+            localStorage.setItem('registered_owners', JSON.stringify(localOwners));
+          }
+
+          // Show Receipt Modal
+          renderReceiptModal(verifyData.receipt);
+
+        } catch (e) {
+          console.error('Payment verification error:', e);
+          alert('An error occurred during payment verification.');
+          document.getElementById('checkout-processing').style.display = 'none';
+          document.getElementById('checkout-form-content').style.display = 'block';
+        }
+      }, 1500);
+    }
+
+    function renderReceiptModal(receipt) {
+      const body = document.getElementById('receipt-modal-body');
+      body.innerHTML = `
+        <div class="receipt-card">
+          <div class="receipt-header">
+            <div>
+              <div style="font-weight:800;font-size:16px;color:#0f172a;">RentBro Subscription Receipt</div>
+              <div style="color:var(--text-muted);font-size:12px;margin-top:2px;">Receipt No: <strong>${receipt.receiptNumber}</strong></div>
+            </div>
+            <span class="receipt-badge">Paid</span>
+          </div>
+
+          <div class="receipt-grid">
+            <div class="receipt-item">
+              <span>Owner Name</span>
+              <strong>${receipt.ownerName}</strong>
+            </div>
+            <div class="receipt-item">
+              <span>Transaction ID</span>
+              <strong style="font-family:monospace">${receipt.transactionId}</strong>
+            </div>
+            <div class="receipt-item">
+              <span>Plan Purchased</span>
+              <strong>${receipt.planName} (${receipt.planType})</strong>
+            </div>
+            <div class="receipt-item">
+              <span>Amount Paid</span>
+              <strong style="color:#0f172a;font-size:16px;">₹${Number(receipt.amount).toLocaleString('en-IN')}</strong>
+            </div>
+            <div class="receipt-item">
+              <span>Payment Date</span>
+              <strong>${receipt.paymentDate}</strong>
+            </div>
+            <div class="receipt-item">
+              <span>Payment Method</span>
+              <strong>${receipt.paymentMethod}</strong>
+            </div>
+            <div class="receipt-item">
+              <span>Subscription Valid From</span>
+              <strong>${receipt.startDate}</strong>
+            </div>
+            <div class="receipt-item">
+              <span>Expires On</span>
+              <strong style="color:${receipt.endDate === 'Lifetime' ? '#10b981' : '#0f172a'}">${receipt.endDate}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;">
+          <button class="btn-plan-action secondary" onclick="window.print()" style="flex:1">
+            <span class="material-icons-outlined" style="font-size:18px">print</span> Print Receipt
+          </button>
+          <button class="btn-plan-action primary" onclick="closeReceiptModalAndRedirect()" style="flex:1">
+            Go to Owner Dashboard →
+          </button>
+        </div>
+      `;
+
+      document.getElementById('receiptModal').style.display = 'flex';
+    }
+
+    function closeReceiptModalAndRedirect() {
+      document.getElementById('receiptModal').style.display = 'none';
       window.location.href = 'index.html';
+    }
+
+    function logoutOwner() {
+      sessionStorage.removeItem('pg_user');
+      window.location.href = '../../login/login/login.html';
     }
   </script>
 </body>

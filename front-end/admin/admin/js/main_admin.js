@@ -25,6 +25,7 @@ const FRAGMENT_MAP = {
   properties:    'pages/properties.html',
   bookings:      'pages/bookings.html',
   payments:      'pages/payments.html',
+  subscriptions: 'pages/subscriptions.html',
   notifications: 'pages/notifications.html'
 };
 
@@ -220,6 +221,7 @@ function renderSection(sec) {
     case 'properties':    renderProperties();    break;
     case 'bookings':      renderBookings();      break;
     case 'payments':      renderPayments();      break;
+    case 'subscriptions': renderSubscriptions(); break;
     case 'notifications': renderNotifications(); break;
   }
 }

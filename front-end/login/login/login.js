@@ -17,10 +17,17 @@ if (typeof LOGIN_MOCK === 'undefined') {
     credentials: {
       super_admin: [{ username: 'superadmin', password: 'admin123', name: 'Super Admin', role: 'super_admin' }],
       admin: [{ username: 'admin', password: 'admin123', name: 'Admin', role: 'admin' }],
-      warden: [], 
-      owner: [], 
+      warden: [
+        { username: 'warden', email: 'sneha.g@email.com', password: 'warden123', name: 'Sneha Gupta', role: 'warden', property: 'Sunrise Heights' }
+      ], 
+      owner: [
+        { username: 'owner1', email: 'rajesh.k@email.com', password: 'owner123', name: 'Rajesh Kumar', role: 'owner', hasActiveSubscription: true, subscriptionPlan: 'Yearly', subscriptionStatus: 'ACTIVE' },
+        { username: 'owner2', email: 'priya.p@email.com', password: 'owner123', name: 'Priya Patel', role: 'owner', hasActiveSubscription: true, subscriptionPlan: 'Yearly', subscriptionStatus: 'ACTIVE' },
+        { username: 'owner3', email: 'sunita.r@email.com', password: 'owner123', name: 'Sunita Rao', role: 'owner', hasActiveSubscription: false, subscriptionPlan: 'None', subscriptionStatus: 'NONE' }
+      ], 
       tenant: [
-        { username: 'tenant', email: 'tenant@gmail.com', password: 'password123', name: 'Demo Tenant', property: 'Sunrise PG Residency', room: '201' }
+        { username: 'tenant', email: 'tenant@gmail.com', password: 'password123', name: 'Demo Tenant', property: 'Sunrise PG Residency', room: '201' },
+        { username: 'amit', email: 'amit.s@email.com', password: 'password123', name: 'Amit Sharma', property: 'Sunrise PG Residency', room: '101' }
       ], 
       guest: [
         { username: 'guest@gmail.com', email: 'guest@gmail.com', phone: '9876543210', password: 'guest123', name: 'Demo Guest', role: 'guest' },
@@ -49,11 +56,16 @@ function goBack() {
   hide('login-card-area');
   hide('guest-signup-area');
   hide('owner-reg-area');
+  hide('success-area');
   show('role-selector', 'flex');
-  document.getElementById('back-btn').style.display = 'none';
-  document.querySelector('.card-panel-inner').style.maxWidth = '480px';
+  const backBtn = document.getElementById('back-btn');
+  if (backBtn) backBtn.style.display = 'none';
+  const panel = document.querySelector('.card-panel-inner');
+  if (panel) panel.style.maxWidth = '480px';
   currentRole = null;
   guestStep   = 1;
+  clearLoginErrors();
+  clearRegErrors();
 }
 
 // ===== ROLE SELECTOR =====
@@ -63,8 +75,10 @@ function showRoleSelector() {
   hide('owner-reg-area');
   hide('success-area');
   show('role-selector', 'flex');
-  document.getElementById('back-btn').style.display = 'none';
-  document.querySelector('.card-panel-inner').style.maxWidth = '480px';
+  const backBtn = document.getElementById('back-btn');
+  if (backBtn) backBtn.style.display = 'none';
+  const panel = document.querySelector('.card-panel-inner');
+  if (panel) panel.style.maxWidth = '480px';
 }
 
 function selectRole(role) {
@@ -106,9 +120,28 @@ function showLoginForm(role) {
   if (titleEl) titleEl.textContent = titles[role] || 'Login';
   if (subEl)   subEl.textContent   = subs[role]   || 'Enter your credentials to continue';
 
+  // Demo Credentials Box
+  const demoCreds = {
+    super_admin: { u: 'superadmin', p: 'admin123' },
+    admin:       { u: 'admin', p: 'admin123' },
+    warden:      { u: 'warden', p: 'warden123' },
+    owner:       { u: 'owner1', p: 'owner123' },
+    tenant:      { u: 'tenant', p: 'password123' }
+  };
+
+  const credBox = document.getElementById('demo-creds-box');
+  const credVal = document.getElementById('demo-creds-val');
+  if (credBox && credVal && demoCreds[role]) {
+    credBox.style.display = 'flex';
+    credVal.textContent = `${demoCreds[role].u} / ${demoCreds[role].p}`;
+    window._currentDemoCreds = demoCreds[role];
+  } else if (credBox) {
+    credBox.style.display = 'none';
+  }
+
   // Username label — only guest uses email
   const label = document.getElementById('username-label');
-  if (label) label.textContent = 'Username';
+  if (label) label.textContent = 'Username or Email';
 
   // Show only the correct footer — all others hidden
   document.getElementById('guest-footer').style.display        = 'none';
@@ -122,6 +155,15 @@ function showLoginForm(role) {
       e.preventDefault();
       handleLogin(role);
     };
+  }
+}
+
+function fillDemoCreds() {
+  if (window._currentDemoCreds) {
+    const uInput = document.getElementById('login-username');
+    const pInput = document.getElementById('login-password');
+    if (uInput) uInput.value = window._currentDemoCreds.u;
+    if (pInput) pInput.value = window._currentDemoCreds.p;
   }
 }
 
@@ -162,41 +204,50 @@ async function handleLogin(role) {
   let user = null;
 
   try {
-    // Check registered guests/owners in localStorage
+    // 1. Primary: Authenticate with NestJS Backend API (supports both username and email)
+    const response = await fetch('http://localhost:3000/users/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    
+    if (response.ok) {
+      user = await response.json();
+    } else {
+      // 2. Fallback: Check registered users in localStorage or mock credentials
+      let registeredMatch = null;
+      if (role === 'guest') {
+        registeredMatch = registeredGuests.find(
+          g => (g.email === username || g.phone === username || g.username === username) && g.password === password
+        );
+      } else if (role === 'owner') {
+        registeredMatch = registeredOwners.find(
+          o => (o.username === username || o.email === username || o.phone === username) && o.password === password
+        );
+      }
+
+      let match = null;
+      if (typeof LOGIN_MOCK !== 'undefined' && LOGIN_MOCK.credentials[role]) {
+        const credList = LOGIN_MOCK.credentials[role] || [];
+        match = credList.find(c => (c.username === username || c.email === username || c.phone === username) && c.password === password);
+      }
+
+      user = match || registeredMatch;
+    }
+  } catch (error) {
+    console.error('Login network error, using local fallback:', error);
+    // Offline local fallback
     let registeredMatch = null;
     if (role === 'guest') {
       registeredMatch = registeredGuests.find(
-        g => (g.email === username || g.phone === username) && g.password === password
+        g => (g.email === username || g.phone === username || g.username === username) && g.password === password
       );
-    }
-    if (role === 'owner') {
+    } else if (role === 'owner') {
       registeredMatch = registeredOwners.find(
-        o => o.email === username && o.password === password
+        o => (o.username === username || o.email === username || o.phone === username) && o.password === password
       );
     }
-
-    // Check mock credentials if available
-    let match = null;
-    if (typeof LOGIN_MOCK !== 'undefined' && LOGIN_MOCK.credentials[role]) {
-      const credList = LOGIN_MOCK.credentials[role] || [];
-      match = credList.find(c => (c.username === username || c.email === username || c.phone === username) && c.password === password);
-    }
-
-    user = match || registeredMatch;
-
-    // If not found locally, call backend API
-    if (!user && role !== 'guest') {
-      const response = await fetch('http://localhost:3000/users/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      if (response.ok) {
-        user = await response.json();
-      }
-    }
-  } catch (error) {
-    console.error('Login error:', error);
+    user = registeredMatch;
   } finally {
     if (submitBtn) {
       submitBtn.textContent = 'Sign In';
@@ -205,36 +256,56 @@ async function handleLogin(role) {
   }
 
   if (user) {
-    // Only owners need pending check — guests are auto-active
-    if (role === 'owner' && user.status === 'pending') {
-      showLoginBanner(
-        'Your property registration is pending admin verification. You will be notified once approved.',
-        'warning'
-      );
-      return;
-    }
+    // Save session with persistent subscription details
+    const hasActiveSub = user.hasActiveSubscription !== undefined 
+      ? user.hasActiveSubscription 
+      : (Boolean(user.subscriptionPlan) && user.subscriptionPlan !== 'Expired' && user.subscriptionPlan !== 'None' && user.subscriptionPlan !== '');
 
-    // Save session
+    const subStatus = user.subscriptionStatus || (hasActiveSub ? 'ACTIVE' : (user.subscriptionPlan === 'Expired' ? 'EXPIRED' : 'NONE'));
+
     sessionStorage.setItem('pg_user', JSON.stringify({
-      name:     user.name,
-      email:    user.email,
-      phone:    user.phone || '',
-      role:     role,
-      property: user.property || '',
-      room:     user.room     || ''
+      id:                    user.id,
+      name:                  user.name,
+      username:              user.username || username,
+      email:                 user.email || (username.includes('@') ? username : ''),
+      phone:                 user.phone || '',
+      role:                  user.role || role,
+      property:              user.property || user.propertyName || '',
+      room:                  user.room     || '',
+      subscriptionPlan:      user.subscriptionPlan || (hasActiveSub ? 'Standard' : ''),
+      subscriptionStatus:    subStatus,
+      hasActiveSubscription: hasActiveSub,
+      subscriptionFee:       user.subscriptionFee || 0,
+      subscriptionEndDate:   user.subscriptionEndDate || null
     }));
 
     const formattedRole = role.charAt(0).toUpperCase() + role.slice(1);
     showLoginBanner(`Directing ${user.name} to ${formattedRole} page...`, 'success');
 
-    setTimeout(() => routeUser(role), 1200);
+    setTimeout(() => routeUser(role, user, hasActiveSub, subStatus), 800);
 
   } else {
-    showLoginBanner('Invalid credentials. Please check and try again.', 'error');
+    showLoginBanner('Invalid credentials. Please check your username/email and password.', 'error');
   }
 }
 
-function routeUser(role) {
+function routeUser(role, userObj = null, hasActiveSub = false, subStatus = 'NONE') {
+  if (role === 'owner') {
+    // If owner has an active subscription -> directly to owner dashboard
+    if (hasActiveSub) {
+      window.location.href = '../../owner/owner_s/index.html';
+      return;
+    }
+    // If expired -> go to subscription page with expired notice
+    if (subStatus === 'EXPIRED') {
+      window.location.href = '../../owner/owner_s/subscription.html?reason=expired';
+      return;
+    }
+    // If new owner without subscription -> mandatory subscription
+    window.location.href = '../../owner/owner_s/subscription.html?reason=required';
+    return;
+  }
+
   const routes = {
     admin:  '../../admin/admin/index.html',
     super_admin: '../../super_admin/super_admin/index.html',
@@ -565,6 +636,14 @@ function renderOwnerRegForm() {
         <div class="reg-err" id="err-o-name"></div>
       </div>
       <div class="reg-field">
+        <label>Username *</label>
+        <div class="reg-inp-wrap">
+          <span class="reg-ico">🏷️</span>
+          <input type="text" id="o-username" placeholder="Choose a username"/>
+        </div>
+        <div class="reg-err" id="err-o-username"></div>
+      </div>
+      <div class="reg-field">
         <label>Email Address *</label>
         <div class="reg-inp-wrap">
           <span class="reg-ico">✉️</span>
@@ -581,13 +660,24 @@ function renderOwnerRegForm() {
         <div class="reg-err" id="err-o-phone"></div>
       </div>
       <div class="reg-field">
-        <label>Total Rooms *</label>
+        <label>Account Password *</label>
         <div class="reg-inp-wrap">
-          <span class="reg-ico">🏠</span>
-          <input type="number" id="o-rooms" placeholder="0" min="1"/>
+          <span class="reg-ico">🔒</span>
+          <input type="password" id="o-password" placeholder="Create password (min 6 chars)"/>
+          <span class="toggle-reg-pw" onclick="togglePw('o-password', this)">👁️</span>
         </div>
-        <div class="reg-err" id="err-o-rooms"></div>
+        <div class="reg-err" id="err-o-password"></div>
       </div>
+      <div class="reg-field">
+        <label>Confirm Password *</label>
+        <div class="reg-inp-wrap">
+          <span class="reg-ico">🔒</span>
+          <input type="password" id="o-confirm" placeholder="Confirm password"/>
+          <span class="toggle-reg-pw" onclick="togglePw('o-confirm', this)">👁️</span>
+        </div>
+        <div class="reg-err" id="err-o-confirm"></div>
+      </div>
+
       <div class="reg-field full">
         <label>PG Property Name *</label>
         <div class="reg-inp-wrap">
@@ -621,18 +711,26 @@ function renderOwnerRegForm() {
         <div class="reg-err" id="err-o-state"></div>
       </div>
       <div class="reg-field">
-        <label>Total Capacity *</label>
+        <label>Total Rooms *</label>
+        <div class="reg-inp-wrap">
+          <span class="reg-ico">🏠</span>
+          <input type="number" id="o-rooms" placeholder="e.g. 10" min="1"/>
+        </div>
+        <div class="reg-err" id="err-o-rooms"></div>
+      </div>
+      <div class="reg-field">
+        <label>Total Capacity (Beds) *</label>
         <div class="reg-inp-wrap">
           <span class="reg-ico">👥</span>
-          <input type="number" id="o-capacity" placeholder="0" min="1"/>
+          <input type="number" id="o-capacity" placeholder="e.g. 20" min="1"/>
         </div>
         <div class="reg-err" id="err-o-capacity"></div>
       </div>
       <div class="reg-field full">
         <label>Amenities</label>
         <div class="amenities-grid">
-          <label class="amenity-check"><input type="checkbox" value="WiFi"/> WiFi</label>
-          <label class="amenity-check"><input type="checkbox" value="AC"/> AC</label>
+          <label class="amenity-check"><input type="checkbox" value="WiFi" checked/> WiFi</label>
+          <label class="amenity-check"><input type="checkbox" value="AC" checked/> AC</label>
           <label class="amenity-check"><input type="checkbox" value="Parking"/> Parking</label>
           <label class="amenity-check"><input type="checkbox" value="Gym"/> Gym</label>
           <label class="amenity-check"><input type="checkbox" value="Laundry"/> Laundry</label>
@@ -643,182 +741,211 @@ function renderOwnerRegForm() {
 
     <!-- Documentation Section -->
     <div class="reg-field full doc-section">
-      <h4 class="doc-title">📄 Documentation Required for Verification</h4>
-      <p class="doc-note">These documents will be reviewed by the admin before your property goes live on the platform.</p>
-      <div class="doc-grid">
-        <div class="reg-field">
-          <label>ID Proof * (Aadhaar / PAN / Driving License)</label>
-          <div class="file-inp-wrap">
-            <span class="reg-ico">📋</span>
-            <input type="file" id="o-idproof" accept=".pdf,.jpg,.jpeg,.png" class="file-input"/>
-            <span class="file-label">Choose file...</span>
-          </div>
-          <div class="reg-err" id="err-o-idproof"></div>
-        </div>
-        <div class="reg-field">
-          <label>Property Images * (Multiple)</label>
-          <div class="file-inp-wrap">
-            <span class="reg-ico">🖼️</span>
-            <input type="file" id="o-images" accept=".jpg,.jpeg,.png" multiple class="file-input"/>
-            <span class="file-label">Choose files...</span>
-          </div>
-          <div class="reg-err" id="err-o-images"></div>
-        </div>
-        <div class="reg-field">
-          <label>Property Ownership Proof</label>
-          <div class="file-inp-wrap">
-            <span class="reg-ico">🏠</span>
-            <input type="file" id="o-ownership" accept=".pdf,.jpg,.jpeg,.png" class="file-input"/>
-            <span class="file-label">Choose file...</span>
-          </div>
-        </div>
-        <div class="reg-field">
-          <label>Fire Safety Certificate</label>
-          <div class="file-inp-wrap">
-            <span class="reg-ico">🔥</span>
-            <input type="file" id="o-firesafety" accept=".pdf,.jpg,.jpeg,.png" class="file-input"/>
-            <span class="file-label">Choose file...</span>
-          </div>
-        </div>
-      </div>
+      <h4 class="doc-title">📄 Property Verification & Subscription Notice</h4>
+      <p class="doc-note">After registering, you will choose an owner subscription plan (Monthly ₹499, Yearly ₹4,999, or Lifetime ₹14,999) to activate and manage your listings.</p>
     </div>
 
     <div class="reg-field full" style="margin-top:8px">
       <label class="amenity-check commission-check">
-        <input type="checkbox" id="o-commission"/>
-        I agree to the <strong>10% platform commission</strong> on all bookings processed through PG Rental Hub.
+        <input type="checkbox" id="o-commission" checked/>
+        I agree to RentBro terms of service and property management policies.
       </label>
       <div class="reg-err" id="err-o-commission"></div>
     </div>
 
-    <button class="btn-submit-reg" onclick="submitOwnerRegistration()">Submit for Verification</button>
+    <button class="btn-submit-reg" id="btn-owner-submit" onclick="submitOwnerRegistration()">Create Owner Account & Continue →</button>
     <p class="reg-login-link" style="margin-top:16px">
-      Already registered? <a href="#" onclick="goBack()">Sign in here</a>
+      Already have an account? <a href="#" onclick="goBack()">Sign in here</a>
     </p>
   `;
-
-  // File input label updates
-  document.querySelectorAll('.file-input').forEach(inp => {
-    inp.addEventListener('change', function () {
-      const label = this.nextElementSibling;
-      if (label) {
-        label.textContent = this.files.length > 1
-          ? `${this.files.length} files selected`
-          : (this.files[0]?.name || 'Choose file...');
-      }
-    });
-  });
 }
 
-function submitOwnerRegistration() {
+async function submitOwnerRegistration() {
   const name     = document.getElementById('o-name')?.value.trim();
+  const username = document.getElementById('o-username')?.value.trim();
   const email    = document.getElementById('o-email')?.value.trim();
   const phone    = document.getElementById('o-phone')?.value.trim();
+  const password = document.getElementById('o-password')?.value;
+  const confirm  = document.getElementById('o-confirm')?.value;
   const propname = document.getElementById('o-propname')?.value.trim();
   const propaddr = document.getElementById('o-propaddr')?.value.trim();
   const city     = document.getElementById('o-city')?.value.trim();
   const state    = document.getElementById('o-state')?.value.trim();
   const rooms    = parseInt(document.getElementById('o-rooms')?.value);
   const capacity = parseInt(document.getElementById('o-capacity')?.value);
-  const idproof  = document.getElementById('o-idproof')?.files[0];
-  const images   = document.getElementById('o-images')?.files;
   const commission = document.getElementById('o-commission')?.checked;
 
   clearRegErrors();
   let valid = true;
 
-  if (!name)     { showRegErr('err-o-name',     'Full name is required');            valid = false; }
+  if (!name) { showRegErr('err-o-name', 'Full name is required'); valid = false; }
+  if (!username) { showRegErr('err-o-username', 'Username is required'); valid = false; }
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     showRegErr('err-o-email', 'Enter a valid email address'); valid = false;
   }
   if (!phone || !/^\+?[\d\s\-]{9,}$/.test(phone)) {
     showRegErr('err-o-phone', 'Enter a valid phone number'); valid = false;
   }
-  if (!propname) { showRegErr('err-o-propname', 'Property name is required');        valid = false; }
-  if (!propaddr) { showRegErr('err-o-propaddr', 'Property address is required');     valid = false; }
-  if (!city)     { showRegErr('err-o-city',     'City is required');                 valid = false; }
-  if (!state)    { showRegErr('err-o-state',    'State is required');                valid = false; }
-  if (isNaN(rooms) || rooms < 1)    { showRegErr('err-o-rooms',    'Enter a valid room count');   valid = false; }
-  if (isNaN(capacity) || capacity < 1) { showRegErr('err-o-capacity', 'Enter a valid capacity'); valid = false; }
-  if (!idproof)  { showRegErr('err-o-idproof',  'ID proof document is required');    valid = false; }
-  if (!images || images.length === 0) {
-    showRegErr('err-o-images', 'At least one property image is required'); valid = false;
+  if (!password || password.length < 6) {
+    showRegErr('err-o-password', 'Password must be at least 6 characters'); valid = false;
   }
-  if (!commission) {
-    showRegErr('err-o-commission', 'You must agree to the commission terms'); valid = false;
+  if (password !== confirm) {
+    showRegErr('err-o-confirm', 'Passwords do not match'); valid = false;
   }
+  if (!propname) { showRegErr('err-o-propname', 'Property name is required'); valid = false; }
+  if (!propaddr) { showRegErr('err-o-propaddr', 'Property address is required'); valid = false; }
+  if (!city)     { showRegErr('err-o-city', 'City is required'); valid = false; }
+  if (!state)    { showRegErr('err-o-state', 'State is required'); valid = false; }
+  if (isNaN(rooms) || rooms < 1) { showRegErr('err-o-rooms', 'Enter valid room count'); valid = false; }
+  if (isNaN(capacity) || capacity < 1) { showRegErr('err-o-capacity', 'Enter valid capacity'); valid = false; }
+  if (!commission) { showRegErr('err-o-commission', 'You must agree to the terms'); valid = false; }
+
   if (!valid) return;
+
+  const submitBtn = document.getElementById('btn-owner-submit');
+  if (submitBtn) {
+    submitBtn.textContent = 'Registering Account...';
+    submitBtn.disabled = true;
+  }
 
   const amenities = [...document.querySelectorAll('.amenity-check input[type=checkbox]:checked')]
     .map(c => c.value).filter(v => v !== 'on');
 
+  let ownerId = Date.now();
+  let createdUser = null;
+
+  // Try creating user in NestJS backend
+  try {
+    const regRes = await fetch('http://localhost:3000/users/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        username,
+        email,
+        phone,
+        password,
+        role: 'owner'
+      })
+    });
+    if (regRes.ok) {
+      createdUser = await regRes.json();
+      ownerId = createdUser.id;
+    }
+  } catch (err) {
+    console.warn('Backend user creation error (using local state fallback):', err);
+  }
+
   const newOwner = {
-    id:               Date.now(),
-    name, email, phone,
+    id:               ownerId,
+    name,
+    username,
+    email,
+    phone,
+    password,
     propertyName:     propname,
     propertyAddress:  propaddr,
-    city, state,
+    city,
+    state,
     totalRooms:       rooms,
     totalCapacity:    capacity,
     amenities,
-    idProof:          idproof.name,
-    propertyImages:   `${images.length} image(s)`,
-    commissionAgreed: true,
     role:             'owner',
-    status:           'pending',     // ← Owners DO need admin approval
-    registeredOn:     new Date().toISOString().split('T')[0],
-    docsVerified:     false,
-    inspectionPassed: false
+    status:           'active',
+    subscriptionPlan: 'None',
+    subscriptionStatus: 'NONE',
+    hasActiveSubscription: false,
+    registeredOn:     new Date().toISOString().split('T')[0]
   };
 
   registeredOwners.push(newOwner);
   localStorage.setItem('registered_owners', JSON.stringify(registeredOwners));
 
-  // Push notification to Admin for real-time verification alert
-  let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
-  crossNotifs.push({
-    id: Date.now(),
-    title: 'New Property Registration',
-    message: `Owner ${name} submitted property "${propname}" for verification.`,
-    type: 'warning',
-    priority: 'urgent',
-    targetRole: 'admin',
-    by: name,
-    sentAt: new Date().toLocaleString()
-  });
-  localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
+  // Save session with mandatory subscription required
+  sessionStorage.setItem('pg_user', JSON.stringify({
+    id:                    ownerId,
+    name:                  name,
+    username:              username,
+    email:                 email,
+    phone:                 phone,
+    role:                  'owner',
+    property:              propname,
+    room:                  '',
+    subscriptionPlan:      '',
+    subscriptionStatus:    'NONE',
+    hasActiveSubscription: false,
+    subscriptionFee:       0,
+    subscriptionEndDate:   null
+  }));
+
+  // Store property details for creation after subscription
+  localStorage.setItem(`owner_pending_prop_${ownerId}`, JSON.stringify({
+    name: propname,
+    location: `${propaddr}, ${city}, ${state}`,
+    ownerId: ownerId,
+    rentMin: 5000,
+    rentMax: 12000,
+    rooms: `${rooms}/${capacity}`,
+    amenities: amenities
+  }));
 
   showSuccessScreen(
-    'Registration Submitted',
-    `Thank you, ${name}. Your property "${propname}" has been submitted for admin review. You will be notified once your documents are verified and the property inspection is complete.`
+    'Owner Account Created! 🎉',
+    `Welcome, ${name}! Your owner account has been registered. Please select a subscription plan to activate your property listing.`,
+    true,
+    '../../owner/owner_s/subscription.html?reason=required'
   );
+
+  setTimeout(() => {
+    window.location.href = '../../owner/owner_s/subscription.html?reason=required';
+  }, 2200);
 }
 
 // ===== SUCCESS SCREEN =====
-function showSuccessScreen(title, message, isRedirect = false) {
+function showSuccessScreen(title, message, isRedirect = false, redirectUrl = null) {
   hide('login-card-area');
   hide('guest-signup-area');
   hide('owner-reg-area');
   hide('role-selector');
   show('success-area', 'flex');
-  document.querySelector('.card-panel-inner').style.maxWidth = '480px';
+  const panel = document.querySelector('.card-panel-inner');
+  if (panel) panel.style.maxWidth = '480px';
   
   // Re-trigger CSS animation
   const card = document.getElementById('success-area');
-  card.classList.remove('show-animated');
-  void card.offsetWidth; // trigger reflow
-  card.classList.add('show-animated');
+  if (card) {
+    card.classList.remove('show-animated');
+    void card.offsetWidth; // trigger reflow
+    card.classList.add('show-animated');
+  }
 
-  document.getElementById('success-title').textContent   = title;
-  document.getElementById('success-message').textContent = message;
-  document.getElementById('back-btn').style.display      = 'none';
+  const titleEl = document.getElementById('success-title');
+  const msgEl = document.getElementById('success-message');
+  const backBtn = document.getElementById('back-btn');
+  const successBtn = document.getElementById('success-btn');
+  const redirectLoader = document.getElementById('redirect-loader');
+
+  if (titleEl) titleEl.textContent = title;
+  if (msgEl) msgEl.textContent = message;
+  if (backBtn) backBtn.style.display = 'none';
 
   if (isRedirect) {
-    document.getElementById('success-btn').style.display = 'none';
-    document.getElementById('redirect-loader').style.display = 'flex';
+    if (successBtn) {
+      successBtn.style.display = 'block';
+      successBtn.textContent = 'Proceed Now →';
+      successBtn.onclick = () => {
+        if (redirectUrl) window.location.href = redirectUrl;
+        else goBack();
+      };
+    }
+    if (redirectLoader) redirectLoader.style.display = 'flex';
   } else {
-    document.getElementById('success-btn').style.display = 'block';
-    document.getElementById('redirect-loader').style.display = 'none';
+    if (successBtn) {
+      successBtn.style.display = 'block';
+      successBtn.textContent = 'Return to Login';
+      successBtn.onclick = () => goBack();
+    }
+    if (redirectLoader) redirectLoader.style.display = 'none';
   }
 }
 

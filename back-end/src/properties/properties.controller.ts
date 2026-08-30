@@ -4,6 +4,7 @@ import { createUploadOptions } from '../middleware/file-upload.middleware';
 import { PropertiesService } from './properties.service';
 import { CreatePropertyDto, UpdatePropertyDto } from './properties.dto';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { SubscriptionGuard } from '../common/guards/subscription.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
 
@@ -15,6 +16,7 @@ export class PropertiesController {
 
   @Post(':id/upload-image')
   @Roles('admin', 'owner')
+  @UseGuards(SubscriptionGuard)
   @UseInterceptors(FileInterceptor('file', createUploadOptions('./uploads/properties')))
   @ApiOperation({ summary: 'Upload property image' })
   @ApiConsumes('multipart/form-data')
@@ -50,14 +52,16 @@ export class PropertiesController {
 
   @Post()
   @Roles('admin', 'owner')
-  @ApiOperation({ summary: 'Create new property' })
+  @UseGuards(SubscriptionGuard)
+  @ApiOperation({ summary: 'Create new property (Requires Active Subscription for Owners)' })
   create(@Body() createPropertyDto: CreatePropertyDto) {
     return this.propertiesService.create(createPropertyDto);
   }
 
   @Put(':id')
   @Roles('admin', 'owner')
-  @ApiOperation({ summary: 'Update property' })
+  @UseGuards(SubscriptionGuard)
+  @ApiOperation({ summary: 'Update property (Requires Active Subscription for Owners)' })
   update(@Param('id') id: string, @Body() updatePropertyDto: UpdatePropertyDto) {
     return this.propertiesService.update(+id, updatePropertyDto);
   }

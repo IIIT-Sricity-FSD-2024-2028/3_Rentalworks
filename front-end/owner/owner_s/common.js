@@ -15,10 +15,28 @@ function requireAuth() {
     const parsed = JSON.parse(session);
     if (parsed.role !== 'owner') throw new Error('Not owner');
     
-    // Check if subscription plan exists, redirect to payment wall if not
-    if (!parsed.subscriptionPlan && !window.location.pathname.includes('subscription.html')) {
-       window.location.href = 'subscription.html';
-       return null;
+    const pathname = window.location.pathname;
+    const isSubscriptionPage = pathname.includes('subscription.html');
+    const isProfilePage = pathname.includes('profile.html');
+    const isAddPropertyPage = pathname.includes('add-property.html');
+
+    const hasActive = parsed.hasActiveSubscription === true || (parsed.subscriptionStatus === 'ACTIVE' && parsed.subscriptionPlan && parsed.subscriptionPlan !== 'Expired' && parsed.subscriptionPlan !== 'None');
+
+    // Subscription page and Profile page are always accessible to owner
+    if (isSubscriptionPage || isProfilePage) {
+      return parsed;
+    }
+
+    // New owner with no subscription at all -> mandatory subscription redirect
+    if (!parsed.subscriptionPlan || parsed.subscriptionStatus === 'NONE' || (!hasActive && parsed.subscriptionStatus !== 'EXPIRED')) {
+      window.location.href = 'subscription.html?reason=required';
+      return null;
+    }
+
+    // Expired owner attempting to access Add Property -> redirect to renewal
+    if (!hasActive && isAddPropertyPage) {
+      window.location.href = 'subscription.html?reason=expired';
+      return null;
     }
 
     return parsed;
@@ -27,6 +45,61 @@ function requireAuth() {
     window.location.href = '../../login/login/login.html';
     return null;
   }
+}
+
+// Background sync of subscription status from backend database
+async function syncSubscriptionWithBackend() {
+  const session = getSession();
+  if (!session || session.role !== 'owner') return;
+
+  try {
+    const headers = { 'x-role': 'owner' };
+    if (session.id) headers['x-user-id'] = String(session.id);
+
+    const res = await fetch(`http://localhost:3000/subscriptions/current?ownerId=${session.id || ''}`, { headers });
+    if (res.ok) {
+      const data = await res.json();
+      session.hasActiveSubscription = data.isActive;
+      session.subscriptionStatus = data.status;
+      if (data.plan) {
+        session.subscriptionPlan = data.plan.displayName;
+        session.subscriptionFee = data.subscription ? data.subscription.amount : data.plan.price;
+      }
+      if (data.subscription) {
+        session.subscriptionEndDate = data.subscription.endDate;
+      }
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+
+      // If expired banner needed on dashboard
+      if (!data.isActive && data.status === 'EXPIRED') {
+        renderSubscriptionAlertBanner('Your subscription has expired. Please renew to list and manage properties.');
+      } else if (!data.isActive && data.status === 'NONE') {
+        renderSubscriptionAlertBanner('Active subscription required. Please choose a plan.');
+      }
+    }
+  } catch (e) {
+    // Fail gracefully if offline
+  }
+}
+
+function renderSubscriptionAlertBanner(message) {
+  let banner = document.getElementById('sub-alert-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'sub-alert-banner';
+    banner.style.cssText = 'background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:14px 20px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; color:#991b1b; font-size:14px; font-weight:500;';
+    const mainContent = document.getElementById('pageContent');
+    if (mainContent) {
+      mainContent.insertBefore(banner, mainContent.firstChild);
+    }
+  }
+  banner.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="material-icons-outlined" style="color:#dc2626;font-size:22px;">warning</span>
+      <span>${message}</span>
+    </div>
+    <a href="subscription.html" style="background:#dc2626; color:white; padding:6px 14px; border-radius:6px; font-weight:600; text-decoration:none; font-size:13px;">Renew Now →</a>
+  `;
 }
 
 function getSession() {

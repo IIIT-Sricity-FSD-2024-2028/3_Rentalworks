@@ -22,6 +22,7 @@ const loadedFragments = {};
 const FRAGMENT_MAP = {
   dashboard:       'pages/dashboard.html',
   regional_admins: 'pages/regional_admins.html',
+  subscriptions:   'pages/subscriptions.html',
   global_reports:  'pages/global_reports.html',
   notifications:   'pages/notifications.html',
   profile:         'pages/profile.html'
@@ -176,6 +177,7 @@ function renderSection(sec) {
   switch (sec) {
     case 'dashboard':       renderDashboard();        break;
     case 'regional_admins': renderRegionalAdmins();   break;
+    case 'subscriptions':   renderSubscriptions();    break;
     case 'global_reports':  renderGlobalReports();    break;
     case 'notifications':   renderNotifications();    break;
     case 'profile':         if (typeof renderProfile === 'function') renderProfile(); break;

@@ -63,4 +63,7 @@ async function bootstrap() {
   // Note: user specifically asked to use port 3000
   await app.listen(3000);
 }
-bootstrap();
+bootstrap().catch(err => {
+  console.error('Fatal Bootstrap Error:', err);
+  process.exit(1);
+});

@@ -1,0 +1,231 @@
+<!-- ================================
+  SUBSCRIPTIONS & REVENUE FRAGMENT — SUPER ADMIN
+  Loaded by: navigateTo('subscriptions')
+  Rendered by: subscriptions_super_admin.js
+================================= -->
+<section id="subscriptions-sec" class="section active">
+  <div class="sec-hdr" style="display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <h2>Global Subscription & Revenue Management</h2>
+      <p>Comprehensive overview of platform subscription metrics, revenue statistics, and owner transactions</p>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn-add" onclick="loadSuperAdminSubscriptions()">
+        <span class="material-icons-outlined" style="font-size:18px;">refresh</span> Refresh Analytics
+      </button>
+    </div>
+  </div>
+
+  <!-- Primary Revenue & Subscription KPI Cards (Glass Morphism matching Payments Tab) -->
+  <div class="pay-summary">
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon bg-green"><span class="material-icons-outlined" style="font-size:24px;">payments</span></div>
+        <span class="stat-trend up">100% Retained</span>
+      </div>
+      <div class="stat-val" id="sa-total-revenue" style="color:#0f172a;">₹0</div>
+      <div class="stat-lbl">Total Subscription Revenue</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon bg-blue"><span class="material-icons-outlined" style="font-size:24px;">workspace_premium</span></div>
+        <span class="stat-trend up">Live Owners</span>
+      </div>
+      <div class="stat-val" id="sa-active-subs">0</div>
+      <div class="stat-lbl">Active Subscriptions</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon bg-purple"><span class="material-icons-outlined" style="font-size:24px;">task_alt</span></div>
+        <span class="stat-trend up">Verified</span>
+      </div>
+      <div class="stat-val" id="sa-successful-payments">0</div>
+      <div class="stat-lbl">Successful Payments</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon bg-red"><span class="material-icons-outlined" style="font-size:24px;">cancel</span></div>
+        <span class="stat-trend down" id="sa-failed-lbl">0 failed</span>
+      </div>
+      <div class="stat-val" id="sa-failed-payments" style="color:#dc2626;">0</div>
+      <div class="stat-lbl">Failed Transactions</div>
+    </div>
+  </div>
+
+  <!-- Secondary Breakdown Row (User Summary Card Style) -->
+  <div class="user-summary" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 20px;">
+    <div class="u-sum-card">
+      <div class="u-sum-label">MONTHLY PLANS (₹499/MO)</div>
+      <div class="u-sum-val green" id="sa-monthly-subs">0</div>
+    </div>
+    <div class="u-sum-card">
+      <div class="u-sum-label">YEARLY PLANS (₹4,999/YR)</div>
+      <div class="u-sum-val blue" id="sa-yearly-subs">0</div>
+    </div>
+    <div class="u-sum-card">
+      <div class="u-sum-label">LIFETIME PLANS (₹14,999)</div>
+      <div class="u-sum-val purple" id="sa-lifetime-subs">0</div>
+    </div>
+    <div class="u-sum-card">
+      <div class="u-sum-label">EXPIRED / CANCELLED</div>
+      <div class="u-sum-val red" id="sa-expired-subs">0</div>
+    </div>
+  </div>
+
+  <!-- Charts Row: Subscription Revenue Trend + Plan Breakdown -->
+  <div class="pay-charts" style="display:grid;grid-template-columns:1.2fr 0.8fr;gap:18px;margin-bottom:20px;">
+    <div class="chart-card">
+      <h3>Subscription Revenue Trajectory</h3>
+      <p>6-month subscription growth and cash collection</p>
+      <div class="line-chart-wrap" id="sa-sub-rev-chart" style="height:140px;margin-top:10px;">
+        <svg viewBox="0 0 500 140" style="width:100%;height:100%;overflow:visible;">
+          <defs>
+            <linearGradient id="saSubGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#2563eb" stop-opacity="0.35"/>
+              <stop offset="100%" stop-color="#2563eb" stop-opacity="0.0"/>
+            </linearGradient>
+          </defs>
+          <path d="M 0 110 Q 100 85, 200 70 T 400 35 T 500 15 L 500 140 L 0 140 Z" fill="url(#saSubGrad)"/>
+          <path d="M 0 110 Q 100 85, 200 70 T 400 35 T 500 15" fill="none" stroke="#2563eb" stroke-width="3.5" stroke-linecap="round"/>
+          <circle cx="0" cy="110" r="4" fill="#2563eb"/>
+          <circle cx="100" cy="90" r="4" fill="#2563eb"/>
+          <circle cx="200" cy="70" r="4" fill="#2563eb"/>
+          <circle cx="300" cy="50" r="4" fill="#2563eb"/>
+          <circle cx="400" cy="35" r="4" fill="#2563eb"/>
+          <circle cx="500" cy="15" r="5" fill="#10b981" stroke="#ffffff" stroke-width="2"/>
+        </svg>
+      </div>
+      <div class="chart-labels" style="display:flex;justify-content:space-between;padding:8px 6px 0;font-size:11px;color:#94a3b8;">
+        <span>Oct</span><span>Nov</span><span>Dec</span><span>Jan</span><span>Feb</span><span>Mar (Current)</span>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <h3>Active Plan Distribution</h3>
+      <p>Owner distribution by subscription tier</p>
+      <div style="padding:14px 0;display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+            <span><strong>Yearly Tier (₹4,999)</strong></span>
+            <span id="sa-bar-yearly-pct">0%</span>
+          </div>
+          <div style="background:#f1f5f9;border-radius:6px;height:8px;overflow:hidden;">
+            <div id="sa-bar-yearly-fill" class="progress-fill" style="background:#2563eb;height:100%;width:0%;"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+            <span><strong>Monthly Tier (₹499)</strong></span>
+            <span id="sa-bar-monthly-pct">0%</span>
+          </div>
+          <div style="background:#f1f5f9;border-radius:6px;height:8px;overflow:hidden;">
+            <div id="sa-bar-monthly-fill" class="progress-fill" style="background:#10b981;height:100%;width:0%;"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+            <span><strong>Lifetime Tier (₹14,999)</strong></span>
+            <span id="sa-bar-lifetime-pct">0%</span>
+          </div>
+          <div style="background:#f1f5f9;border-radius:6px;height:8px;overflow:hidden;">
+            <div id="sa-bar-lifetime-fill" class="progress-fill" style="background:#8b5cf6;height:100%;width:0%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Buttons with Apple-style Morphism -->
+  <div style="display:flex; gap:10px; margin-bottom:16px;">
+    <button id="sa-tab-subs" class="btn-add" onclick="switchSuperAdminSubTab('subs')">
+      <span class="material-icons-outlined" style="font-size:18px;">subscriptions</span> Active Subscriptions
+    </button>
+    <button id="sa-tab-payments" class="btn-add" onclick="switchSuperAdminSubTab('payments')" style="background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;">
+      <span class="material-icons-outlined" style="font-size:18px;">receipt_long</span> Payment Transactions & Invoices
+    </button>
+  </div>
+
+  <!-- Subscriptions Table View -->
+  <div id="sa-view-subs">
+    <div class="tbl-wrap">
+      <div class="tbl-hdr">
+        <div class="search-wrap">
+          <span class="s-ico"><span class="material-icons-outlined" style="font-size:20px;">search</span></span>
+          <input type="text" id="sa-sub-search" placeholder="Search by owner name, email, phone, or receipt..." oninput="filterSuperAdminSubscriptions()">
+        </div>
+        <select id="sa-sub-status-filter" class="sel" onchange="filterSuperAdminSubscriptions()">
+          <option value="ALL">All Statuses</option>
+          <option value="ACTIVE">Active</option>
+          <option value="EXPIRED">Expired</option>
+          <option value="CANCELLED">Cancelled</option>
+        </select>
+        <select id="sa-sub-plan-filter" class="sel" onchange="filterSuperAdminSubscriptions()">
+          <option value="ALL">All Plans</option>
+          <option value="MONTHLY">Monthly</option>
+          <option value="YEARLY">Yearly</option>
+          <option value="LIFETIME">Lifetime</option>
+        </select>
+        <span style="font-size:12px;color:#16a34a;font-weight:600;padding:6px 10px;background:#dcfce7;border-radius:6px">
+          <span class="material-icons-outlined" style="font-size:16px;vertical-align:middle;">verified</span> Real-time Sync
+        </span>
+      </div>
+
+      <table class="data-tbl">
+        <thead>
+          <tr>
+            <th>Owner Details</th>
+            <th>Plan Type</th>
+            <th>Amount</th>
+            <th>Start Date</th>
+            <th>Expiry Date</th>
+            <th>Status</th>
+            <th>Receipt No</th>
+            <th style="text-align:right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="sa-subscriptions-tbody">
+          <tr><td colspan="8" style="text-align:center;padding:40px;color:#94a3b8;">Loading subscriptions...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Payments Table View -->
+  <div id="sa-view-payments" style="display:none;">
+    <div class="tbl-wrap">
+      <div class="tbl-hdr">
+        <div class="search-wrap">
+          <span class="s-ico"><span class="material-icons-outlined" style="font-size:20px;">search</span></span>
+          <input type="text" id="sa-pay-search" placeholder="Search by transaction ID, owner, or receipt..." oninput="filterSuperAdminPayments()">
+        </div>
+        <select id="sa-pay-status-filter" class="sel" onchange="filterSuperAdminPayments()">
+          <option value="ALL">All Payment Statuses</option>
+          <option value="SUCCESS">Success / Paid</option>
+          <option value="FAILED">Failed</option>
+        </select>
+        <span style="font-size:12px;color:#2563eb;font-weight:600;padding:6px 10px;background:#eff6ff;border-radius:6px">
+          <span class="material-icons-outlined" style="font-size:16px;vertical-align:middle;">receipt</span> Gateway Ledger
+        </span>
+      </div>
+
+      <table class="data-tbl">
+        <thead>
+          <tr>
+            <th>Payment Date</th>
+            <th>Owner</th>
+            <th>Plan</th>
+            <th>Amount</th>
+            <th>Method</th>
+            <th>Transaction ID</th>
+            <th>Status</th>
+            <th>Receipt No</th>
+            <th style="text-align:right">Action</th>
+          </tr>
+        </thead>
+        <tbody id="sa-payments-tbody">
+          <tr><td colspan="9" style="text-align:center;padding:40px;color:#94a3b8;">Loading payments...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

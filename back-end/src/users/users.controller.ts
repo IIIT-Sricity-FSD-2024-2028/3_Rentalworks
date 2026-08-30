@@ -42,9 +42,15 @@ export class UsersController {
     return this.usersService.login(loginDto);
   }
 
+  @Post('register')
+  @ApiOperation({ summary: 'Public registration for new users (owners, guests)' })
+  register(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.create(createUserDto);
+  }
+
   @Post()
   @Roles('admin')
-  @ApiOperation({ summary: 'Create new user' })
+  @ApiOperation({ summary: 'Create new user (Admin only)' })
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }

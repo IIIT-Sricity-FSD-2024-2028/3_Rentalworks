@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { UserActivity } from './user-activity.entity';
 import { CreateUserDto, UpdateUserDto, LoginDto, ForgotPasswordDto, ResetPasswordDto } from './users.dto';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
@@ -14,6 +15,7 @@ export class UsersService {
     private usersRepository: Repository<User>,
     @InjectRepository(UserActivity)
     private activityRepository: Repository<UserActivity>,
+    private subscriptionsService: SubscriptionsService,
   ) {}
 
   findAll() {
@@ -23,6 +25,17 @@ export class UsersService {
   async findOne(id: number) {
     const user = await this.usersRepository.findOneBy({ id });
     if (!user) throw new NotFoundException(`User with ID ${id} not found`);
+    
+    if (user.role === 'owner') {
+      const subInfo = await this.subscriptionsService.getCurrentSubscription(user.id);
+      return {
+        ...user,
+        subscriptionStatus: subInfo.status,
+        hasActiveSubscription: subInfo.isActive,
+        activeSubscription: subInfo.subscription,
+        subscriptionPlan: subInfo.plan ? subInfo.plan.displayName : user.subscriptionPlan
+      };
+    }
     return user;
   }
 
@@ -59,7 +72,12 @@ export class UsersService {
   }
 
   async login(loginDto: LoginDto, clientMetadata: any = {}) {
-    const user = await this.usersRepository.findOne({ where: { username: loginDto.username } });
+    const user = await this.usersRepository.findOne({
+      where: [
+        { username: loginDto.username },
+        { email: loginDto.username }
+      ]
+    });
     if (!user) throw new UnauthorizedException('Invalid credentials');
     
     const isMatch = await bcrypt.compare(loginDto.password || '', user.password || '');
@@ -71,6 +89,21 @@ export class UsersService {
     await this.logActivity(user.id, 'login', 'Successfully logged in', clientMetadata);
 
     const { password, ...result } = user;
+
+    // Attach real-time subscription details for owner
+    if (user.role === 'owner') {
+      const subInfo = await this.subscriptionsService.getCurrentSubscription(user.id);
+      return {
+        ...result,
+        subscriptionStatus: subInfo.status,
+        hasActiveSubscription: subInfo.isActive,
+        subscriptionPlan: subInfo.plan ? subInfo.plan.displayName : (user.subscriptionPlan || 'None'),
+        subscriptionFee: subInfo.subscription ? subInfo.subscription.amount : (user.subscriptionFee || 0),
+        subscriptionEndDate: subInfo.subscription ? subInfo.subscription.endDate : null,
+        activeSubscription: subInfo.subscription
+      };
+    }
+
     return result;
   }
 

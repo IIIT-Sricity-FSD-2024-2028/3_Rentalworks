@@ -116,6 +116,46 @@
         ]
       }
     },
+    "/users/register": {
+      "post": {
+        "operationId": "UsersController_register",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Public registration for new users (owners, guests)",
+        "tags": [
+          "users"
+        ]
+      }
+    },
     "/users": {
       "post": {
         "operationId": "UsersController_create",
@@ -150,7 +190,7 @@
             "description": ""
           }
         },
-        "summary": "Create new user",
+        "summary": "Create new user (Admin only)",
         "tags": [
           "users"
         ]
@@ -304,6 +344,468 @@
         ]
       }
     },
+    "/subscriptions/plans": {
+      "get": {
+        "operationId": "SubscriptionsController_getPlans",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get all active subscription plans",
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/subscriptions/current": {
+      "get": {
+        "operationId": "SubscriptionsController_getCurrent",
+        "parameters": [
+          {
+            "name": "ownerId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get current subscription details for owner",
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/subscriptions/checkout": {
+      "post": {
+        "operationId": "SubscriptionsController_checkout",
+        "parameters": [
+          {
+            "name": "ownerId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Initiate subscription checkout order",
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/subscriptions/verify-payment": {
+      "post": {
+        "operationId": "SubscriptionsController_verifyPayment",
+        "parameters": [
+          {
+            "name": "ownerId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Verify payment and activate subscription",
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/subscriptions/upgrade": {
+      "post": {
+        "operationId": "SubscriptionsController_upgrade",
+        "parameters": [
+          {
+            "name": "ownerId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpgradeSubscriptionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Initiate plan upgrade",
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/subscriptions/renew": {
+      "post": {
+        "operationId": "SubscriptionsController_renew",
+        "parameters": [
+          {
+            "name": "ownerId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenewSubscriptionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Initiate plan renewal",
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/subscriptions/history": {
+      "get": {
+        "operationId": "SubscriptionsController_getSubscriptionHistory",
+        "parameters": [
+          {
+            "name": "ownerId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get owner subscription history",
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/subscriptions/payments": {
+      "get": {
+        "operationId": "SubscriptionsController_getPaymentHistory",
+        "parameters": [
+          {
+            "name": "ownerId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get owner payment history",
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/subscriptions/payments/{id}/receipt": {
+      "get": {
+        "operationId": "SubscriptionsController_getReceipt",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ownerId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get receipt details for a payment",
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/subscriptions/admin/stats": {
+      "get": {
+        "operationId": "SubscriptionsController_getAdminStats",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get aggregated subscription and payment statistics for admin",
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/subscriptions/admin/all": {
+      "get": {
+        "operationId": "SubscriptionsController_getAllSubscriptions",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get all subscriptions for admin review",
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/subscriptions/admin/payments": {
+      "get": {
+        "operationId": "SubscriptionsController_getAllPayments",
+        "parameters": [
+          {
+            "name": "x-role",
+            "in": "header",
+            "required": false,
+            "description": "The role of the requesting user (admin, warden, owner, tenant)",
+            "schema": {}
+          },
+          {
+            "name": "x-user-id",
+            "in": "header",
+            "required": false,
+            "description": "The ID of the requesting user",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get all subscription payments for admin review",
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
     "/properties/{id}/upload-image": {
       "post": {
         "operationId": "PropertiesController_uploadImage",
@@ -420,7 +922,7 @@
             "description": ""
           }
         },
-        "summary": "Create new property",
+        "summary": "Create new property (Requires Active Subscription for Owners)",
         "tags": [
           "properties"
         ]
@@ -504,7 +1006,7 @@
             "description": ""
           }
         },
-        "summary": "Update property",
+        "summary": "Update property (Requires Active Subscription for Owners)",
         "tags": [
           "properties"
         ]
@@ -1656,6 +2158,72 @@
           },
           "region": {
             "type": "string"
+          }
+        }
+      },
+      "CheckoutDto": {
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "number",
+            "description": "ID of the subscription plan to purchase"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "default": "MockGateway"
+          },
+          "simulateFailure": {
+            "type": "boolean",
+            "default": false
+          },
+          "ownerId": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "planId"
+        ]
+      },
+      "UpgradeSubscriptionDto": {
+        "type": "object",
+        "properties": {
+          "newPlanId": {
+            "type": "number",
+            "description": "Target plan ID to upgrade to"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "default": "MockGateway"
+          },
+          "simulateFailure": {
+            "type": "boolean",
+            "default": false
+          },
+          "ownerId": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "newPlanId"
+        ]
+      },
+      "RenewSubscriptionDto": {
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "number",
+            "description": "Optional plan ID if changing plan during renewal"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "default": "MockGateway"
+          },
+          "simulateFailure": {
+            "type": "boolean",
+            "default": false
+          },
+          "ownerId": {
+            "type": "number"
           }
         }
       },

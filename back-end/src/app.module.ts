@@ -20,6 +20,10 @@ import { Complaint } from './complaints/complaint.entity';
 import { Notification } from './notifications/notification.entity';
 import { Remark } from './remarks/remark.entity';
 import { RemarksModule } from './remarks/remarks.module';
+import { SubscriptionPlan } from './subscriptions/subscription-plan.entity';
+import { Subscription } from './subscriptions/subscription.entity';
+import { SubscriptionPayment } from './subscriptions/subscription-payment.entity';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -29,12 +33,12 @@ import { RemarksModule } from './remarks/remarks.module';
       useFactory: (configService: ConfigService): TypeOrmModuleOptions => ({
         type: 'better-sqlite3' as any,
         database: configService.get<string>('DB_NAME', 'rentalworks.sqlite'),
-        entities: [User, UserActivity, Property, Booking, Payment, Complaint, Notification, Remark],
+        entities: [User, UserActivity, Property, Booking, Payment, Complaint, Notification, Remark, SubscriptionPlan, Subscription, SubscriptionPayment],
         synchronize: true,
       }),
       inject: [ConfigService],
     }),
-    UsersModule, PropertiesModule, BookingsModule, PaymentsModule, ComplaintsModule, NotificationsModule, RemarksModule
+    UsersModule, PropertiesModule, BookingsModule, PaymentsModule, ComplaintsModule, NotificationsModule, RemarksModule, SubscriptionsModule
   ],
   controllers: [AppController],
   providers: [AppService],
