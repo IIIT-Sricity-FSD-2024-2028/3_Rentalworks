@@ -190,7 +190,7 @@ function updateComplaintStatus(newStatus) {
     priority: 'important',
     targetRole: 'tenant',
     by: 'Warden',
-    sentAt: new Date().toLocaleString()
+    sentAt: new Date().toISOString()
   });
   localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
 }
@@ -252,7 +252,7 @@ function escalateComplaint() {
     priority: 'high',
     targetRole: 'owner',
     by: 'Warden',
-    sentAt: new Date().toLocaleString()
+    sentAt: new Date().toISOString()
   });
 
   // Also notify the Tenant that their complaint was escalated
@@ -264,7 +264,7 @@ function escalateComplaint() {
     priority: 'high',
     targetRole: 'tenant',
     by: 'Warden',
-    sentAt: new Date().toLocaleString()
+    sentAt: new Date().toISOString()
   });
 
   // === KEY FIX: Push the escalated complaint into global_issues ===

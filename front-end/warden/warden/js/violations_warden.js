@@ -23,7 +23,10 @@ function renderViolations(filter = 'all') {
         <td>
           <div class="action-icons">
             <button class="btn-issue-warning" onclick="issueWarning('${v.id}')">Issue Warning</button>
-            <button class="btn-escalate" onclick="escalateViolation('${v.id}')">↑ Escalate</button>
+            ${v.escalated 
+              ? `<button class="btn-escalate" style="background:#f3f4f6;color:#9ca3af;border-color:#e5e7eb;cursor:not-allowed" disabled>Escalated ✓</button>`
+              : `<button class="btn-escalate" onclick="escalateViolation('${v.id}')">↑ Escalate</button>`
+            }
           </div>
         </td>
       </tr>
@@ -47,13 +50,15 @@ function issueWarning(id) {
   saveToStorage();
   renderViolations();
   showToast('warning', 'Warning Issued', `Warning issued to ${v.tenant} for ${v.type}`);
+
+  if (v.warnings >= 3) {
+    escalateViolation(v.id);
+  }
 }
 
 function escalateViolation(id) {
   const v = violations.find(v => String(v.id) === String(id));
-  if (!v) return;
-
-  showToast('warning', 'Escalated to Owner', `Violation by ${v.tenant} has been sent to the Property Owner.`);
+  if (!v || v.escalated) return;
 
   const newNotif = {
     id: Date.now(),
@@ -65,12 +70,54 @@ function escalateViolation(id) {
   };
 
   notifications.unshift(newNotif);
+
+  // Notify Owner via cross-notifications
+  let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
+  const escalateId = Date.now();
+  crossNotifs.push({
+    id: escalateId,
+    title: 'Violation Escalated by Warden',
+    message: `Rule Violation by ${v.tenant} (Room ${v.room}) for "${v.type}" requires your attention.`,
+    type: 'warning',
+    priority: 'high',
+    targetRole: 'owner',
+    by: 'Warden',
+    sentAt: new Date().toISOString()
+  });
+
+  // Push the escalated violation into global_issues for the Owner
+  let globalIss = JSON.parse(localStorage.getItem('global_issues') || '[]');
+  const escId = 'esc_viol_' + v.id;
+  const alreadyEscalated = globalIss.some(i => String(i.id) === escId);
+  if (!alreadyEscalated) {
+    globalIss.unshift({
+      id: escId,
+      title: 'Rule Violation: ' + v.type,
+      desc: `Rule violation escalated from Warden. Severity: ${v.severity}. Warnings issued: ${v.warnings}.`,
+      category: 'Violation',
+      priority: v.severity === 'high' ? 'high' : (v.severity === 'medium' ? 'medium' : 'low'),
+      status: 'open',
+      tenantName: v.tenant || 'Tenant',
+      room: v.room || '',
+      propertyName: 'Default Property',
+      reportedDate: new Date().toISOString().split('T')[0],
+      _escalatedByWarden: true
+    });
+    localStorage.setItem('global_issues', JSON.stringify(globalIss));
+  }
+
+  localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
+
+  v.escalated = true; // Mark as escalated
   saveToStorage();
   updateNotifBadge();
+  renderViolations(); // Update the UI button
 
   if (currentSection === 'notifications') {
     renderNotifications();
   }
+
+  showToast('warning', 'Escalated to Owner', 'Violation has been sent to the Property Owner and will appear in their Issues page.');
 }
 
 // ----- Filter Setup -----
@@ -83,17 +130,28 @@ function setupViolationFilter() {
 
 // ----- Add Violation -----
 function openAddViolationModal() {
-  // Populate tenant dropdown
   const currentTenants = JSON.parse(localStorage.getItem('warden_tenants') || '[]');
-  const tenantOptions = currentTenants.map(t => `<option value="${t.name}|${t.room}">${t.name} (Room ${t.room})</option>`).join('');
-
+  
   showModal('Add Rule Violation', `
     <div class="form-group">
-      <label>Tenant *</label>
-      <select id="new-viol-tenant" class="filter-select" style="width:100%">
-        ${tenantOptions || '<option disabled selected>No tenants available</option>'}
-      </select>
-      <div class="error-msg" id="err-new-viol-tenant"></div>
+      <label>Tenant Name *</label>
+      <div class="input-wrapper">
+        <input type="text" id="new-viol-tenant-name" list="tenant-names" placeholder="e.g. Amit Sharma" />
+      </div>
+      <datalist id="tenant-names">
+        ${currentTenants.map(t => `<option value="${t.name}">`).join('')}
+      </datalist>
+      <div class="error-msg" id="err-new-viol-tenant-name"></div>
+    </div>
+    <div class="form-group">
+      <label>Room Number *</label>
+      <div class="input-wrapper">
+        <input type="text" id="new-viol-room" list="tenant-rooms" placeholder="e.g. 101" />
+      </div>
+      <datalist id="tenant-rooms">
+        ${[...new Set(currentTenants.map(t => t.room))].map(r => `<option value="${r}">`).join('')}
+      </datalist>
+      <div class="error-msg" id="err-new-viol-room"></div>
     </div>
     <div class="form-group">
       <label>Violation Type *</label>
@@ -109,19 +167,28 @@ function openAddViolationModal() {
       </select>
     </div>
   `, () => {
-    const tenantVal = document.getElementById('new-viol-tenant').value;
+    // Clear previous errors
+    ['err-new-viol-tenant-name', 'err-new-viol-room', 'err-new-viol-type'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) { el.textContent = ''; el.classList.remove('show'); }
+    });
+
+    const tenantName = document.getElementById('new-viol-tenant-name').value.trim();
+    const room = document.getElementById('new-viol-room').value.trim();
     const type = document.getElementById('new-viol-type').value.trim();
     const severity = document.getElementById('new-viol-severity').value;
 
     let valid = true;
-    if (!tenantVal) { showFieldError('err-new-viol-tenant', 'Select a tenant'); valid = false; }
+    if (!tenantName) { showFieldError('err-new-viol-tenant-name', 'Tenant name is required'); valid = false; }
+    if (!room) { showFieldError('err-new-viol-room', 'Room number is required'); valid = false; }
     if (!type) { showFieldError('err-new-viol-type', 'Violation type is required'); valid = false; }
-    if (!valid) return;
+    
+    // Return false to prevent modal from closing if invalid
+    if (!valid) return false;
 
-    const [tenantName, room] = tenantVal.split('|');
-
+    const newViolId = Date.now();
     violations.unshift({
-      id: Date.now(),
+      id: newViolId,
       tenant: tenantName,
       room: room,
       type: type,
@@ -132,7 +199,10 @@ function openAddViolationModal() {
 
     saveToStorage();
     renderViolations();
-    closeModal();
     showToast('success', 'Violation Added', `Added ${type} for ${tenantName}`);
+
+    if (severity === 'high') {
+      setTimeout(() => escalateViolation(newViolId), 500);
+    }
   });
 }
