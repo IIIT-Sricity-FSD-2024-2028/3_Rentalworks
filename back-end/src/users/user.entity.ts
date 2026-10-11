@@ -1,9 +1,10 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Property } from '../properties/property.entity';
+import { Booking } from '../bookings/booking.entity';
+import { Payment } from '../payments/payment.entity';
+import { Complaint } from '../complaints/complaint.entity';
+import { BookingRequest } from '../booking-requests/booking-request.entity';
+import { TenantStay } from '../tenant-stays/tenant-stay.entity';
 
 @Entity('users')
 export class User {
@@ -19,16 +20,13 @@ export class User {
   @Column()
   phone: string;
 
-  @Column({
-    type: 'varchar',
-    default: 'tenant',
-  })
+  @Column({ type: 'varchar', default: 'tenant' })
   role: string;
 
   @Column({ unique: true })
   username: string;
 
-  @Column()
+  @Column({ select: false, nullable: true })
   password?: string;
 
   @Column({ default: 'active' })
@@ -43,6 +41,30 @@ export class User {
   @Column({ nullable: true })
   subscriptionPlan?: string;
 
-  @Column({ type: 'decimal', nullable: true })
+  @Column({ type: 'numeric', precision: 10, scale: 2, nullable: true })
   subscriptionFee?: number;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @OneToMany(() => Property, property => property.owner)
+  properties: Property[];
+
+  @OneToMany(() => Booking, booking => booking.tenant)
+  bookings: Booking[];
+
+  @OneToMany(() => BookingRequest, req => req.tenant)
+  bookingRequests: BookingRequest[];
+
+  @OneToMany(() => TenantStay, stay => stay.tenant)
+  tenantStays: TenantStay[];
+
+  @OneToMany(() => Payment, payment => payment.tenant)
+  payments: Payment[];
+
+  @OneToMany(() => Complaint, complaint => complaint.tenant)
+  complaints: Complaint[];
 }

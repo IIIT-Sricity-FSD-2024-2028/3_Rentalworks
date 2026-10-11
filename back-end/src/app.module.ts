@@ -17,6 +17,9 @@ import { Booking } from './bookings/booking.entity';
 import { Payment } from './payments/payment.entity';
 import { Complaint } from './complaints/complaint.entity';
 import { Notification } from './notifications/notification.entity';
+import { Room } from './rooms/room.entity';
+import { BookingRequest } from './booking-requests/booking-request.entity';
+import { TenantStay } from './tenant-stays/tenant-stay.entity';
 
 @Module({
   imports: [
@@ -25,10 +28,10 @@ import { Notification } from './notifications/notification.entity';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) =>
         ({
-          type: 'better-sqlite3',
-          database: 'db.sqlite',
-          entities: [User, Property, Booking, Payment, Complaint, Notification],
-          synchronize: true, // Use synchronize for local dev without migrations
+          type: 'postgres',
+          url: configService.get<string>('DATABASE_URL'),
+          entities: [User, Property, Booking, Payment, Complaint, Notification, Room, BookingRequest, TenantStay],
+          synchronize: true, // DEVELOPMENT ONLY: Set to false in production
         }) as any,
       inject: [ConfigService],
     }),

@@ -64,9 +64,12 @@ export class UsersService {
   }
 
   async login(loginDto: LoginDto) {
-    const user = await this.usersRepository.findOne({
-      where: { username: loginDto.username },
-    });
+    const user = await this.usersRepository
+      .createQueryBuilder('user')
+      .where('user.username = :username', { username: loginDto.username })
+      .addSelect('user.password')
+      .getOne();
+
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
     const isMatch = await bcrypt.compare(

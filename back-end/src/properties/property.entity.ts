@@ -1,11 +1,11 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  JoinColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { User } from '../users/user.entity';
+import { Room } from '../rooms/room.entity';
+import { Booking } from '../bookings/booking.entity';
+import { BookingRequest } from '../booking-requests/booking-request.entity';
+import { TenantStay } from '../tenant-stays/tenant-stay.entity';
+import { Payment } from '../payments/payment.entity';
+import { Complaint } from '../complaints/complaint.entity';
 
 @Entity('properties')
 export class Property {
@@ -18,7 +18,7 @@ export class Property {
   @Column()
   location: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, user => user.properties)
   @JoinColumn({ name: 'ownerId' })
   owner: User;
 
@@ -31,7 +31,7 @@ export class Property {
   @Column({ type: 'int' })
   rentMax: number;
 
-  @Column({ type: 'decimal', precision: 3, scale: 1 })
+  @Column({ type: 'numeric', precision: 3, scale: 1 })
   safetyScore: number;
 
   @Column()
@@ -52,7 +52,7 @@ export class Property {
   @Column({ default: false })
   inspectionPassed: boolean;
 
-  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
+  @Column({ type: 'numeric', precision: 5, scale: 2, default: 0 })
   commissionRate: number;
 
   @Column()
@@ -63,4 +63,28 @@ export class Property {
 
   @Column({ default: false })
   changeRequestPending: boolean;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @OneToMany(() => Room, room => room.property)
+  roomEntities: Room[];
+
+  @OneToMany(() => Booking, booking => booking.property)
+  bookings: Booking[];
+
+  @OneToMany(() => BookingRequest, req => req.property)
+  bookingRequests: BookingRequest[];
+
+  @OneToMany(() => TenantStay, stay => stay.property)
+  tenantStays: TenantStay[];
+
+  @OneToMany(() => Payment, payment => payment.property)
+  payments: Payment[];
+
+  @OneToMany(() => Complaint, complaint => complaint.property)
+  complaints: Complaint[];
 }

@@ -6,13 +6,16 @@ import { Booking } from './src/bookings/booking.entity';
 import { Payment } from './src/payments/payment.entity';
 import { Complaint } from './src/complaints/complaint.entity';
 import { Notification } from './src/notifications/notification.entity';
+import { Room } from './src/rooms/room.entity';
+import { BookingRequest } from './src/booking-requests/booking-request.entity';
+import { TenantStay } from './src/tenant-stays/tenant-stay.entity';
 
 config();
 
 export const AppDataSource = new DataSource({
-  type: 'better-sqlite3',
-  database: 'db.sqlite',
-  entities: [User, Property, Booking, Payment, Complaint, Notification],
+  type: 'postgres',
+  url: process.env.DATABASE_URL,
+  entities: [User, Property, Booking, Payment, Complaint, Notification, Room, BookingRequest, TenantStay],
   migrations: ['src/migrations/*.ts'],
-  synchronize: true,
+  synchronize: true, // DEVELOPMENT ONLY: Auto-creates schema. Use migrations in production.
 });
