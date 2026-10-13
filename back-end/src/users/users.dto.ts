@@ -30,6 +30,11 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   region?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  address?: string;
 }
 
 export class UpdateUserDto {
@@ -62,6 +67,16 @@ export class UpdateUserDto {
   @IsString()
   @IsOptional()
   region?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  address?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  password?: string;
 }
 
 export class LoginDto {
@@ -72,4 +87,69 @@ export class LoginDto {
   @ApiProperty()
   @IsString()
   password?: string;
+}
+
+export class CreateTenantDto {
+  @ApiProperty()
+  @IsString()
+  name: string;
+
+  @ApiProperty()
+  @IsString()
+  room: string;
+
+  @ApiProperty()
+  @IsString()
+  phone: string;
+
+  @ApiProperty({ required: false })
+  @IsEmail()
+  @IsOptional()
+  email?: string;
+
+  @ApiProperty()
+  @IsString()
+  checkIn: string;
+
+  @ApiProperty()
+  rent: number;
+
+  @ApiProperty({ required: false, default: 'pending' })
+  @IsOptional()
+  paymentStatus?: string;
+}
+
+export class UpdateTenantDto {
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  room?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  phone?: string;
+
+  @ApiProperty({ required: false })
+  @IsEmail()
+  @IsOptional()
+  email?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  checkIn?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  rent?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  paymentStatus?: string;
 }

@@ -31,6 +31,9 @@ export class Room {
   @Column({ default: 'available' })
   status: string;
 
+  @Column({ default: 'Ready' })
+  maintenanceStatus: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

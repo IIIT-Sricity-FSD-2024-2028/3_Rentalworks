@@ -215,14 +215,20 @@ async function handleLogin(role) {
     }
 
     // Save session
-    sessionStorage.setItem('pg_user', JSON.stringify({
+    const sessionObj = {
+      id:       user.id,
       name:     user.name,
       email:    user.email,
       phone:    user.phone || '',
       role:     role,
       property: user.property || '',
-      room:     user.room     || ''
-    }));
+      room:     user.room     || '',
+      address:  user.address  || ''
+    };
+    sessionStorage.setItem('pg_user', JSON.stringify(sessionObj));
+    if (role === 'warden') {
+      sessionStorage.setItem('warden_user', JSON.stringify(sessionObj));
+    }
 
     const formattedRole = role.charAt(0).toUpperCase() + role.slice(1);
     showLoginBanner(`Directing ${user.name} to ${formattedRole} page...`, 'success');

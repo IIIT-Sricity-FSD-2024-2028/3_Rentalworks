@@ -9,6 +9,8 @@ import { BookingsModule } from './bookings/bookings.module';
 import { PaymentsModule } from './payments/payments.module';
 import { ComplaintsModule } from './complaints/complaints.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { WardenNotificationsModule } from './warden-notifications/warden-notifications.module';
+import { RuleViolationsModule } from './rule-violations/rule-violations.module';
 import { LoggerMiddleware } from './middleware/logger.middleware';
 import { SecurityMiddleware } from './middleware/security.middleware';
 import { User } from './users/user.entity';
@@ -17,9 +19,13 @@ import { Booking } from './bookings/booking.entity';
 import { Payment } from './payments/payment.entity';
 import { Complaint } from './complaints/complaint.entity';
 import { Notification } from './notifications/notification.entity';
+import { WardenNotification } from './warden-notifications/warden-notification.entity';
+import { RuleViolation } from './rule-violations/rule-violation.entity';
 import { Room } from './rooms/room.entity';
 import { BookingRequest } from './booking-requests/booking-request.entity';
 import { TenantStay } from './tenant-stays/tenant-stay.entity';
+
+import { RoomsModule } from './rooms/rooms.module';
 
 @Module({
   imports: [
@@ -30,7 +36,19 @@ import { TenantStay } from './tenant-stays/tenant-stay.entity';
         ({
           type: 'postgres',
           url: configService.get<string>('DATABASE_URL'),
-          entities: [User, Property, Booking, Payment, Complaint, Notification, Room, BookingRequest, TenantStay],
+          entities: [
+            User,
+            Property,
+            Booking,
+            Payment,
+            Complaint,
+            Notification,
+            WardenNotification,
+            RuleViolation,
+            Room,
+            BookingRequest,
+            TenantStay,
+          ],
           synchronize: true, // DEVELOPMENT ONLY: Set to false in production
         }) as any,
       inject: [ConfigService],
@@ -41,6 +59,9 @@ import { TenantStay } from './tenant-stays/tenant-stay.entity';
     PaymentsModule,
     ComplaintsModule,
     NotificationsModule,
+    WardenNotificationsModule,
+    RuleViolationsModule,
+    RoomsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

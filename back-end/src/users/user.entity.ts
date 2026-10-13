@@ -39,6 +39,9 @@ export class User {
   region?: string;
 
   @Column({ nullable: true })
+  address?: string;
+
+  @Column({ nullable: true })
   subscriptionPlan?: string;
 
   @Column({ type: 'numeric', precision: 10, scale: 2, nullable: true })

@@ -1,3 +1,8 @@
 .neon
-
 .agents/
+
+# Environment files
+.env
+.env.*
+.env*.local
+!.env.example

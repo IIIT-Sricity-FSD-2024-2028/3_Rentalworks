@@ -1,7 +1,11 @@
 node_modules/
 back-end/node_modules/
 back-end/dist/
+# Environment files
 .env
+.env.*
+.env*.local
+!.env.example
 back-end/logs/
 back-end/uploads/
 

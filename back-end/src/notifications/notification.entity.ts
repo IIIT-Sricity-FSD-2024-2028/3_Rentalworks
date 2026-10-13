@@ -28,8 +28,8 @@ export class Notification {
   @JoinColumn({ name: 'byUserId' })
   byUser: User;
 
-  @Column()
-  byUserId: number;
+  @Column({ nullable: true })
+  byUserId?: number;
 
   @CreateDateColumn()
   createdAt: Date;

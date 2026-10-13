@@ -13,7 +13,13 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { createUploadOptions } from '../middleware/file-upload.middleware';
 import { UsersService } from './users.service';
-import { CreateUserDto, UpdateUserDto, LoginDto } from './users.dto';
+import {
+  CreateUserDto,
+  UpdateUserDto,
+  LoginDto,
+  CreateTenantDto,
+  UpdateTenantDto,
+} from './users.dto';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
@@ -55,8 +61,43 @@ export class UsersController {
     return this.usersService.login(loginDto);
   }
 
+  // --- TENANT ENDPOINTS (Must be before :id to prevent route conflicts) ---
+
+  @Get('tenants')
+  @Roles('admin', 'warden')
+  @ApiOperation({ summary: 'Get all tenant records with booking, room and payment' })
+  getTenants() {
+    return this.usersService.getTenants();
+  }
+
+  @Post('tenants')
+  @Roles('admin', 'warden')
+  @ApiOperation({ summary: 'Create new tenant with linked booking, stay, payment' })
+  createTenant(@Body() createTenantDto: CreateTenantDto) {
+    return this.usersService.createTenant(createTenantDto);
+  }
+
+  @Put('tenants/:id')
+  @Roles('admin', 'warden')
+  @ApiOperation({ summary: 'Update tenant with linked booking, stay, payment' })
+  updateTenant(
+    @Param('id') id: string,
+    @Body() updateTenantDto: UpdateTenantDto,
+  ) {
+    return this.usersService.updateTenant(+id, updateTenantDto);
+  }
+
+  @Delete('tenants/:id')
+  @Roles('admin', 'warden')
+  @ApiOperation({ summary: 'Delete tenant and associated records' })
+  removeTenant(@Param('id') id: string) {
+    return this.usersService.removeTenant(+id);
+  }
+
+  // --- STANDARD USER CRUD ---
+
   @Post()
-  @Roles('admin')
+  @Roles('admin', 'warden')
   @ApiOperation({ summary: 'Create new user' })
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
@@ -84,7 +125,7 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @Roles('admin')
+  @Roles('admin', 'warden')
   @ApiOperation({ summary: 'Delete a user' })
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
