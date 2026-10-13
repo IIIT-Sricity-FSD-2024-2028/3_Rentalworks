@@ -19,9 +19,10 @@ export class OwnerController {
 
   private getEffectiveOwnerId(userIdHeader?: string): number {
     if (userIdHeader && !isNaN(Number(userIdHeader))) {
-      return Number(userIdHeader);
+      const parsed = Number(userIdHeader);
+      return parsed === 6 ? 16 : parsed;
     }
-    return 6; // Default to Rajesh Kumar (seeded owner)
+    return 16; // Default to Rajesh Kumar in Neon Cloud (id 16)
   }
 
   @Get('dashboard-stats')

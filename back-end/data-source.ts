@@ -9,6 +9,8 @@ import { Notification } from './src/notifications/notification.entity';
 import { Room } from './src/rooms/room.entity';
 import { BookingRequest } from './src/booking-requests/booking-request.entity';
 import { TenantStay } from './src/tenant-stays/tenant-stay.entity';
+import { Subscription } from './src/owner/subscription.entity';
+import { OwnerApplicationIntegration1710000000000 } from './src/migrations/1710000000000-OwnerApplicationIntegration';
 import { SuperAdminAnnouncements1800000000000 } from './src/migrations/1800000000000-SuperAdminAnnouncements';
 import { RestoreSharedColumns1800000001000 } from './src/migrations/1800000001000-RestoreSharedColumns';
 import { RecoverSharedColumns1800000002000 } from './src/migrations/1800000002000-RecoverSharedColumns';
@@ -18,7 +20,23 @@ config();
 export const AppDataSource = new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL,
-  entities: [User, Property, Booking, Payment, Complaint, Notification, Room, BookingRequest, TenantStay],
-  migrations: [SuperAdminAnnouncements1800000000000, RestoreSharedColumns1800000001000, RecoverSharedColumns1800000002000],
+  entities: [
+    User,
+    Property,
+    Booking,
+    Payment,
+    Complaint,
+    Notification,
+    Room,
+    BookingRequest,
+    TenantStay,
+    Subscription,
+  ],
+  migrations: [
+    OwnerApplicationIntegration1710000000000,
+    SuperAdminAnnouncements1800000000000,
+    RestoreSharedColumns1800000001000,
+    RecoverSharedColumns1800000002000,
+  ],
   synchronize: false,
 });

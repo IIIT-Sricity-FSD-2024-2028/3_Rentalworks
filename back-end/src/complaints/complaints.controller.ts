@@ -9,6 +9,8 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  Query,
+  Headers,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { createUploadOptions } from '../middleware/file-upload.middleware';
@@ -54,8 +56,18 @@ export class ComplaintsController {
   @Get()
   @Roles('admin', 'warden', 'tenant', 'owner')
   @ApiOperation({ summary: 'Get all complaints' })
-  findAll() {
-    return this.complaintsService.findAll();
+  findAll(
+    @Query('ownerId') ownerId?: string,
+    @Headers('x-role') role?: string,
+    @Headers('x-user-id') userId?: string,
+  ) {
+    let effectiveOwnerId: number | undefined = undefined;
+    if (ownerId && !isNaN(Number(ownerId))) {
+      effectiveOwnerId = Number(ownerId);
+    } else if (role === 'owner' && userId && !isNaN(Number(userId))) {
+      effectiveOwnerId = Number(userId);
+    }
+    return this.complaintsService.findAll(effectiveOwnerId);
   }
 
   @Get(':id')

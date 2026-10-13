@@ -6,7 +6,7 @@
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 function getAuthHeaders() {
-  let userId = '6';
+  let userId = '16';
   try {
     const session = sessionStorage.getItem('pg_user') || localStorage.getItem('pg_user');
     if (session) {
@@ -16,7 +16,7 @@ function getAuthHeaders() {
       }
     }
   } catch (err) {
-    // ignore JSON parse error, use default 6
+    // ignore JSON parse error, use default 16
   }
 
   const headers = {
@@ -69,108 +69,109 @@ export async function apiRequest(endpoint, method, body) {
 // 1. DASHBOARD STATS
 // ==========================================
 export async function getDashboardStats() {
-  return await apiRequest('/owner/dashboard-stats', 'GET');
+  return await apiRequest('/api/dashboard/stats', 'GET');
 }
 
 // ==========================================
 // 2. PROPERTIES ENDPOINTS
 // ==========================================
 export async function getProperties(ownerId) {
-  const query = ownerId ? '?ownerId=' + ownerId : '?ownerId=6';
-  return await apiRequest('/properties' + query, 'GET');
+  const query = ownerId ? '?ownerId=' + ownerId : '?ownerId=16';
+  return await apiRequest('/api/properties' + query, 'GET');
 }
 
 export async function getPropertyById(id) {
-  return await apiRequest('/properties/' + id, 'GET');
+  return await apiRequest('/api/properties/' + id, 'GET');
 }
 
 export async function createProperty(propertyData) {
-  return await apiRequest('/properties', 'POST', propertyData);
+  return await apiRequest('/api/properties', 'POST', propertyData);
 }
 
 export async function updateProperty(id, propertyData) {
-  return await apiRequest('/properties/' + id, 'PUT', propertyData);
+  return await apiRequest('/api/properties/' + id, 'PUT', propertyData);
 }
 
 export async function deleteProperty(id) {
-  return await apiRequest('/properties/' + id, 'DELETE');
+  return await apiRequest('/api/properties/' + id, 'DELETE');
 }
 
 // ==========================================
 // 3. ISSUES / COMPLAINTS ENDPOINTS
 // ==========================================
-export async function getIssues() {
-  return await apiRequest('/complaints', 'GET');
+export async function getIssues(ownerId) {
+  const query = ownerId ? '?ownerId=' + ownerId : '?ownerId=16';
+  return await apiRequest('/api/issues' + query, 'GET');
 }
 
 export async function getIssueById(id) {
-  return await apiRequest('/complaints/' + id, 'GET');
+  return await apiRequest('/api/issues/' + id, 'GET');
 }
 
 export async function updateIssueStatus(id, newStatus) {
-  return await apiRequest('/complaints/' + id, 'PUT', { status: newStatus });
+  return await apiRequest('/api/issues/' + id, 'PUT', { status: newStatus });
 }
 
 export async function createIssue(issueData) {
-  return await apiRequest('/complaints', 'POST', issueData);
+  return await apiRequest('/api/issues', 'POST', issueData);
 }
 
 export async function deleteIssue(id) {
-  return await apiRequest('/complaints/' + id, 'DELETE');
+  return await apiRequest('/api/issues/' + id, 'DELETE');
 }
 
 // ==========================================
 // 4. NOTIFICATIONS ENDPOINTS
 // ==========================================
 export async function getNotifications() {
-  return await apiRequest('/notifications', 'GET');
+  return await apiRequest('/api/notifications', 'GET');
 }
 
 export async function markNotificationRead(id) {
-  return await apiRequest('/notifications/' + id + '/read', 'PUT');
+  return await apiRequest('/api/notifications/' + id + '/read', 'PUT');
 }
 
 export async function markAllNotificationsRead() {
-  return await apiRequest('/notifications/mark-all-read', 'PUT');
+  return await apiRequest('/api/notifications/mark-all-read', 'PUT');
 }
 
 export async function createNotification(notifData) {
-  return await apiRequest('/notifications', 'POST', notifData);
+  return await apiRequest('/api/notifications', 'POST', notifData);
 }
 
 export async function deleteNotification(id) {
-  return await apiRequest('/notifications/' + id, 'DELETE');
+  return await apiRequest('/api/notifications/' + id, 'DELETE');
 }
 
 // ==========================================
 // 5. POLICY ENDPOINTS
 // ==========================================
 export async function getPolicy() {
-  return await apiRequest('/owner/policy', 'GET');
+  return await apiRequest('/api/policies', 'GET');
 }
 
 export async function updatePolicy(policyData) {
-  return await apiRequest('/owner/policy', 'PUT', policyData);
+  return await apiRequest('/api/policies', 'PUT', policyData);
 }
 
 // ==========================================
 // 6. PROFILE ENDPOINTS
 // ==========================================
 export async function getProfile() {
-  return await apiRequest('/owner/profile', 'GET');
+  return await apiRequest('/api/profile', 'GET');
 }
 
 export async function updateProfile(profileData) {
-  return await apiRequest('/owner/profile', 'PUT', profileData);
+  return await apiRequest('/api/profile', 'PUT', profileData);
 }
 
 // ==========================================
 // 7. SUBSCRIPTION ENDPOINTS
 // ==========================================
 export async function getSubscription() {
-  return await apiRequest('/owner/subscription', 'GET');
+  return await apiRequest('/api/subscription', 'GET');
 }
 
 export async function updateSubscription(subscriptionData) {
-  return await apiRequest('/owner/subscription', 'PUT', subscriptionData);
+  return await apiRequest('/api/subscription', 'PUT', subscriptionData);
 }

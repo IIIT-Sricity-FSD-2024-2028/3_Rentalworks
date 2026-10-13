@@ -22,7 +22,14 @@ export class ComplaintsService {
     private wardenNotificationsService: WardenNotificationsService,
   ) {}
 
-  findAll() {
+  async findAll(ownerId?: number) {
+    if (ownerId) {
+      return this.complaintsRepository.find({
+        where: { property: { ownerId: ownerId } },
+        relations: { tenant: true, property: true },
+        order: { createdAt: 'DESC' },
+      });
+    }
     return this.complaintsRepository.find({
       relations: { tenant: true, property: true },
       order: { createdAt: 'DESC' },

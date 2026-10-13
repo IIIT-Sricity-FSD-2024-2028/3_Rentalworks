@@ -61,7 +61,7 @@ export default function App() {
       // ignore
     }
     return {
-      id: 6,
+      id: 16,
       name: 'Rajesh Kumar',
       email: 'rajesh.k@email.com',
       role: 'owner',
@@ -150,7 +150,7 @@ export default function App() {
       setLoading(true);
       try {
         const results = await Promise.all([
-          getProperties(6).catch(() => null),
+          getProperties(16).catch(() => null),
           getIssues().catch(() => null),
           getNotifications().catch(() => null),
           getPolicy().catch(() => null),
@@ -197,22 +197,14 @@ export default function App() {
           };
           setUser((prev) => Object.assign({}, prev, userUpdate));
         }
-
-        // Fallback to local data.json if backend has no properties
-        if (loadedData.properties.length === 0) {
-          const resp = await fetch('/data.json');
-          if (resp.ok) {
-            const fallbackJson = await resp.json();
-            loadedData = Object.assign({}, loadedData, fallbackJson);
-          }
-        }
-
         setData(loadedData);
         persistLocalBackup(loadedData);
       } catch (err) {
         console.error('Data load error:', err);
         const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) setData(JSON.parse(stored));
+        if (stored) {
+          setData(JSON.parse(stored));
+        }
       } finally {
         setLoading(false);
       }
@@ -223,7 +215,7 @@ export default function App() {
 
   const refreshProperties = async () => {
     try {
-      const apiProps = await getProperties(6);
+      const apiProps = await getProperties(16);
       if (apiProps && Array.isArray(apiProps)) {
         const mapped = apiProps.map(mapProperty);
         setData((prev) => {
@@ -275,7 +267,7 @@ export default function App() {
       const payload = {
         name: newProperty.name,
         location: (newProperty.city || 'Chennai') + ', ' + (newProperty.state || 'Tamil Nadu'),
-        ownerId: 6,
+        ownerId: 16,
         rentMin: Number(newProperty.monthlyRent) || 7000,
         rentMax: (Number(newProperty.monthlyRent) || 7000) + 2000,
         rooms: (newProperty.occupiedRooms || 0) + '/' + (newProperty.totalRooms || 10),

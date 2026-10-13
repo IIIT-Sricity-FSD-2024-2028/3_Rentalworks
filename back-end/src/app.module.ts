@@ -30,6 +30,8 @@ import { SuperAdminModule } from './super-admin/super-admin.module';
 import { SuperAdminAnnouncements1800000000000 } from './migrations/1800000000000-SuperAdminAnnouncements';
 import { RestoreSharedColumns1800000001000 } from './migrations/1800000001000-RestoreSharedColumns';
 import { RecoverSharedColumns1800000002000 } from './migrations/1800000002000-RecoverSharedColumns';
+import { OwnerApplicationIntegration1710000000000 } from './migrations/1710000000000-OwnerApplicationIntegration';
+import { Subscription } from './owner/subscription.entity';
 
 @Module({
   imports: [
@@ -61,9 +63,15 @@ import { RecoverSharedColumns1800000002000 } from './migrations/1800000002000-Re
             Room,
             BookingRequest,
             TenantStay,
+            Subscription,
           ],
           synchronize: false,
-          migrations: [SuperAdminAnnouncements1800000000000, RestoreSharedColumns1800000001000, RecoverSharedColumns1800000002000],
+          migrations: [
+            OwnerApplicationIntegration1710000000000,
+            SuperAdminAnnouncements1800000000000,
+            RestoreSharedColumns1800000001000,
+            RecoverSharedColumns1800000002000,
+          ],
           migrationsRun: true,
         }) as any,
       inject: [ConfigService],

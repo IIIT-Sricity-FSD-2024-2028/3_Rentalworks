@@ -5,6 +5,7 @@ import { Property } from '../properties/property.entity';
 import { Complaint } from '../complaints/complaint.entity';
 import { Notification } from '../notifications/notification.entity';
 import { User } from '../users/user.entity';
+import { Subscription } from './subscription.entity';
 
 @Injectable()
 export class OwnerService {
@@ -17,6 +18,8 @@ export class OwnerService {
     private readonly notificationRepo: Repository<Notification>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(Subscription)
+    private readonly subscriptionRepo: Repository<Subscription>,
   ) {}
 
   async getDashboardStats(ownerId: number) {
@@ -183,20 +186,46 @@ export class OwnerService {
       throw new NotFoundException('Owner not found');
     }
 
+    let subRecord = await this.subscriptionRepo.findOne({
+      where: { ownerId: ownerId },
+      order: { id: 'DESC' },
+    });
+
+    if (!subRecord) {
+      const planName = user.subscriptionPlan || 'Growth';
+      const monthlyFee = user.subscriptionFee ? Number(user.subscriptionFee) : 8000;
+      const today = new Date().toISOString().split('T')[0];
+      const nextYear = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      subRecord = this.subscriptionRepo.create({
+        ownerId: ownerId,
+        planName: planName,
+        planType: planName,
+        monthlyFee: monthlyFee,
+        amount: monthlyFee,
+        currency: 'INR',
+        status: 'active',
+        billingCycle: 'monthly',
+        startDate: today,
+        endDate: nextYear,
+      });
+      await this.subscriptionRepo.save(subRecord);
+    }
+
     const propertiesCount = await this.propertyRepo.count({
       where: { ownerId: ownerId },
     });
 
     return {
-      currentPlan: user.subscriptionPlan || 'Growth',
-      status: 'active',
-      monthlyFee: user.subscriptionFee ? Number(user.subscriptionFee) : 8000,
-      billingCycle: 'monthly',
+      currentPlan: subRecord.planName,
+      status: subRecord.status,
+      monthlyFee: Number(subRecord.monthlyFee),
+      billingCycle: subRecord.billingCycle,
       propertiesManaged: propertiesCount,
-      maxProperties: 10,
-      renewalDate: '2025-04-15',
+      maxProperties: subRecord.planName === 'Standard' ? 1 : 10,
+      renewalDate: subRecord.endDate || '2025-04-15',
       features: [
-        'Up to 10 Properties',
+        'Up to ' + (subRecord.planName === 'Standard' ? '1 Property' : '10 Properties'),
         'Advanced Analytics',
         'Direct Messaging',
         'Automated Rent Reminders',
@@ -211,14 +240,30 @@ export class OwnerService {
       throw new NotFoundException('Owner not found');
     }
 
-    if (planData.plan) {
-      user.subscriptionPlan = planData.plan;
-    }
-    if (planData.fee !== undefined) {
-      user.subscriptionFee = planData.fee;
-    }
+    const newPlanName = planData.plan || planData.planName || user.subscriptionPlan || 'Growth';
+    const newFee = planData.fee !== undefined ? Number(planData.fee) : 8000;
 
+    user.subscriptionPlan = newPlanName;
+    user.subscriptionFee = newFee;
     await this.userRepo.save(user);
+
+    const today = new Date().toISOString().split('T')[0];
+    const nextYear = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const sub = this.subscriptionRepo.create({
+      ownerId: ownerId,
+      planName: newPlanName,
+      planType: newPlanName,
+      monthlyFee: newFee,
+      amount: newFee,
+      currency: 'INR',
+      status: 'active',
+      billingCycle: 'monthly',
+      startDate: today,
+      endDate: nextYear,
+    });
+    await this.subscriptionRepo.save(sub);
+
     return this.getSubscription(ownerId);
   }
 }
