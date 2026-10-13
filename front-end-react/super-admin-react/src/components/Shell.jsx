@@ -9,6 +9,7 @@ const navigation = [
 export default function Shell({ user, section, setSection, onLogout, toast, children }) {
   function logout() {
     sessionStorage.removeItem('pg_user');
+    sessionStorage.removeItem('super_admin_token');
     onLogout();
   }
 

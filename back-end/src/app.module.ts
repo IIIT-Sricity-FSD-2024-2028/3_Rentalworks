@@ -26,6 +26,8 @@ import { RuleViolation } from './rule-violations/rule-violation.entity';
 import { Room } from './rooms/room.entity';
 import { BookingRequest } from './booking-requests/booking-request.entity';
 import { TenantStay } from './tenant-stays/tenant-stay.entity';
+import { SuperAdminModule } from './super-admin/super-admin.module';
+import { SuperAdminAnnouncements1800000000000 } from './migrations/1800000000000-SuperAdminAnnouncements';
 
 @Module({
   imports: [
@@ -49,7 +51,9 @@ import { TenantStay } from './tenant-stays/tenant-stay.entity';
             BookingRequest,
             TenantStay,
           ],
-          synchronize: true, // DEVELOPMENT ONLY: Set to false in production
+          synchronize: true, // Retained for the owner integration on this branch.
+          migrations: [SuperAdminAnnouncements1800000000000],
+          migrationsRun: true,
         }) as any,
       inject: [ConfigService],
     }),
@@ -63,6 +67,7 @@ import { TenantStay } from './tenant-stays/tenant-stay.entity';
     RuleViolationsModule,
     RoomsModule,
     OwnerModule,
+    SuperAdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -121,6 +121,11 @@ export class LoginDto {
   @ApiProperty()
   @IsString()
   password?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  otp?: string;
 }
 
 export class CreateTenantDto {

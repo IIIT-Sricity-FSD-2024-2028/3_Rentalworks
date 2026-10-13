@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { api } from './services/api';
-import { mergeById, readList } from './services/data';
 import Shell from './components/Shell';
 import Dashboard from './pages/Dashboard';
 import RegionalAdmins from './pages/RegionalAdmins';
@@ -15,47 +14,47 @@ export default function App() {
     catch { return null; }
   });
   const [section, setSection] = useState('dashboard');
-  const [data, setData] = useState({ users: [], properties: [], payments: [], notifications: [] });
+  const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
+  const signedIn = user && user.role === 'super_admin' && sessionStorage.getItem('super_admin_token');
 
   function showToast(type, title, message) { setToast({ type, title, message, id: Date.now() }); }
 
   async function refresh() {
-    const endpoints = [api.users, api.properties, api.payments, api.notifications];
-    const results = await Promise.allSettled(endpoints.map(load => load()));
-    const keys = ['users', 'properties', 'payments', 'notifications'];
-    const localKeys = ['admin_users', 'admin_properties', 'global_payments', 'admin_notifs'];
-    const next = {};
-    results.forEach((result, index) => {
-      const server = result.status === 'fulfilled' && Array.isArray(result.value) ? result.value : [];
-      next[keys[index]] = mergeById(server, readList(localKeys[index]));
-    });
-    next.users = mergeById(next.users, [...readList('registered_guests'), ...readList('registered_owners')]);
-    next.notifications = mergeById(next.notifications, readList('cross_notifications'));
-    setData(next);
-    setError(results.some(result => result.status === 'rejected') ? 'Some data could not be loaded from the server.' : '');
+    try {
+      const next = await api.overview();
+      setData(next);
+      setError('');
+    } catch (failure) {
+      setData(null);
+      setError(failure.message);
+      if (failure.message === 'Sign in as super admin' || failure.message === 'Session expired' || failure.message === 'Invalid session') {
+        sessionStorage.removeItem('super_admin_token');
+        setUser(null);
+      }
+    }
   }
 
-  useEffect(() => { if (user?.role === 'super_admin') refresh(); }, [user?.role]);
+  useEffect(() => { if (signedIn) refresh(); }, [Boolean(signedIn)]);
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(null), 3500);
     return () => clearTimeout(timer);
   }, [toast]);
 
-  if (user?.role !== 'super_admin') return <Login onLogin={setUser} />;
+  if (!signedIn) return <Login onLogin={setUser} />;
 
-  const pages = {
+  const pages = data ? {
     dashboard: <Dashboard data={data} />,
     regional_admins: <RegionalAdmins users={data.users} refresh={refresh} showToast={showToast} />,
     global_reports: <GlobalReports data={data} />,
     notifications: <Notifications data={data} refresh={refresh} showToast={showToast} />,
-    profile: <Profile user={user} setUser={setUser} users={data.users} refresh={refresh} showToast={showToast} />,
-  };
+    profile: <Profile user={user} setUser={setUser} showToast={showToast} />,
+  } : {};
 
-  return <Shell user={user} section={section} setSection={setSection} onLogout={() => setUser(null)} toast={toast}>
-    {error && <p role="alert" style={{ color: '#d97706' }}>{error}</p>}
-    {pages[section]}
+  return <Shell user={user} section={section} setSection={setSection} onLogout={() => { setUser(null); setData(null); }} toast={toast}>
+    {error && <p role="alert" style={{ color: '#d97706' }}>{error} <button onClick={refresh}>Retry</button></p>}
+    {data ? pages[section] : !error && <p>Loading live data...</p>}
   </Shell>;
 }

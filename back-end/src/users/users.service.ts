@@ -3,6 +3,7 @@ import {
   NotFoundException,
   UnauthorizedException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
@@ -19,6 +20,8 @@ import {
   UpdateTenantDto,
 } from './users.dto';
 import * as bcrypt from 'bcrypt';
+import { issueSuperAdminToken } from '../super-admin/super-admin-token';
+import { verifyTotp } from '../super-admin/totp';
 
 @Injectable()
 export class UsersService {
@@ -39,6 +42,7 @@ export class UsersService {
   }
 
   async create(createUserDto: CreateUserDto) {
+    if (createUserDto.role === 'super_admin') throw new ForbiddenException('Super admin accounts cannot be created here');
     const hashedPassword = await bcrypt.hash(
       createUserDto.password || 'default123',
       10,
@@ -56,6 +60,9 @@ export class UsersService {
 
   async update(id: number, updateUserDto: UpdateUserDto) {
     const user = await this.findOne(id);
+    if (user.role === 'super_admin' || updateUserDto.role === 'super_admin') {
+      throw new ForbiddenException('Use the super admin account endpoints');
+    }
 
     // Filter out undefined values to prevent overwriting
     const cleanDto = Object.fromEntries(
@@ -74,6 +81,7 @@ export class UsersService {
 
   async remove(id: number) {
     const user = await this.findOne(id);
+    if (user.role === 'super_admin') throw new ForbiddenException('Super admin accounts cannot be deleted here');
     const removed = Object.assign({}, user);
     await this.usersRepository.remove(user);
     return removed;
@@ -94,8 +102,19 @@ export class UsersService {
     );
     if (!isMatch) throw new UnauthorizedException('Invalid credentials');
 
+    if (user.role === 'super_admin' && user.twoFactorEnabled) {
+      const withSecret = await this.usersRepository.createQueryBuilder('user')
+        .addSelect('user.twoFactorSecret').where('user.id = :id', { id: user.id }).getOne();
+      if (!withSecret?.twoFactorSecret || !verifyTotp(withSecret.twoFactorSecret, loginDto.otp || '')) {
+        throw new UnauthorizedException('Enter the current authenticator code');
+      }
+    }
+
     const result = Object.assign({}, user);
     delete (result as any).password;
+    if (user.role === 'super_admin' && user.status === 'active') {
+      return Object.assign(result, { token: issueSuperAdminToken(user.id) });
+    }
     return result;
   }
 

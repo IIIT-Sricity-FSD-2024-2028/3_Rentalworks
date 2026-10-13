@@ -1,30 +1,34 @@
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-// Every request from this portal carries the role used by the existing backend.
-async function request(path, options = {}) {
-  const response = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'x-role': 'super_admin',
-      ...options.headers,
-    },
-  });
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
-    throw new Error(Array.isArray(body.message) ? body.message.join(', ') : body.message || `Request failed (${response.status})`);
+async function request(path, method = 'GET', body = null, authenticated = true) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (authenticated) {
+    const token = sessionStorage.getItem('super_admin_token');
+    if (!token) throw new Error('Please sign in again.');
+    headers.Authorization = `Bearer ${token}`;
+    headers['x-role'] = 'super_admin';
   }
-  if (response.status === 204) return null;
-  return response.json();
+  const options = { method, headers };
+  if (body !== null) options.body = JSON.stringify(body);
+  const response = await fetch(`${BASE_URL}${path}`, options);
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = Array.isArray(result.message) ? result.message.join(', ') : result.message;
+    throw new Error(message || `Request failed (${response.status})`);
+  }
+  return result;
 }
 
 export const api = {
-  login: (username, password) => request('/users/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
-  users: () => request('/users'),
-  properties: () => request('/properties'),
-  payments: () => request('/payments'),
-  notifications: () => request('/notifications'),
-  createAdmin: (details) => request('/users', { method: 'POST', body: JSON.stringify(details) }),
-  updateUser: (id, details) => request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(details) }),
-  sendNotification: (details) => request('/notifications', { method: 'POST', body: JSON.stringify(details) }),
+  login: (username, password, otp) => request('/users/login', 'POST', { username, password, otp }, false),
+  overview: () => request('/super-admin/overview'),
+  profile: () => request('/super-admin/profile'),
+  createAdmin: details => request('/super-admin/regional-admins', 'POST', details),
+  updateAdmin: (id, details) => request(`/super-admin/regional-admins/${id}`, 'PUT', details),
+  updateProfile: details => request('/super-admin/profile', 'PUT', details),
+  changePassword: details => request('/super-admin/password', 'PUT', details),
+  setupTwoFactor: () => request('/super-admin/two-factor/setup', 'POST'),
+  confirmTwoFactor: code => request('/super-admin/two-factor/confirm', 'POST', { code }),
+  disableTwoFactor: code => request('/super-admin/two-factor/disable', 'POST', { code }),
+  sendNotification: details => request('/super-admin/announcements', 'POST', details),
 };

@@ -1,12 +1,15 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
+import { DataSource } from 'typeorm';
+import { User } from '../../users/user.entity';
+import { verifySuperAdminToken } from '../../super-admin/super-admin-token';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(private reflector: Reflector, private dataSource: DataSource) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredRoles = this.reflector.getAllAndOverride<string[]>(
       ROLES_KEY,
       [context.getHandler(), context.getClass()],
@@ -24,7 +27,11 @@ export class RolesGuard implements CanActivate {
     }
 
     if (userRole === 'super_admin') {
-      return true; // Super admin has access to everything
+      const id = verifySuperAdminToken(request.headers.authorization);
+      const user = await this.dataSource.getRepository(User).findOneBy({ id });
+      if (!user || user.role !== 'super_admin' || user.status !== 'active') return false;
+      request.superAdminId = id;
+      return true;
     }
 
     return requiredRoles.includes(userRole as string);

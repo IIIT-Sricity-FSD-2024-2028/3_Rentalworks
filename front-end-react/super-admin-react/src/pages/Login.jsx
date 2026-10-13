@@ -5,6 +5,7 @@ export default function Login({ onLogin }) {
   const [selected, setSelected] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,8 +23,10 @@ export default function Login({ onLogin }) {
     if (!username.trim() || !password) { setError('Enter your username and password.'); return; }
     setLoading(true); setError('');
     try {
-      const user = await api.login(username.trim(), password);
+      const user = await api.login(username.trim(), password, otp.trim());
       if (user.role !== 'super_admin') throw new Error('This portal is for super admins only.');
+      if (!user.token) throw new Error('The server did not issue a super admin session.');
+      sessionStorage.setItem('super_admin_token', user.token);
       sessionStorage.setItem('pg_user', JSON.stringify(user));
       onLogin(user);
     } catch (failure) { setError(failure.message); }
@@ -43,6 +46,7 @@ export default function Login({ onLogin }) {
         {error && <div className="login-banner" style={{ display: 'block' }} role="alert">{error}</div>}
         <form onSubmit={signIn}><div className="form-field"><label>Username</label><div className="inp-wrap"><span className="inp-ico"><span className="material-icons-outlined" style={{ fontSize: 20 }}>person</span></span><input value={username} onChange={event => setUsername(event.target.value)} placeholder="Enter your username" /></div></div>
           <div className="form-field"><label>Password</label><div className="inp-wrap"><span className="inp-ico"><span className="material-icons-outlined" style={{ fontSize: 20 }}>lock</span></span><input type={showPassword ? 'text' : 'password'} value={password} onChange={event => setPassword(event.target.value)} placeholder="Enter your password" /><span className="toggle-pw" onClick={() => setShowPassword(!showPassword)}><span className="material-icons-outlined" style={{ fontSize: 24 }}>{showPassword ? 'visibility_off' : 'visibility'}</span></span></div></div>
+          <div className="form-field"><label>Authenticator Code (if enabled)</label><div className="inp-wrap"><span className="inp-ico"><span className="material-icons-outlined" style={{ fontSize: 20 }}>security</span></span><input inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={event => setOtp(event.target.value)} placeholder="6-digit code" /></div></div>
           <button type="submit" className="btn-login" disabled={loading}>{loading ? 'Signing In...' : 'Sign In'}</button>
         </form>
       </div>}

@@ -68,6 +68,10 @@ function showRoleSelector() {
 }
 
 function selectRole(role) {
+  if (role === 'super_admin') {
+    window.location.href = '../../../front-end-react/super-admin-react/dist/index.html';
+    return;
+  }
   currentRole = role;
   hide('role-selector');
   document.getElementById('back-btn').style.display = 'flex';

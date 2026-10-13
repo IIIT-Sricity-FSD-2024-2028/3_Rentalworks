@@ -68,6 +68,12 @@ export class User {
   @Column({ type: 'jsonb', nullable: true })
   policy?: any;
 
+  @Column({ select: false, nullable: true })
+  twoFactorSecret?: string;
+
+  @Column({ default: false })
+  twoFactorEnabled: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

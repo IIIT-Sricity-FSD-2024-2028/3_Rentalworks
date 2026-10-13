@@ -24,6 +24,18 @@ export class Notification {
   @Column()
   sentAt: string;
 
+  @Column({ type: 'jsonb', nullable: true })
+  recipientUserIds?: number[];
+
+  @Column({ type: 'varchar', nullable: true })
+  targetRole?: string;
+
+  @Column({ type: 'int', nullable: true })
+  targetPropertyId?: number;
+
+  @Column({ type: 'varchar', default: 'sent' })
+  deliveryStatus: string;
+
   @ManyToOne(() => User)
   @JoinColumn({ name: 'byUserId' })
   byUser: User;
