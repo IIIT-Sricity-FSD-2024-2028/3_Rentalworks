@@ -32,6 +32,8 @@ import { RestoreSharedColumns1800000001000 } from './migrations/1800000001000-Re
 import { RecoverSharedColumns1800000002000 } from './migrations/1800000002000-RecoverSharedColumns';
 import { OwnerApplicationIntegration1710000000000 } from './migrations/1710000000000-OwnerApplicationIntegration';
 import { Subscription } from './owner/subscription.entity';
+import { Owner } from './owner/owner.entity';
+import { CreateOwnersTable1850000000000 } from './migrations/1850000000000-CreateOwnersTable';
 
 @Module({
   imports: [
@@ -64,6 +66,7 @@ import { Subscription } from './owner/subscription.entity';
             BookingRequest,
             TenantStay,
             Subscription,
+            Owner,
           ],
           synchronize: false,
           migrations: [
@@ -71,6 +74,7 @@ import { Subscription } from './owner/subscription.entity';
             SuperAdminAnnouncements1800000000000,
             RestoreSharedColumns1800000001000,
             RecoverSharedColumns1800000002000,
+            CreateOwnersTable1850000000000,
           ],
           migrationsRun: true,
         }) as any,
