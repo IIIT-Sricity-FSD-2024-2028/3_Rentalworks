@@ -243,7 +243,7 @@ async function handleLogin(role) {
 function routeUser(role) {
   const routes = {
     admin:  '../../admin/admin/index.html',
-    super_admin: '../../super_admin/super_admin/index.html',
+    super_admin: '../../../front-end-react/super-admin-react/dist/index.html',
     warden: '../../warden/warden/index_warden.html',
     owner:  '../../owner/owner_s/index.html',
     tenant: '../../Tenant/index.html',
