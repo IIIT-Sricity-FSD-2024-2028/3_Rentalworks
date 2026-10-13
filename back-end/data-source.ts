@@ -17,5 +17,5 @@ export const AppDataSource = new DataSource({
   url: process.env.DATABASE_URL,
   entities: [User, Property, Booking, Payment, Complaint, Notification, Room, BookingRequest, TenantStay],
   migrations: ['src/migrations/*.ts'],
-  synchronize: false,
+  synchronize: true, // DEVELOPMENT ONLY: Auto-creates schema. Use migrations in production.
 });

@@ -1,11 +1,11 @@
-import { IsEmail, IsIn, IsInt, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsIn, IsInt, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class CreateRegionalAdminDto {
   @IsString() @MinLength(2) @MaxLength(100) name: string;
   @IsEmail() email: string;
   @IsString() @MinLength(2) @MaxLength(100) region: string;
   @IsString() @MinLength(6) password: string;
-  @IsString() @MinLength(9) phone: string;
+  @IsString() @Matches(/^\+?[\d\s-]{9,}$/) phone: string;
 }
 
 export class UpdateRegionalAdminDto {

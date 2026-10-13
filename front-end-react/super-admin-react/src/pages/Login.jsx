@@ -27,8 +27,10 @@ export default function Login({ onLogin }) {
       if (user.role !== 'super_admin') throw new Error('This portal is for super admins only.');
       if (!user.token) throw new Error('The server did not issue a super admin session.');
       sessionStorage.setItem('super_admin_token', user.token);
-      sessionStorage.setItem('pg_user', JSON.stringify(user));
-      onLogin(user);
+      const profile = Object.assign({}, user);
+      delete profile.token;
+      sessionStorage.setItem('pg_user', JSON.stringify(profile));
+      onLogin(profile);
     } catch (failure) { setError(failure.message); }
     finally { setLoading(false); }
   }

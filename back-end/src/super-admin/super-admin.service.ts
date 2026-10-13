@@ -62,7 +62,7 @@ export class SuperAdminService implements OnModuleInit, OnModuleDestroy {
 
   async createAdmin(dto: CreateRegionalAdminDto) {
     const email = dto.email.trim().toLowerCase();
-    if (await this.users.exists({ where: { email } })) throw new ConflictException('Email is already in use');
+    if (await this.users.exists({ where: [{ email }, { username: email }] })) throw new ConflictException('Email or username is already in use');
     const username = email;
     const admin = this.users.create({
       name: dto.name.trim(), email, phone: dto.phone.trim(), region: dto.region.trim(),

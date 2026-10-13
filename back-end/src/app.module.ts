@@ -51,7 +51,7 @@ import { SuperAdminAnnouncements1800000000000 } from './migrations/1800000000000
             BookingRequest,
             TenantStay,
           ],
-          synchronize: true, // Retained for the owner integration on this branch.
+          synchronize: true, // DEVELOPMENT ONLY: Set to false in production
           migrations: [SuperAdminAnnouncements1800000000000],
           migrationsRun: true,
         }) as any,
