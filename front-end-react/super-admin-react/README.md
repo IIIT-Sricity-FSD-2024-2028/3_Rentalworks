@@ -9,9 +9,9 @@ The five super admin screens are React components in `src/pages/`. Their CSS fil
 3. In this directory, run `npm install` and `npm run dev`. Vite uses port 5176. Set `VITE_API_URL` if the backend is not on `http://localhost:3000`.
 4. Sign in with an active `super_admin` row in the `users` table. The login username is the `username` column. If two factor sign-in is enabled, enter the current code from an authenticator app.
 
-The NestJS app applies the additive `SuperAdminAnnouncements1800000000000` migration when it starts. It adds audience and delivery fields to `notifications`, plus two factor fields to `users`. Existing users, properties, payments, and notifications remain in their existing tables.
+The NestJS app applies the additive `SuperAdminAnnouncements1800000000000` and `RestoreSharedColumns1800000001000` migrations when it starts. They add the fields required by the owner and super admin modules. Existing users, properties, payments, and notifications remain in their existing tables.
 
-The shared backend currently has TypeORM `synchronize: true` from the owner integration. Review its pending schema changes before starting that combined version against a shared database. The super admin migration itself was applied and verified on Neon.
+The backend runs with TypeORM `synchronize: false`. Its additive migrations create the fields used by the owner and super admin modules without removing data. Do not start an older backend version with `synchronize: true` against the same Neon database; that version can remove newer columns and cause HTTP 500 errors.
 
 The shared legacy role selector takes Super Admin directly to this React login. For a static build, run `npm run build` and serve the repository root so the link to `dist/index.html` resolves.
 

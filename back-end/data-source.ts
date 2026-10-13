@@ -9,6 +9,8 @@ import { Notification } from './src/notifications/notification.entity';
 import { Room } from './src/rooms/room.entity';
 import { BookingRequest } from './src/booking-requests/booking-request.entity';
 import { TenantStay } from './src/tenant-stays/tenant-stay.entity';
+import { SuperAdminAnnouncements1800000000000 } from './src/migrations/1800000000000-SuperAdminAnnouncements';
+import { RestoreSharedColumns1800000001000 } from './src/migrations/1800000001000-RestoreSharedColumns';
 
 config();
 
@@ -16,6 +18,6 @@ export const AppDataSource = new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL,
   entities: [User, Property, Booking, Payment, Complaint, Notification, Room, BookingRequest, TenantStay],
-  migrations: ['src/migrations/*.ts'],
-  synchronize: true, // DEVELOPMENT ONLY: Auto-creates schema. Use migrations in production.
+  migrations: [SuperAdminAnnouncements1800000000000, RestoreSharedColumns1800000001000],
+  synchronize: false,
 });

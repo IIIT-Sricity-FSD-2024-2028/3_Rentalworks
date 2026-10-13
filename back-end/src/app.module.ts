@@ -28,6 +28,7 @@ import { BookingRequest } from './booking-requests/booking-request.entity';
 import { TenantStay } from './tenant-stays/tenant-stay.entity';
 import { SuperAdminModule } from './super-admin/super-admin.module';
 import { SuperAdminAnnouncements1800000000000 } from './migrations/1800000000000-SuperAdminAnnouncements';
+import { RestoreSharedColumns1800000001000 } from './migrations/1800000001000-RestoreSharedColumns';
 
 @Module({
   imports: [
@@ -51,8 +52,8 @@ import { SuperAdminAnnouncements1800000000000 } from './migrations/1800000000000
             BookingRequest,
             TenantStay,
           ],
-          synchronize: true, // DEVELOPMENT ONLY: Set to false in production
-          migrations: [SuperAdminAnnouncements1800000000000],
+          synchronize: false,
+          migrations: [SuperAdminAnnouncements1800000000000, RestoreSharedColumns1800000001000],
           migrationsRun: true,
         }) as any,
       inject: [ConfigService],
