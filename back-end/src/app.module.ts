@@ -29,10 +29,20 @@ import { TenantStay } from './tenant-stays/tenant-stay.entity';
 import { SuperAdminModule } from './super-admin/super-admin.module';
 import { SuperAdminAnnouncements1800000000000 } from './migrations/1800000000000-SuperAdminAnnouncements';
 import { RestoreSharedColumns1800000001000 } from './migrations/1800000001000-RestoreSharedColumns';
+import { RecoverSharedColumns1800000002000 } from './migrations/1800000002000-RecoverSharedColumns';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validate: (config) => {
+        if (!config.DATABASE_URL) throw new Error('DATABASE_URL is required in back-end/.env');
+        if (!config.SUPER_ADMIN_TOKEN_SECRET || config.SUPER_ADMIN_TOKEN_SECRET.length < 32) {
+          throw new Error('SUPER_ADMIN_TOKEN_SECRET must be at least 32 characters in back-end/.env');
+        }
+        return config;
+      },
+    }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) =>
@@ -53,7 +63,7 @@ import { RestoreSharedColumns1800000001000 } from './migrations/1800000001000-Re
             TenantStay,
           ],
           synchronize: false,
-          migrations: [SuperAdminAnnouncements1800000000000, RestoreSharedColumns1800000001000],
+          migrations: [SuperAdminAnnouncements1800000000000, RestoreSharedColumns1800000001000, RecoverSharedColumns1800000002000],
           migrationsRun: true,
         }) as any,
       inject: [ConfigService],

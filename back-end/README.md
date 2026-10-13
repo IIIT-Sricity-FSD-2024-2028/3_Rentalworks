@@ -25,56 +25,15 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository for RentalWorks Backend.
 
-## Project setup
+## Run the backend
 
-1. Install dependencies:
-```bash
-$ npm install
-```
+1. Pull the latest `react-migration` branch. Stop any other backend process using port 3000 or the same Neon database.
+2. Copy `.env.example` to `.env`. Set your Neon `DATABASE_URL` and a random `SUPER_ADMIN_TOKEN_SECRET` with at least 32 characters. Keep `.env` private.
+3. From `back-end`, run `npm install` and `npm run start:dev`.
 
-2. Setup Database Environment:
-Copy the provided `.env.example` to `.env`:
-```bash
-$ cp .env.example .env
-```
+The backend applies pending additive migrations on startup. Do not run SQL or seed dummy data for the super admin portal. Automatic TypeORM schema synchronization is disabled because an older checkout removed shared database columns.
 
-3. Start PostgreSQL Database:
-If you have Docker installed, you can start the local PostgreSQL instance via docker-compose:
-```bash
-$ docker-compose up -d
-```
-
-4. Run Initial Migrations:
-We use TypeORM for database interactions. To create the tables in your database:
-```bash
-# If using TypeORM CLI
-$ npm run typeorm -- migration:run -d ./data-source.ts
-```
-
-5. Seed Database (Optional):
-To seed the database with initial dummy data from the original `data.json`:
-```bash
-$ npx ts-node scripts/seed.ts
-```
-
-## Running the app
-
-```bash
-$ npm install
-```
-
-## Compile and run the project
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
+For a compiled run, use `npm run build` followed by `npm run start:prod`.
 
 ## Run tests
 

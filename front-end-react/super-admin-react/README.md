@@ -4,14 +4,14 @@ The five super admin screens are React components in `src/pages/`. Their CSS fil
 
 ## Run
 
-1. Set `DATABASE_URL` and a random `SUPER_ADMIN_TOKEN_SECRET` of at least 32 characters in `back-end/.env`. Never commit that file.
+1. Copy `back-end/.env.example` to `back-end/.env`, then set the real `DATABASE_URL` and a random `SUPER_ADMIN_TOKEN_SECRET` of at least 32 characters. Never commit that file.
 2. In `back-end`, run `npm install` and `npm run start:dev`.
 3. In this directory, run `npm install` and `npm run dev`. Vite uses port 5176. Set `VITE_API_URL` if the backend is not on `http://localhost:3000`.
 4. Sign in with an active `super_admin` row in the `users` table. The login username is the `username` column. If two factor sign-in is enabled, enter the current code from an authenticator app.
 
-The NestJS app applies the additive `SuperAdminAnnouncements1800000000000` and `RestoreSharedColumns1800000001000` migrations when it starts. They add the fields required by the owner and super admin modules. Existing users, properties, payments, and notifications remain in their existing tables.
+The NestJS app applies additive migrations when it starts. They add the fields required by the owner and super admin modules. Existing users, properties, payments, and notifications remain in their existing tables. The `RecoverSharedColumns1800000002000` migration restores fields removed when an older checkout ran with automatic schema synchronization.
 
-The backend runs with TypeORM `synchronize: false`. Its additive migrations create the fields used by the owner and super admin modules without removing data. Do not start an older backend version with `synchronize: true` against the same Neon database; that version can remove newer columns and cause HTTP 500 errors.
+The backend runs with TypeORM `synchronize: false`. Its additive migrations create the fields used by the owner and super admin modules without removing data. Run only one current backend against the shared Neon database. Every teammate must pull `react-migration` before starting their backend; older versions with `synchronize: true` can remove newer columns and cause HTTP 500 errors. Starting the current backend applies pending migrations automatically; no manual SQL is needed.
 
 The shared legacy role selector takes Super Admin directly to this React login. For a static build, run `npm run build` and serve the repository root so the link to `dist/index.html` resolves.
 
