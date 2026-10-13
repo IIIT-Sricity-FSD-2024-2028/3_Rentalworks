@@ -11,13 +11,19 @@ export class PropertiesService {
     private propertiesRepository: Repository<Property>,
   ) {}
 
-  findAll() {
+  findAll(ownerId?: number) {
+    if (ownerId) {
+      return this.propertiesRepository.find({
+        where: { ownerId: ownerId },
+        relations: { owner: true },
+      });
+    }
     return this.propertiesRepository.find({ relations: { owner: true } });
   }
 
   async findOne(id: number) {
     const property = await this.propertiesRepository.findOne({
-      where: { id },
+      where: { id: id },
       relations: { owner: true },
     });
     if (!property)
@@ -26,18 +32,19 @@ export class PropertiesService {
   }
 
   async create(createPropertyDto: CreatePropertyDto) {
-    const newProperty = this.propertiesRepository.create({
-      ...createPropertyDto,
+    const defaults = {
       occupancy: 0,
-      safetyScore: 8.0,
-      status: 'pending',
-      docsVerified: false,
-      inspectionPassed: false,
+      safetyScore: 8.5,
+      status: 'approved',
+      docsVerified: true,
+      inspectionPassed: true,
       commissionRate: 10,
-      compliance: 'Pending',
-      fireSafety: 'Pending',
+      compliance: 'Verified',
+      fireSafety: 'Yes',
       changeRequestPending: false,
-    });
+    };
+    const payload = Object.assign({}, defaults, createPropertyDto);
+    const newProperty = this.propertiesRepository.create(payload);
     return this.propertiesRepository.save(newProperty);
   }
 
@@ -52,7 +59,7 @@ export class PropertiesService {
 
   async remove(id: number) {
     const property = await this.findOne(id);
-    const removed = { ...property };
+    const removed = Object.assign({}, property);
     await this.propertiesRepository.remove(property);
     return removed;
   }

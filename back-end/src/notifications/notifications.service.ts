@@ -29,10 +29,12 @@ export class NotificationsService {
   }
 
   async create(createNotificationDto: CreateNotificationDto) {
-    const newNotification = this.notificationsRepository.create({
-      ...createNotificationDto,
-      sentAt: new Date().toISOString(),
-    });
+    const defaults = {
+      read: false,
+      sentAt: new Date().toISOString().split('T')[0],
+    };
+    const payload = Object.assign({}, defaults, createNotificationDto);
+    const newNotification = this.notificationsRepository.create(payload);
     return this.notificationsRepository.save(newNotification);
   }
 
@@ -45,9 +47,24 @@ export class NotificationsService {
     return this.notificationsRepository.save(notification);
   }
 
+  async markRead(id: number) {
+    const notification = await this.findOne(id);
+    notification.read = true;
+    return this.notificationsRepository.save(notification);
+  }
+
+  async markAllRead() {
+    await this.notificationsRepository
+      .createQueryBuilder()
+      .update(Notification)
+      .set({ read: true })
+      .execute();
+    return { success: true };
+  }
+
   async remove(id: number) {
     const notification = await this.findOne(id);
-    const removed = { ...notification };
+    const removed = Object.assign({}, notification);
     await this.notificationsRepository.remove(notification);
     return removed;
   }

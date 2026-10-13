@@ -38,6 +38,7 @@
     "multer": "^2.2.0",
     "pg": "^8.23.0",
     "reflect-metadata": "^0.2.2",
+    "rentalworks-modernized": "file:..",
     "rxjs": "^7.8.1",
     "sqlite3": "^6.0.1",
     "swagger-ui-express": "^5.0.1",

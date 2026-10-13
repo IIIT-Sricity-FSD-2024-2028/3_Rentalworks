@@ -40,11 +40,12 @@ export class ComplaintsService {
   }
 
   async create(createComplaintDto: CreateComplaintDto) {
-    const newComplaint = this.complaintsRepository.create({
-      ...createComplaintDto,
+    const defaults = {
       status: 'open',
       reportedAt: new Date().toISOString().split('T')[0],
-    });
+    };
+    const payload = Object.assign({}, defaults, createComplaintDto);
+    const newComplaint = this.complaintsRepository.create(payload);
     const saved = await this.complaintsRepository.save(newComplaint);
 
     // Workflow: Notify Warden in the separate warden_notifications table
@@ -97,7 +98,7 @@ export class ComplaintsService {
 
   async remove(id: number) {
     const complaint = await this.findOne(id);
-    const removed = { ...complaint };
+    const removed = Object.assign({}, complaint);
     await this.complaintsRepository.remove(complaint);
     return removed;
   }

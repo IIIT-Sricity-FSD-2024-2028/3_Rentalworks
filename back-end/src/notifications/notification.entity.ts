@@ -31,6 +31,9 @@ export class Notification {
   @Column({ nullable: true })
   byUserId?: number;
 
+  @Column({ default: false })
+  read: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

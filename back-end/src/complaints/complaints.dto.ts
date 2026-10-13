@@ -13,6 +13,26 @@ export class CreateComplaintDto {
   @ApiProperty()
   @IsString()
   description: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  title?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  priority?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  category?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  reportedBy?: string;
 }
 
 export class UpdateComplaintDto {
@@ -20,6 +40,21 @@ export class UpdateComplaintDto {
   @IsString()
   @IsOptional()
   status?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  title?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  priority?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  category?: string;
 
   @ApiProperty({ required: false })
   @IsString()

@@ -64,6 +64,36 @@ export class Property {
   @Column({ default: false })
   changeRequestPending: boolean;
 
+  @Column({ nullable: true })
+  address?: string;
+
+  @Column({ nullable: true })
+  city?: string;
+
+  @Column({ nullable: true })
+  state?: string;
+
+  @Column({ nullable: true })
+  pincode?: string;
+
+  @Column({ nullable: true })
+  type?: string;
+
+  @Column({ type: 'int', nullable: true })
+  totalCapacity?: number;
+
+  @Column({ type: 'int', nullable: true })
+  totalRooms?: number;
+
+  @Column({ type: 'int', nullable: true })
+  occupiedRooms?: number;
+
+  @Column({ type: 'int', nullable: true })
+  monthlyRent?: number;
+
+  @Column({ type: 'jsonb', nullable: true })
+  rules?: string[];
+
   @CreateDateColumn()
   createdAt: Date;
 

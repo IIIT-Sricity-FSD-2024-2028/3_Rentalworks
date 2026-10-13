@@ -47,6 +47,27 @@ export class User {
   @Column({ type: 'numeric', precision: 10, scale: 2, nullable: true })
   subscriptionFee?: number;
 
+  @Column({ nullable: true })
+  company?: string;
+
+  @Column({ nullable: true })
+  city?: string;
+
+  @Column({ nullable: true })
+  state?: string;
+
+  @Column({ nullable: true })
+  pincode?: string;
+
+  @Column({ type: 'text', nullable: true })
+  bio?: string;
+
+  @Column({ nullable: true })
+  avatar?: string;
+
+  @Column({ type: 'jsonb', nullable: true })
+  policy?: any;
+
   @CreateDateColumn()
   createdAt: Date;
 

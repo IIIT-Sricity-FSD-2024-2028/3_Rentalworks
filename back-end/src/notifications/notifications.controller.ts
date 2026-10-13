@@ -38,14 +38,28 @@ export class NotificationsController {
   }
 
   @Post()
-  @Roles('admin', 'warden')
+  @Roles('admin', 'warden', 'owner')
   @ApiOperation({ summary: 'Create new notification' })
   create(@Body() createNotificationDto: CreateNotificationDto) {
     return this.notificationsService.create(createNotificationDto);
   }
 
+  @Put('mark-all-read')
+  @Roles('admin', 'warden', 'tenant', 'owner')
+  @ApiOperation({ summary: 'Mark all notifications as read' })
+  markAllRead() {
+    return this.notificationsService.markAllRead();
+  }
+
+  @Put(':id/read')
+  @Roles('admin', 'warden', 'tenant', 'owner')
+  @ApiOperation({ summary: 'Mark a notification as read' })
+  markRead(@Param('id') id: string) {
+    return this.notificationsService.markRead(+id);
+  }
+
   @Put(':id')
-  @Roles('admin', 'warden')
+  @Roles('admin', 'warden', 'owner')
   @ApiOperation({ summary: 'Update a notification' })
   update(
     @Param('id') id: string,
@@ -55,7 +69,7 @@ export class NotificationsController {
   }
 
   @Delete(':id')
-  @Roles('admin')
+  @Roles('admin', 'warden', 'owner')
   @ApiOperation({ summary: 'Delete a notification' })
   remove(@Param('id') id: string) {
     return this.notificationsService.remove(+id);

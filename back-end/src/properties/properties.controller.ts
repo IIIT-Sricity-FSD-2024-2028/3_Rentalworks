@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Headers,
+  Query,
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
@@ -55,8 +56,8 @@ export class PropertiesController {
   @Get()
   @ApiOperation({ summary: 'Get all properties' })
   // All roles can read properties, tenants use it for discovery
-  findAll() {
-    return this.propertiesService.findAll();
+  findAll(@Query('ownerId') ownerId?: string) {
+    return this.propertiesService.findAll(ownerId ? +ownerId : undefined);
   }
 
   @Get(':id')

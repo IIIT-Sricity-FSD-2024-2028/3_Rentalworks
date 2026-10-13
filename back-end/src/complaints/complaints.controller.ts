@@ -66,7 +66,7 @@ export class ComplaintsController {
   }
 
   @Post()
-  @Roles('admin', 'tenant')
+  @Roles('admin', 'tenant', 'owner')
   @ApiOperation({ summary: 'Submit new complaint' })
   create(@Body() createComplaintDto: CreateComplaintDto) {
     return this.complaintsService.create(createComplaintDto);
@@ -83,7 +83,7 @@ export class ComplaintsController {
   }
 
   @Delete(':id')
-  @Roles('admin', 'tenant')
+  @Roles('admin', 'tenant', 'owner')
   @ApiOperation({ summary: 'Delete complaint' })
   remove(@Param('id') id: string) {
     return this.complaintsService.remove(+id);

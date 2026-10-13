@@ -76,7 +76,41 @@ export class UpdateUserDto {
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
+  company?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
   password?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  city?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  state?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  pincode?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  bio?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  avatar?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  policy?: any;
 }
 
 export class LoginDto {
@@ -112,7 +146,9 @@ export class CreateTenantDto {
   checkIn: string;
 
   @ApiProperty()
-  rent: number;
+  @IsNumber()
+  @IsOptional()
+  rent?: number;
 
   @ApiProperty({ required: false, default: 'pending' })
   @IsOptional()

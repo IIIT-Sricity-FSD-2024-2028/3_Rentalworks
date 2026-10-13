@@ -11,6 +11,8 @@ import { ComplaintsModule } from './complaints/complaints.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { WardenNotificationsModule } from './warden-notifications/warden-notifications.module';
 import { RuleViolationsModule } from './rule-violations/rule-violations.module';
+import { RoomsModule } from './rooms/rooms.module';
+import { OwnerModule } from './owner/owner.module';
 import { LoggerMiddleware } from './middleware/logger.middleware';
 import { SecurityMiddleware } from './middleware/security.middleware';
 import { User } from './users/user.entity';
@@ -24,8 +26,6 @@ import { RuleViolation } from './rule-violations/rule-violation.entity';
 import { Room } from './rooms/room.entity';
 import { BookingRequest } from './booking-requests/booking-request.entity';
 import { TenantStay } from './tenant-stays/tenant-stay.entity';
-
-import { RoomsModule } from './rooms/rooms.module';
 
 @Module({
   imports: [
@@ -62,6 +62,7 @@ import { RoomsModule } from './rooms/rooms.module';
     WardenNotificationsModule,
     RuleViolationsModule,
     RoomsModule,
+    OwnerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

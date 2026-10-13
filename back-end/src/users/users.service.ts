@@ -43,12 +43,14 @@ export class UsersService {
       createUserDto.password || 'default123',
       10,
     );
-    const newUser = this.usersRepository.create({
-      ...createUserDto,
+    const defaults = {
       password: hashedPassword,
       status: 'active',
       joinDate: new Date().toISOString().split('T')[0],
-    });
+    };
+    const payload = Object.assign({}, defaults, createUserDto);
+    payload.password = hashedPassword;
+    const newUser = this.usersRepository.create(payload);
     return this.usersRepository.save(newUser);
   }
 
@@ -72,7 +74,7 @@ export class UsersService {
 
   async remove(id: number) {
     const user = await this.findOne(id);
-    const removed = { ...user };
+    const removed = Object.assign({}, user);
     await this.usersRepository.remove(user);
     return removed;
   }
@@ -92,7 +94,8 @@ export class UsersService {
     );
     if (!isMatch) throw new UnauthorizedException('Invalid credentials');
 
-    const { password, ...result } = user;
+    const result = Object.assign({}, user);
+    delete (result as any).password;
     return result;
   }
 

@@ -41,7 +41,7 @@ export class Booking {
   @Column()
   duration: string;
 
-  @Column({ type: 'numeric', precision: 10, scale: 2 })
+  @Column({ type: 'int', nullable: true })
   rent: number;
 
   @Column()
