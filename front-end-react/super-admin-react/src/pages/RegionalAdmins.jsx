@@ -16,8 +16,22 @@ export default function RegionalAdmins({ users, refresh, showToast }) {
   function openEdit(admin) { setForm({ name: admin.name, email: admin.email, region: admin.region || '', phone: admin.phone || '', password: '' }); setEditing(admin); }
 
   async function save() {
-    if (!form.region.trim() || (editing === 'new' && (!form.name.trim() || !form.email.trim() || !form.phone.trim() || form.password.length < 6))) {
-      showToast('error', 'Validation', 'All fields are required.'); return;
+    if (form.region.trim().length < 2) {
+      showToast('error', 'Validation', 'Enter a region with at least 2 characters.'); return;
+    }
+    if (editing === 'new') {
+      if (form.name.trim().length < 2) {
+        showToast('error', 'Validation', 'Enter a name with at least 2 characters.'); return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+        showToast('error', 'Validation', 'Enter a valid email address, such as sanjay@example.com.'); return;
+      }
+      if (!/^\+?[\d\s-]{9,}$/.test(form.phone.trim())) {
+        showToast('error', 'Validation', 'Enter a valid phone number.'); return;
+      }
+      if (form.password.length < 6) {
+        showToast('error', 'Validation', 'Password must have at least 6 characters.'); return;
+      }
     }
     setSaving(true);
     try {
