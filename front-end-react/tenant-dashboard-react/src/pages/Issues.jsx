@@ -2,6 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../services/api';
 
+const getCategoryIcon = (category) => {
+  switch (category?.toLowerCase()) {
+    case 'plumbing':
+      return 'water_drop';
+    case 'electrical':
+      return 'bolt';
+    case 'appliances':
+      return 'kitchen';
+    case 'internet/wifi':
+    case 'internet':
+    case 'wifi':
+      return 'wifi';
+    case 'maintenance':
+      return 'build';
+    default:
+      return 'report_problem';
+  }
+};
+
 const Issues = () => {
   const { tenant, activeBooking } = useAuth();
 
@@ -9,6 +28,12 @@ const Issues = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Filter & Search & View Mode
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
+
+  // Reporting Form State
   const [isReporting, setIsReporting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('Plumbing');
   const [selectedPriority, setSelectedPriority] = useState('medium');
@@ -92,6 +117,23 @@ const Issues = () => {
   const openCount = issues.filter((i) => i.status === 'open').length;
   const inProgressCount = issues.filter((i) => i.status === 'in_progress').length;
   const resolvedCount = issues.filter((i) => i.status === 'resolved').length;
+
+  const filteredIssues = issues.filter((iss) => {
+    if (statusFilter !== 'all' && iss.status !== statusFilter) {
+      return false;
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchTitle = iss.title?.toLowerCase().includes(q);
+      const matchDesc = iss.description?.toLowerCase().includes(q);
+      const matchCat = iss.category?.toLowerCase().includes(q);
+      const matchLoc = iss.location?.toLowerCase().includes(q);
+      const matchPri = iss.priority?.toLowerCase().includes(q);
+      const matchStat = iss.status?.toLowerCase().includes(q);
+      return matchTitle || matchDesc || matchCat || matchLoc || matchPri || matchStat;
+    }
+    return true;
+  });
 
   if (isReporting) {
     return (
@@ -256,7 +298,7 @@ const Issues = () => {
       <div className="page-header page-header-row">
         <div>
           <h1>Issues</h1>
-          <p>Track and manage all reported issues</p>
+          <p>Track, report and resolve maintenance issues</p>
         </div>
         <button className="btn btn-primary" onClick={() => setIsReporting(true)}>
           + Report New Issue
@@ -311,99 +353,290 @@ const Issues = () => {
         </div>
       </div>
 
-      <div className="card">
-        <div className="card-body">
-          <div className="card-title">All Issues</div>
-          <div className="mt-14" style={{ marginTop: '14px' }}>
-            {loading ? (
-              <p style={{ color: 'var(--text-muted)' }}>Loading issues from Neon...</p>
-            ) : error ? (
-              <p style={{ color: 'var(--danger)' }}>{error}</p>
-            ) : issues.length === 0 ? (
-              <p style={{ color: 'var(--text-muted)' }}>No issues reported yet.</p>
-            ) : (
-              <table className="payment-table">
-                <thead>
-                  <tr>
-                    <th>Title & Description</th>
-                    <th>Category</th>
-                    <th>Priority</th>
-                    <th>Status</th>
-                    <th>Created At</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {issues.map((iss) => (
-                    <tr key={iss.id}>
-                      <td>
-                        <strong>{iss.title}</strong>
-                        {iss.location && (
-                          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                            Location: {iss.location}
-                          </div>
-                        )}
-                        <div style={{ fontSize: '13px', marginTop: '2px' }}>
-                          {iss.description}
-                        </div>
-                      </td>
-                      <td>
-                        <span className="badge badge-info">{iss.category}</span>
-                      </td>
-                      <td>
-                        <span
-                          style={{
-                            fontWeight: '600',
-                            textTransform: 'capitalize',
-                            color:
-                              iss.priority === 'urgent' || iss.priority === 'high'
-                                ? 'var(--danger)'
-                                : iss.priority === 'medium'
-                                ? 'var(--warning)'
-                                : 'var(--text-muted)',
-                          }}
-                        >
-                          {iss.priority}
-                        </span>
-                      </td>
-                      <td>
-                        <span
-                          className={`badge-${
-                            iss.status === 'resolved'
-                              ? 'active'
-                              : iss.status === 'in_progress'
-                              ? 'warning'
-                              : 'danger'
-                          }`}
-                          style={{ textTransform: 'capitalize' }}
-                        >
-                          {iss.status?.replace('_', ' ')}
-                        </span>
-                      </td>
-                      <td>
-                        {iss.createdAt
-                          ? new Date(iss.createdAt).toLocaleDateString()
-                          : 'N/A'}
-                      </td>
-                      <td>
-                        <button
-                          className="btn btn-ghost btn-sm"
-                          style={{ color: 'var(--danger)' }}
-                          onClick={() => handleDelete(iss.id)}
-                          title="Delete issue"
-                        >
-                          <span className="material-icons-outlined" style={{ fontSize: '18px' }}>
-                            delete
-                          </span>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+      {/* MODERN CARD PANEL */}
+      <div className="premium-card-panel">
+        <div className="panel-header-bar">
+          <div className="panel-header-title">
+            <h2>All Issues</h2>
+            <span className="panel-count-badge">{filteredIssues.length}</span>
+          </div>
+
+          <div className="panel-controls-right">
+            {/* Status Filter Pills */}
+            <div className="panel-filters-wrap">
+              <button
+                className={`filter-pill-btn ${statusFilter === 'all' ? 'active' : ''}`}
+                onClick={() => setStatusFilter('all')}
+              >
+                All ({issues.length})
+              </button>
+              <button
+                className={`filter-pill-btn ${statusFilter === 'open' ? 'active' : ''}`}
+                onClick={() => setStatusFilter('open')}
+              >
+                Open ({openCount})
+              </button>
+              <button
+                className={`filter-pill-btn ${statusFilter === 'in_progress' ? 'active' : ''}`}
+                onClick={() => setStatusFilter('in_progress')}
+              >
+                In Progress ({inProgressCount})
+              </button>
+              <button
+                className={`filter-pill-btn ${statusFilter === 'resolved' ? 'active' : ''}`}
+                onClick={() => setStatusFilter('resolved')}
+              >
+                Resolved ({resolvedCount})
+              </button>
+            </div>
+
+            {/* Search Input Pill */}
+            <div className="search-input-pill">
+              <span className="material-icons-outlined" style={{ fontSize: '18px', color: 'var(--text-muted)' }}>
+                search
+              </span>
+              <input
+                type="text"
+                placeholder="Search issues, location..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}
+                >
+                  <span className="material-icons-outlined" style={{ fontSize: '16px' }}>close</span>
+                </button>
+              )}
+            </div>
+
+            {/* View Mode Switcher */}
+            <div className="view-mode-toggle">
+              <button
+                className={`view-mode-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                onClick={() => setViewMode('grid')}
+                title="Grid Card View"
+              >
+                <span className="material-icons-outlined" style={{ fontSize: '20px' }}>grid_view</span>
+              </button>
+              <button
+                className={`view-mode-btn ${viewMode === 'table' ? 'active' : ''}`}
+                onClick={() => setViewMode('table')}
+                title="Table List View"
+              >
+                <span className="material-icons-outlined" style={{ fontSize: '20px' }}>view_list</span>
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* CONTENT AREA */}
+        {loading ? (
+          <div style={{ padding: '50px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <span
+              className="material-icons-outlined"
+              style={{ fontSize: '42px', animation: 'spin 1.5s linear infinite', display: 'inline-block' }}
+            >
+              sync
+            </span>
+            <p style={{ marginTop: '10px', fontSize: '14px' }}>Loading issues from Neon...</p>
+          </div>
+        ) : error ? (
+          <div style={{ padding: '30px 20px', textAlign: 'center', color: 'var(--danger)' }}>
+            <p>{error}</p>
+          </div>
+        ) : filteredIssues.length === 0 ? (
+          <div className="records-empty-box">
+            <div className="records-empty-icon">
+              <span className="material-icons-outlined" style={{ fontSize: '48px', color: '#94a3b8' }}>
+                build_circle
+              </span>
+            </div>
+            <div className="records-empty-title">
+              {issues.length === 0 ? 'No Issues Reported Yet' : 'No Matching Issues Found'}
+            </div>
+            <div className="records-empty-subtitle">
+              {issues.length === 0
+                ? 'Your room and facilities are looking good! If anything breaks or needs repair, report an issue here.'
+                : 'Try adjusting your filters or search keywords.'}
+            </div>
+            {issues.length === 0 ? (
+              <button
+                className="btn btn-primary btn-sm"
+                style={{ marginTop: '16px' }}
+                onClick={() => setIsReporting(true)}
+              >
+                + Report New Issue
+              </button>
+            ) : (
+              <button
+                className="btn btn-ghost btn-sm"
+                style={{ marginTop: '16px' }}
+                onClick={() => {
+                  setStatusFilter('all');
+                  setSearchQuery('');
+                }}
+              >
+                Reset Filters
+              </button>
+            )}
+          </div>
+        ) : viewMode === 'grid' ? (
+          /* MODERN CARD GRID */
+          <div className="item-cards-grid">
+            {filteredIssues.map((iss) => (
+              <div key={iss.id} className={`modern-record-card status-${iss.status || 'open'}`}>
+                <div>
+                  <div className="card-top-meta">
+                    <div className="card-badges-left">
+                      <span className="category-chip">
+                        <span className="material-icons-outlined" style={{ fontSize: '15px' }}>
+                          {getCategoryIcon(iss.category)}
+                        </span>
+                        {iss.category}
+                      </span>
+                      <span className={`priority-tag ${iss.priority || 'medium'}`}>
+                        <span className="material-icons-outlined" style={{ fontSize: '13px' }}>
+                          {iss.priority === 'urgent' || iss.priority === 'high' ? 'priority_high' : 'flag'}
+                        </span>
+                        {iss.priority}
+                      </span>
+                    </div>
+
+                    <span className={`status-badge-pill ${iss.status || 'open'}`}>
+                      <span className="pulse-dot"></span>
+                      {iss.status?.replace('_', ' ') || 'Open'}
+                    </span>
+                  </div>
+
+                  <h3 className="record-main-title">{iss.title}</h3>
+
+                  {iss.location && (
+                    <div className="record-location-tag">
+                      <span className="material-icons-outlined" style={{ fontSize: '13px' }}>
+                        location_on
+                      </span>
+                      {iss.location}
+                    </div>
+                  )}
+
+                  <p className="record-desc-text">
+                    {iss.description || 'No description provided.'}
+                  </p>
+                </div>
+
+                <div className="record-card-footer">
+                  <div className="record-date-info">
+                    <span className="material-icons-outlined" style={{ fontSize: '16px' }}>
+                      calendar_today
+                    </span>
+                    {iss.createdAt
+                      ? new Date(iss.createdAt).toLocaleDateString(undefined, {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })
+                      : 'N/A'}
+                  </div>
+
+                  <button
+                    className="record-delete-btn"
+                    onClick={() => handleDelete(iss.id)}
+                    title="Cancel or delete issue"
+                  >
+                    <span className="material-icons-outlined" style={{ fontSize: '17px' }}>
+                      delete_outline
+                    </span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* MODERN DATA TABLE VIEW */
+          <div style={{ overflowX: 'auto' }}>
+            <table className="modern-data-table">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Title & Description</th>
+                  <th>Location</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Reported Date</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredIssues.map((iss) => (
+                  <tr key={iss.id}>
+                    <td>
+                      <span className="category-chip">
+                        <span className="material-icons-outlined" style={{ fontSize: '14px' }}>
+                          {getCategoryIcon(iss.category)}
+                        </span>
+                        {iss.category}
+                      </span>
+                    </td>
+                    <td>
+                      <strong style={{ display: 'block', color: 'var(--text-primary)', marginBottom: '3px' }}>
+                        {iss.title}
+                      </strong>
+                      <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>
+                        {iss.description}
+                      </span>
+                    </td>
+                    <td>
+                      {iss.location ? (
+                        <span className="record-location-tag">
+                          <span className="material-icons-outlined" style={{ fontSize: '13px' }}>
+                            location_on
+                          </span>
+                          {iss.location}
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>—</span>
+                      )}
+                    </td>
+                    <td>
+                      <span className={`priority-tag ${iss.priority || 'medium'}`}>
+                        {iss.priority}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`status-badge-pill ${iss.status || 'open'}`}>
+                        <span className="pulse-dot"></span>
+                        {iss.status?.replace('_', ' ') || 'Open'}
+                      </span>
+                    </td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: '12.5px', whiteSpace: 'nowrap' }}>
+                      {iss.createdAt
+                        ? new Date(iss.createdAt).toLocaleDateString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })
+                        : 'N/A'}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button
+                        className="record-delete-btn"
+                        onClick={() => handleDelete(iss.id)}
+                        title="Delete issue"
+                      >
+                        <span className="material-icons-outlined" style={{ fontSize: '17px' }}>
+                          delete_outline
+                        </span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
