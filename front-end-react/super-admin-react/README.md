@@ -11,7 +11,7 @@ The five super admin screens are React components in `src/pages/`. Their CSS fil
 
 The NestJS app applies additive migrations when it starts. They add the fields required by the owner and super admin modules. Existing users, properties, payments, and notifications remain in their existing tables. The `RecoverSharedColumns1800000002000` migration restores fields removed when an older checkout ran with automatic schema synchronization.
 
-The backend runs with TypeORM `synchronize: false`. Its additive migrations create the fields used by the owner and super admin modules without removing data. Run only one current backend against the shared Neon database. Every teammate must pull `react-migration` before starting their backend; older versions with `synchronize: true` can remove newer columns and cause HTTP 500 errors. Starting the current backend applies pending migrations automatically; no manual SQL is needed.
+The backend runs with TypeORM `synchronize: false`. Its additive migrations create the fields used by the owner and super admin modules without removing data. It also checks for missing shared columns before login and super admin requests and restores them when needed. Run only one current backend against the shared Neon database. Every teammate must pull `react-migration` before starting their backend; older versions with `synchronize: true` can remove newer columns and cause data loss. No manual SQL is needed.
 
 The shared legacy role selector takes Super Admin directly to this React login. For a static build, run `npm run build` and serve the repository root so the link to `dist/index.html` resolves.
 

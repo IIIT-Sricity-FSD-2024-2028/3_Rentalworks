@@ -22,6 +22,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { issueSuperAdminToken } from '../super-admin/super-admin-token';
 import { verifyTotp } from '../super-admin/totp';
+import { ensureSharedColumns } from '../migrations/ensure-shared-columns';
 
 @Injectable()
 export class UsersService {
@@ -88,6 +89,7 @@ export class UsersService {
   }
 
   async login(loginDto: LoginDto) {
+    await ensureSharedColumns(this.dataSource);
     const user = await this.usersRepository
       .createQueryBuilder('user')
       .where('user.username = :username', { username: loginDto.username })

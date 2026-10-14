@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException, OnModuleDestroy, OnModuleInit, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from '../users/user.entity';
 import { Property } from '../properties/property.entity';
@@ -10,11 +10,13 @@ import { TenantStay } from '../tenant-stays/tenant-stay.entity';
 import { Notification } from '../notifications/notification.entity';
 import { ChangePasswordDto, CreateAnnouncementDto, CreateRegionalAdminDto, UpdateProfileDto, UpdateRegionalAdminDto } from './super-admin.dto';
 import { newTotpSecret, verifyTotp } from './totp';
+import { ensureSharedColumns } from '../migrations/ensure-shared-columns';
 
 @Injectable()
 export class SuperAdminService implements OnModuleInit, OnModuleDestroy {
   private timer: ReturnType<typeof setInterval> | null = null;
   constructor(
+    private dataSource: DataSource,
     @InjectRepository(User) private users: Repository<User>,
     @InjectRepository(Property) private properties: Repository<Property>,
     @InjectRepository(Payment) private payments: Repository<Payment>,
@@ -173,6 +175,7 @@ export class SuperAdminService implements OnModuleInit, OnModuleDestroy {
   }
 
   async dueAnnouncements() {
+    await ensureSharedColumns(this.dataSource);
     const due = await this.notifications.createQueryBuilder('notification')
       .where('notification.deliveryStatus = :status', { status: 'scheduled' })
       .andWhere('notification.sentAt <= :now', { now: new Date().toISOString() }).getMany();

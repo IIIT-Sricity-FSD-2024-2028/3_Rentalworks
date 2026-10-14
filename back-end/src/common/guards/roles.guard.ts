@@ -4,6 +4,7 @@ import { ROLES_KEY } from '../decorators/roles.decorator';
 import { DataSource } from 'typeorm';
 import { User } from '../../users/user.entity';
 import { verifySuperAdminToken } from '../../super-admin/super-admin-token';
+import { ensureSharedColumns } from '../../migrations/ensure-shared-columns';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -27,6 +28,7 @@ export class RolesGuard implements CanActivate {
     }
 
     if (userRole === 'super_admin') {
+      await ensureSharedColumns(this.dataSource);
       const id = verifySuperAdminToken(request.headers.authorization);
       const user = await this.dataSource.getRepository(User).findOneBy({ id });
       if (!user || user.role !== 'super_admin' || user.status !== 'active') return false;
