@@ -38,6 +38,12 @@ import { Owner } from './owner/owner.entity';
 import { CreateOwnersTable1850000000000 } from './migrations/1850000000000-CreateOwnersTable';
 import { RoommateProfile } from './roommates/roommate-profile.entity';
 import { RoommatesModule } from './roommates/roommates.module';
+import { Issue } from './issues/issue.entity';
+import { Service } from './services/service.entity';
+import { ServiceRequest } from './service-requests/service-request.entity';
+import { IssuesModule } from './issues/issues.module';
+import { ServicesModule } from './services/services.module';
+import { ServiceRequestsModule } from './service-requests/service-requests.module';
 
 @Module({
   imports: [
@@ -72,6 +78,9 @@ import { RoommatesModule } from './roommates/roommates.module';
             Subscription,
             Owner,
             RoommateProfile,
+            Issue,
+            Service,
+            ServiceRequest,
           ],
           synchronize: false,
           migrations: [
@@ -99,6 +108,9 @@ import { RoommatesModule } from './roommates/roommates.module';
     OwnerModule,
     SuperAdminModule,
     RoommatesModule,
+    IssuesModule,
+    ServicesModule,
+    ServiceRequestsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

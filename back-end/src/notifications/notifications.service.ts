@@ -42,6 +42,7 @@ export class NotificationsService {
     const defaults = {
       read: false,
       isRead: false,
+      recipients: createNotificationDto.recipients || 1,
       sentAt: new Date().toISOString().split('T')[0],
     };
     const payload = Object.assign({}, defaults, createNotificationDto);
