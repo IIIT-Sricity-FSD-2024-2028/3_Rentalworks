@@ -8,6 +8,7 @@ import Complaints from './pages/Complaints';
 import Services from './pages/Services';
 import Payments from './pages/Payments';
 import Profile from './pages/Profile';
+import Login from './pages/Login';
 import { AuthProvider } from './context/AuthContext';
 import './index.css';
 
@@ -16,6 +17,7 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          <Route path="/login" element={<Login />} />
           <Route path="/" element={<Layout />}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
@@ -26,6 +28,7 @@ function App() {
             <Route path="payments" element={<Payments />} />
             <Route path="profile" element={<Profile />} />
           </Route>
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

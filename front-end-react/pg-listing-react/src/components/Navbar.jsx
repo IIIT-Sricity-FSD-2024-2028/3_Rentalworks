@@ -86,10 +86,21 @@ export default function Navbar() {
               )}
             </div>
           ) : (
-            <button className="btn-nav-primary" onClick={() => setAuthModalOpen(true)}>
-              <span className="material-icons-outlined" style={{ fontSize: '18px' }}>login</span>
-              Sign In
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <a
+                href="http://localhost:5173/login"
+                className="btn-nav-outline"
+                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                title="Unified RentBro Multi-Role Login Portal"
+              >
+                <span className="material-icons-outlined" style={{ fontSize: '18px' }}>vpn_key</span>
+                Portal Login
+              </a>
+              <button className="btn-nav-primary" onClick={() => setAuthModalOpen(true)}>
+                <span className="material-icons-outlined" style={{ fontSize: '18px' }}>login</span>
+                Guest Sign In
+              </button>
+            </div>
           )}
 
           {isDetailsPage && (

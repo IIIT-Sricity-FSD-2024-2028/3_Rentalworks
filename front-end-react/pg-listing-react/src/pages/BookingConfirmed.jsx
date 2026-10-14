@@ -37,10 +37,10 @@ export default function BookingConfirmed() {
 
     sessionStorage.setItem('pg_user', JSON.stringify(tenantSession));
     sessionStorage.setItem('tenant_user', JSON.stringify(tenantSession));
+    localStorage.setItem('currentUser', JSON.stringify(tenantSession));
 
-    // Try navigating to tenant dashboard URL or show guidance
-    alert(`Tenant session initialized for ${tenantSession.name}! You can now access all tenant features with your registered account.`);
-    navigate('/my-bookings');
+    // Navigate directly to the live Tenant Dashboard React application
+    window.location.href = 'http://localhost:5173/dashboard';
   };
 
   return (
