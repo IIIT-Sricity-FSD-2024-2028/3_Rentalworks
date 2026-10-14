@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../services/api';
+import { StatCard, StatusBadge, FilterBar, EmptyState } from '../components';
 
 const parseComplaint = (c) => {
   const raw = c.description || '';
@@ -151,6 +152,13 @@ const Complaints = () => {
     return true;
   });
 
+  const filterOptions = [
+    { key: 'all', label: 'All', count: complaints.length },
+    { key: 'open', label: 'Open', count: openCount },
+    { key: 'in_progress', label: 'In Progress', count: progressCount },
+    { key: 'resolved', label: 'Resolved', count: resolvedCount },
+  ];
+
   return (
     <div>
       <div className="page-header page-header-row">
@@ -164,174 +172,73 @@ const Complaints = () => {
       </div>
 
       <div className="stats-grid mb-20" style={{ marginBottom: '20px' }}>
-        <div className="stat-card">
-          <div className="stat-label">Total Complaints</div>
-          <div className="stat-value">{complaints.length}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">
-            Open{' '}
-            <span className="stat-icon">
-              <span className="material-icons-outlined" style={{ fontSize: '32px' }}>
-                error
-              </span>
-            </span>
-          </div>
-          <div className="stat-value" style={{ color: 'var(--danger)' }}>
-            {openCount}
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">
-            In Progress{' '}
-            <span className="stat-icon">
-              <span className="material-icons-outlined" style={{ fontSize: '32px' }}>
-                schedule
-              </span>
-            </span>
-          </div>
-          <div className="stat-value" style={{ color: 'var(--warning)' }}>
-            {progressCount}
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">
-            Resolved{' '}
-            <span className="stat-icon">
-              <span className="material-icons-outlined" style={{ fontSize: '32px' }}>
-                check_circle
-              </span>
-            </span>
-          </div>
-          <div className="stat-value" style={{ color: 'var(--success)' }}>
-            {resolvedCount}
-          </div>
-        </div>
+        <StatCard label="Total Complaints" value={complaints.length} />
+        <StatCard
+          label="Open"
+          value={openCount}
+          valueColor="var(--danger)"
+          icon={<span className="material-icons-outlined" style={{ fontSize: '32px' }}>error</span>}
+        />
+        <StatCard
+          label="In Progress"
+          value={progressCount}
+          valueColor="var(--warning)"
+          icon={<span className="material-icons-outlined" style={{ fontSize: '32px' }}>schedule</span>}
+        />
+        <StatCard
+          label="Resolved"
+          value={resolvedCount}
+          valueColor="var(--success)"
+          icon={<span className="material-icons-outlined" style={{ fontSize: '32px' }}>check_circle</span>}
+        />
       </div>
 
-      {/* MODERN CARD PANEL */}
+      {/* MODERN CARD PANEL WITH REUSABLE FILTER BAR */}
       <div className="premium-card-panel">
-        <div className="panel-header-bar">
-          <div className="panel-header-title">
-            <h2>All Complaints</h2>
-            <span className="panel-count-badge">{filteredComplaints.length}</span>
-          </div>
-
-          <div className="panel-controls-right">
-            {/* Status Filter Pills */}
-            <div className="panel-filters-wrap">
-              <button
-                className={`filter-pill-btn ${statusFilter === 'all' ? 'active' : ''}`}
-                onClick={() => setStatusFilter('all')}
-              >
-                All ({complaints.length})
-              </button>
-              <button
-                className={`filter-pill-btn ${statusFilter === 'open' ? 'active' : ''}`}
-                onClick={() => setStatusFilter('open')}
-              >
-                Open ({openCount})
-              </button>
-              <button
-                className={`filter-pill-btn ${statusFilter === 'in_progress' ? 'active' : ''}`}
-                onClick={() => setStatusFilter('in_progress')}
-              >
-                In Progress ({progressCount})
-              </button>
-              <button
-                className={`filter-pill-btn ${statusFilter === 'resolved' ? 'active' : ''}`}
-                onClick={() => setStatusFilter('resolved')}
-              >
-                Resolved ({resolvedCount})
-              </button>
-            </div>
-
-            {/* Search Input Pill */}
-            <div className="search-input-pill">
-              <span className="material-icons-outlined" style={{ fontSize: '18px', color: 'var(--text-muted)' }}>
-                search
-              </span>
-              <input
-                type="text"
-                placeholder="Search complaints..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}
-                >
-                  <span className="material-icons-outlined" style={{ fontSize: '16px' }}>close</span>
-                </button>
-              )}
-            </div>
-
-            {/* View Mode Switcher */}
-            <div className="view-mode-toggle">
-              <button
-                className={`view-mode-btn ${viewMode === 'grid' ? 'active' : ''}`}
-                onClick={() => setViewMode('grid')}
-                title="Grid Card View"
-              >
-                <span className="material-icons-outlined" style={{ fontSize: '20px' }}>grid_view</span>
-              </button>
-              <button
-                className={`view-mode-btn ${viewMode === 'table' ? 'active' : ''}`}
-                onClick={() => setViewMode('table')}
-                title="Table List View"
-              >
-                <span className="material-icons-outlined" style={{ fontSize: '20px' }}>view_list</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        <FilterBar
+          title="All Complaints"
+          count={filteredComplaints.length}
+          filters={filterOptions}
+          activeFilter={statusFilter}
+          onFilterChange={setStatusFilter}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Search complaints..."
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+        />
 
         {/* CONTENT AREA */}
         {loading ? (
           <div style={{ padding: '50px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
-            <span className="material-icons-outlined" style={{ fontSize: '42px', animation: 'spin 1.5s linear infinite', display: 'inline-block' }}>
+            <span
+              className="material-icons-outlined"
+              style={{ fontSize: '42px', animation: 'spin 1.5s linear infinite', display: 'inline-block' }}
+            >
               sync
             </span>
             <p style={{ marginTop: '10px', fontSize: '14px' }}>Loading complaints...</p>
           </div>
         ) : filteredComplaints.length === 0 ? (
-          <div className="records-empty-box">
-            <div className="records-empty-icon">
-              <span className="material-icons-outlined" style={{ fontSize: '48px', color: '#94a3b8' }}>
-                checklist
-              </span>
-            </div>
-            <div className="records-empty-title">
-              {complaints.length === 0 ? 'No Complaints Filed Yet' : 'No Matching Complaints Found'}
-            </div>
-            <div className="records-empty-subtitle">
-              {complaints.length === 0
+          <EmptyState
+            icon="checklist"
+            title={complaints.length === 0 ? 'No Complaints Filed Yet' : 'No Matching Complaints Found'}
+            subtitle={
+              complaints.length === 0
                 ? 'Everything seems to be running smoothly! If you ever face an issue, file a complaint anytime.'
-                : 'Try adjusting your filters or search terms to find what you are looking for.'}
-            </div>
-            {complaints.length === 0 ? (
-              <button
-                className="btn btn-primary btn-sm"
-                style={{ marginTop: '16px' }}
-                onClick={() => setIsModalOpen(true)}
-              >
-                + File New Complaint
-              </button>
-            ) : (
-              <button
-                className="btn btn-ghost btn-sm"
-                style={{ marginTop: '16px' }}
-                onClick={() => {
-                  setStatusFilter('all');
-                  setSearchQuery('');
-                }}
-              >
-                Reset Filters
-              </button>
-            )}
-          </div>
+                : 'Try adjusting your filters or search terms to find what you are looking for.'
+            }
+            actionLabel={complaints.length === 0 ? '+ File New Complaint' : 'Reset Filters'}
+            onAction={
+              complaints.length === 0
+                ? () => setIsModalOpen(true)
+                : () => {
+                    setStatusFilter('all');
+                    setSearchQuery('');
+                  }
+            }
+            actionType={complaints.length === 0 ? 'primary' : 'ghost'}
+          />
         ) : viewMode === 'grid' ? (
           /* MODERN CARD GRID */
           <div className="item-cards-grid">
@@ -354,10 +261,7 @@ const Complaints = () => {
                       </span>
                     </div>
 
-                    <span className={`status-badge-pill ${c.status || 'open'}`}>
-                      <span className="pulse-dot"></span>
-                      {c.status?.replace('_', ' ') || 'Open'}
-                    </span>
+                    <StatusBadge status={c.status || 'open'} />
                   </div>
 
                   <h3 className="record-main-title">{c.parsedTitle}</h3>
@@ -426,10 +330,7 @@ const Complaints = () => {
                       </span>
                     </td>
                     <td>
-                      <span className={`status-badge-pill ${c.status || 'open'}`}>
-                        <span className="pulse-dot"></span>
-                        {c.status?.replace('_', ' ') || 'Open'}
-                      </span>
+                      <StatusBadge status={c.status || 'open'} />
                     </td>
                     <td style={{ color: 'var(--text-muted)', fontSize: '12.5px', whiteSpace: 'nowrap' }}>
                       {c.reportedAt
