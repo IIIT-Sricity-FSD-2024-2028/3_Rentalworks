@@ -9,13 +9,9 @@ import { Notification } from './src/notifications/notification.entity';
 import { Room } from './src/rooms/room.entity';
 import { BookingRequest } from './src/booking-requests/booking-request.entity';
 import { TenantStay } from './src/tenant-stays/tenant-stay.entity';
-import { Subscription } from './src/owner/subscription.entity';
-import { Owner } from './src/owner/owner.entity';
-import { OwnerApplicationIntegration1710000000000 } from './src/migrations/1710000000000-OwnerApplicationIntegration';
-import { SuperAdminAnnouncements1800000000000 } from './src/migrations/1800000000000-SuperAdminAnnouncements';
-import { RestoreSharedColumns1800000001000 } from './src/migrations/1800000001000-RestoreSharedColumns';
-import { RecoverSharedColumns1800000002000 } from './src/migrations/1800000002000-RecoverSharedColumns';
-import { CreateOwnersTable1850000000000 } from './src/migrations/1850000000000-CreateOwnersTable';
+import { Issue } from './src/issues/issue.entity';
+import { Service } from './src/services/service.entity';
+import { ServiceRequest } from './src/service-requests/service-request.entity';
 
 config();
 
@@ -32,15 +28,10 @@ export const AppDataSource = new DataSource({
     Room,
     BookingRequest,
     TenantStay,
-    Subscription,
-    Owner,
+    Issue,
+    Service,
+    ServiceRequest,
   ],
-  migrations: [
-    OwnerApplicationIntegration1710000000000,
-    SuperAdminAnnouncements1800000000000,
-    RestoreSharedColumns1800000001000,
-    RecoverSharedColumns1800000002000,
-    CreateOwnersTable1850000000000,
-  ],
-  synchronize: false,
+  migrations: ['src/migrations/*.ts'],
+  synchronize: false, // Managed safely via migrations
 });

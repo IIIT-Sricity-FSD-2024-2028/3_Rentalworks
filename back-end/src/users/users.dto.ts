@@ -34,7 +34,16 @@ export class CreateUserDto {
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
+  avatar?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
   address?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  preferences?: any;
 }
 
 export class UpdateUserDto {
@@ -71,46 +80,21 @@ export class UpdateUserDto {
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
-  address?: string;
+  avatar?: string;
 
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
-  company?: string;
+  address?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  preferences?: any;
 
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
   password?: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  city?: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  state?: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  pincode?: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  bio?: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  avatar?: string;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  policy?: any;
 }
 
 export class LoginDto {

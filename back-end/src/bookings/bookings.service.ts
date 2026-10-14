@@ -17,19 +17,23 @@ export class BookingsService {
     @InjectRepository(Booking)
     private bookingsRepository: Repository<Booking>,
     private dataSource: DataSource,
-  ) {}
+  ) { }
 
-  findAll() {
+  findAll(tenantId?: number, propertyId?: number) {
+    const where: any = {};
+    if (tenantId) where.tenantId = tenantId;
+    if (propertyId) where.propertyId = propertyId;
+
     return this.bookingsRepository.find({
-      relations: { tenant: true, property: true },
-      order: { createdAt: 'DESC' },
+      where,
+      relations: { tenant: true, property: true, roomEntity: true },
     });
   }
 
   async findOne(id: number) {
     const booking = await this.bookingsRepository.findOne({
       where: { id },
-      relations: { tenant: true, property: true },
+      relations: { tenant: true, property: true, roomEntity: true },
     });
     if (!booking)
       throw new NotFoundException(`Booking with ID ${id} not found`);
@@ -37,8 +41,9 @@ export class BookingsService {
   }
 
   async create(createBookingDto: CreateBookingDto) {
+    const { phone, ...bookingData } = createBookingDto;
     const newBooking = this.bookingsRepository.create({
-      ...createBookingDto,
+      ...bookingData,
       status: 'pending',
     });
     return this.bookingsRepository.save(newBooking);

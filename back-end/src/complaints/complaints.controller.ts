@@ -6,10 +6,10 @@ import {
   Param,
   Put,
   Delete,
+  Query,
   UseGuards,
   UseInterceptors,
   UploadedFile,
-  Query,
   Headers,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -18,13 +18,13 @@ import { ComplaintsService } from './complaints.service';
 import { CreateComplaintDto, UpdateComplaintDto } from './complaints.dto';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
-import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('complaints')
 @Controller('complaints')
 @UseGuards(RolesGuard)
 export class ComplaintsController {
-  constructor(private readonly complaintsService: ComplaintsService) {}
+  constructor(private readonly complaintsService: ComplaintsService) { }
 
   @Post(':id/upload-attachment')
   @Roles('admin', 'tenant', 'warden')
@@ -41,33 +41,33 @@ export class ComplaintsController {
       },
     },
   })
-  uploadAttachment(
+  async uploadAttachment(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    const filePath = file.path.replace(/\\/g, '/');
+    await this.complaintsService.update(+id, { attachment: filePath });
     return {
       message: 'Complaint attachment uploaded successfully',
       complaintId: id,
       filename: file.filename,
-      path: file.path,
+      path: filePath,
     };
   }
 
   @Get()
   @Roles('admin', 'warden', 'tenant', 'owner')
   @ApiOperation({ summary: 'Get all complaints' })
+  @ApiQuery({ name: 'tenantId', required: false })
+  @ApiQuery({ name: 'propertyId', required: false })
   findAll(
-    @Query('ownerId') ownerId?: string,
-    @Headers('x-role') role?: string,
-    @Headers('x-user-id') userId?: string,
+    @Query('tenantId') tenantId?: string,
+    @Query('propertyId') propertyId?: string,
   ) {
-    let effectiveOwnerId: number | undefined = undefined;
-    if (ownerId && !isNaN(Number(ownerId))) {
-      effectiveOwnerId = Number(ownerId);
-    } else if (role === 'owner' && userId && !isNaN(Number(userId))) {
-      effectiveOwnerId = Number(userId);
-    }
-    return this.complaintsService.findAll(effectiveOwnerId);
+    return this.complaintsService.findAll(
+      tenantId ? +tenantId : undefined,
+      propertyId ? +propertyId : undefined,
+    );
   }
 
   @Get(':id')

@@ -1,10 +1,20 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+} from 'typeorm';
 import { Property } from '../properties/property.entity';
 import { Booking } from '../bookings/booking.entity';
 import { Payment } from '../payments/payment.entity';
 import { Complaint } from '../complaints/complaint.entity';
 import { BookingRequest } from '../booking-requests/booking-request.entity';
 import { TenantStay } from '../tenant-stays/tenant-stay.entity';
+import { Notification } from '../notifications/notification.entity';
+import { Issue } from '../issues/issue.entity';
+import { ServiceRequest } from '../service-requests/service-request.entity';
 
 @Entity('users')
 export class User {
@@ -80,21 +90,30 @@ export class User {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToMany(() => Property, property => property.owner)
+  @OneToMany(() => Property, (property) => property.owner)
   properties: Property[];
 
-  @OneToMany(() => Booking, booking => booking.tenant)
+  @OneToMany(() => Booking, (booking) => booking.tenant)
   bookings: Booking[];
 
-  @OneToMany(() => BookingRequest, req => req.tenant)
+  @OneToMany(() => BookingRequest, (req) => req.tenant)
   bookingRequests: BookingRequest[];
 
-  @OneToMany(() => TenantStay, stay => stay.tenant)
+  @OneToMany(() => TenantStay, (stay) => stay.tenant)
   tenantStays: TenantStay[];
 
-  @OneToMany(() => Payment, payment => payment.tenant)
+  @OneToMany(() => Payment, (payment) => payment.tenant)
   payments: Payment[];
 
-  @OneToMany(() => Complaint, complaint => complaint.tenant)
+  @OneToMany(() => Complaint, (complaint) => complaint.tenant)
   complaints: Complaint[];
+
+  @OneToMany(() => Notification, (notif) => notif.user)
+  receivedNotifications: Notification[];
+
+  @OneToMany(() => Issue, (issue) => issue.tenant)
+  issues: Issue[];
+
+  @OneToMany(() => ServiceRequest, (req) => req.tenant)
+  serviceRequests: ServiceRequest[];
 }

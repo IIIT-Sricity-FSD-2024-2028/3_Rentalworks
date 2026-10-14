@@ -6,13 +6,19 @@ export class CreateBookingDto {
   @IsNumber()
   tenantId: number;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsString()
-  phone: string;
+  @IsOptional()
+  phone?: string;
 
   @ApiProperty()
   @IsNumber()
   propertyId: number;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  roomId?: number;
 
   @ApiProperty()
   @IsString()
@@ -21,6 +27,11 @@ export class CreateBookingDto {
   @ApiProperty()
   @IsString()
   checkIn: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  checkOut?: string;
 
   @ApiProperty()
   @IsString()
@@ -41,6 +52,16 @@ export class UpdateBookingDto {
   @IsString()
   @IsOptional()
   room?: string;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  roomId?: number;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  checkOut?: string;
 }
 
 export class CheckoutBookingDto {

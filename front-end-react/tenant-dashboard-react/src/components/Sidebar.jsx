@@ -1,7 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
+import { apiFetch } from '../services/api';
 
 const Sidebar = () => {
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const notifs = await apiFetch('/notifications').catch(() => []);
+        if (Array.isArray(notifs)) {
+          const count = notifs.filter((n) => !n.isRead && !n.read).length;
+          setUnreadCount(count);
+        }
+      } catch (err) {
+        // silent
+      }
+    };
+    fetchUnread();
+  }, []);
+
   return (
     <aside className="sidebar" id="sidebar">
       <div className="sidebar-logo">
@@ -20,7 +38,11 @@ const Sidebar = () => {
         </NavLink>
         <NavLink to="/notifications" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
           <span className="nav-icon"><span className="material-icons-outlined" style={{fontSize: '24px'}}>notifications</span></span> Notifications
-          <span className="nav-badge notif-count" id="notif-nav-badge">3</span>
+          {unreadCount > 0 && (
+            <span className="nav-badge notif-count" id="notif-nav-badge">
+              {unreadCount}
+            </span>
+          )}
         </NavLink>
         <NavLink to="/complaints" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
           <span className="nav-icon"><span className="material-icons-outlined" style={{fontSize: '24px'}}>chat</span></span> Complaints

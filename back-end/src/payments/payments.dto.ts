@@ -10,6 +10,11 @@ export class CreatePaymentDto {
   @IsNumber()
   propertyId: number;
 
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  roomId?: number;
+
   @ApiProperty()
   @IsString()
   room: string;
@@ -37,4 +42,9 @@ export class UpdatePaymentDto {
   @IsString()
   @IsOptional()
   clearance?: string;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  roomId?: number;
 }

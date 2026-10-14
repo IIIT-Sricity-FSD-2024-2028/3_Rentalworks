@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { Notification } from './notification.entity';
 import {
   CreateNotificationDto,
@@ -12,16 +12,26 @@ export class NotificationsService {
   constructor(
     @InjectRepository(Notification)
     private notificationsRepository: Repository<Notification>,
-  ) {}
+  ) { }
 
-  findAll() {
-    return this.notificationsRepository.find({ relations: { byUser: true } });
+  findAll(userId?: number) {
+    if (userId) {
+      return this.notificationsRepository.find({
+        where: [{ userId }, { userId: IsNull() }],
+        relations: { byUser: true, user: true },
+        order: { id: 'DESC' },
+      });
+    }
+    return this.notificationsRepository.find({
+      relations: { byUser: true, user: true },
+      order: { id: 'DESC' },
+    });
   }
 
   async findOne(id: number) {
     const notification = await this.notificationsRepository.findOne({
       where: { id },
-      relations: { byUser: true },
+      relations: { byUser: true, user: true },
     });
     if (!notification)
       throw new NotFoundException(`Notification with ID ${id} not found`);
@@ -31,6 +41,7 @@ export class NotificationsService {
   async create(createNotificationDto: CreateNotificationDto) {
     const defaults = {
       read: false,
+      isRead: false,
       sentAt: new Date().toISOString().split('T')[0],
     };
     const payload = Object.assign({}, defaults, createNotificationDto);
@@ -47,19 +58,31 @@ export class NotificationsService {
     return this.notificationsRepository.save(notification);
   }
 
-  async markRead(id: number) {
+  async markAsRead(id: number) {
     const notification = await this.findOne(id);
     notification.read = true;
+    notification.isRead = true;
     return this.notificationsRepository.save(notification);
   }
 
-  async markAllRead() {
-    await this.notificationsRepository
+  async markRead(id: number) {
+    return this.markAsRead(id);
+  }
+
+  async markAllAsRead(userId?: number) {
+    const qb = this.notificationsRepository
       .createQueryBuilder()
       .update(Notification)
-      .set({ read: true })
-      .execute();
-    return { success: true };
+      .set({ read: true, isRead: true });
+    if (userId) {
+      qb.where('"userId" = :userId OR "userId" IS NULL', { userId });
+    }
+    await qb.execute();
+    return { success: true, message: 'All notifications marked as read' };
+  }
+
+  async markAllRead() {
+    return this.markAllAsRead();
   }
 
   async remove(id: number) {

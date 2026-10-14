@@ -6,13 +6,14 @@ import {
   Param,
   Put,
   Delete,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto, UpdatePaymentDto } from './payments.dto';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('payments')
 @Controller('payments')
@@ -21,7 +22,7 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @Get('revenue')
-  @Roles('super_admin')
+  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: 'Get total platform revenue' })
   getRevenue() {
     return this.paymentsService.getRevenue();
@@ -30,8 +31,16 @@ export class PaymentsController {
   @Get()
   @Roles('super_admin', 'admin', 'warden', 'tenant', 'owner')
   @ApiOperation({ summary: 'Get all payments' })
-  findAll() {
-    return this.paymentsService.findAll();
+  @ApiQuery({ name: 'tenantId', required: false })
+  @ApiQuery({ name: 'propertyId', required: false })
+  findAll(
+    @Query('tenantId') tenantId?: string,
+    @Query('propertyId') propertyId?: string,
+  ) {
+    return this.paymentsService.findAll(
+      tenantId ? +tenantId : undefined,
+      propertyId ? +propertyId : undefined,
+    );
   }
 
   @Get(':id')

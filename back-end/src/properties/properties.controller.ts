@@ -6,9 +6,8 @@ import {
   Param,
   Put,
   Delete,
-  UseGuards,
-  Headers,
   Query,
+  UseGuards,
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
@@ -18,13 +17,13 @@ import { PropertiesService } from './properties.service';
 import { CreatePropertyDto, UpdatePropertyDto } from './properties.dto';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
-import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('properties')
 @Controller('properties')
 @UseGuards(RolesGuard)
 export class PropertiesController {
-  constructor(private readonly propertiesService: PropertiesService) {}
+  constructor(private readonly propertiesService: PropertiesService) { }
 
   @Post(':id/upload-image')
   @Roles('admin', 'owner')
@@ -41,23 +40,37 @@ export class PropertiesController {
       },
     },
   })
-  uploadImage(
+  async uploadImage(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    const filePath = file.path.replace(/\\/g, '/');
+    const property = await this.propertiesService.findOne(+id);
+    const images = Array.isArray(property.images)
+      ? [...property.images, filePath]
+      : [filePath];
+    await this.propertiesService.update(+id, { images });
+
     return {
       message: 'Property image uploaded successfully',
       propertyId: id,
       filename: file.filename,
-      path: file.path,
+      path: filePath,
     };
   }
 
   @Get()
   @ApiOperation({ summary: 'Get all properties' })
-  // All roles can read properties, tenants use it for discovery
-  findAll(@Query('ownerId') ownerId?: string) {
-    return this.propertiesService.findAll(ownerId ? +ownerId : undefined);
+  @ApiQuery({ name: 'location', required: false })
+  @ApiQuery({ name: 'ownerId', required: false })
+  findAll(
+    @Query('location') location?: string,
+    @Query('ownerId') ownerId?: string,
+  ) {
+    return this.propertiesService.findAll(
+      location,
+      ownerId ? +ownerId : undefined,
+    );
   }
 
   @Get(':id')

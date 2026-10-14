@@ -1,0 +1,2585 @@
+{
+  "tables": [
+    "booking_requests",
+    "bookings",
+    "complaints",
+    "issues",
+    "migrations",
+    "notifications",
+    "payments",
+    "properties",
+    "remarks",
+    "rooms",
+    "service_requests",
+    "services",
+    "subscription_payments",
+    "subscription_plans",
+    "subscriptions",
+    "system_issues",
+    "tenant_stays",
+    "user_activities",
+    "users"
+  ],
+  "schemaInfo": {
+    "booking_requests": {
+      "rowCount": 2,
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('booking_requests_id_seq'::regclass)",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "tenantId",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "propertyId",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "roomId",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "status",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'pending'::character varying",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "requestedDate",
+          "data_type": "date",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "message",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "createdAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updatedAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "foreignKeys": [
+        {
+          "column_name": "tenantId",
+          "foreign_table_name": "users",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_a246dd6062a40f23c147ac80d6d"
+        },
+        {
+          "column_name": "propertyId",
+          "foreign_table_name": "properties",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_5935cdf940d27d3de8dda4c6aa5"
+        },
+        {
+          "column_name": "roomId",
+          "foreign_table_name": "rooms",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_34c9789ed98eff3bf45125c3b6e"
+        }
+      ],
+      "indexes": [
+        {
+          "indexname": "PK_62c29ee249979fe0bcdcde33dae",
+          "indexdef": "CREATE UNIQUE INDEX \"PK_62c29ee249979fe0bcdcde33dae\" ON public.booking_requests USING btree (id)"
+        }
+      ]
+    },
+    "bookings": {
+      "rowCount": 2,
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('bookings_id_seq'::regclass)",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "tenantId",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "propertyId",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "room",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "checkIn",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "duration",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "status",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "roomId",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "checkOut",
+          "data_type": "date",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "createdAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updatedAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "rent",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 10,
+          "numeric_scale": 2
+        }
+      ],
+      "foreignKeys": [
+        {
+          "column_name": "tenantId",
+          "foreign_table_name": "users",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_2b285bda3e1b07b6dc1386af33b"
+        },
+        {
+          "column_name": "propertyId",
+          "foreign_table_name": "properties",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_cf064476d403971270369232d80"
+        },
+        {
+          "column_name": "roomId",
+          "foreign_table_name": "rooms",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_0172b36e4e054d6ebb819d58efb"
+        }
+      ],
+      "indexes": [
+        {
+          "indexname": "PK_bee6805982cc1e248e94ce94957",
+          "indexdef": "CREATE UNIQUE INDEX \"PK_bee6805982cc1e248e94ce94957\" ON public.bookings USING btree (id)"
+        }
+      ]
+    },
+    "complaints": {
+      "rowCount": 5,
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('complaints_id_seq'::regclass)",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "tenantId",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "propertyId",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "description",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "status",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'open'::character varying",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "reportedAt",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "title",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "priority",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'medium'::character varying",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "resolvedAt",
+          "data_type": "date",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "createdAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updatedAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "foreignKeys": [
+        {
+          "column_name": "tenantId",
+          "foreign_table_name": "users",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_878a9fe3af62490a5f791c47987"
+        },
+        {
+          "column_name": "propertyId",
+          "foreign_table_name": "properties",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_4e50ca6131e6b17088bebe60c6b"
+        }
+      ],
+      "indexes": [
+        {
+          "indexname": "PK_4b7566a2a489c2cc7c12ed076ad",
+          "indexdef": "CREATE UNIQUE INDEX \"PK_4b7566a2a489c2cc7c12ed076ad\" ON public.complaints USING btree (id)"
+        }
+      ]
+    },
+    "issues": {
+      "rowCount": 0,
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('issues_id_seq'::regclass)",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "title",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": 255,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "description",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "category",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'Other'::character varying",
+          "character_maximum_length": 100,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "priority",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'medium'::character varying",
+          "character_maximum_length": 50,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "status",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'open'::character varying",
+          "character_maximum_length": 50,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "location",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": 255,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "tenantId",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "propertyId",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "roomId",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "resolvedAt",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "createdAt",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updatedAt",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "foreignKeys": [
+        {
+          "column_name": "tenantId",
+          "foreign_table_name": "users",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "CASCADE",
+          "constraint_name": "FK_issues_tenant"
+        },
+        {
+          "column_name": "propertyId",
+          "foreign_table_name": "properties",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "SET NULL",
+          "constraint_name": "FK_issues_property"
+        },
+        {
+          "column_name": "roomId",
+          "foreign_table_name": "rooms",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "SET NULL",
+          "constraint_name": "FK_issues_room"
+        }
+      ],
+      "indexes": [
+        {
+          "indexname": "issues_pkey",
+          "indexdef": "CREATE UNIQUE INDEX issues_pkey ON public.issues USING btree (id)"
+        },
+        {
+          "indexname": "IDX_issues_tenantId",
+          "indexdef": "CREATE INDEX \"IDX_issues_tenantId\" ON public.issues USING btree (\"tenantId\")"
+        },
+        {
+          "indexname": "IDX_issues_propertyId",
+          "indexdef": "CREATE INDEX \"IDX_issues_propertyId\" ON public.issues USING btree (\"propertyId\")"
+        },
+        {
+          "indexname": "IDX_issues_roomId",
+          "indexdef": "CREATE INDEX \"IDX_issues_roomId\" ON public.issues USING btree (\"roomId\")"
+        },
+        {
+          "indexname": "IDX_issues_status",
+          "indexdef": "CREATE INDEX \"IDX_issues_status\" ON public.issues USING btree (status)"
+        },
+        {
+          "indexname": "IDX_issues_category",
+          "indexdef": "CREATE INDEX \"IDX_issues_category\" ON public.issues USING btree (category)"
+        },
+        {
+          "indexname": "IDX_issues_createdAt",
+          "indexdef": "CREATE INDEX \"IDX_issues_createdAt\" ON public.issues USING btree (\"createdAt\")"
+        }
+      ]
+    },
+    "migrations": {
+      "rowCount": 1,
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('migrations_id_seq'::regclass)",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "timestamp",
+          "data_type": "bigint",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 64,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "name",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "foreignKeys": [],
+      "indexes": [
+        {
+          "indexname": "PK_8c82d7f526340ab734260ea46be",
+          "indexdef": "CREATE UNIQUE INDEX \"PK_8c82d7f526340ab734260ea46be\" ON public.migrations USING btree (id)"
+        }
+      ]
+    },
+    "notifications": {
+      "rowCount": 0,
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('notifications_id_seq'::regclass)",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "title",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "message",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "type",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "priority",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "recipients",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "sentAt",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "byUserId",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "createdAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updatedAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "isRead",
+          "data_type": "boolean",
+          "is_nullable": "YES",
+          "column_default": "false",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "userId",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "targetRole",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": "'all'::character varying",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "foreignKeys": [
+        {
+          "column_name": "byUserId",
+          "foreign_table_name": "users",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_ce99181b79f917ffdc6f4dd1d8d"
+        },
+        {
+          "column_name": "userId",
+          "foreign_table_name": "users",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "CASCADE",
+          "constraint_name": "FK_notification_recipient_user"
+        }
+      ],
+      "indexes": [
+        {
+          "indexname": "PK_6a72c3c0f683f6462415e653c3a",
+          "indexdef": "CREATE UNIQUE INDEX \"PK_6a72c3c0f683f6462415e653c3a\" ON public.notifications USING btree (id)"
+        },
+        {
+          "indexname": "IDX_notifications_userId",
+          "indexdef": "CREATE INDEX \"IDX_notifications_userId\" ON public.notifications USING btree (\"userId\")"
+        },
+        {
+          "indexname": "IDX_notifications_isRead",
+          "indexdef": "CREATE INDEX \"IDX_notifications_isRead\" ON public.notifications USING btree (\"isRead\")"
+        }
+      ]
+    },
+    "payments": {
+      "rowCount": 3,
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('payments_id_seq'::regclass)",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "tenantId",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "propertyId",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "room",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "amount",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 10,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "method",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "transactionId",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "paidDate",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "status",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "clearance",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "platformFee",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": "'0'::numeric",
+          "character_maximum_length": null,
+          "numeric_precision": 10,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "createdAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updatedAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "foreignKeys": [
+        {
+          "column_name": "tenantId",
+          "foreign_table_name": "users",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_98a04cdcbac4f6a2c55c7d19350"
+        },
+        {
+          "column_name": "propertyId",
+          "foreign_table_name": "properties",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_8ffcbb107170ed65322ac59fd6e"
+        }
+      ],
+      "indexes": [
+        {
+          "indexname": "PK_197ab7af18c93fbb0c9b28b4a59",
+          "indexdef": "CREATE UNIQUE INDEX \"PK_197ab7af18c93fbb0c9b28b4a59\" ON public.payments USING btree (id)"
+        }
+      ]
+    },
+    "properties": {
+      "rowCount": 3,
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('properties_id_seq'::regclass)",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "name",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "location",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "ownerId",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "rentMin",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "rentMax",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "safetyScore",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 3,
+          "numeric_scale": 1
+        },
+        {
+          "column_name": "rooms",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "occupancy",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "amenities",
+          "data_type": "jsonb",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "status",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "docsVerified",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "false",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "inspectionPassed",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "false",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "commissionRate",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": "'0'::numeric",
+          "character_maximum_length": null,
+          "numeric_precision": 5,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "compliance",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "fireSafety",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "changeRequestPending",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "false",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "createdAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updatedAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "foreignKeys": [
+        {
+          "column_name": "ownerId",
+          "foreign_table_name": "users",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_47b8bfd9c3165b8a53cd0c58df0"
+        }
+      ],
+      "indexes": [
+        {
+          "indexname": "PK_2d83bfa0b9fcd45dee1785af44d",
+          "indexdef": "CREATE UNIQUE INDEX \"PK_2d83bfa0b9fcd45dee1785af44d\" ON public.properties USING btree (id)"
+        }
+      ]
+    },
+    "remarks": {
+      "rowCount": 0,
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('remarks_id_seq'::regclass)",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "text",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "complaintId",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "authorId",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "createdAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "authorRole",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "foreignKeys": [
+        {
+          "column_name": "complaintId",
+          "foreign_table_name": "complaints",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "CASCADE",
+          "constraint_name": "FK_c4145602b7bbbf527579fd1b9aa"
+        },
+        {
+          "column_name": "authorId",
+          "foreign_table_name": "users",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_b9bb7106c9efa3b95c219338940"
+        }
+      ],
+      "indexes": [
+        {
+          "indexname": "PK_d2fb9d856201fedb9767195bb73",
+          "indexdef": "CREATE UNIQUE INDEX \"PK_d2fb9d856201fedb9767195bb73\" ON public.remarks USING btree (id)"
+        }
+      ]
+    },
+    "rooms": {
+      "rowCount": 4,
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('rooms_id_seq'::regclass)",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "roomNumber",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "propertyId",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "capacity",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "currentOccupancy",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "0",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "rent",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 10,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "status",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'available'::character varying",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "createdAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updatedAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "maintenanceStatus",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'Ready'::character varying",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "foreignKeys": [
+        {
+          "column_name": "propertyId",
+          "foreign_table_name": "properties",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_ce3e5c454b2ff702244f7318828"
+        }
+      ],
+      "indexes": [
+        {
+          "indexname": "PK_0368a2d7c215f2d0458a54933f2",
+          "indexdef": "CREATE UNIQUE INDEX \"PK_0368a2d7c215f2d0458a54933f2\" ON public.rooms USING btree (id)"
+        }
+      ]
+    },
+    "service_requests": {
+      "rowCount": 0,
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('service_requests_id_seq'::regclass)",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "serviceId",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "serviceType",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'General'::character varying",
+          "character_maximum_length": 100,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "serviceName",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": 100,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "requestedDate",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": "CURRENT_DATE",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "status",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'pending'::character varying",
+          "character_maximum_length": 50,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "amount",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": "0",
+          "character_maximum_length": null,
+          "numeric_precision": 10,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "description",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "notes",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "tenantId",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "propertyId",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "roomId",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "requestedAt",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "scheduledAt",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "completedAt",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "createdAt",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updatedAt",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "foreignKeys": [
+        {
+          "column_name": "serviceId",
+          "foreign_table_name": "services",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "SET NULL",
+          "constraint_name": "FK_service_requests_service"
+        },
+        {
+          "column_name": "tenantId",
+          "foreign_table_name": "users",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "CASCADE",
+          "constraint_name": "FK_service_requests_tenant"
+        },
+        {
+          "column_name": "propertyId",
+          "foreign_table_name": "properties",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "SET NULL",
+          "constraint_name": "FK_service_requests_property"
+        },
+        {
+          "column_name": "roomId",
+          "foreign_table_name": "rooms",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "SET NULL",
+          "constraint_name": "FK_service_requests_room"
+        }
+      ],
+      "indexes": [
+        {
+          "indexname": "service_requests_pkey",
+          "indexdef": "CREATE UNIQUE INDEX service_requests_pkey ON public.service_requests USING btree (id)"
+        },
+        {
+          "indexname": "IDX_service_requests_tenantId",
+          "indexdef": "CREATE INDEX \"IDX_service_requests_tenantId\" ON public.service_requests USING btree (\"tenantId\")"
+        },
+        {
+          "indexname": "IDX_service_requests_propertyId",
+          "indexdef": "CREATE INDEX \"IDX_service_requests_propertyId\" ON public.service_requests USING btree (\"propertyId\")"
+        },
+        {
+          "indexname": "IDX_service_requests_roomId",
+          "indexdef": "CREATE INDEX \"IDX_service_requests_roomId\" ON public.service_requests USING btree (\"roomId\")"
+        },
+        {
+          "indexname": "IDX_service_requests_status",
+          "indexdef": "CREATE INDEX \"IDX_service_requests_status\" ON public.service_requests USING btree (status)"
+        },
+        {
+          "indexname": "IDX_service_requests_createdAt",
+          "indexdef": "CREATE INDEX \"IDX_service_requests_createdAt\" ON public.service_requests USING btree (\"createdAt\")"
+        }
+      ]
+    },
+    "services": {
+      "rowCount": 4,
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('services_id_seq'::regclass)",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "name",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": 100,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "description",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "price",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": "0",
+          "character_maximum_length": null,
+          "numeric_precision": 10,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "pricingModel",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'included_in_rent'::character varying",
+          "character_maximum_length": 50,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "timing",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": 100,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "location",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": 100,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "isAvailable",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "true",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "propertyId",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "createdAt",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updatedAt",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "foreignKeys": [
+        {
+          "column_name": "propertyId",
+          "foreign_table_name": "properties",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "CASCADE",
+          "constraint_name": "FK_services_property"
+        }
+      ],
+      "indexes": [
+        {
+          "indexname": "services_pkey",
+          "indexdef": "CREATE UNIQUE INDEX services_pkey ON public.services USING btree (id)"
+        },
+        {
+          "indexname": "IDX_services_propertyId",
+          "indexdef": "CREATE INDEX \"IDX_services_propertyId\" ON public.services USING btree (\"propertyId\")"
+        },
+        {
+          "indexname": "IDX_services_isAvailable",
+          "indexdef": "CREATE INDEX \"IDX_services_isAvailable\" ON public.services USING btree (\"isAvailable\")"
+        }
+      ]
+    },
+    "subscription_payments": {
+      "rowCount": 2,
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('subscription_payments_id_seq'::regclass)",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "ownerId",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "subscriptionId",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "planType",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "transactionId",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "orderId",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "amount",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 10,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "currency",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'INR'::character varying",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "paymentMethod",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'MockGateway'::character varying",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "status",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'SUCCESS'::character varying",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "paymentDate",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "receiptNumber",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "planDuration",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "createdAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "foreignKeys": [
+        {
+          "column_name": "ownerId",
+          "foreign_table_name": "users",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_f89b8799066169bd3c7f8ded0cb"
+        },
+        {
+          "column_name": "subscriptionId",
+          "foreign_table_name": "subscriptions",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_b71c34361d0308a49ceed66d63b"
+        }
+      ],
+      "indexes": [
+        {
+          "indexname": "PK_1b7a76365fd477de59cba0ab957",
+          "indexdef": "CREATE UNIQUE INDEX \"PK_1b7a76365fd477de59cba0ab957\" ON public.subscription_payments USING btree (id)"
+        }
+      ]
+    },
+    "subscription_plans": {
+      "rowCount": 3,
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('subscription_plans_id_seq'::regclass)",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "name",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "displayName",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "description",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "price",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 10,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "durationMonths",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "currency",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'INR'::character varying",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "features",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "badge",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "isActive",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "true",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "sortOrder",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "0",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "createdAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updatedAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "foreignKeys": [],
+      "indexes": [
+        {
+          "indexname": "PK_9ab8fe6918451ab3d0a4fb6bb0c",
+          "indexdef": "CREATE UNIQUE INDEX \"PK_9ab8fe6918451ab3d0a4fb6bb0c\" ON public.subscription_plans USING btree (id)"
+        },
+        {
+          "indexname": "UQ_ae18a0f6e0143f06474aa8cef1f",
+          "indexdef": "CREATE UNIQUE INDEX \"UQ_ae18a0f6e0143f06474aa8cef1f\" ON public.subscription_plans USING btree (name)"
+        }
+      ]
+    },
+    "subscriptions": {
+      "rowCount": 2,
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('subscriptions_id_seq'::regclass)",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "ownerId",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "planId",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "planType",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "amount",
+          "data_type": "numeric",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 10,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "currency",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'INR'::character varying",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "startDate",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "endDate",
+          "data_type": "date",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "status",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'PENDING'::character varying",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "paymentId",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "orderId",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "receiptNumber",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "createdAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updatedAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "foreignKeys": [
+        {
+          "column_name": "ownerId",
+          "foreign_table_name": "users",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_331400b3a08ee505d42ddba1db0"
+        },
+        {
+          "column_name": "planId",
+          "foreign_table_name": "subscription_plans",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_7536cba909dd7584a4640cad7d5"
+        }
+      ],
+      "indexes": [
+        {
+          "indexname": "PK_a87248d73155605cf782be9ee5e",
+          "indexdef": "CREATE UNIQUE INDEX \"PK_a87248d73155605cf782be9ee5e\" ON public.subscriptions USING btree (id)"
+        }
+      ]
+    },
+    "system_issues": {
+      "rowCount": 2,
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('system_issues_id_seq'::regclass)",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "title",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "description",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "category",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'bug'::character varying",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "severity",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'medium'::character varying",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "status",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'detected'::character varying",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "stabilityTested",
+          "data_type": "boolean",
+          "is_nullable": "NO",
+          "column_default": "false",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "reportedByAdminId",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "resolvedAt",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "resolutionNotes",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "systemStatus",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'operational'::character varying",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "createdAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updatedAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "foreignKeys": [],
+      "indexes": [
+        {
+          "indexname": "PK_b84b1754570763e709d4212ca64",
+          "indexdef": "CREATE UNIQUE INDEX \"PK_b84b1754570763e709d4212ca64\" ON public.system_issues USING btree (id)"
+        }
+      ]
+    },
+    "tenant_stays": {
+      "rowCount": 2,
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('tenant_stays_id_seq'::regclass)",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "tenantId",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "propertyId",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "roomId",
+          "data_type": "integer",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "moveInDate",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "moveOutDate",
+          "data_type": "date",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "status",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'active'::character varying",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "createdAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updatedAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "foreignKeys": [
+        {
+          "column_name": "tenantId",
+          "foreign_table_name": "users",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_edf3d09a5a249e2a8f5a8a10d70"
+        },
+        {
+          "column_name": "propertyId",
+          "foreign_table_name": "properties",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_1e5c0b3088d6b282ffaeb4bf17d"
+        },
+        {
+          "column_name": "roomId",
+          "foreign_table_name": "rooms",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_6892ec8099f03c2d3957cdbf125"
+        }
+      ],
+      "indexes": [
+        {
+          "indexname": "PK_42ab9f08a64456e7bc5353eff67",
+          "indexdef": "CREATE UNIQUE INDEX \"PK_42ab9f08a64456e7bc5353eff67\" ON public.tenant_stays USING btree (id)"
+        }
+      ]
+    },
+    "user_activities": {
+      "rowCount": 2,
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('user_activities_id_seq'::regclass)",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "userId",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "type",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "description",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "metadata",
+          "data_type": "text",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "createdAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "foreignKeys": [
+        {
+          "column_name": "userId",
+          "foreign_table_name": "users",
+          "foreign_column_name": "id",
+          "update_rule": "NO ACTION",
+          "delete_rule": "NO ACTION",
+          "constraint_name": "FK_5618ade060df353e3965b759995"
+        }
+      ],
+      "indexes": [
+        {
+          "indexname": "PK_1245d4d2cf04ba7743f2924d951",
+          "indexdef": "CREATE UNIQUE INDEX \"PK_1245d4d2cf04ba7743f2924d951\" ON public.user_activities USING btree (id)"
+        }
+      ]
+    },
+    "users": {
+      "rowCount": 7,
+      "columns": [
+        {
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('users_id_seq'::regclass)",
+          "character_maximum_length": null,
+          "numeric_precision": 32,
+          "numeric_scale": 0
+        },
+        {
+          "column_name": "name",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "email",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "phone",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "role",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'tenant'::character varying",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "username",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "password",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "status",
+          "data_type": "character varying",
+          "is_nullable": "NO",
+          "column_default": "'active'::character varying",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "joinDate",
+          "data_type": "date",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "region",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "subscriptionPlan",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "subscriptionFee",
+          "data_type": "numeric",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": 10,
+          "numeric_scale": 2
+        },
+        {
+          "column_name": "createdAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "updatedAt",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": "now()",
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        },
+        {
+          "column_name": "address",
+          "data_type": "character varying",
+          "is_nullable": "YES",
+          "column_default": null,
+          "character_maximum_length": null,
+          "numeric_precision": null,
+          "numeric_scale": null
+        }
+      ],
+      "foreignKeys": [],
+      "indexes": [
+        {
+          "indexname": "PK_a3ffb1c0c8416b9fc6f907b7433",
+          "indexdef": "CREATE UNIQUE INDEX \"PK_a3ffb1c0c8416b9fc6f907b7433\" ON public.users USING btree (id)"
+        },
+        {
+          "indexname": "UQ_97672ac88f789774dd47f7c8be3",
+          "indexdef": "CREATE UNIQUE INDEX \"UQ_97672ac88f789774dd47f7c8be3\" ON public.users USING btree (email)"
+        },
+        {
+          "indexname": "UQ_fe0bb3f6520ee0469504521e710",
+          "indexdef": "CREATE UNIQUE INDEX \"UQ_fe0bb3f6520ee0469504521e710\" ON public.users USING btree (username)"
+        }
+      ]
+    }
+  }
+}

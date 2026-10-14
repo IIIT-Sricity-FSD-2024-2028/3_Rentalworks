@@ -6,20 +6,20 @@ import {
   Param,
   Put,
   Delete,
+  Query,
   UseGuards,
-  Headers,
 } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto, UpdateBookingDto, CheckoutBookingDto } from './bookings.dto';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('bookings')
 @Controller('bookings')
 @UseGuards(RolesGuard)
 export class BookingsController {
-  constructor(private readonly bookingsService: BookingsService) {}
+  constructor(private readonly bookingsService: BookingsService) { }
 
   @Post('checkout')
   @ApiOperation({ summary: 'Complete guest booking payment and convert to active tenant' })
@@ -30,8 +30,19 @@ export class BookingsController {
   @Get()
   @Roles('admin', 'warden', 'tenant', 'owner')
   @ApiOperation({ summary: 'Get all bookings' })
-  findAll() {
-    return this.bookingsService.findAll();
+  @ApiQuery({ name: 'userId', required: false })
+  @ApiQuery({ name: 'tenantId', required: false })
+  @ApiQuery({ name: 'propertyId', required: false })
+  findAll(
+    @Query('userId') userId?: string,
+    @Query('tenantId') tenantId?: string,
+    @Query('propertyId') propertyId?: string,
+  ) {
+    const effectiveTenantId = tenantId || userId;
+    return this.bookingsService.findAll(
+      effectiveTenantId ? +effectiveTenantId : undefined,
+      propertyId ? +propertyId : undefined,
+    );
   }
 
   @Get(':id')

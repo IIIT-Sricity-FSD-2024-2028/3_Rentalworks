@@ -20,26 +20,24 @@ export class ComplaintsService {
     @InjectRepository(Room)
     private roomRepository: Repository<Room>,
     private wardenNotificationsService: WardenNotificationsService,
-  ) {}
+  ) { }
 
-  async findAll(ownerId?: number) {
-    if (ownerId) {
-      return this.complaintsRepository.find({
-        where: { property: { ownerId: ownerId } },
-        relations: { tenant: true, property: true },
-        order: { createdAt: 'DESC' },
-      });
-    }
+  findAll(tenantId?: number, propertyId?: number) {
+    const where: any = {};
+    if (tenantId) where.tenantId = tenantId;
+    if (propertyId) where.propertyId = propertyId;
+
     return this.complaintsRepository.find({
-      relations: { tenant: true, property: true },
-      order: { createdAt: 'DESC' },
+      where,
+      relations: { tenant: true, property: true, roomEntity: true },
+      order: { id: 'DESC' },
     });
   }
 
   async findOne(id: number) {
     const complaint = await this.complaintsRepository.findOne({
       where: { id },
-      relations: { tenant: true, property: true },
+      relations: { tenant: true, property: true, roomEntity: true },
     });
     if (!complaint)
       throw new NotFoundException(`Complaint with ID ${id} not found`);
@@ -49,6 +47,8 @@ export class ComplaintsService {
   async create(createComplaintDto: CreateComplaintDto) {
     const defaults = {
       status: 'open',
+      priority: createComplaintDto.priority || 'medium',
+      category: createComplaintDto.category || 'general',
       reportedAt: new Date().toISOString().split('T')[0],
     };
     const payload = Object.assign({}, defaults, createComplaintDto);
@@ -99,6 +99,9 @@ export class ComplaintsService {
     const cleanDto = Object.fromEntries(
       Object.entries(updateComplaintDto).filter(([_, v]) => v !== undefined),
     );
+    if (cleanDto.status === 'resolved' && !cleanDto.resolvedAt) {
+      cleanDto.resolvedAt = new Date().toISOString().split('T')[0];
+    }
     Object.assign(complaint, cleanDto);
     return this.complaintsRepository.save(complaint);
   }

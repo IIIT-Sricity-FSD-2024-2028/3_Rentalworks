@@ -5,13 +5,15 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { PropertiesModule } from './properties/properties.module';
+import { RoomsModule } from './rooms/rooms.module';
 import { BookingsModule } from './bookings/bookings.module';
+import { BookingRequestsModule } from './booking-requests/booking-requests.module';
+import { TenantStaysModule } from './tenant-stays/tenant-stays.module';
 import { PaymentsModule } from './payments/payments.module';
 import { ComplaintsModule } from './complaints/complaints.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { WardenNotificationsModule } from './warden-notifications/warden-notifications.module';
 import { RuleViolationsModule } from './rule-violations/rule-violations.module';
-import { RoomsModule } from './rooms/rooms.module';
 import { OwnerModule } from './owner/owner.module';
 import { LoggerMiddleware } from './middleware/logger.middleware';
 import { SecurityMiddleware } from './middleware/security.middleware';
@@ -85,19 +87,22 @@ import { RoommatesModule } from './roommates/roommates.module';
     }),
     UsersModule,
     PropertiesModule,
+    RoomsModule,
     BookingsModule,
+    BookingRequestsModule,
+    TenantStaysModule,
     PaymentsModule,
     ComplaintsModule,
     NotificationsModule,
     WardenNotificationsModule,
     RuleViolationsModule,
-    RoomsModule,
     OwnerModule,
     SuperAdminModule,
     RoommatesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
+  exports: [],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

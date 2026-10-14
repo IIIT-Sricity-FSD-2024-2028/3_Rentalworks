@@ -14,16 +14,22 @@ export class PaymentsService {
     private propertiesRepository: Repository<Property>,
   ) {}
 
-  findAll() {
+  findAll(tenantId?: number, propertyId?: number) {
+    const where: any = {};
+    if (tenantId) where.tenantId = tenantId;
+    if (propertyId) where.propertyId = propertyId;
+
     return this.paymentsRepository.find({
-      relations: { tenant: true, property: true },
+      where,
+      relations: { tenant: true, property: true, roomEntity: true },
+      order: { id: 'DESC' },
     });
   }
 
   async findOne(id: number) {
     const payment = await this.paymentsRepository.findOne({
       where: { id },
-      relations: { tenant: true, property: true },
+      relations: { tenant: true, property: true, roomEntity: true },
     });
     if (!payment)
       throw new NotFoundException(`Payment with ID ${id} not found`);
@@ -37,7 +43,8 @@ export class PaymentsService {
 
     let platformFee = 0;
     if (property && property.commissionRate) {
-      platformFee = (createPaymentDto.amount * property.commissionRate) / 100;
+      platformFee =
+        (Number(createPaymentDto.amount) * Number(property.commissionRate)) / 100;
     }
 
     const newPayment = this.paymentsRepository.create({
@@ -74,12 +81,13 @@ export class PaymentsService {
     let totalRevenue = 0;
 
     payments.forEach((payment) => {
-      if (payment.status === 'verified' && payment.platformFee) {
-        totalRevenue += payment.platformFee;
+      const fee = Number(payment.platformFee) || 0;
+      if (payment.status === 'verified' && fee > 0) {
+        totalRevenue += fee;
 
         const region = payment.property?.location || 'Unknown';
         revenueByRegion[region] =
-          (revenueByRegion[region] || 0) + payment.platformFee;
+          (revenueByRegion[region] || 0) + fee;
       }
     });
 

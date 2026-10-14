@@ -42,6 +42,8 @@ export class HttpErrorFilter implements ExceptionFilter {
       message: errorMessage,
     };
 
+    console.error('EXCEPTION IN FILTER:', exception);
+
     // Log the error using Winston
     logger.error(
       `${request.method} ${request.url} ${status} - Error: ${JSON.stringify(errorResponse)}`,

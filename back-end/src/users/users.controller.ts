@@ -6,6 +6,7 @@ import {
   Param,
   Delete,
   Put,
+  Headers,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -28,13 +29,13 @@ import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
 @Controller('users')
 @UseGuards(RolesGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Post('upload-avatar')
   @UseInterceptors(
     FileInterceptor('file', createUploadOptions('./uploads/avatars')),
   )
-  @ApiOperation({ summary: 'Upload user avatar (Router-level middleware)' })
+  @ApiOperation({ summary: 'Upload user avatar' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -47,11 +48,18 @@ export class UsersController {
       },
     },
   })
-  uploadAvatar(@UploadedFile() file: Express.Multer.File) {
+  async uploadAvatar(
+    @UploadedFile() file: Express.Multer.File,
+    @Headers('x-user-id') headerUserId?: string,
+  ) {
+    const filePath = file.path.replace(/\\/g, '/');
+    if (headerUserId && !isNaN(+headerUserId)) {
+      await this.usersService.update(+headerUserId, { avatar: filePath });
+    }
     return {
       message: 'File uploaded successfully',
       filename: file.filename,
-      path: file.path,
+      path: filePath,
     };
   }
 
@@ -103,35 +111,35 @@ export class UsersController {
   // --- STANDARD USER CRUD ---
 
   @Post()
-  @Roles('admin', 'warden')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: 'Create new user' })
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
 
   @Get()
-  @Roles('admin', 'warden')
+  @Roles('admin', 'warden', 'super_admin')
   @ApiOperation({ summary: 'Get all users' })
   findAll() {
     return this.usersService.findAll();
   }
 
   @Get(':id')
-  @Roles('admin', 'warden', 'tenant', 'owner')
+  @Roles('admin', 'warden', 'tenant', 'owner', 'super_admin')
   @ApiOperation({ summary: 'Get a user by ID' })
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(+id);
   }
 
   @Put(':id')
-  @Roles('admin', 'tenant', 'owner', 'warden')
+  @Roles('admin', 'tenant', 'owner', 'warden', 'super_admin')
   @ApiOperation({ summary: 'Update a user' })
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(+id, updateUserDto);
   }
 
   @Delete(':id')
-  @Roles('admin', 'warden')
+  @Roles('admin', 'super_admin')
   @ApiOperation({ summary: 'Delete a user' })
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);

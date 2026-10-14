@@ -9,22 +9,40 @@ export class PropertiesService {
   constructor(
     @InjectRepository(Property)
     private propertiesRepository: Repository<Property>,
-  ) {}
+  ) { }
 
-  findAll(ownerId?: number) {
-    if (ownerId) {
-      return this.propertiesRepository.find({
-        where: { ownerId: ownerId },
-        relations: { owner: true },
+  findAll(locationOrOwnerId?: string | number, ownerId?: number) {
+    let location: string | undefined;
+    let resolvedOwnerId: number | undefined = ownerId;
+
+    if (typeof locationOrOwnerId === 'number') {
+      resolvedOwnerId = locationOrOwnerId;
+    } else if (typeof locationOrOwnerId === 'string') {
+      location = locationOrOwnerId;
+    }
+
+    const query = this.propertiesRepository
+      .createQueryBuilder('property')
+      .leftJoinAndSelect('property.owner', 'owner')
+      .leftJoinAndSelect('property.roomEntities', 'rooms');
+
+    if (location) {
+      query.andWhere('LOWER(property.location) LIKE LOWER(:location)', {
+        location: `%${location}%`,
       });
     }
-    return this.propertiesRepository.find({ relations: { owner: true } });
+
+    if (resolvedOwnerId) {
+      query.andWhere('property.ownerId = :ownerId', { ownerId: resolvedOwnerId });
+    }
+
+    return query.getMany();
   }
 
   async findOne(id: number) {
     const property = await this.propertiesRepository.findOne({
-      where: { id: id },
-      relations: { owner: true },
+      where: { id },
+      relations: { owner: true, roomEntities: true },
     });
     if (!property)
       throw new NotFoundException(`Property with ID ${id} not found`);
@@ -42,6 +60,9 @@ export class PropertiesService {
       compliance: 'Verified',
       fireSafety: 'Yes',
       changeRequestPending: false,
+      gender: createPropertyDto.gender || 'unisex',
+      rules: createPropertyDto.rules || [],
+      images: createPropertyDto.images || [],
     };
     const payload = Object.assign({}, defaults, createPropertyDto);
     const newProperty = this.propertiesRepository.create(payload);

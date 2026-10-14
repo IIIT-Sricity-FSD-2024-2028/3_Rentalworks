@@ -36,55 +36,25 @@ export class CreatePropertyDto {
   @IsArray()
   amenities: string[];
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, default: 'unisex' })
   @IsString()
   @IsOptional()
-  address?: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  city?: string;
+  gender?: string;
 
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
-  state?: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  pincode?: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  type?: string;
-
-  @ApiProperty({ required: false })
-  @IsNumber()
-  @IsOptional()
-  totalCapacity?: number;
-
-  @ApiProperty({ required: false })
-  @IsNumber()
-  @IsOptional()
-  totalRooms?: number;
-
-  @ApiProperty({ required: false })
-  @IsNumber()
-  @IsOptional()
-  occupiedRooms?: number;
-
-  @ApiProperty({ required: false })
-  @IsNumber()
-  @IsOptional()
-  monthlyRent?: number;
+  description?: string;
 
   @ApiProperty({ required: false })
   @IsArray()
   @IsOptional()
   rules?: string[];
+
+  @ApiProperty({ required: false })
+  @IsArray()
+  @IsOptional()
+  images?: string[];
 }
 
 export class UpdatePropertyDto {
@@ -134,57 +104,27 @@ export class UpdatePropertyDto {
   rooms?: string;
 
   @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  gender?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiProperty({ required: false })
   @IsArray()
   @IsOptional()
   amenities?: string[];
 
   @ApiProperty({ required: false })
-  @IsString()
+  @IsArray()
   @IsOptional()
-  address?: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  city?: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  state?: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  pincode?: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  type?: string;
-
-  @ApiProperty({ required: false })
-  @IsNumber()
-  @IsOptional()
-  totalCapacity?: number;
-
-  @ApiProperty({ required: false })
-  @IsNumber()
-  @IsOptional()
-  totalRooms?: number;
-
-  @ApiProperty({ required: false })
-  @IsNumber()
-  @IsOptional()
-  occupiedRooms?: number;
-
-  @ApiProperty({ required: false })
-  @IsNumber()
-  @IsOptional()
-  monthlyRent?: number;
+  rules?: string[];
 
   @ApiProperty({ required: false })
   @IsArray()
   @IsOptional()
-  rules?: string[];
+  images?: string[];
 }

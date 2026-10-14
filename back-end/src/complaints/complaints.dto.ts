@@ -19,20 +19,25 @@ export class CreateComplaintDto {
   @IsOptional()
   title?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, default: 'medium' })
   @IsString()
   @IsOptional()
   priority?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, default: 'general' })
   @IsString()
   @IsOptional()
   category?: string;
 
   @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  roomId?: number;
+
+  @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
-  reportedBy?: string;
+  attachment?: string;
 }
 
 export class UpdateComplaintDto {
@@ -40,11 +45,6 @@ export class UpdateComplaintDto {
   @IsString()
   @IsOptional()
   status?: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  title?: string;
 
   @ApiProperty({ required: false })
   @IsString()
@@ -60,4 +60,14 @@ export class UpdateComplaintDto {
   @IsString()
   @IsOptional()
   resolution?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  resolvedAt?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  attachment?: string;
 }

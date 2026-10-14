@@ -9,6 +9,7 @@ const Dashboard = () => {
   
   const [complaintsCount, setComplaintsCount] = useState(0);
   const [paymentsDue, setPaymentsDue] = useState(0);
+  const [pendingServicesCount, setPendingServicesCount] = useState(0);
 
   useEffect(() => {
     // Animate bars
@@ -26,16 +27,34 @@ const Dashboard = () => {
       try {
         if (!tenant) return;
         
-        // Fetch complaints
-        const allComplaints = await apiFetch('/complaints');
-        const userComplaints = allComplaints.filter(c => c.tenantId === tenant.id && c.status === 'open');
-        setComplaintsCount(userComplaints.length);
+        // Fetch complaints & issues
+        const [allComplaints, myIssues, allPayments, myServiceRequests] = await Promise.all([
+          apiFetch('/complaints').catch(() => []),
+          apiFetch('/issues/my').catch(() => []),
+          apiFetch('/payments').catch(() => []),
+          apiFetch('/service-requests/my').catch(() => []),
+        ]);
+
+        const userComplaints = (Array.isArray(allComplaints) ? allComplaints : []).filter(
+          c => c.tenantId === tenant.id && c.status === 'open'
+        );
+        const openIssues = (Array.isArray(myIssues) ? myIssues : []).filter(
+          i => i.status === 'open' || i.status === 'in_progress'
+        );
+        setComplaintsCount(userComplaints.length + openIssues.length);
         
         // Fetch payments
-        const allPayments = await apiFetch('/payments');
-        const userPendingPayments = allPayments.filter(p => p.tenantId === tenant.id && p.status === 'pending');
-        const totalDue = userPendingPayments.reduce((sum, p) => sum + p.amount, 0);
+        const userPendingPayments = (Array.isArray(allPayments) ? allPayments : []).filter(
+          p => p.tenantId === tenant.id && p.status === 'pending'
+        );
+        const totalDue = userPendingPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
         setPaymentsDue(totalDue);
+
+        // Service requests
+        const activeServices = (Array.isArray(myServiceRequests) ? myServiceRequests : []).filter(
+          s => s.status === 'pending' || s.status === 'in_progress' || s.status === 'scheduled'
+        );
+        setPendingServicesCount(activeServices.length);
       } catch (error) {
         console.error('Failed to fetch stats:', error);
       }
@@ -107,8 +126,8 @@ const Dashboard = () => {
       </div>
 
       <div className="stats-grid">
-        <div className="stat-card"><div className="stat-label">Active Complaints <span className="stat-icon"><span className="material-icons-outlined" style={{fontSize: '32px'}}>error</span></span></div><div className="stat-value">{complaintsCount}</div><div className="stat-sub">Needs attention</div></div>
-        <div className="stat-card"><div className="stat-label">Pending Services <span className="stat-icon"><span className="material-icons-outlined" style={{fontSize: '32px'}}>schedule</span></span></div><div className="stat-value">0</div><div className="stat-sub">In progress</div></div>
+        <div className="stat-card"><div className="stat-label">Active Issues / Complaints <span className="stat-icon"><span className="material-icons-outlined" style={{fontSize: '32px'}}>error</span></span></div><div className="stat-value">{complaintsCount}</div><div className="stat-sub">Needs attention</div></div>
+        <div className="stat-card"><div className="stat-label">Pending Services <span className="stat-icon"><span className="material-icons-outlined" style={{fontSize: '32px'}}>schedule</span></span></div><div className="stat-value">{pendingServicesCount}</div><div className="stat-sub">In progress</div></div>
         <div className="stat-card"><div className="stat-label">Payment Due <span className="stat-icon">₹</span></div><div className="stat-value" style={{color: 'var(--primary)'}}>₹{paymentsDue.toLocaleString()}</div><div className="stat-sub" style={{color: 'var(--danger)'}}>Action Required</div></div>
         <div className="stat-card"><div className="stat-label">Days Remaining <span className="stat-icon"><span className="material-icons-outlined" style={{fontSize: '32px'}}>calendar_today</span></span></div><div className="stat-value">126</div><div className="stat-sub">Until check-out</div></div>
       </div>

@@ -18,18 +18,30 @@ export class CreateNotificationDto {
   @IsString()
   priority: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: false, default: 1 })
   @IsNumber()
-  recipients: number;
+  @IsOptional()
+  recipients?: number;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsNumber()
-  byUserId: number;
+  @IsOptional()
+  byUserId?: number;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  userId?: number;
 
   @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()
   read?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  isRead?: boolean;
 }
 
 export class UpdateNotificationDto {
@@ -42,4 +54,9 @@ export class UpdateNotificationDto {
   @IsBoolean()
   @IsOptional()
   read?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  isRead?: boolean;
 }

@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { User } from '../users/user.entity';
 
 @Entity('notifications')
@@ -18,7 +26,7 @@ export class Notification {
   @Column()
   priority: string;
 
-  @Column({ type: 'int' })
+  @Column({ type: 'int', default: 1 })
   recipients: number;
 
   @Column()
@@ -43,8 +51,21 @@ export class Notification {
   @Column({ nullable: true })
   byUserId?: number;
 
+  @ManyToOne(() => User, (user) => user.receivedNotifications, {
+    nullable: true,
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'userId' })
+  user?: User;
+
+  @Column({ nullable: true })
+  userId?: number;
+
   @Column({ default: false })
   read: boolean;
+
+  @Column({ default: false, nullable: true })
+  isRead?: boolean;
 
   @CreateDateColumn()
   createdAt: Date;
