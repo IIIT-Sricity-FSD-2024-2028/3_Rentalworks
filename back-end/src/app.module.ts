@@ -34,6 +34,8 @@ import { OwnerApplicationIntegration1710000000000 } from './migrations/171000000
 import { Subscription } from './owner/subscription.entity';
 import { Owner } from './owner/owner.entity';
 import { CreateOwnersTable1850000000000 } from './migrations/1850000000000-CreateOwnersTable';
+import { RoommateProfile } from './roommates/roommate-profile.entity';
+import { RoommatesModule } from './roommates/roommates.module';
 
 @Module({
   imports: [
@@ -67,6 +69,7 @@ import { CreateOwnersTable1850000000000 } from './migrations/1850000000000-Creat
             TenantStay,
             Subscription,
             Owner,
+            RoommateProfile,
           ],
           synchronize: false,
           migrations: [
@@ -91,6 +94,7 @@ import { CreateOwnersTable1850000000000 } from './migrations/1850000000000-Creat
     RoomsModule,
     OwnerModule,
     SuperAdminModule,
+    RoommatesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

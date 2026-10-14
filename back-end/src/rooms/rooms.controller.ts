@@ -16,25 +16,23 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('rooms')
 @Controller('rooms')
-@UseGuards(RolesGuard)
 export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
 
   @Get()
-  @Roles('admin', 'warden', 'tenant', 'owner')
   @ApiOperation({ summary: 'Get all rooms' })
   findAll() {
     return this.roomsService.findAll();
   }
 
   @Get(':id')
-  @Roles('admin', 'warden', 'tenant', 'owner')
   @ApiOperation({ summary: 'Get room by ID' })
   findOne(@Param('id') id: string) {
     return this.roomsService.findOne(+id);
   }
 
   @Post()
+  @UseGuards(RolesGuard)
   @Roles('admin', 'warden')
   @ApiOperation({ summary: 'Create new room' })
   create(@Body() createRoomDto: CreateRoomDto) {
@@ -42,6 +40,7 @@ export class RoomsController {
   }
 
   @Put(':id')
+  @UseGuards(RolesGuard)
   @Roles('admin', 'warden')
   @ApiOperation({ summary: 'Update room (status, maintenance, occupancy)' })
   update(@Param('id') id: string, @Body() updateRoomDto: UpdateRoomDto) {
@@ -49,6 +48,7 @@ export class RoomsController {
   }
 
   @Delete(':id')
+  @UseGuards(RolesGuard)
   @Roles('admin', 'warden')
   @ApiOperation({ summary: 'Delete room' })
   remove(@Param('id') id: string) {

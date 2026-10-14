@@ -90,9 +90,10 @@ export class UsersService {
 
   async login(loginDto: LoginDto) {
     await ensureSharedColumns(this.dataSource);
+    const identifier = (loginDto.username || '').trim();
     const user = await this.usersRepository
       .createQueryBuilder('user')
-      .where('user.username = :username', { username: loginDto.username })
+      .where('user.username = :identifier OR user.email = :identifier OR user.phone = :identifier', { identifier })
       .addSelect('user.password')
       .getOne();
 
@@ -117,6 +118,40 @@ export class UsersService {
     if (user.role === 'super_admin' && user.status === 'active') {
       return Object.assign(result, { token: issueSuperAdminToken(user.id) });
     }
+    return result;
+  }
+
+  async guestRegister(dto: { name: string; email: string; phone: string; password?: string }) {
+    const email = (dto.email || '').trim().toLowerCase();
+    const phone = (dto.phone || '').trim();
+
+    let user = await this.usersRepository.findOne({
+      where: [{ email }, { phone }],
+    });
+
+    if (user) {
+      const { password, ...result } = user;
+      return result;
+    }
+
+    const timestamp = Date.now();
+    const sanitized = (dto.name || 'guest').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    const username = `guest_${sanitized}_${timestamp.toString().slice(-4)}`;
+    const passwordHash = await bcrypt.hash(dto.password || 'guest123', 10);
+
+    user = this.usersRepository.create({
+      name: dto.name.trim(),
+      email,
+      phone,
+      username,
+      password: passwordHash,
+      role: 'guest',
+      status: 'active',
+      joinDate: new Date().toISOString().split('T')[0],
+    });
+
+    const saved = await this.usersRepository.save(user);
+    const { password, ...result } = saved;
     return result;
   }
 

@@ -10,7 +10,7 @@ import {
   Headers,
 } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
-import { CreateBookingDto, UpdateBookingDto } from './bookings.dto';
+import { CreateBookingDto, UpdateBookingDto, CheckoutBookingDto } from './bookings.dto';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
@@ -20,6 +20,12 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 @UseGuards(RolesGuard)
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
+
+  @Post('checkout')
+  @ApiOperation({ summary: 'Complete guest booking payment and convert to active tenant' })
+  checkout(@Body() checkoutDto: CheckoutBookingDto) {
+    return this.bookingsService.completeCheckout(checkoutDto);
+  }
 
   @Get()
   @Roles('admin', 'warden', 'tenant', 'owner')

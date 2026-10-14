@@ -20,15 +20,26 @@ export class HttpErrorFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
+    const exceptionResponse: any =
+      exception instanceof HttpException ? exception.getResponse() : null;
+
+    let errorMessage: any = 'Internal server error';
+    if (exceptionResponse) {
+      if (typeof exceptionResponse === 'object' && exceptionResponse.message) {
+        errorMessage = exceptionResponse.message;
+      } else if (typeof exceptionResponse === 'string') {
+        errorMessage = exceptionResponse;
+      } else {
+        errorMessage = exception instanceof HttpException ? exception.message : 'Error';
+      }
+    }
+
     const errorResponse = {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
       method: request.method,
-      message:
-        exception instanceof HttpException
-          ? exception.message || exception.getResponse()
-          : 'Internal server error',
+      message: errorMessage,
     };
 
     // Log the error using Winston

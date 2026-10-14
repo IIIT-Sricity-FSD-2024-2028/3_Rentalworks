@@ -61,6 +61,12 @@ export class UsersController {
     return this.usersService.login(loginDto);
   }
 
+  @Post('guest-register')
+  @ApiOperation({ summary: 'Register or authenticate guest user' })
+  guestRegister(@Body() dto: { name: string; email: string; phone: string; password?: string }) {
+    return this.usersService.guestRegister(dto);
+  }
+
   // --- TENANT ENDPOINTS (Must be before :id to prevent route conflicts) ---
 
   @Get('tenants')

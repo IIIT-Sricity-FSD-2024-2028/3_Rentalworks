@@ -1,7 +1,17 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useBooking } from '../context/BookingContext';
 
 export default function ListingCard({ listing, isDisabled }) {
-  const { title, location, price, rating, features, note, image } = listing;
+  const navigate = useNavigate();
+  const { setSelectedPG } = useBooking();
+  const { id, title, location, price, rating, features, note, image } = listing;
+
+  const handleCardClick = () => {
+    if (isDisabled) return;
+    setSelectedPG(listing);
+    navigate(`/pg/${id || 1}`);
+  };
 
   const cardStyle = isDisabled ? {
     opacity: '0.6',
@@ -9,7 +19,7 @@ export default function ListingCard({ listing, isDisabled }) {
   } : { cursor: 'pointer' };
 
   return (
-    <div className="listing-card" style={cardStyle} onClick={() => window.location.href = '#'}>
+    <div className="listing-card" style={cardStyle} onClick={handleCardClick}>
       <div className="image-box">
         <img src={image} alt={title} loading="lazy" />
         <span className="badge badge-rating">
@@ -26,13 +36,13 @@ export default function ListingCard({ listing, isDisabled }) {
         <div className="features">
           {features.map((feature, idx) => (
             <span key={idx} className="tag">
-              <span className="material-icons-outlined" style={{ fontSize: '20px' }}>{feature.icon}</span> 
+              <span className="material-icons-outlined" style={{ fontSize: '20px' }}>{feature.icon}</span>
               {feature.text}
             </span>
           ))}
         </div>
         <p className="note">{note}</p>
-        <button 
+        <button
           className="view-btn"
           style={isDisabled ? { background: '#e2e8f0', color: '#64748b', boxShadow: 'none' } : {}}
         >
