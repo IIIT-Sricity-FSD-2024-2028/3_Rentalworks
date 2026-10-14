@@ -42,7 +42,7 @@ import { CreateOwnersTable1850000000000 } from './migrations/1850000000000-Creat
       validate: (config) => {
         if (!config.DATABASE_URL) throw new Error('DATABASE_URL is required in back-end/.env');
         if (!config.SUPER_ADMIN_TOKEN_SECRET || config.SUPER_ADMIN_TOKEN_SECRET.length < 32) {
-          config.SUPER_ADMIN_TOKEN_SECRET = 'dev_super_admin_secret_key_at_least_32_chars_long_12345';
+          throw new Error('SUPER_ADMIN_TOKEN_SECRET must be at least 32 characters in back-end/.env');
         }
         return config;
       },
