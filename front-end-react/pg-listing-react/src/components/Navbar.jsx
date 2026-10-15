@@ -9,17 +9,17 @@ export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const isDetailsPage = location.pathname.startsWith('/pg/');
-  const isListingPage = location.pathname === '/' || location.pathname === '/listings';
+  const isDetailsPage = location.pathname.startsWith('/pg/') || location.pathname.startsWith('/pgs/');
+  const isListingPage = location.pathname === '/listings' || location.pathname === '/pgs';
 
   return (
     <nav className="site-navbar">
       <div className="nav-container">
-        <div className="nav-brand" onClick={() => navigate('/')}>
+        <div className="nav-brand" onClick={() => navigate('/')} style={{ cursor: 'pointer' }} title="Back to RentalWork Home">
           <span className="brand-icon">
-            <span className="material-icons-outlined">home</span>
+            <span className="material-icons-outlined">apartment</span>
           </span>
-          <span className="brand-text">Sunrise PG Residency</span>
+          <span className="brand-text">RentalWork PG</span>
         </div>
 
         {isDetailsPage && (

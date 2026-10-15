@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useWardenData } from '../utils/dataStore';
+import { updateComplaintApi } from '../utils/api';
 import Modal from '../components/Modal';
 
 export default function Complaints() {
@@ -75,11 +76,20 @@ export default function Complaints() {
     updateComplaint(id, { timeline: newTimeline });
   };
 
-  const handleUpdateStatus = (newStatus) => {
+  const handleUpdateStatus = async (newStatus) => {
     if (!selectedComplaint) return;
     
     addTimelineEvent(selectedComplaint.id, `Status changed to ${getStatusLabel(newStatus)}`, 'Warden');
     updateComplaint(selectedComplaint.id, { status: newStatus });
+
+    try {
+      await updateComplaintApi(selectedComplaint.id, {
+        status: newStatus,
+        resolution: newStatus === 'resolved' ? 'Resolved by Warden' : undefined,
+      });
+    } catch (apiErr) {
+      console.warn('Backend updateComplaint failed, falling back:', apiErr);
+    }
 
     showToast('success', 'Status Updated', `Complaint marked as ${newStatus.replace('_', ' ')}`);
 

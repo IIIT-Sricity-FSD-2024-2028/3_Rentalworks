@@ -1,13 +1,23 @@
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
+function getActiveTenant() {
+  try {
+    const stored = sessionStorage.getItem('tenant_user') || sessionStorage.getItem('pg_user') || localStorage.getItem('currentUser');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed && parsed.id) return parsed;
+    }
+  } catch (_) {}
+  return null;
+}
+
 /**
  * Custom fetch wrapper to automatically include required headers like x-user-id and x-role.
  */
 export const apiFetch = async (endpoint, options = {}) => {
-  // Use a hardcoded tenant ID for now, as requested.
-  // In a real app, this would come from AuthContext or localStorage.
-  const tenantId = '1'; 
-  const role = 'tenant';
+  const activeUser = getActiveTenant();
+  const tenantId = activeUser?.id ? String(activeUser.id) : '1';
+  const role = activeUser?.role || 'tenant';
 
   const headers = {
     'Content-Type': 'application/json',

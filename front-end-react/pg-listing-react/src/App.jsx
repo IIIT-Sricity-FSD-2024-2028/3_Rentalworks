@@ -5,6 +5,7 @@ import { BookingProvider } from './context/BookingContext';
 
 // Landing & PG Discovery Layout
 import GuestLayout from './components/GuestLayout';
+import LandingPage from './pages/LandingPage';
 import ListingsPage from './pages/ListingsPage';
 import PgDetailsLanding from './pages/PgDetailsLanding';
 import BookingRoommate from './pages/BookingRoommate';
@@ -32,23 +33,31 @@ export default function App() {
       <AuthProvider>
         <BookingProvider>
           <Routes>
-            {/* 1. Public Landing & PG Discovery Flow */}
+            {/* 1. Standalone Original Landing Page */}
+            <Route path="/" element={<LandingPage />} />
+
+            {/* 2. Public PG Discovery & Booking Flow */}
             <Route element={<GuestLayout />}>
-              <Route path="/" element={<ListingsPage />} />
               <Route path="/listings" element={<ListingsPage />} />
+              <Route path="/pgs" element={<ListingsPage />} />
               <Route path="/pg/:id" element={<PgDetailsLanding />} />
+              <Route path="/pgs/:id" element={<PgDetailsLanding />} />
+              <Route path="/booking/:id" element={<PgDetailsLanding />} />
               <Route path="/book/:id/roommate" element={<BookingRoommate />} />
               <Route path="/book/:id/review" element={<BookingReview />} />
               <Route path="/book/:id/payment" element={<PaymentGateway />} />
+              <Route path="/payment/:bookingId" element={<PaymentGateway />} />
               <Route path="/book/:id/confirmed" element={<BookingConfirmed />} />
+              <Route path="/booking-success/:bookingId" element={<BookingConfirmed />} />
               <Route path="/my-bookings" element={<MyBookings />} />
               <Route path="/transactions" element={<Transactions />} />
             </Route>
 
-            {/* 2. Central Multi-Role Login Portal */}
+            {/* 3. Central Multi-Role Login & Registration Portal */}
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Login />} />
 
-            {/* 3. Role-Based Management Portals */}
+            {/* 4. Role-Based Management Portals */}
             <Route path="/tenant/*" element={<TenantPortal />} />
             <Route path="/dashboard/*" element={<Navigate to="/tenant/dashboard" replace />} />
             <Route path="/owner/*" element={<OwnerPortal />} />
@@ -56,7 +65,7 @@ export default function App() {
             <Route path="/warden/*" element={<WardenPortal />} />
             <Route path="/super-admin/*" element={<SuperAdminPortal />} />
 
-            {/* 4. Global Fallback */}
+            {/* 5. Global Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BookingProvider>

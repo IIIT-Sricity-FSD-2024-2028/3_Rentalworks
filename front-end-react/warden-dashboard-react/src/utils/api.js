@@ -120,6 +120,15 @@ export async function getComplaintsApi() {
   return [];
 }
 
+export async function updateComplaintApi(id, data) {
+  const res = await fetch(`${API_BASE}/complaints/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+}
+
 export async function getNotificationsApi() {
   try {
     const res = await fetch(`${API_BASE}/notifications`, {

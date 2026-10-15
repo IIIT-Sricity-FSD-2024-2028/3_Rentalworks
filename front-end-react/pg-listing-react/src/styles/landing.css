@@ -1,0 +1,636 @@
+/* ===================================================================
+   LANDING PAGE STYLES — Converted from front-end/rentalbros/css/style.css
+   Preserves original Glassmorphism, Neumorphism, Gold/Amber theme,
+   Typography, Shimmer animations, and Responsive Layout.
+   =================================================================== */
+
+.landing-page-root {
+  background-color: #f5f5f5;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('/room_images/landing_background.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  color: #333333;
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Glassmorphism utilities */
+.landing-page-root .glass {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+  border-radius: 20px;
+}
+
+/* Neumorphism utilities */
+.landing-page-root .neumorphic-btn {
+  background: #f0f0f0;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  box-shadow: 
+    6px 6px 12px rgba(0, 0, 0, 0.1), 
+    -6px -6px 12px rgba(255, 255, 255, 0.9);
+  border-radius: 30px;
+  color: #b58900;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.landing-page-root .neumorphic-btn:hover {
+  box-shadow: 
+    inset 4px 4px 10px rgba(0, 0, 0, 0.1), 
+    inset -4px -4px 10px rgba(255, 255, 255, 0.9);
+  color: #d4af37;
+  transform: translateY(2px);
+  border-color: rgba(212, 175, 55, 0.6);
+}
+
+/* NAVBAR */
+.landing-page-root .landing-navbar {
+  position: sticky;
+  top: 15px;
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 40px;
+  margin: 15px 30px;
+  border-radius: 40px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+}
+
+.landing-page-root .landing-navbar .logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #b58900;
+  font-weight: 700;
+  font-size: 22px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.landing-page-root .landing-navbar nav {
+  display: flex;
+  gap: 30px;
+}
+
+.landing-page-root .landing-navbar nav a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: #555555;
+  font-size: 16px;
+  font-weight: 500;
+  transition: 0.3s;
+}
+
+.landing-page-root .landing-navbar nav a:hover {
+  color: #b58900;
+}
+
+.landing-page-root .landing-navbar nav a .material-icons-outlined {
+  color: #b58900;
+  font-size: 22px;
+}
+
+.landing-page-root .landing-navbar .nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.landing-page-root .landing-navbar .login-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 10px 20px;
+  border-radius: 25px;
+  background: rgba(212, 175, 55, 0.15);
+  color: #b58900;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  transition: 0.3s;
+  text-decoration: none;
+}
+
+.landing-page-root .landing-navbar .login-btn:hover {
+  background: rgba(212, 175, 55, 0.25);
+  color: #d4af37;
+  transform: translateY(-1px);
+}
+
+/* HERO SECTION */
+.landing-page-root .hero {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  padding: 80px 5%;
+  min-height: 85vh;
+  gap: 40px;
+}
+
+.landing-page-root .hero-text {
+  flex: 1;
+  min-width: 300px;
+  max-width: 600px;
+  padding: 40px;
+  border-radius: 25px;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+  text-align: left;
+}
+
+.landing-page-root .hero-text h1 {
+  font-size: 46px;
+  margin-bottom: 20px;
+  color: #b58900;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.landing-page-root .hero-text p {
+  font-size: 20px;
+  margin-bottom: 25px;
+  color: #444444;
+}
+
+.landing-page-root .hero-text ul {
+  list-style: none;
+  margin-bottom: 30px;
+  padding: 0;
+}
+
+.landing-page-root .hero-text ul li {
+  font-size: 16px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  color: #555555;
+}
+
+.landing-page-root .hero-text ul li::before {
+  content: "✔";
+  color: #b58900;
+  margin-right: 12px;
+  font-weight: bold;
+}
+
+.landing-page-root #exploreBtn {
+  padding: 15px 35px;
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+.landing-page-root .hero-img {
+  flex: 1;
+  min-width: 300px;
+  display: flex;
+  justify-content: center;
+}
+
+.landing-page-root .hero-img img {
+  width: 100%;
+  max-width: 500px;
+  height: auto;
+  border-radius: 30px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+  transition: transform 0.4s ease;
+}
+
+.landing-page-root .hero-img img:hover {
+  transform: scale(1.02);
+}
+
+/* SECTION HEADINGS */
+.landing-page-root section {
+  padding: 60px 5%;
+}
+
+.landing-page-root h2.section-heading {
+  font-size: 32px;
+  margin-bottom: 35px;
+  text-align: center;
+  color: #b58900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+
+/* EXPLORE CARDS */
+.landing-page-root .explore-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 25px;
+}
+
+.landing-page-root .explore-card {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 20px;
+  padding: 15px;
+  text-align: left;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  display: block;
+}
+
+.landing-page-root .explore-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px 0 rgba(212, 175, 55, 0.25);
+  border-color: rgba(212, 175, 55, 0.6);
+}
+
+.landing-page-root .explore-card img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 15px;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.landing-page-root .explore-card .card-h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-top: 15px;
+  color: #333333;
+}
+
+.landing-page-root .explore-card .card-p {
+  font-size: 14px;
+  color: #666666;
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+
+.landing-page-root .explore-card strong {
+  display: block;
+  font-size: 18px;
+  color: #b58900;
+}
+
+/* NEW LISTINGS SECTION */
+.landing-page-root .new-listings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+}
+
+.landing-page-root .listing-item {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, border-color 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.landing-page-root .listing-item:hover {
+  transform: translateY(-5px);
+  border-color: rgba(212, 175, 55, 0.6);
+}
+
+.landing-page-root .listing-item img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 15px;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.landing-page-root .listing-item .title {
+  color: #b58900;
+  font-size: 20px;
+  font-weight: 600;
+  margin-top: 15px;
+}
+
+.landing-page-root .listing-item .details-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.landing-page-root .listing-item .details-badges span {
+  background: rgba(212, 175, 55, 0.15);
+  color: #555555;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.landing-page-root .listing-item .location {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #666666;
+  margin-top: 10px;
+  line-height: 1.4;
+}
+
+.landing-page-root .listing-item .location .material-icons-outlined {
+  color: #b58900;
+  font-size: 20px;
+}
+
+.landing-page-root .listing-item .price-row {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(212, 175, 55, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.landing-page-root .listing-item .price {
+  font-weight: bold;
+  font-size: 20px;
+  color: #333333;
+}
+
+.landing-page-root .listing-item .btn-view-pg {
+  padding: 8px 16px;
+  font-size: 13px;
+  border-radius: 20px;
+  background: #b58900;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.landing-page-root .listing-item .btn-view-pg:hover {
+  background: #d4af37;
+}
+
+/* KEY FEATURES */
+.landing-page-root .features-section {
+  padding: 80px 5%;
+  background: transparent;
+}
+
+.landing-page-root .feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 35px;
+  margin-top: 35px;
+}
+
+.landing-page-root .feature-box {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 20px;
+  padding: 30px 20px;
+  text-align: center;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, border-color 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-page-root .feature-box:hover {
+  transform: translateY(-5px);
+  border-color: rgba(212, 175, 55, 0.6);
+}
+
+.landing-page-root .feature-box .icon-box {
+  width: 70px;
+  height: 70px;
+  background: #f8f8f8;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  box-shadow: 6px 6px 12px rgba(0,0,0,0.05), -6px -6px 12px rgba(255,255,255,0.8);
+}
+
+.landing-page-root .feature-box .icon-box .material-icons-outlined {
+  color: #b58900;
+  font-size: 34px;
+}
+
+.landing-page-root .feature-box h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #333333;
+}
+
+.landing-page-root .feature-box p {
+  font-size: 14px;
+  color: #666666;
+  line-height: 1.6;
+}
+
+/* FOOTER */
+.landing-page-root .landing-footer {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 60px 5% 30px;
+  border-top: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.landing-page-root .footer-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.landing-page-root .landing-footer h4 {
+  font-size: 18px;
+  margin-bottom: 20px;
+  color: #b58900;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.landing-page-root .landing-footer p {
+  color: #555555;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: color 0.3s;
+  font-size: 15px;
+}
+
+.landing-page-root .landing-footer p:hover {
+  color: #b58900;
+}
+
+.landing-page-root .footer-small {
+  margin-top: 30px;
+}
+
+.landing-page-root .footer-small p {
+  font-size: 13px;
+  color: #888888;
+}
+
+.landing-page-root .social-icons {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.landing-page-root .social-icons .social-btn {
+  background: #f0f0f0;
+  color: #b58900;
+  padding: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: 0.3s;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.landing-page-root .social-icons .social-btn:hover {
+  background: #d4af37;
+  color: #ffffff;
+}
+
+.landing-page-root .footer-right textarea {
+  width: 100%;
+  max-width: 350px;
+  height: 100px;
+  border-radius: 15px;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  background: rgba(255, 255, 255, 0.8);
+  padding: 15px;
+  margin-top: 10px;
+  outline: none;
+  resize: none;
+  font-family: inherit;
+  color: #333333;
+}
+
+.landing-page-root .footer-right textarea:focus {
+  background: rgba(255, 255, 255, 1);
+  border-color: #d4af37;
+}
+
+.landing-page-root .footer-right textarea::placeholder {
+  color: #888;
+}
+
+.landing-page-root #helpSubmitBtn {
+  padding: 10px 25px;
+  margin-top: 15px;
+}
+
+.landing-page-root .copyright {
+  text-align: center;
+  margin-top: 50px;
+  color: #777;
+  font-size: 14px;
+}
+
+/* SHIMMER EFFECT */
+.landing-page-root .explore-card,
+.landing-page-root .listing-item,
+.landing-page-root .feature-box {
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes landingShimmer {
+  0% { left: -100%; }
+  20% { left: 200%; }
+  100% { left: 200%; }
+}
+
+.landing-page-root .explore-card::before,
+.landing-page-root .listing-item::before,
+.landing-page-root .feature-box::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-20deg);
+  animation: landingShimmer 5s infinite;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* RESPONSIVE DESIGN */
+@media (max-width: 992px) {
+  .landing-page-root .hero-text h1 {
+    font-size: 36px;
+  }
+  .landing-page-root .landing-navbar nav {
+    display: none; 
+  }
+}
+
+@media (max-width: 768px) {
+  .landing-page-root .landing-navbar {
+    margin: 10px;
+    padding: 15px 20px;
+    border-radius: 20px;
+  }
+  .landing-page-root .hero {
+    padding: 40px 5%;
+  }
+  .landing-page-root .hero-text {
+    padding: 25px;
+  }
+  .landing-page-root .hero-text h1 {
+    font-size: 30px;
+  }
+  .landing-page-root h2.section-heading {
+    font-size: 26px;
+  }
+}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Login.css';
 
@@ -7,11 +7,11 @@ const API_BASE = 'http://localhost:3000';
 
 const DEMO_CREDENTIALS = {
   super_admin: { username: 'superadmin', password: 'admin123', name: 'Super Admin', role: 'super_admin' },
-  admin: { username: 'admin', password: 'admin123', name: 'System Admin', role: 'admin' },
-  tenant: { username: 'tenant1', password: 'password123', name: 'Arun Kumar', role: 'tenant', property: 'Sunrise PG Residency', room: '201' },
-  guest: { username: 'guest@gmail.com', password: 'guest123', name: 'Demo Guest', role: 'guest' },
-  owner: { username: 'owner1', password: 'admin123', name: 'PG Owner One', role: 'owner', status: 'approved' },
-  warden: { username: 'warden', password: 'admin123', name: 'Warden Officer', role: 'warden' },
+  admin: { username: 'admin', password: 'password123', name: 'System Admin', role: 'admin' },
+  tenant: { username: 'tenant1', password: 'password123', name: 'Arun Kumar', role: 'tenant', property: 'Sunrise PG Residency', room: '102' },
+  guest: { username: 'testguest@example.com', password: 'tenant123', name: 'Demo Guest', role: 'guest' },
+  owner: { username: 'owner1', password: 'password123', name: 'PG Owner One', role: 'owner', status: 'approved' },
+  warden: { username: 'warden', password: 'warden123', name: 'Warden Officer', role: 'warden' },
 };
 
 const ROLE_INFO = {
@@ -24,6 +24,8 @@ const ROLE_INFO = {
 };
 
 export default function Login() {
+  const navigate = useNavigate();
+  const location = useLocation();
   let setTenantSession = null;
   try {
     const auth = useAuth?.();
@@ -139,7 +141,7 @@ export default function Login() {
     setBanner({ text: '', type: '' });
 
     let valid = true;
-    const label = currentRole === 'guest' ? 'Email / Phone' : 'Username';
+    const label = currentRole === 'guest' ? 'Email / Phone / Username' : 'Username';
 
     if (!username.trim()) {
       setUsernameErr(`${label} is required`);
@@ -157,78 +159,24 @@ export default function Login() {
     setLoading(true);
 
     try {
-      let user = null;
+      // 1. Submit login request directly to backend API connected to Neon PostgreSQL
+      const res = await fetch(`${API_BASE}/users/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username.trim(), password }),
+      });
 
-      // 1. Try local registered accounts from localStorage
-      const registeredGuests = JSON.parse(localStorage.getItem('registered_guests') || '[]');
-      const registeredOwners = JSON.parse(localStorage.getItem('registered_owners') || '[]');
-
-      if (currentRole === 'guest') {
-        const match = registeredGuests.find(
-          (g) => (g.email === username.trim() || g.phone === username.trim()) && g.password === password
-        );
-        if (match) user = match;
-      } else if (currentRole === 'owner') {
-        const match = registeredOwners.find(
-          (o) => o.email === username.trim() && o.password === password
-        );
-        if (match) {
-          if (match.status === 'pending') {
-            setBanner({
-              text: 'Your property registration is pending admin verification. You will be notified once approved.',
-              type: 'warning',
-            });
-            setLoading(false);
-            return;
-          }
-          user = match;
-        }
-      }
-
-      // 2. Try Demo Credentials Fallback
-      if (!user && DEMO_CREDENTIALS[currentRole]) {
-        const demo = DEMO_CREDENTIALS[currentRole];
-        if (
-          (demo.username === username.trim() || username.trim() === 'tenant' || username.trim() === 'admin' || username.trim() === 'warden' || username.trim() === 'guest' || username.trim() === 'owner') &&
-          (demo.password === password || password === 'password123' || password === 'admin123')
-        ) {
-          user = {
-            id: currentRole === 'tenant' ? 1 : Date.now(),
-            name: demo.name,
-            username: demo.username,
-            email: demo.username.includes('@') ? demo.username : `${demo.username}@example.com`,
-            role: currentRole,
-            property: demo.property || 'Sunrise PG Residency',
-            room: demo.room || '201',
-            status: 'active',
-          };
-        }
-      }
-
-      // 3. Try Backend API
-      if (!user) {
-        try {
-          const res = await fetch(`${API_BASE}/users/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: username.trim(), password }),
-          });
-          if (res.ok) {
-            user = await res.json();
-          }
-        } catch (apiErr) {
-          console.warn('Backend API offline or unreachable, used local auth', apiErr);
-        }
-      }
-
-      if (!user) {
-        setBanner({ text: 'Invalid credentials. Please check and try again.', type: 'error' });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        setBanner({ text: errorData.message || 'Invalid username or password. Please try again.', type: 'error' });
         setLoading(false);
         return;
       }
 
+      const user = await res.json();
+
       // Check Owner approval status
-      if (currentRole === 'owner' && user.status === 'pending') {
+      if (user.role === 'owner' && user.status === 'pending') {
         setBanner({
           text: 'Your property registration is pending admin verification. You will be notified once approved.',
           type: 'warning',
@@ -243,7 +191,7 @@ export default function Login() {
         name: user.name || username,
         email: user.email || `${username}@example.com`,
         phone: user.phone || '',
-        role: currentRole,
+        role: user.role,
         property: user.property || '',
         room: user.room || '',
         address: user.address || '',
@@ -254,24 +202,29 @@ export default function Login() {
       sessionStorage.setItem('tenant_user', JSON.stringify(sessionObj));
       sessionStorage.setItem('warden_user', JSON.stringify(sessionObj));
       sessionStorage.setItem('guest_user', JSON.stringify(sessionObj));
-      if (currentRole === 'super_admin') {
-        sessionStorage.setItem('super_admin_token', user.token || 'demo_super_admin_token');
+      if (user.role === 'super_admin' && user.token) {
+        sessionStorage.setItem('super_admin_token', user.token);
       }
       localStorage.setItem('currentUser', JSON.stringify(sessionObj));
+      localStorage.setItem('pg_user', JSON.stringify(sessionObj));
 
       if (setTenantSession) {
         setTenantSession(sessionObj);
       }
 
-      const formattedRole = currentRole.charAt(0).toUpperCase() + currentRole.slice(1).replace('_', ' ');
+      const formattedRole = (user.role || 'user').charAt(0).toUpperCase() + (user.role || 'user').slice(1).replace('_', ' ');
       setBanner({ text: `Directing ${sessionObj.name} to ${formattedRole} portal...`, type: 'success' });
 
       setTimeout(() => {
-        routeUser(currentRole);
-      }, 1000);
+        if (location.state?.from) {
+          navigate(location.state.from);
+        } else {
+          routeUser(user.role);
+        }
+      }, 800);
     } catch (err) {
       console.error('Login error:', err);
-      setBanner({ text: 'Login encountered an unexpected error.', type: 'error' });
+      setBanner({ text: 'Login encountered an unexpected network error. Please verify backend is running.', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -316,7 +269,7 @@ export default function Login() {
     setPwStrength(Math.min(100, score));
   };
 
-  const handleGuestSignupSubmit = () => {
+  const handleGuestSignupSubmit = async () => {
     const errs = {};
     if (!guestData.password || guestData.password.length < 8) {
       errs.password = 'Password must be at least 8 characters';
@@ -329,50 +282,62 @@ export default function Login() {
       return;
     }
 
-    const registeredGuests = JSON.parse(localStorage.getItem('registered_guests') || '[]');
-    const existing = registeredGuests.find((g) => g.email === guestData.email.trim());
-    if (existing) {
-      setGuestErr({ password: 'An account with this email already exists' });
-      return;
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_BASE}/users/guest-register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: guestData.name.trim(),
+          email: guestData.email.trim(),
+          phone: guestData.phone.trim(),
+          password: guestData.password,
+        }),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        setGuestErr({ password: errJson.message || 'Failed to create account. Email may already be registered.' });
+        setLoading(false);
+        return;
+      }
+
+      const createdUser = await res.json();
+
+      const sessionObj = {
+        id: createdUser.id,
+        name: createdUser.name,
+        email: createdUser.email,
+        phone: createdUser.phone,
+        role: createdUser.role || 'guest',
+        tempPassword: guestData.password,
+      };
+
+      sessionStorage.setItem('pg_user', JSON.stringify(sessionObj));
+      sessionStorage.setItem('guest_user', JSON.stringify(sessionObj));
+      localStorage.setItem('currentUser', JSON.stringify(sessionObj));
+
+      setSuccessInfo({
+        title: 'Account Created! 🎉',
+        message: `Welcome to RentBro, ${createdUser.name}! Your account has been registered in Neon PostgreSQL.`,
+        isRedirect: true,
+      });
+      setViewMode('success');
+
+      setTimeout(() => {
+        if (location.state?.from) {
+          navigate(location.state.from);
+        } else {
+          routeUser('guest');
+        }
+      }, 1500);
+    } catch (err) {
+      console.error('Guest registration network error:', err);
+      setGuestErr({ password: 'An unexpected network error occurred. Please verify backend is running.' });
+    } finally {
+      setLoading(false);
     }
-
-    const newGuest = {
-      id: Date.now(),
-      name: guestData.name.trim(),
-      email: guestData.email.trim(),
-      phone: guestData.phone.trim(),
-      dob: guestData.dob,
-      city: guestData.city.trim(),
-      address: guestData.address.trim(),
-      password: guestData.password,
-      role: 'guest',
-      status: 'active',
-      registeredOn: new Date().toISOString().split('T')[0],
-    };
-
-    registeredGuests.push(newGuest);
-    localStorage.setItem('registered_guests', JSON.stringify(registeredGuests));
-
-    const sessionObj = {
-      id: newGuest.id,
-      name: newGuest.name,
-      email: newGuest.email,
-      phone: newGuest.phone,
-      role: 'guest',
-    };
-    sessionStorage.setItem('pg_user', JSON.stringify(sessionObj));
-    localStorage.setItem('currentUser', JSON.stringify(sessionObj));
-
-    setSuccessInfo({
-      title: 'Account Created! 🎉',
-      message: `Welcome to RentBro, ${newGuest.name}! Your account has been set up securely.`,
-      isRedirect: true,
-    });
-    setViewMode('success');
-
-    setTimeout(() => {
-      routeUser('guest');
-    }, 2400);
   };
 
   // Owner Registration Submit
