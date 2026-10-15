@@ -41,7 +41,7 @@ import {
 const STORAGE_KEY = 'pg_manager_data_storage';
 const SESSION_KEY = 'pg_user';
 
-export default function App() {
+export function OwnerPortal() {
   const [data, setData] = useState({
     properties: [],
     issues: [],
@@ -519,7 +519,9 @@ export default function App() {
 
   const handleLogout = () => {
     sessionStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem('pg_user');
     showToast('Signed out successfully', 'info');
+    window.location.href = '/login';
   };
 
   const unreadNotifsCount = (data.notifications || []).filter((n) => !n.read).length;
@@ -537,7 +539,7 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter>
+    <>
       <Toast toasts={toasts} onRemove={removeToast} />
 
       <Routes>
@@ -634,6 +636,15 @@ export default function App() {
           />
         </Route>
       </Routes>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <OwnerPortal />
     </BrowserRouter>
   );
 }
+

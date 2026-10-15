@@ -72,6 +72,31 @@ export default function Navbar() {
                     <span className="user-role-chip">{currentUser.role?.toUpperCase() || 'GUEST'}</span>
                   </div>
                   <hr />
+                  {currentUser.role === 'tenant' && (
+                    <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate('/tenant/dashboard'); }}>
+                      <span className="material-icons-outlined">dashboard</span> Tenant Portal
+                    </button>
+                  )}
+                  {currentUser.role === 'owner' && (
+                    <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate('/owner'); }}>
+                      <span className="material-icons-outlined">apartment</span> Owner Portal
+                    </button>
+                  )}
+                  {currentUser.role === 'admin' && (
+                    <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate('/admin'); }}>
+                      <span className="material-icons-outlined">admin_panel_settings</span> Admin Portal
+                    </button>
+                  )}
+                  {currentUser.role === 'super_admin' && (
+                    <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate('/super-admin'); }}>
+                      <span className="material-icons-outlined">shield</span> Super Admin Portal
+                    </button>
+                  )}
+                  {currentUser.role === 'warden' && (
+                    <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate('/warden/dashboard'); }}>
+                      <span className="material-icons-outlined">manage_accounts</span> Warden Portal
+                    </button>
+                  )}
                   <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate('/my-bookings'); }}>
                     <span className="material-icons-outlined">receipt_long</span> My Bookings
                   </button>
@@ -87,15 +112,15 @@ export default function Navbar() {
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <a
-                href="http://localhost:5173/login"
+              <button
                 className="btn-nav-outline"
-                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                onClick={() => navigate('/login')}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                 title="Unified RentBro Multi-Role Login Portal"
               >
                 <span className="material-icons-outlined" style={{ fontSize: '18px' }}>vpn_key</span>
                 Portal Login
-              </a>
+              </button>
               <button className="btn-nav-primary" onClick={() => setAuthModalOpen(true)}>
                 <span className="material-icons-outlined" style={{ fontSize: '18px' }}>login</span>
                 Guest Sign In

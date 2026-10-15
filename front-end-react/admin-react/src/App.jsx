@@ -8,10 +8,11 @@ import Payments from './pages/Payments';
 import Subscriptions from './pages/Subscriptions';
 import Complaints from './pages/Complaints';
 import Notifications from './pages/Notifications';
+import { ToastProvider } from './components/Toast';
 
-export default function App() {
+export function AdminPortal() {
   return (
-    <BrowserRouter>
+    <ToastProvider>
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
@@ -23,8 +24,17 @@ export default function App() {
           <Route path="complaints" element={<Complaints />} />
           <Route path="notifications" element={<Notifications />} />
         </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="" replace />} />
       </Routes>
+    </ToastProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AdminPortal />
     </BrowserRouter>
   );
 }
+

@@ -24,8 +24,13 @@ const ROLE_INFO = {
 };
 
 export default function Login() {
-  const navigate = useNavigate();
-  const { setTenantSession } = useAuth();
+  let setTenantSession = null;
+  try {
+    const auth = useAuth?.();
+    if (auth) setTenantSession = auth.setTenantSession;
+  } catch (_) {
+    // optional if rendered outside tenant AuthProvider
+  }
 
   // View states: 'role_select' | 'login' | 'signup' | 'owner_reg' | 'success'
   const [viewMode, setViewMode] = useState('role_select');
@@ -82,23 +87,19 @@ export default function Login() {
     isRedirect: false,
   });
 
-  // Navigation router connecting to all React projects in front-end-react
+  // Navigation router connecting to all React portals in front-end-react
   const routeUser = (role) => {
     const routes = {
-      tenant: '/dashboard', // Local tenant dashboard
-      guest: 'http://localhost:5174/listings', // pg-listing-react
-      warden: 'http://localhost:5175/', // warden-dashboard-react
-      owner: 'http://localhost:5177/', // owner-react
-      admin: 'http://localhost:5178/', // admin-react
-      super_admin: 'http://localhost:5176/', // super-admin-react
+      tenant: '/tenant/dashboard',
+      guest: '/listings',
+      warden: '/warden/dashboard',
+      owner: '/owner',
+      admin: '/admin',
+      super_admin: '/super-admin',
     };
 
-    const dest = routes[role] || '/dashboard';
-    if (dest.startsWith('http')) {
-      window.location.href = dest;
-    } else {
-      navigate(dest);
-    }
+    const dest = routes[role] || '/tenant/dashboard';
+    navigate(dest);
   };
 
   // Switch role handler
@@ -252,6 +253,10 @@ export default function Login() {
       sessionStorage.setItem('pg_user', JSON.stringify(sessionObj));
       sessionStorage.setItem('tenant_user', JSON.stringify(sessionObj));
       sessionStorage.setItem('warden_user', JSON.stringify(sessionObj));
+      sessionStorage.setItem('guest_user', JSON.stringify(sessionObj));
+      if (currentRole === 'super_admin') {
+        sessionStorage.setItem('super_admin_token', user.token || 'demo_super_admin_token');
+      }
       localStorage.setItem('currentUser', JSON.stringify(sessionObj));
 
       if (setTenantSession) {
@@ -452,16 +457,17 @@ export default function Login() {
     <div className="exact-login-page">
       <div className="main-container">
         {/* Navigation Back to Landing Page / PG Discovery */}
-        <a
-          href="http://localhost:5174/listings"
+        <button
+          onClick={() => navigate('/')}
           className="home-back-link"
+          style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           title="Return to PG Discovery"
         >
           <span className="material-icons-outlined" style={{ fontSize: '24px' }}>
             arrow_back
           </span>
           Home
-        </a>
+        </button>
 
         {/* Brand Top Header */}
         <div className="top-header">

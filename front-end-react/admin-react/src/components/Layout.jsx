@@ -3,13 +3,13 @@ import { useState, useEffect } from 'react';
 import { useToast } from './Toast';
 
 const NAV_ITEMS = [
-  { to: '/', icon: 'folder', label: 'Dashboard', end: true },
-  { to: '/users', icon: 'group', label: 'User Management' },
-  { to: '/properties', icon: 'apartment', label: 'PG Properties' },
-  { to: '/bookings', icon: 'calendar_today', label: 'Bookings' },
-  { to: '/payments', icon: 'credit_card', label: 'Payments' },
-  { to: '/subscriptions', icon: 'workspace_premium', label: 'Subscriptions' },
-  { to: '/notifications', icon: 'notifications', label: 'Announcements' },
+  { to: '/admin', icon: 'folder', label: 'Dashboard', end: true },
+  { to: '/admin/users', icon: 'group', label: 'User Management' },
+  { to: '/admin/properties', icon: 'apartment', label: 'PG Properties' },
+  { to: '/admin/bookings', icon: 'calendar_today', label: 'Bookings' },
+  { to: '/admin/payments', icon: 'credit_card', label: 'Payments' },
+  { to: '/admin/subscriptions', icon: 'workspace_premium', label: 'Subscriptions' },
+  { to: '/admin/notifications', icon: 'notifications', label: 'Announcements' },
 ];
 
 export default function Layout() {
@@ -47,8 +47,7 @@ export default function Layout() {
     sessionStorage.removeItem('pg_user');
     localStorage.removeItem('pg_user');
     toast('info', 'Logged Out', 'You have been logged out.');
-    // Redirect to login
-    window.location.href = '../../login/login/login.html';
+    window.location.href = '/login';
   };
 
   const handleToggle2FA = (e) => {
@@ -155,7 +154,10 @@ export default function Layout() {
           </div>
 
           <div className="nb-right">
-            <NavLink to="/notifications" className="nb-icon" title="Announcements">
+            <NavLink to="/listings" className="nb-icon" title="Browse PG Discovery Listings">
+              <span className="material-icons-outlined" style={{ fontSize: 22 }}>storefront</span>
+            </NavLink>
+            <NavLink to="/admin/notifications" className="nb-icon" title="Announcements">
               <span className="material-icons-outlined" style={{ fontSize: 22 }}>notifications</span>
               <span className="nb-dot" />
             </NavLink>

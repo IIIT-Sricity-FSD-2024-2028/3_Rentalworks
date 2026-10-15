@@ -10,13 +10,14 @@ export default function Sidebar({
   user = { name: 'Rajesh Kumar', role: 'owner' }
 }) {
   const navItems = [
-    { to: '/', icon: 'dashboard', label: 'Dashboard', end: true },
-    { to: '/properties', icon: 'apartment', label: 'Properties' },
-    { to: '/issues', icon: 'warning', label: 'Issues', badge: openIssuesCount, isDanger: true },
-    { to: '/notifications', icon: 'notifications', label: 'Notifications', badge: unreadNotifsCount },
-    { to: '/policy', icon: 'description', label: 'Policy' },
-    { to: '/profile', icon: 'person', label: 'Profile' },
-    { to: '/subscription', icon: 'workspace_premium', label: 'Subscription' },
+    { to: '/owner', icon: 'dashboard', label: 'Dashboard', end: true },
+    { to: '/owner/properties', icon: 'apartment', label: 'Properties' },
+    { to: '/owner/add-property', icon: 'add_business', label: 'Add Property' },
+    { to: '/owner/issues', icon: 'warning', label: 'Issues', badge: openIssuesCount, isDanger: true },
+    { to: '/owner/notifications', icon: 'notifications', label: 'Notifications', badge: unreadNotifsCount },
+    { to: '/owner/policy', icon: 'description', label: 'Policy' },
+    { to: '/owner/profile', icon: 'person', label: 'Profile' },
+    { to: '/owner/subscription', icon: 'workspace_premium', label: 'Subscription' },
   ];
 
   const initials = (user.name || 'Owner')

@@ -11,6 +11,7 @@ export default function Shell({ user, section, setSection, onLogout, toast, chil
     sessionStorage.removeItem('pg_user');
     sessionStorage.removeItem('super_admin_token');
     onLogout();
+    window.location.href = '/login';
   }
 
   return <>
@@ -32,6 +33,7 @@ export default function Shell({ user, section, setSection, onLogout, toast, chil
         <header className="navbar">
           <div className="nb-left"><h4>Welcome back, {user.name || 'Super Admin'}</h4><p>{user.email || 'admin@pgrentals.com'}</p></div>
           <div className="nb-right">
+            <div className="nb-icon" title="Browse PG Discovery Listings" onClick={() => window.location.href = '/listings'}><span className="material-icons-outlined" style={{ fontSize: 24 }}>storefront</span></div>
             <div className="nb-icon" onClick={() => setSection('notifications')}><span className="material-icons-outlined" style={{ fontSize: 24 }}>notifications</span><span className="nb-dot" /></div>
             <div className="nb-icon" title="Settings & Profile" onClick={() => setSection('profile')}><span className="material-icons-outlined" style={{ fontSize: 24 }}>settings</span></div>
             <button className="btn-logout" onClick={logout}>↪ Logout</button>

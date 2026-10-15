@@ -21,20 +21,20 @@ const Topbar = () => {
         <div className="email">{displayEmail}</div>
       </div>
       <div className="topbar-actions">
-        <a
-          href="http://localhost:5174/listings"
+        <button
           className="btn btn-outline btn-sm"
-          style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+          onClick={() => navigate('/listings')}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
           title="Browse PG listings"
         >
           <span className="material-icons-outlined" style={{ fontSize: '17px' }}>storefront</span>
           Listings
-        </a>
-        <button className="topbar-btn" onClick={() => navigate('/notifications')} title="Notifications">
+        </button>
+        <button className="topbar-btn" onClick={() => navigate('/tenant/notifications')} title="Notifications">
           <span className="material-icons-outlined" style={{ fontSize: '24px' }}>notifications</span>
           <span className="notif-dot notif-count"></span>
         </button>
-        <button className="topbar-btn" onClick={() => navigate('/profile')} title="Profile">
+        <button className="topbar-btn" onClick={() => navigate('/tenant/profile')} title="Profile">
           <span className="material-icons-outlined" style={{ fontSize: '24px' }}>person</span>
         </button>
         <button className="logout-btn" onClick={handleLogout}>↪ Logout</button>

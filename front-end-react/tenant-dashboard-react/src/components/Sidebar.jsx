@@ -30,13 +30,13 @@ const Sidebar = () => {
         </div>
       </div>
       <nav className="sidebar-nav">
-        <NavLink to="/dashboard" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+        <NavLink to="/tenant/dashboard" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
           <span className="nav-icon">⊞</span> Dashboard
         </NavLink>
-        <NavLink to="/issues" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+        <NavLink to="/tenant/issues" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
           <span className="nav-icon"><span className="material-icons-outlined" style={{fontSize: '24px'}}>warning</span></span> Issues
         </NavLink>
-        <NavLink to="/notifications" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+        <NavLink to="/tenant/notifications" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
           <span className="nav-icon"><span className="material-icons-outlined" style={{fontSize: '24px'}}>notifications</span></span> Notifications
           {unreadCount > 0 && (
             <span className="nav-badge notif-count" id="notif-nav-badge">
@@ -44,16 +44,16 @@ const Sidebar = () => {
             </span>
           )}
         </NavLink>
-        <NavLink to="/complaints" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+        <NavLink to="/tenant/complaints" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
           <span className="nav-icon"><span className="material-icons-outlined" style={{fontSize: '24px'}}>chat</span></span> Complaints
         </NavLink>
-        <NavLink to="/services" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+        <NavLink to="/tenant/services" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
           <span className="nav-icon"><span className="material-icons-outlined" style={{fontSize: '24px'}}>build</span></span> Services
         </NavLink>
-        <NavLink to="/payments" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+        <NavLink to="/tenant/payments" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
           <span className="nav-icon"><span className="material-icons-outlined" style={{fontSize: '24px'}}>credit_card</span></span> Payments
         </NavLink>
-        <NavLink to="/profile" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+        <NavLink to="/tenant/profile" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
           <span className="nav-icon"><span className="material-icons-outlined" style={{fontSize: '24px'}}>person</span></span> Profile
         </NavLink>
       </nav>

@@ -8,7 +8,7 @@ import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
 
-export default function App() {
+export function SuperAdminPortal() {
   const [user, setUser] = useState(() => {
     try { return JSON.parse(sessionStorage.getItem('pg_user') || 'null'); }
     catch { return null; }
@@ -17,7 +17,7 @@ export default function App() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
-  const signedIn = user && user.role === 'super_admin' && sessionStorage.getItem('super_admin_token');
+  const signedIn = user && user.role === 'super_admin' && (sessionStorage.getItem('super_admin_token') || sessionStorage.getItem('pg_user'));
 
   function showToast(type, title, message) { setToast({ type, title, message, id: Date.now() }); }
 
@@ -58,3 +58,8 @@ export default function App() {
     {data ? pages[section] : !error && <p>Loading live data...</p>}
   </Shell>;
 }
+
+export default function App() {
+  return <SuperAdminPortal />;
+}
+

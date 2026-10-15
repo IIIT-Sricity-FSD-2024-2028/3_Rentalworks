@@ -26,7 +26,7 @@ export default function Header() {
   const handleLogout = () => {
     sessionStorage.removeItem('warden_user');
     sessionStorage.removeItem('pg_user'); // Required for central login architecture
-    window.location.href = '../../login/login/login.html';
+    window.location.href = '/login';
   };
 
   const { data } = useWardenData();
@@ -39,11 +39,14 @@ export default function Header() {
         <p>{currentUser.email}</p>
       </div>
       <div className="navbar-right">
-        <div className="nav-icon-btn" onClick={() => navigate('/notifications')} title="Notifications">
+        <div className="nav-icon-btn" onClick={() => navigate('/listings')} title="Browse PG Discovery Listings">
+          <span className="material-icons-outlined" style={{ fontSize: '24px' }}>storefront</span>
+        </div>
+        <div className="nav-icon-btn" onClick={() => navigate('/warden/notifications')} title="Notifications">
           <span className="material-icons-outlined" style={{ fontSize: '24px' }}>notifications</span>
           {unreadCount > 0 && <span className="notif-badge" />}
         </div>
-        <div className="nav-icon-btn" onClick={() => navigate('/profile')}>
+        <div className="nav-icon-btn" onClick={() => navigate('/warden/profile')} title="Profile">
           <span className="material-icons-outlined" style={{ fontSize: '24px' }}>person</span>
         </div>
         <button className="btn-logout" onClick={handleLogout}>↪ Logout</button>

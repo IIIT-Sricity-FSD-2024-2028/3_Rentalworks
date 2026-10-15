@@ -18,8 +18,8 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="/tenant" element={<Layout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="issues" element={<Issues />} />
             <Route path="notifications" element={<Notifications />} />
@@ -28,7 +28,17 @@ function App() {
             <Route path="payments" element={<Payments />} />
             <Route path="profile" element={<Profile />} />
           </Route>
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Navigate to="/tenant/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="issues" element={<Issues />} />
+            <Route path="notifications" element={<Notifications />} />
+            <Route path="complaints" element={<Complaints />} />
+            <Route path="services" element={<Services />} />
+            <Route path="payments" element={<Payments />} />
+            <Route path="profile" element={<Profile />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/tenant/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
