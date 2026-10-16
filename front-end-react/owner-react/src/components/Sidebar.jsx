@@ -7,7 +7,7 @@ export default function Sidebar({
   onClose,
   unreadNotifsCount = 0,
   openIssuesCount = 0,
-  user = { name: 'Rajesh Kumar', role: 'owner' }
+  user = { name: 'Owner', role: 'owner' }
 }) {
   const navItems = [
     { to: '/owner', icon: 'dashboard', label: 'Dashboard', end: true },
@@ -20,7 +20,7 @@ export default function Sidebar({
     { to: '/owner/subscription', icon: 'workspace_premium', label: 'Subscription' },
   ];
 
-  const initials = (user.name || 'Owner')
+  const initials = (user?.name || 'Owner')
     .split(' ')
     .map((w) => w[0])
     .join('')
@@ -75,7 +75,7 @@ export default function Sidebar({
           <div className="sidebar-user">
             <div className="user-avatar">{initials}</div>
             <div className="user-info">
-              <div className="user-name">{user.name || 'Property Owner'}</div>
+              <div className="user-name">{user?.name || 'Property Owner'}</div>
               <div className="user-role" id="sidebarUserRole">Property Owner</div>
             </div>
           </div>

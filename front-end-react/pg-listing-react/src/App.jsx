@@ -24,6 +24,7 @@ import OwnerPortal from './portals/OwnerPortal';
 import AdminPortal from './portals/AdminPortal';
 import WardenPortal from './portals/WardenPortal';
 import SuperAdminPortal from './portals/SuperAdminPortal';
+import ProtectedRoute from './components/ProtectedRoute';
 
 import './index.css';
 
@@ -57,13 +58,48 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Login />} />
 
-            {/* 4. Role-Based Management Portals */}
-            <Route path="/tenant/*" element={<TenantPortal />} />
+            {/* 4. Role-Based Management Portals (Protected by Authenticated Session) */}
+            <Route
+              path="/tenant/*"
+              element={
+                <ProtectedRoute allowedRoles={['tenant']}>
+                  <TenantPortal />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/dashboard/*" element={<Navigate to="/tenant/dashboard" replace />} />
-            <Route path="/owner/*" element={<OwnerPortal />} />
-            <Route path="/admin/*" element={<AdminPortal />} />
-            <Route path="/warden/*" element={<WardenPortal />} />
-            <Route path="/super-admin/*" element={<SuperAdminPortal />} />
+            <Route
+              path="/owner/*"
+              element={
+                <ProtectedRoute allowedRoles={['owner']}>
+                  <OwnerPortal />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/*"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                  <AdminPortal />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/warden/*"
+              element={
+                <ProtectedRoute allowedRoles={['warden']}>
+                  <WardenPortal />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/super-admin/*"
+              element={
+                <ProtectedRoute allowedRoles={['super_admin']}>
+                  <SuperAdminPortal />
+                </ProtectedRoute>
+              }
+            />
 
             {/* 5. Global Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />

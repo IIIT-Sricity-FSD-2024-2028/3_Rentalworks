@@ -98,6 +98,7 @@ export default function PaymentGateway() {
         name: residentName,
         email: residentEmail,
         phone: residentPhone,
+        gender: currentUser?.gender || (bookingFor === 'friend' ? friendDetails?.gender : undefined),
         password: residentPassword,
         propertyId: pg.id || 1,
         propertyName: pg.title || 'Sunrise PG Residency',

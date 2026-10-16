@@ -85,7 +85,7 @@ export default function Header({ onToggleSidebar, unreadNotifsCount = 0, onLogou
           <span className="material-icons-outlined icon-24">settings</span>
         </Link>
 
-        <button className="btn-logout-custom" onClick={onLogout}>
+        <button id="owner-logout-btn" className="btn-logout-custom" onClick={onLogout}>
           ↪ Logout
         </button>
       </div>

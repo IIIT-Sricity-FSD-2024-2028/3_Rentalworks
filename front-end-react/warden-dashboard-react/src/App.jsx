@@ -15,6 +15,28 @@ import Profile from './pages/Profile';
 import ErrorBoundary from './components/ErrorBoundary';
 
 export function WardenPortal() {
+  React.useEffect(() => {
+    const checkAuth = () => {
+      try {
+        const u = JSON.parse(sessionStorage.getItem('warden_user')) || JSON.parse(sessionStorage.getItem('pg_user'));
+        if (!u || u.role !== 'warden') {
+          window.location.replace('/login');
+        }
+      } catch {
+        window.location.replace('/login');
+      }
+    };
+    checkAuth();
+    window.addEventListener('pageshow', checkAuth);
+    window.addEventListener('popstate', checkAuth);
+    window.addEventListener('storage', checkAuth);
+    return () => {
+      window.removeEventListener('pageshow', checkAuth);
+      window.removeEventListener('popstate', checkAuth);
+      window.removeEventListener('storage', checkAuth);
+    };
+  }, []);
+
   return (
     <ErrorBoundary>
       <WardenLayout>

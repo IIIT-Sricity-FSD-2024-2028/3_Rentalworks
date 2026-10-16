@@ -41,82 +41,41 @@ let registeredOwners = JSON.parse(localStorage.getItem('registered_owners')) || 
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
-  showRoleSelector();
+  showLoginForm();
 });
 
 // ===== BACK BUTTON =====
 function goBack() {
-  hide('login-card-area');
-  hide('guest-signup-area');
-  hide('owner-reg-area');
-  show('role-selector', 'flex');
-  document.getElementById('back-btn').style.display = 'none';
-  document.querySelector('.card-panel-inner').style.maxWidth = '480px';
-  currentRole = null;
-  guestStep   = 1;
-}
-
-// ===== ROLE SELECTOR =====
-function showRoleSelector() {
-  hide('login-card-area');
-  hide('guest-signup-area');
-  hide('owner-reg-area');
-  hide('success-area');
-  show('role-selector', 'flex');
-  document.getElementById('back-btn').style.display = 'none';
-  document.querySelector('.card-panel-inner').style.maxWidth = '480px';
-}
-
-function selectRole(role) {
-  if (role === 'super_admin') {
-    window.location.href = '../../../front-end-react/super-admin-react/dist/index.html';
-    return;
-  }
-  currentRole = role;
-  hide('role-selector');
-  document.getElementById('back-btn').style.display = 'flex';
-
-  if (role === 'guest') {
-    showGuestLogin();
-  } else {
-    showLoginForm(role);
-  }
-}
-
-// ===== LOGIN FORM =====
-function showLoginForm(role) {
   hide('guest-signup-area');
   hide('owner-reg-area');
   show('login-card-area', 'block');
+  const backBtn = document.getElementById('back-btn');
+  if (backBtn) backBtn.style.display = 'none';
+  const panelInner = document.querySelector('.card-panel-inner');
+  if (panelInner) panelInner.style.maxWidth = '480px';
+  guestStep = 1;
+}
 
-  // Role-specific title and subtitle
-  const titles = {
-    super_admin: 'Super Admin Login',
-    admin:  'Admin Login',
-    warden: 'Warden Login',
-    owner:  'Owner Login',
-    tenant: 'Tenant Login'
-  };
-  const subs = {
-    super_admin: 'Global system administration access',
-    admin:  'System administration access',
-    warden: 'PG operations management',
-    owner:  'Property owner portal',
-    tenant: 'Resident account access'
-  };
+// ===== LOGIN FORM =====
+function showLoginForm() {
+  hide('guest-signup-area');
+  hide('owner-reg-area');
+  show('login-card-area', 'block');
+  const backBtn = document.getElementById('back-btn');
+  if (backBtn) backBtn.style.display = 'none';
 
   const titleEl = document.getElementById('login-role-title');
   const subEl   = document.getElementById('login-role-sub');
-  if (titleEl) titleEl.textContent = titles[role] || 'Login';
-  if (subEl)   subEl.textContent   = subs[role]   || 'Enter your credentials to continue';
+  if (titleEl) titleEl.textContent = 'Sign In';
+  if (subEl)   subEl.textContent   = 'Enter your credentials to access your dashboard';
 
-  // Username label — only guest uses email
   const label = document.getElementById('username-label');
-  if (label) label.textContent = 'Username';
+  if (label) label.textContent = 'Username or Email';
 
-  // Show only the correct footer — all others hidden
-  document.getElementById('guest-footer').style.display        = 'none';
-  document.getElementById('owner-register-link').style.display = role === 'owner' ? 'block' : 'none';
+  const guestFooter = document.getElementById('guest-footer');
+  if (guestFooter) guestFooter.style.display = 'block';
+  const ownerFooter = document.getElementById('owner-register-link');
+  if (ownerFooter) ownerFooter.style.display = 'block';
 
   clearLoginErrors();
 
@@ -124,12 +83,12 @@ function showLoginForm(role) {
   if (form) {
     form.onsubmit = (e) => {
       e.preventDefault();
-      handleLogin(role);
+      handleLogin();
     };
   }
 }
 
-async function handleLogin(role) {
+async function handleLogin() {
   const usernameInput = document.getElementById('login-username');
   const passwordInput = document.getElementById('login-password');
 
@@ -139,19 +98,13 @@ async function handleLogin(role) {
   clearLoginErrors();
   let valid = true;
 
-  const usernameLabel = role === 'guest' ? 'Email / Phone' : 'Username';
-
   if (!username) {
-    showErr('err-username', `${usernameLabel} is required`);
+    showErr('err-username', 'Username or Email is required');
     usernameInput?.classList.add('input-error');
     valid = false;
   }
   if (!password) {
     showErr('err-password', 'Password is required');
-    passwordInput?.classList.add('input-error');
-    valid = false;
-  } else if (password.length < 6) {
-    showErr('err-password', 'Password must be at least 6 characters');
     passwordInput?.classList.add('input-error');
     valid = false;
   }
@@ -166,38 +119,35 @@ async function handleLogin(role) {
   let user = null;
 
   try {
-    // Check registered guests/owners in localStorage
-    let registeredMatch = null;
-    if (role === 'guest') {
-      registeredMatch = registeredGuests.find(
+    // 1. Submit to backend API connected to Neon PostgreSQL
+    const response = await fetch('http://localhost:3000/users/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    if (response.ok) {
+      user = await response.json();
+    } else {
+      // Check registered guests/owners in localStorage fallback
+      const registeredMatch = registeredGuests.find(
         g => (g.email === username || g.phone === username) && g.password === password
-      );
-    }
-    if (role === 'owner') {
-      registeredMatch = registeredOwners.find(
+      ) || registeredOwners.find(
         o => o.email === username && o.password === password
       );
-    }
 
-    // Check mock credentials if available
-    let match = null;
-    if (typeof LOGIN_MOCK !== 'undefined' && LOGIN_MOCK.credentials[role]) {
-      const credList = LOGIN_MOCK.credentials[role] || [];
-      match = credList.find(c => (c.username === username || c.email === username || c.phone === username) && c.password === password);
-    }
-
-    user = match || registeredMatch;
-
-    // If not found locally, call backend API
-    if (!user && role !== 'guest') {
-      const response = await fetch('http://localhost:3000/users/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
-      if (response.ok) {
-        user = await response.json();
+      // Check mock credentials if available
+      let mockMatch = null;
+      if (typeof LOGIN_MOCK !== 'undefined' && LOGIN_MOCK.credentials) {
+        for (const roleKey of Object.keys(LOGIN_MOCK.credentials)) {
+          const credList = LOGIN_MOCK.credentials[roleKey] || [];
+          const found = credList.find(c => (c.username === username || c.email === username || c.phone === username) && c.password === password);
+          if (found) {
+            mockMatch = Object.assign({ role: roleKey }, found);
+            break;
+          }
+        }
       }
+      user = registeredMatch || mockMatch;
     }
   } catch (error) {
     console.error('Login error:', error);
@@ -209,7 +159,9 @@ async function handleLogin(role) {
   }
 
   if (user) {
-    // Only owners need pending check — guests are auto-active
+    const role = user.role || 'tenant';
+
+    // Only owners need pending check
     if (role === 'owner' && user.status === 'pending') {
       showLoginBanner(
         'Your property registration is pending admin verification. You will be notified once approved.',
@@ -218,11 +170,11 @@ async function handleLogin(role) {
       return;
     }
 
-    // Save session
+    // Save session across keys
     const sessionObj = {
       id:       user.id,
-      name:     user.name,
-      email:    user.email,
+      name:     user.name || username,
+      email:    user.email || `${username}@example.com`,
       phone:    user.phone || '',
       role:     role,
       property: user.property || '',
@@ -230,14 +182,17 @@ async function handleLogin(role) {
       address:  user.address  || ''
     };
     sessionStorage.setItem('pg_user', JSON.stringify(sessionObj));
-    if (role === 'warden') {
-      sessionStorage.setItem('warden_user', JSON.stringify(sessionObj));
-    }
+    sessionStorage.setItem('tenant_user', JSON.stringify(sessionObj));
+    sessionStorage.setItem('warden_user', JSON.stringify(sessionObj));
+    sessionStorage.setItem('owner_user', JSON.stringify(sessionObj));
+    sessionStorage.setItem('guest_user', JSON.stringify(sessionObj));
+    localStorage.setItem('currentUser', JSON.stringify(sessionObj));
+    localStorage.setItem('pg_user', JSON.stringify(sessionObj));
 
-    const formattedRole = role.charAt(0).toUpperCase() + role.slice(1);
-    showLoginBanner(`Directing ${user.name} to ${formattedRole} page...`, 'success');
+    const formattedRole = role.charAt(0).toUpperCase() + role.slice(1).replace('_', ' ');
+    showLoginBanner(`Directing ${user.name || username} to ${formattedRole} page...`, 'success');
 
-    setTimeout(() => routeUser(role), 1200);
+    setTimeout(() => routeUser(role), 800);
 
   } else {
     showLoginBanner('Invalid credentials. Please check and try again.', 'error');
@@ -253,8 +208,8 @@ function routeUser(role) {
     tenant: '../../Tenant/index.html',
     guest:  '../../pg_details/index.html'
   };
-  const dest = routes[role];
-  if (dest) window.location.href = dest;
+  const dest = routes[role] || '../../Tenant/index.html';
+  window.location.replace(dest);
 }
 
 // ===== GUEST LOGIN =====

@@ -26,56 +26,21 @@
             <div class="card-panel-inner">
                 
                 <button id="back-btn" class="back-btn" style="display: none;" onclick="goBack()">
-                    ← Back to Roles
+                    ← Back to Login
                 </button>
 
-                <div id="role-selector" class="card role-card">
-                    <div class="role-layout">
-                        <div class="role-layout-text">
-                            <h2 class="card-title">Select Your Role</h2>
-                        </div>
-                        
-                        <div class="role-grid">
-                            <button class="role-btn" onclick="selectRole('super_admin')">
-                                <div class="role-initial">S</div>
-                                Super Admin
-                            </button>
-                            <button class="role-btn" onclick="selectRole('admin')">
-                                <div class="role-initial">A</div>
-                                Admin
-                            </button>
-                            <button class="role-btn" onclick="selectRole('tenant')">
-                                <div class="role-initial">T</div>
-                                Tenant
-                            </button>
-                            <button class="role-btn" onclick="selectRole('guest')">
-                                <div class="role-initial">G</div>
-                                Guest
-                            </button>
-                            <button class="role-btn" onclick="selectRole('owner')">
-                                <div class="role-initial">O</div>
-                                Owner
-                            </button>
-                            <button class="role-btn" onclick="selectRole('warden')">
-                                <div class="role-initial">W</div>
-                                Warden
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="login-card-area" class="card login-card">
-                    <h2 id="login-role-title" class="card-title">Login</h2>
-                    <p id="login-role-sub" class="card-sub">Enter your credentials</p>
+                <div id="login-card-area" class="card login-card" style="display: block;">
+                    <h2 id="login-role-title" class="card-title">Sign In</h2>
+                    <p id="login-role-sub" class="card-sub">Enter your credentials to access your dashboard</p>
 
                     <div id="login-banner" class="login-banner"></div>
 
                     <form id="main-login-form">
                         <div class="form-field">
-                            <label id="username-label">Username</label>
+                            <label id="username-label">Username or Email</label>
                             <div class="inp-wrap">
                                 <span class="inp-ico"><span class="material-icons-outlined" style="font-size:20px;">person</span></span>
-                                <input type="text" id="login-username" placeholder="Enter your username">
+                                <input type="text" id="login-username" placeholder="Enter your username or email" autocomplete="username">
                             </div>
                             <div class="login-err-msg" id="err-username"></div>
                         </div>
@@ -84,7 +49,7 @@
                             <label>Password</label>
                             <div class="inp-wrap">
                                 <span class="inp-ico"><span class="material-icons-outlined" style="font-size:20px;">lock</span></span>
-                                <input type="password" id="login-password" placeholder="Enter your password">
+                                <input type="password" id="login-password" placeholder="Enter your password" autocomplete="current-password">
                                 <span class="toggle-pw" onclick="togglePw('login-password', this)"><span class="material-icons-outlined" style="font-size:24px;">visibility</span></span>
                             </div>
                             <div class="login-err-msg" id="err-password"></div>
@@ -93,10 +58,10 @@
                         <button type="submit" class="btn-login">Sign In</button>
                     </form>
 
-                    <div id="guest-footer" class="card-footer" style="display: none;">
+                    <div id="guest-footer" class="card-footer" style="display: block; margin-top: 20px; text-align: center;">
                         New to PG Rental Hub? <a href="#" class="footer-link" onclick="showGuestSignup()">Create Guest Account</a>
                     </div>
-                    <div id="owner-register-link" class="card-footer" style="display: none;">
+                    <div id="owner-register-link" class="card-footer" style="display: block; margin-top: 8px; text-align: center;">
                         Want to list your PG? <a href="#" class="footer-link" onclick="showOwnerRegistration()">Register Property</a>
                     </div>
                 </div>

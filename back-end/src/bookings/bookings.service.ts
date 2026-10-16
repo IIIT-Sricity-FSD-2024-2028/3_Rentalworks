@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -41,6 +41,24 @@ export class BookingsService {
   }
 
   async create(createBookingDto: CreateBookingDto) {
+    const user = await this.dataSource.getRepository(User).findOne({ where: { id: createBookingDto.tenantId } });
+    if (user && ['admin', 'owner', 'warden', 'super_admin'].includes(user.role)) {
+      throw new ForbiddenException('Unauthorized account: Management accounts cannot make tenant bookings.');
+    }
+    const property = await this.dataSource.getRepository(Property).findOne({ where: { id: createBookingDto.propertyId } });
+    if (property && user) {
+      const userGender = (user.gender || '').trim().toLowerCase();
+      const policy = (property.gender || 'unisex').trim().toLowerCase();
+      if (policy.includes('girl') || policy === 'female') {
+        if (userGender !== 'female') {
+          throw new BadRequestException(`Booking Ineligible: ${property.name} has a Girls Only policy. Ineligible booking rejected.`);
+        }
+      } else if (policy.includes('boy') || policy === 'male') {
+        if (userGender !== 'male') {
+          throw new BadRequestException(`Booking Ineligible: ${property.name} has a Boys Only policy. Ineligible booking rejected.`);
+        }
+      }
+    }
     const { phone, ...bookingData } = createBookingDto;
     const newBooking = this.bookingsRepository.create({
       ...bookingData,
@@ -75,13 +93,62 @@ export class BookingsService {
       const propertyRepo = manager.getRepository(Property);
       const wardenNotifRepo = manager.getRepository(WardenNotification);
 
-      // 1. Resolve or Create User (Promoted to Tenant)
+      // 1. Resolve Property FIRST for policy verification
+      let property: Property | null = null;
+      if (dto.propertyId) {
+        property = await propertyRepo.findOne({ where: { id: dto.propertyId } });
+      }
+      if (!property && dto.propertyName) {
+        property = await propertyRepo.findOne({ where: { name: dto.propertyName.trim() } });
+      }
+      if (!property) {
+        // Fallback to first available approved property
+        property = (await propertyRepo.findOne({ where: { status: 'approved' }, order: { id: 'ASC' } }))
+          || (await propertyRepo.findOne({ where: { id: 1 } }));
+      }
+      const propId = property ? property.id : 1;
+      const propName = property ? property.name : (dto.propertyName || 'Sunrise PG Residency');
+
+      // 2. Resolve or Create User (Promoted to Tenant)
       let user: User | null = null;
       if (dto.guestId) {
         user = await userRepo.findOne({ where: { id: dto.guestId } });
       }
       if (!user && dto.email) {
         user = await userRepo.findOne({ where: { email: dto.email.trim() } });
+      }
+
+      // Check role restriction: prevent management accounts from making bookings
+      if (user && ['admin', 'owner', 'warden', 'super_admin'].includes(user.role)) {
+        throw new ForbiddenException(
+          `Unauthorized account: ${user.role.toUpperCase()} accounts cannot make tenant PG bookings. Please use a Guest or Tenant account.`
+        );
+      }
+
+      // 3. Gender Policy Verification
+      const rawGender = (dto.gender || user?.gender || '').trim().toLowerCase();
+      if (!rawGender) {
+        throw new BadRequestException('Tenant gender is required to verify booking eligibility. Please select your gender.');
+      }
+      const normalizedGender = (rawGender === 'female' || rawGender === 'girl' || rawGender === 'women' || rawGender === 'f')
+        ? 'female'
+        : (rawGender === 'male' || rawGender === 'boy' || rawGender === 'men' || rawGender === 'm')
+        ? 'male'
+        : 'other';
+
+      const propertyPolicy = (property?.gender || 'unisex').trim().toLowerCase();
+      const isGirlsOnly = propertyPolicy.includes('girl') || propertyPolicy === 'female';
+      const isBoysOnly = propertyPolicy.includes('boy') || propertyPolicy === 'male';
+
+      if (isGirlsOnly && normalizedGender !== 'female') {
+        throw new BadRequestException(
+          `Ineligible Booking: "${propName}" is designated as Girls Only. Male tenants are not eligible to book this PG.`
+        );
+      }
+      if (isBoysOnly && normalizedGender !== 'male') {
+        throw new BadRequestException(
+          `Ineligible Booking: "${propName}" is designated as Boys Only. Female tenants are not eligible to book this PG.`
+        );
       }
 
       const rawPassword = dto.password?.trim() || 'tenant123';
@@ -98,6 +165,7 @@ export class BookingsService {
         user.status = 'active';
         user.name = dto.name.trim() || user.name;
         user.phone = dto.phone.trim() || user.phone;
+        user.gender = normalizedGender;
         user.password = passwordHash;
         user.joinDate = dto.checkIn || user.joinDate || new Date().toISOString().split('T')[0];
         await userRepo.save(user);
@@ -109,6 +177,7 @@ export class BookingsService {
           email: dto.email.trim(),
           phone: dto.phone.trim(),
           role: 'tenant',
+          gender: normalizedGender,
           username,
           password: passwordHash,
           status: 'active',
@@ -116,22 +185,6 @@ export class BookingsService {
         });
         user = await userRepo.save(user);
       }
-
-      // 2. Resolve Property
-      let property: Property | null = null;
-      if (dto.propertyId) {
-        property = await propertyRepo.findOne({ where: { id: dto.propertyId } });
-      }
-      if (!property && dto.propertyName) {
-        property = await propertyRepo.findOne({ where: { name: dto.propertyName.trim() } });
-      }
-      if (!property) {
-        // Fallback to first available approved property to prevent foreign key errors
-        property = (await propertyRepo.findOne({ where: { status: 'approved' }, order: { id: 'ASC' } }))
-          || (await propertyRepo.findOne({ where: { id: 1 } }));
-      }
-      const propId = property ? property.id : 1;
-      const propName = property ? property.name : (dto.propertyName || 'Sunrise PG Residency');
 
       // 3. Resolve or Allocate Room
       const isSingleRoom =

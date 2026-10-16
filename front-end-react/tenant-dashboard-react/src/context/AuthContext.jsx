@@ -10,21 +10,56 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [activeBooking, setActiveBooking] = useState(null);
 
-  // Initialize tenant ID from persisted session or default to '1'
+  // Initialize tenant ID from persisted session
   const getInitialTenantId = () => {
     try {
       const stored = sessionStorage.getItem('tenant_user') || sessionStorage.getItem('pg_user') || localStorage.getItem('currentUser');
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed && parsed.id) return String(parsed.id);
+        if (parsed && parsed.id && parsed.role === 'tenant') return String(parsed.id);
       }
     } catch (e) {
       // ignore
     }
-    return '1';
+    return null;
   };
 
   const [tenantId, setTenantId] = useState(getInitialTenantId);
+
+  // Guard: Verify authentication on mount, bfcache restore, and history navigation
+  useEffect(() => {
+    const checkAuth = () => {
+      try {
+        const stored = sessionStorage.getItem('tenant_user') || sessionStorage.getItem('pg_user') || localStorage.getItem('currentUser');
+        if (!stored) {
+          window.location.replace('/login');
+          return;
+        }
+        const parsed = JSON.parse(stored);
+        if (!parsed || parsed.role !== 'tenant') {
+          window.location.replace('/login');
+          return;
+        }
+        if (String(parsed.id) !== tenantId) {
+          setTenantId(String(parsed.id));
+        }
+      } catch {
+        window.location.replace('/login');
+      }
+    };
+
+    checkAuth();
+    window.addEventListener('storage', checkAuth);
+    window.addEventListener('pageshow', checkAuth);
+    window.addEventListener('popstate', checkAuth);
+    window.addEventListener('rentbro-logout', checkAuth);
+    return () => {
+      window.removeEventListener('storage', checkAuth);
+      window.removeEventListener('pageshow', checkAuth);
+      window.removeEventListener('popstate', checkAuth);
+      window.removeEventListener('rentbro-logout', checkAuth);
+    };
+  }, [tenantId]);
 
   const setTenantSession = (user) => {
     if (user && user.id) {
@@ -39,13 +74,26 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     sessionStorage.removeItem('tenant_user');
     sessionStorage.removeItem('pg_user');
+    sessionStorage.removeItem('guest_user');
+    sessionStorage.removeItem('warden_user');
+    sessionStorage.removeItem('owner_user');
+    sessionStorage.removeItem('super_admin_token');
     localStorage.removeItem('currentUser');
+    localStorage.removeItem('pg_user');
     setTenant(null);
     setActiveBooking(null);
+    try {
+      window.dispatchEvent(new Event('rentbro-logout'));
+    } catch (_) {}
+    window.location.replace('/login');
   };
 
   useEffect(() => {
     const fetchTenantData = async () => {
+      if (!tenantId) {
+        setLoading(false);
+        return;
+      }
       try {
         setLoading(true);
         // Fetch user profile from Neon

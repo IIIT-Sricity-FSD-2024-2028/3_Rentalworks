@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useBooking } from '../context/BookingContext';
 
 export default function AuthModal() {
-  const { authModalOpen, setAuthModalOpen, login, registerGuest, authModalCallback } = useAuth();
+  const { authModalOpen, setAuthModalOpen, guestLogin, registerGuest, authModalCallback } = useAuth();
+  const { selectedPG } = useBooking();
   const [mode, setMode] = useState('login'); // 'login' | 'signup'
 
   const [loginForm, setLoginForm] = useState({ identifier: '', password: '' });
-  const [signupForm, setSignupForm] = useState({ name: '', email: '', phone: '', password: '' });
+  const [signupForm, setSignupForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    gender: 'male',
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -27,7 +35,7 @@ export default function AuthModal() {
     setLoading(true);
     setError('');
     try {
-      const user = await login(loginForm.identifier.trim(), loginForm.password);
+      const user = await guestLogin(loginForm.identifier.trim(), loginForm.password);
       setAuthModalOpen(false);
       if (typeof authModalCallback === 'function') {
         authModalCallback(user);
@@ -45,6 +53,10 @@ export default function AuthModal() {
       setError('Please provide Name, Email, and Phone number');
       return;
     }
+    if (!signupForm.gender) {
+      setError('Please select your gender');
+      return;
+    }
     if (!signupForm.password || signupForm.password.length < 6) {
       setError('Password must be at least 6 characters long');
       return;
@@ -57,6 +69,7 @@ export default function AuthModal() {
         name: signupForm.name.trim(),
         email: signupForm.email.trim(),
         phone: signupForm.phone.trim(),
+        gender: signupForm.gender,
         password: signupForm.password,
       });
       setAuthModalOpen(false);
@@ -80,11 +93,17 @@ export default function AuthModal() {
         <div className="auth-modal-header">
           <div className="auth-logo-badge">
             <span className="material-icons-outlined" style={{ fontSize: '30px', color: '#ca8a04' }}>
-              lock
+              badge
             </span>
           </div>
-          <h2>Guest Sign In Required</h2>
-          <p>Please authenticate or create a quick guest account to proceed with your room reservation.</p>
+          <h2>Guest Booking Authentication</h2>
+          <p>
+            {selectedPG?.title ? (
+              <span>Continuing reservation for <strong>{selectedPG.title}</strong></span>
+            ) : (
+              <span>Sign in or create a guest profile to proceed with room reservation.</span>
+            )}
+          </p>
         </div>
 
         <div className="auth-modal-tabs">
@@ -93,7 +112,7 @@ export default function AuthModal() {
             onClick={() => { setMode('login'); setError(''); }}
             type="button"
           >
-            Sign In
+            Guest Sign In
           </button>
           <button
             className={`auth-tab-btn ${mode === 'signup' ? 'active' : ''}`}
@@ -105,9 +124,9 @@ export default function AuthModal() {
         </div>
 
         {error && (
-          <div className="auth-error-banner">
-            <span className="material-icons-outlined" style={{ fontSize: '18px' }}>error_outline</span>
-            {error}
+          <div className="auth-error-banner" style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', padding: '12px 14px', borderRadius: '8px', fontSize: '13.5px', marginBottom: '16px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+            <span className="material-icons-outlined" style={{ fontSize: '18px', flexShrink: 0, marginTop: '2px' }}>error_outline</span>
+            <span>{error}</span>
           </div>
         )}
 
@@ -119,7 +138,7 @@ export default function AuthModal() {
                 <span className="material-icons-outlined">mail_outline</span>
                 <input
                   type="text"
-                  placeholder="e.g. guest@gmail.com or 9876543210"
+                  placeholder="e.g. testguest@example.com or tenant1"
                   value={loginForm.identifier}
                   onChange={(e) => setLoginForm({ ...loginForm, identifier: e.target.value })}
                   required
@@ -142,11 +161,11 @@ export default function AuthModal() {
             </div>
 
             <button type="submit" className="btn-auth-submit" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign In & Continue Booking →'}
+              {loading ? 'Authenticating...' : 'Sign In & Continue Booking →'}
             </button>
 
-            <div className="auth-helper-note">
-              <span>Demo Account: <code>tenant1</code> / <code>password123</code> or create a new guest account</span>
+            <div className="auth-helper-note" style={{ fontSize: '12px', color: '#64748b', marginTop: '12px', textAlign: 'center' }}>
+              <span>Guests &amp; Tenants only. Management accounts (Admin/Owner/Warden) use Portal Login.</span>
             </div>
           </form>
         ) : (
@@ -157,7 +176,7 @@ export default function AuthModal() {
                 <span className="material-icons-outlined">person_outline</span>
                 <input
                   type="text"
-                  placeholder="e.g. Vikram Joshi"
+                  placeholder="e.g. Rohit Kumar"
                   value={signupForm.name}
                   onChange={(e) => setSignupForm({ ...signupForm, name: e.target.value })}
                   required
@@ -172,7 +191,7 @@ export default function AuthModal() {
                   <span className="material-icons-outlined">mail_outline</span>
                   <input
                     type="email"
-                    placeholder="vikram@example.com"
+                    placeholder="rohit@example.com"
                     value={signupForm.email}
                     onChange={(e) => setSignupForm({ ...signupForm, email: e.target.value })}
                     required
@@ -196,7 +215,24 @@ export default function AuthModal() {
             </div>
 
             <div className="form-field">
-              <label>Create Password (used for Tenant Dashboard) *</label>
+              <label>Gender * (Required for PG Booking Eligibility)</label>
+              <div className="input-box" style={{ padding: '4px 12px' }}>
+                <span className="material-icons-outlined" style={{ color: '#ca8a04' }}>wc</span>
+                <select
+                  value={signupForm.gender}
+                  onChange={(e) => setSignupForm({ ...signupForm, gender: e.target.value })}
+                  required
+                  style={{ width: '100%', height: '42px', border: 'none', background: 'transparent', outline: 'none', fontSize: '14px', color: '#1e293b', cursor: 'pointer' }}
+                >
+                  <option value="male">Male (Eligible for Boys &amp; Co-ed PGs)</option>
+                  <option value="female">Female (Eligible for Girls &amp; Co-ed PGs)</option>
+                  <option value="other">Other (Eligible for Co-ed PGs)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="form-field">
+              <label>Create Password *</label>
               <div className="input-box">
                 <span className="material-icons-outlined">vpn_key</span>
                 <input
@@ -210,7 +246,7 @@ export default function AuthModal() {
             </div>
 
             <button type="submit" className="btn-auth-submit" disabled={loading}>
-              {loading ? 'Creating Guest Profile...' : 'Complete Sign Up & Reserve Room →'}
+              {loading ? 'Creating Profile...' : 'Complete Sign Up & Continue Booking →'}
             </button>
           </form>
         )}

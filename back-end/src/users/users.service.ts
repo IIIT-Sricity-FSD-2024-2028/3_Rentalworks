@@ -112,7 +112,18 @@ export class UsersService {
     return result;
   }
 
-  async guestRegister(dto: { name: string; email: string; phone: string; password?: string }) {
+  async guestLogin(loginDto: LoginDto) {
+    const user = await this.login(loginDto);
+    const unauthorizedRoles = ['admin', 'owner', 'warden', 'super_admin'];
+    if (unauthorizedRoles.includes(user.role)) {
+      throw new ForbiddenException(
+        `Unauthorized account: ${user.role.toUpperCase()} accounts cannot access the guest booking flow. Please sign in with a Guest or Tenant account, or visit the main Portal Login for dashboard access.`
+      );
+    }
+    return user;
+  }
+
+  async guestRegister(dto: { name: string; email: string; phone: string; password?: string; gender?: string }) {
     const email = (dto.email || '').trim().toLowerCase();
     const phone = (dto.phone || '').trim();
 
@@ -121,6 +132,15 @@ export class UsersService {
     });
 
     if (user) {
+      if (['admin', 'owner', 'warden', 'super_admin'].includes(user.role)) {
+        throw new ForbiddenException(
+          `Unauthorized account: This email belongs to an ${user.role.toUpperCase()} account. Management accounts cannot register or book as guests.`
+        );
+      }
+      if (dto.gender && !user.gender) {
+        user.gender = dto.gender;
+        await this.usersRepository.save(user);
+      }
       const { password, ...result } = user;
       return result;
     }
@@ -137,6 +157,7 @@ export class UsersService {
       username,
       password: passwordHash,
       role: 'guest',
+      gender: dto.gender || undefined,
       status: 'active',
       joinDate: new Date().toISOString().split('T')[0],
     });
@@ -185,6 +206,7 @@ export class UsersService {
         name: t.name,
         email: t.email,
         phone: t.phone,
+        gender: t.gender,
         role: t.role,
         room: roomNumber,
         checkIn,
@@ -231,6 +253,7 @@ export class UsersService {
         email,
         phone: dto.phone.trim(),
         role: 'tenant',
+        gender: dto.gender || undefined,
         username,
         password: passwordHash,
         status: 'active',
@@ -339,6 +362,7 @@ export class UsersService {
       if (dto.name) user.name = dto.name.trim();
       if (dto.phone) user.phone = dto.phone.trim();
       if (dto.email) user.email = dto.email.trim();
+      if (dto.gender) user.gender = dto.gender.trim();
       await userRepo.save(user);
 
       const bookingRepo = manager.getRepository(Booking);

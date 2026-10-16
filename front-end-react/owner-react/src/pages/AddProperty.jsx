@@ -23,6 +23,7 @@ export default function AddProperty({ onAddProperty }) {
     state: '',
     pincode: '',
     type: '',
+    gender: 'unisex',
     capacity: '',
     rooms: '',
     rent: '',
@@ -101,6 +102,7 @@ export default function AddProperty({ onAddProperty }) {
       state: formData.state.trim(),
       pincode: formData.pincode.trim(),
       type: formData.type,
+      gender: formData.gender || (formData.type === 'Female' ? 'girls' : formData.type === 'Male' ? 'boys' : 'unisex'),
       totalCapacity: Number(formData.capacity),
       totalRooms: Number(formData.rooms),
       occupiedRooms: Number(formData.occupied) || 0,
@@ -229,6 +231,25 @@ export default function AddProperty({ onAddProperty }) {
                 <option value="Female">Female Only</option>
               </select>
               {errors.type && <span className="form-error">{errors.type}</span>}
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">
+                Gender Policy <span className="req">*</span>
+              </label>
+              <select
+                className="form-input"
+                id="gender"
+                value={formData.gender}
+                onChange={handleChange}
+              >
+                <option value="unisex">Co-ed (All Genders Eligible)</option>
+                <option value="boys">Boys Only (Male Tenants Only)</option>
+                <option value="girls">Girls Only (Female Tenants Only)</option>
+              </select>
+              <span className="text-xs text-muted" style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                Enforced by backend booking verification
+              </span>
             </div>
           </div>
         </div>

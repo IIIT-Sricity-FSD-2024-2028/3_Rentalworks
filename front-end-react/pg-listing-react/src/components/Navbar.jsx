@@ -111,21 +111,14 @@ export default function Navbar() {
               )}
             </div>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <button
-                className="btn-nav-outline"
-                onClick={() => navigate('/login')}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
-                title="Unified RentBro Multi-Role Login Portal"
-              >
-                <span className="material-icons-outlined" style={{ fontSize: '18px' }}>vpn_key</span>
-                Portal Login
-              </button>
-              <button className="btn-nav-primary" onClick={() => setAuthModalOpen(true)}>
-                <span className="material-icons-outlined" style={{ fontSize: '18px' }}>login</span>
-                Guest Sign In
-              </button>
-            </div>
+            <button
+              className="btn-nav-primary"
+              onClick={() => navigate('/login')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <span className="material-icons-outlined" style={{ fontSize: '18px' }}>login</span>
+              Sign In
+            </button>
           )}
 
           {isDetailsPage && (

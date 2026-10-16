@@ -42,6 +42,11 @@ export class CreateUserDto {
   address?: string;
 
   @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  gender?: string;
+
+  @ApiProperty({ required: false })
   @IsOptional()
   preferences?: any;
 }
@@ -94,6 +99,11 @@ export class UpdateUserDto {
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
+  gender?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
   password?: string;
 }
 
@@ -124,6 +134,11 @@ export class CreateTenantDto {
   @IsEmail()
   @IsOptional()
   email?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  gender?: string;
 
   @ApiProperty()
   @IsString()
@@ -159,6 +174,11 @@ export class UpdateTenantDto {
   @IsEmail()
   @IsOptional()
   email?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  gender?: string;
 
   @ApiProperty({ required: false })
   @IsString()
