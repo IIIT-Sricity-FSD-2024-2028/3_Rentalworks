@@ -34,26 +34,37 @@ export class NotificationsController {
     @Query('userId') userId?: string,
     @Headers('x-user-id') headerUserId?: string,
   ) {
-    const id = userId || headerUserId;
-    return this.notificationsService.findAll(id ? +id : undefined);
+    const rawId = userId || headerUserId;
+    const num = rawId ? Number(rawId) : NaN;
+    const parsedId =
+      !isNaN(num) && Number.isInteger(num) && num > 0 && num <= 2147483647
+        ? num
+        : undefined;
+    return this.notificationsService.findAll(parsedId);
   }
 
   @Put('read-all')
   @Roles('admin', 'warden', 'tenant', 'owner', 'super_admin')
   @ApiOperation({ summary: 'Mark all notifications as read (PUT)' })
   markAllAsReadPut(@Headers('x-user-id') headerUserId?: string) {
-    return this.notificationsService.markAllAsRead(
-      headerUserId ? +headerUserId : undefined,
-    );
+    const num = headerUserId ? Number(headerUserId) : NaN;
+    const parsedId =
+      !isNaN(num) && Number.isInteger(num) && num > 0 && num <= 2147483647
+        ? num
+        : undefined;
+    return this.notificationsService.markAllAsRead(parsedId);
   }
 
   @Patch('read-all')
   @Roles('admin', 'warden', 'tenant', 'owner', 'super_admin')
   @ApiOperation({ summary: 'Mark all notifications as read (PATCH)' })
   markAllAsRead(@Headers('x-user-id') headerUserId?: string) {
-    return this.notificationsService.markAllAsRead(
-      headerUserId ? +headerUserId : undefined,
-    );
+    const num = headerUserId ? Number(headerUserId) : NaN;
+    const parsedId =
+      !isNaN(num) && Number.isInteger(num) && num > 0 && num <= 2147483647
+        ? num
+        : undefined;
+    return this.notificationsService.markAllAsRead(parsedId);
   }
 
   @Put(':id/read')

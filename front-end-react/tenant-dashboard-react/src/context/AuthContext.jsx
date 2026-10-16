@@ -16,7 +16,12 @@ export const AuthProvider = ({ children }) => {
       const stored = sessionStorage.getItem('tenant_user') || sessionStorage.getItem('pg_user') || localStorage.getItem('currentUser');
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed && parsed.id && parsed.role === 'tenant') return String(parsed.id);
+        if (parsed && parsed.id) {
+          const numId = Number(parsed.id);
+          if (Number.isInteger(numId) && numId > 0 && numId <= 2147483647) {
+            return String(numId);
+          }
+        }
       }
     } catch (e) {
       // ignore
@@ -84,7 +89,7 @@ export const AuthProvider = ({ children }) => {
     setActiveBooking(null);
     try {
       window.dispatchEvent(new Event('rentbro-logout'));
-    } catch (_) {}
+    } catch (_) { }
     window.location.replace('/login');
   };
 
@@ -113,7 +118,7 @@ export const AuthProvider = ({ children }) => {
 
         // Fetch bookings for this user to get active booking
         const bookings = await apiFetch(`/bookings?userId=${tenantId}`).catch(() => []);
-        
+
         if (Array.isArray(bookings) && bookings.length > 0) {
           const userBookings = bookings.filter(b => b.tenantId === Number(tenantId) || b.tenant?.id === Number(tenantId));
           const active = userBookings.find(b => b.status === 'confirmed' || b.status === 'active') || userBookings[0];

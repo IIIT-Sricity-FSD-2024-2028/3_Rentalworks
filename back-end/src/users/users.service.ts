@@ -36,6 +36,9 @@ export class UsersService {
   }
 
   async findOne(id: number) {
+    if (!id || isNaN(id) || !Number.isInteger(id) || id <= 0 || id > 2147483647) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
     const user = await this.usersRepository.findOneBy({ id });
     if (!user) throw new NotFoundException(`User with ID ${id} not found`);
     return user;
