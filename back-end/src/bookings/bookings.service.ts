@@ -21,8 +21,12 @@ export class BookingsService {
 
   findAll(tenantId?: number, propertyId?: number) {
     const where: any = {};
-    if (tenantId) where.tenantId = tenantId;
-    if (propertyId) where.propertyId = propertyId;
+    if (tenantId && !isNaN(tenantId) && Number.isInteger(tenantId) && tenantId > 0 && tenantId <= 2147483647) {
+      where.tenantId = tenantId;
+    }
+    if (propertyId && !isNaN(propertyId) && Number.isInteger(propertyId) && propertyId > 0 && propertyId <= 2147483647) {
+      where.propertyId = propertyId;
+    }
 
     return this.bookingsRepository.find({
       where,
@@ -31,6 +35,9 @@ export class BookingsService {
   }
 
   async findOne(id: number) {
+    if (!id || isNaN(id) || !Number.isInteger(id) || id <= 0 || id > 2147483647) {
+      throw new NotFoundException(`Booking with ID ${id} not found`);
+    }
     const booking = await this.bookingsRepository.findOne({
       where: { id },
       relations: { tenant: true, property: true, roomEntity: true },

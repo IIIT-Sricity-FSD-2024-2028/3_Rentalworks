@@ -50,8 +50,8 @@ export class PaymentsService {
     const newPayment = this.paymentsRepository.create({
       ...createPaymentDto,
       paidDate: new Date().toISOString().split('T')[0],
-      status: 'pending',
-      clearance: 'Pending',
+      status: createPaymentDto.status || 'completed',
+      clearance: createPaymentDto.clearance || 'Approved',
       platformFee,
     });
     return this.paymentsRepository.save(newPayment);

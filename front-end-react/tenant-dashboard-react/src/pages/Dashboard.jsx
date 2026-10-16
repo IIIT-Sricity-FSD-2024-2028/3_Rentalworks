@@ -44,11 +44,17 @@ const Dashboard = () => {
         setComplaintsCount(userComplaints.length + openIssues.length);
         
         // Fetch payments
-        const userPendingPayments = (Array.isArray(allPayments) ? allPayments : []).filter(
-          p => p.tenantId === tenant.id && p.status === 'pending'
+        const curM = new Date().getMonth();
+        const curY = new Date().getFullYear();
+        const userCompletedThisMonth = (Array.isArray(allPayments) ? allPayments : []).filter(
+          p => p.tenantId === tenant.id && (p.status === 'completed' || p.status === 'success' || p.status === 'verified') &&
+          new Date(p.paidDate || p.createdAt).getMonth() === curM &&
+          new Date(p.paidDate || p.createdAt).getFullYear() === curY
         );
-        const totalDue = userPendingPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-        setPaymentsDue(totalDue);
+        const monthlyRentVal = activeBooking ? Number(activeBooking.rent || 0) : 0;
+        const paidSoFar = userCompletedThisMonth.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+        const remainingDue = monthlyRentVal > 0 ? Math.max(0, monthlyRentVal - paidSoFar) : 0;
+        setPaymentsDue(remainingDue);
 
         // Service requests
         const activeServices = (Array.isArray(myServiceRequests) ? myServiceRequests : []).filter(

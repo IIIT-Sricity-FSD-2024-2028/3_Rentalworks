@@ -629,8 +629,8 @@ export default function Login() {
                     {guestStep === 1
                       ? 'Personal Info'
                       : guestStep === 2
-                      ? 'Address Details'
-                      : 'Secure Account'}
+                        ? 'Address Details'
+                        : 'Secure Account'}
                   </h2>
                   <p className="stepper-sub" id="signup-subtitle">
                     Step {guestStep} of 3

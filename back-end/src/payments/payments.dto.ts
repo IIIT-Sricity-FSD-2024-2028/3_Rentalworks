@@ -1,16 +1,20 @@
 import { IsString, IsNumber, IsOptional } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreatePaymentDto {
   @ApiProperty()
+  @Type(() => Number)
   @IsNumber()
   tenantId: number;
 
   @ApiProperty()
+  @Type(() => Number)
   @IsNumber()
   propertyId: number;
 
   @ApiProperty({ required: false })
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   roomId?: number;
@@ -20,6 +24,7 @@ export class CreatePaymentDto {
   room: string;
 
   @ApiProperty()
+  @Type(() => Number)
   @IsNumber()
   amount: number;
 
@@ -30,6 +35,16 @@ export class CreatePaymentDto {
   @ApiProperty()
   @IsString()
   transactionId: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  status?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  clearance?: string;
 }
 
 export class UpdatePaymentDto {

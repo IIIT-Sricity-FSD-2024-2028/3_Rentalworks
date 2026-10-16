@@ -16,7 +16,12 @@ export const AuthProvider = ({ children }) => {
       const stored = sessionStorage.getItem('tenant_user') || sessionStorage.getItem('pg_user') || localStorage.getItem('currentUser');
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed && parsed.id) return String(parsed.id);
+        if (parsed && parsed.id) {
+          const numId = Number(parsed.id);
+          if (Number.isInteger(numId) && numId > 0 && numId <= 2147483647) {
+            return String(numId);
+          }
+        }
       }
     } catch (e) {
       // ignore

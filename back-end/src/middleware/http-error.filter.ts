@@ -44,10 +44,10 @@ export class HttpErrorFilter implements ExceptionFilter {
 
     console.error('EXCEPTION IN FILTER:', exception);
 
+    const stack = exception instanceof Error ? exception.stack : JSON.stringify(exception);
     // Log the error using Winston
     logger.error(
-      `${request.method} ${request.url} ${status} - Error: ${JSON.stringify(errorResponse)}`,
-      exception instanceof Error ? exception.stack : '',
+      `${request.method} ${request.url} ${status} - Error: ${JSON.stringify(errorResponse)} - Details: ${stack}`,
     );
 
     response.status(status).json(errorResponse);

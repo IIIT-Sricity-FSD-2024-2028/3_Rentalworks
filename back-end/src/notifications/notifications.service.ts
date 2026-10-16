@@ -14,21 +14,46 @@ export class NotificationsService {
     private notificationsRepository: Repository<Notification>,
   ) { }
 
-  findAll(userId?: number) {
-    if (userId) {
-      return this.notificationsRepository.find({
-        where: [{ userId }, { userId: IsNull() }],
+  async findAll(userId?: number) {
+    const validUserId =
+      typeof userId === 'number' &&
+      Number.isInteger(userId) &&
+      userId > 0 &&
+      userId <= 2147483647
+        ? userId
+        : undefined;
+
+    try {
+      if (validUserId) {
+        const notifications = await this.notificationsRepository.find({
+          where: [{ userId: validUserId }, { userId: IsNull() }],
+          relations: { byUser: true, user: true },
+          order: { id: 'DESC' },
+        });
+
+        // Filter for announcements targeting specific recipient IDs if present
+        return notifications.filter((n) => {
+          if (!n.recipientUserIds || !Array.isArray(n.recipientUserIds) || n.recipientUserIds.length === 0) {
+            return true;
+          }
+          return n.recipientUserIds.includes(validUserId);
+        });
+      }
+
+      return await this.notificationsRepository.find({
         relations: { byUser: true, user: true },
         order: { id: 'DESC' },
       });
+    } catch (err) {
+      // Gracefully fall back to empty list on unexpected database errors
+      return [];
     }
-    return this.notificationsRepository.find({
-      relations: { byUser: true, user: true },
-      order: { id: 'DESC' },
-    });
   }
 
   async findOne(id: number) {
+    if (!id || isNaN(id) || !Number.isInteger(id) || id <= 0 || id > 2147483647) {
+      throw new NotFoundException(`Notification with ID ${id} not found`);
+    }
     const notification = await this.notificationsRepository.findOne({
       where: { id },
       relations: { byUser: true, user: true },
@@ -71,12 +96,20 @@ export class NotificationsService {
   }
 
   async markAllAsRead(userId?: number) {
+    const validUserId =
+      typeof userId === 'number' &&
+      Number.isInteger(userId) &&
+      userId > 0 &&
+      userId <= 2147483647
+        ? userId
+        : undefined;
+
     const qb = this.notificationsRepository
       .createQueryBuilder()
       .update(Notification)
       .set({ read: true, isRead: true });
-    if (userId) {
-      qb.where('"userId" = :userId OR "userId" IS NULL', { userId });
+    if (validUserId) {
+      qb.where('"userId" = :userId OR "userId" IS NULL', { userId: validUserId });
     }
     await qb.execute();
     return { success: true, message: 'All notifications marked as read' };

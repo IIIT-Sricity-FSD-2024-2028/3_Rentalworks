@@ -1,11 +1,18 @@
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
+const MAX_POSTGRES_INT = 2147483647;
+
 function getActiveTenant() {
   try {
     const stored = sessionStorage.getItem('tenant_user') || sessionStorage.getItem('pg_user') || localStorage.getItem('currentUser');
     if (stored) {
       const parsed = JSON.parse(stored);
-      if (parsed && parsed.id) return parsed;
+      if (parsed && parsed.id) {
+        const numId = Number(parsed.id);
+        if (Number.isInteger(numId) && numId > 0 && numId <= MAX_POSTGRES_INT) {
+          return { ...parsed, id: numId };
+        }
+      }
     }
   } catch (_) {}
   return null;
