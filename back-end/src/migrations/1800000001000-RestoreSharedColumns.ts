@@ -13,6 +13,7 @@ export class RestoreSharedColumns1800000001000 implements MigrationInterface {
     await queryRunner.query('ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "policy" jsonb');
     await queryRunner.query('ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "twoFactorSecret" varchar');
     await queryRunner.query('ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "twoFactorEnabled" boolean NOT NULL DEFAULT false');
+    await queryRunner.query('ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "gender" varchar');
 
     await queryRunner.query('ALTER TABLE "properties" ADD COLUMN IF NOT EXISTS "address" varchar');
     await queryRunner.query('ALTER TABLE "properties" ADD COLUMN IF NOT EXISTS "city" varchar');
