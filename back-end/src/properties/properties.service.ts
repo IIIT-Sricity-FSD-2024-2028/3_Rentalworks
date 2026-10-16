@@ -65,15 +65,29 @@ export class PropertiesService {
       images: createPropertyDto.images || [],
     };
     const payload = Object.assign({}, defaults, createPropertyDto);
+    if (!payload.rooms) {
+      payload.rooms = payload.totalRooms ? String(payload.totalRooms) : '1';
+    } else {
+      payload.rooms = String(payload.rooms);
+    }
+    if (payload.monthlyRent && (!payload.rentMin || !payload.rentMax)) {
+      payload.rentMin = payload.rentMin ?? payload.monthlyRent;
+      payload.rentMax = payload.rentMax ?? payload.monthlyRent;
+    }
     const newProperty = this.propertiesRepository.create(payload);
     return this.propertiesRepository.save(newProperty);
   }
 
   async update(id: number, updatePropertyDto: UpdatePropertyDto) {
     const property = await this.findOne(id);
-    const cleanDto = Object.fromEntries(
+    const cleanDto: any = Object.fromEntries(
       Object.entries(updatePropertyDto).filter(([_, v]) => v !== undefined),
     );
+    if (cleanDto.rooms !== undefined) {
+      cleanDto.rooms = String(cleanDto.rooms);
+    } else if (cleanDto.totalRooms !== undefined && !property.rooms) {
+      cleanDto.rooms = String(cleanDto.totalRooms);
+    }
     Object.assign(property, cleanDto);
     return this.propertiesRepository.save(property);
   }

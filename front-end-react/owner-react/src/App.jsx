@@ -1,19 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { ownerClasses } from "./classes";
+import React, { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // Layout & Components
-import Layout from './components/Layout';
-import Toast from './components/Toast';
+import Layout from "./components/Layout";
+import Toast from "./components/Toast";
 
 // Pages
-import Dashboard from './pages/Dashboard';
-import Properties from './pages/Properties';
-import AddProperty from './pages/AddProperty';
-import Issues from './pages/Issues';
-import Notifications from './pages/Notifications';
-import Policy from './pages/Policy';
-import Profile from './pages/Profile';
-import Subscription from './pages/Subscription';
+import Dashboard from "./pages/Dashboard";
+import Properties from "./pages/Properties";
+import AddProperty from "./pages/AddProperty";
+import Issues from "./pages/Issues";
+import Notifications from "./pages/Notifications";
+import Policy from "./pages/Policy";
+import Profile from "./pages/Profile";
+import Subscription from "./pages/Subscription";
 
 // API Service
 import {
@@ -36,10 +37,9 @@ import {
   updateProfile,
   getSubscription,
   updateSubscription,
-} from './services/api';
+} from "./services/api";
 
-const STORAGE_KEY = 'pg_manager_data_storage';
-const SESSION_KEY = 'pg_user';
+const SESSION_KEY = "pg_user";
 
 export function OwnerPortal() {
   const [data, setData] = useState({
@@ -51,14 +51,18 @@ export function OwnerPortal() {
   });
 
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   // User session state
   const [user, setUser] = useState(() => {
     try {
-      const s = sessionStorage.getItem(SESSION_KEY) || sessionStorage.getItem('pg_user');
+      const s =
+        sessionStorage.getItem(SESSION_KEY) ||
+        sessionStorage.getItem("pg_user");
       if (s) {
         const parsed = JSON.parse(s);
-        if (parsed && parsed.role === 'owner') return parsed;
+        if (parsed && parsed.role === "owner" && parsed.token)
+          return { id: parsed.id, role: parsed.role, token: parsed.token };
       }
     } catch (e) {
       // ignore
@@ -70,37 +74,43 @@ export function OwnerPortal() {
   useEffect(() => {
     const checkAuth = () => {
       try {
-        const s = sessionStorage.getItem(SESSION_KEY) || sessionStorage.getItem('pg_user');
+        const s =
+          sessionStorage.getItem(SESSION_KEY) ||
+          sessionStorage.getItem("pg_user");
         if (!s) {
-          window.location.replace('/login');
+          window.location.replace("/login");
           return;
         }
         const parsed = JSON.parse(s);
-        if (!parsed || parsed.role !== 'owner') {
-          window.location.replace('/login');
+        if (!parsed || parsed.role !== "owner" || !parsed.token) {
+          window.location.replace("/login");
           return;
         }
-        setUser(parsed);
+        setUser((previous) =>
+          previous?.id === parsed.id
+            ? previous
+            : { id: parsed.id, role: parsed.role, token: parsed.token },
+        );
       } catch {
-        window.location.replace('/login');
+        window.location.replace("/login");
       }
     };
 
     checkAuth();
-    window.addEventListener('pageshow', checkAuth);
-    window.addEventListener('popstate', checkAuth);
-    window.addEventListener('storage', checkAuth);
+    window.addEventListener("pageshow", checkAuth);
+    window.addEventListener("popstate", checkAuth);
+    window.addEventListener("storage", checkAuth);
     return () => {
-      window.removeEventListener('pageshow', checkAuth);
-      window.removeEventListener('popstate', checkAuth);
-      window.removeEventListener('storage', checkAuth);
+      window.removeEventListener("pageshow", checkAuth);
+      window.removeEventListener("popstate", checkAuth);
+      window.removeEventListener("storage", checkAuth);
     };
   }, []);
 
   // Toast notifications state
   const [toasts, setToasts] = useState([]);
 
-  const showToast = (message, type = 'info') => {
+  const showToast = (message, type = "info") => {
     const id = Date.now() + Math.random();
     setToasts((prev) => prev.concat({ id, message, type }));
     setTimeout(() => {
@@ -112,54 +122,57 @@ export function OwnerPortal() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  const persistLocalBackup = (newData) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-    } catch (e) {
-      // ignore
-    }
-  };
-
   // Map raw API property object to client schema
   const mapProperty = (p) => ({
     id: p.id,
     name: p.name,
-    address: p.address || p.location || '',
-    city: p.city || 'Chennai',
-    state: p.state || 'Tamil Nadu',
-    pincode: p.pincode || '600001',
-    type: p.type || 'Mixed',
-    totalCapacity: p.totalCapacity || 30,
-    totalRooms: p.totalRooms || 15,
-    occupiedRooms: p.occupiedRooms || 10,
-    monthlyRent: p.monthlyRent || p.rentMin || 7500,
-    amenities: p.amenities || ['WiFi', 'AC'],
-    gender: p.gender || (p.type === 'Female' ? 'girls' : p.type === 'Male' ? 'boys' : 'unisex'),
-    status: p.status === 'approved' ? 'Active' : p.status || 'Active',
-    addedDate: p.createdAt ? p.createdAt.split('T')[0] : '2024-01-15',
-    owner: p.owner ? p.owner.name : 'Rajesh Kumar',
-    ownerEmail: p.owner ? p.owner.email : 'rajesh.k@email.com',
+    address: p.address || p.location || "",
+    city: p.city || "",
+    state: p.state || "",
+    pincode: p.pincode || "",
+    type:
+      p.type ||
+      { girls: "Female", boys: "Male", unisex: "Mixed" }[p.gender] ||
+      "Not specified",
+    images: Array.isArray(p.images) ? p.images : [],
+    description: p.description || "",
+    hasRoomRecords: Boolean(p.hasRoomRecords),
+    totalOccupants: p.totalOccupants ?? null,
+    capacityWarning: Boolean(p.capacityWarning),
+    estimatedMonthlyRent: p.estimatedMonthlyRent ?? null,
+    totalCapacity: p.totalCapacity ?? 0,
+    totalRooms: p.totalRooms ?? 0,
+    occupiedRooms: p.occupiedRooms ?? 0,
+    monthlyRent: p.monthlyRent ?? p.rentMin ?? 0,
+    amenities: p.amenities || [],
+    gender:
+      p.gender ||
+      (p.type === "Female" ? "girls" : p.type === "Male" ? "boys" : "unisex"),
+    status: p.status === "approved" ? "Active" : p.status || "Not specified",
+    addedDate: p.createdAt ? p.createdAt.split("T")[0] : "",
+    owner: p.owner?.name || "",
+    ownerEmail: p.owner?.email || "",
   });
 
   // Map raw API issue object to client schema
   const mapIssue = (i) => ({
     id: i.id,
     propertyId: i.propertyId,
-    propertyName: i.property ? i.property.name : 'Sunrise PG',
-    title: i.title || i.description || 'Issue reported',
-    description: i.description || '',
-    category: i.category || 'Maintenance',
+    propertyName: i.property?.name || "",
+    title: i.title || i.description || "Issue reported",
+    description: i.description || "",
+    category: i.category || "Uncategorized",
     priority: i.priority
       ? i.priority.charAt(0).toUpperCase() + i.priority.slice(1)
-      : 'Medium',
+      : "Medium",
     status:
-      i.status === 'open'
-        ? 'Open'
-        : i.status === 'in-progress' || i.status === 'in progress'
-        ? 'In Progress'
-        : 'Resolved',
-    reportedBy: i.reportedBy || (i.tenant ? i.tenant.name : 'Tenant'),
-    reportedDate: i.reportedAt || '2025-03-20',
+      i.status === "open"
+        ? "Open"
+        : i.status === "in-progress" || i.status === "in progress"
+          ? "In Progress"
+          : "Resolved",
+    reportedBy: i.reportedBy || (i.tenant ? i.tenant.name : "Tenant"),
+    reportedDate: i.reportedAt || "",
   });
 
   // Map raw API notification object to client schema
@@ -167,9 +180,13 @@ export function OwnerPortal() {
     id: n.id,
     title: n.title,
     message: n.message,
-    type: n.type || 'reminder',
-    read: Boolean(n.read),
-    date: n.sentAt ? n.sentAt.split('T')[0] : '2025-03-25',
+    type: n.type || "reminder",
+    priority: n.priority || "normal",
+    read: Boolean(n.read || n.isRead),
+    targetRole: n.targetRole || "all",
+    sender: n.byUser?.name || (n.byUserId === user?.id ? "You (Owner)" : "System"),
+    senderRole: n.byUser?.role || (n.byUserId === user?.id ? "owner" : "system"),
+    date: n.sentAt ? n.sentAt.split("T")[0] : n.createdAt ? n.createdAt.split("T")[0] : "",
   });
 
   // Initial Data Loading from NestJS REST API
@@ -178,12 +195,12 @@ export function OwnerPortal() {
       setLoading(true);
       try {
         const results = await Promise.all([
-          getProperties(16).catch(() => null),
-          getIssues().catch(() => null),
-          getNotifications().catch(() => null),
-          getPolicy().catch(() => null),
-          getProfile().catch(() => null),
-          getSubscription().catch(() => null),
+          getProperties(),
+          getIssues(),
+          getNotifications(),
+          getPolicy(),
+          getProfile(),
+          getSubscription(),
         ]);
 
         const apiProps = results[0];
@@ -216,23 +233,19 @@ export function OwnerPortal() {
         if (apiProfile && apiProfile.name) {
           loadedData.profile = apiProfile;
           const userUpdate = {
-            id: apiProfile.id || 6,
+            id: apiProfile.id,
             name: apiProfile.name,
             email: apiProfile.email,
             phone: apiProfile.phone,
-            subscriptionPlan: (apiSub && apiSub.currentPlan) || apiProfile.subscriptionPlan || 'Growth',
-            subscriptionFee: (apiSub && apiSub.monthlyFee) || 8000,
+            subscriptionPlan: apiSub?.currentPlan || "No active subscription",
+            subscriptionFee: apiSub?.monthlyFee ?? 0,
           };
           setUser((prev) => Object.assign({}, prev, userUpdate));
         }
+        loadedData.subscription = apiSub;
         setData(loadedData);
-        persistLocalBackup(loadedData);
       } catch (err) {
-        console.error('Data load error:', err);
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          setData(JSON.parse(stored));
-        }
+        setLoadError(err.message || "Could not load owner data");
       } finally {
         setLoading(false);
       }
@@ -243,17 +256,16 @@ export function OwnerPortal() {
 
   const refreshProperties = async () => {
     try {
-      const apiProps = await getProperties(16);
+      const apiProps = await getProperties();
       if (apiProps && Array.isArray(apiProps)) {
         const mapped = apiProps.map(mapProperty);
         setData((prev) => {
           const updated = Object.assign({}, prev, { properties: mapped });
-          persistLocalBackup(updated);
           return updated;
         });
       }
     } catch (err) {
-      console.error(err);
+      throw err;
     }
   };
 
@@ -264,12 +276,11 @@ export function OwnerPortal() {
         const mapped = apiIssues.map(mapIssue);
         setData((prev) => {
           const updated = Object.assign({}, prev, { issues: mapped });
-          persistLocalBackup(updated);
           return updated;
         });
       }
     } catch (err) {
-      console.error(err);
+      throw err;
     }
   };
 
@@ -280,12 +291,11 @@ export function OwnerPortal() {
         const mapped = apiNotifs.map(mapNotification);
         setData((prev) => {
           const updated = Object.assign({}, prev, { notifications: mapped });
-          persistLocalBackup(updated);
           return updated;
         });
       }
     } catch (err) {
-      console.error(err);
+      throw err;
     }
   };
 
@@ -294,32 +304,37 @@ export function OwnerPortal() {
     try {
       const payload = {
         name: newProperty.name,
-        location: (newProperty.city || 'Chennai') + ', ' + (newProperty.state || 'Tamil Nadu'),
-        ownerId: 16,
-        rentMin: Number(newProperty.monthlyRent) || 7000,
-        rentMax: (Number(newProperty.monthlyRent) || 7000) + 2000,
-        rooms: (newProperty.occupiedRooms || 0) + '/' + (newProperty.totalRooms || 10),
-        amenities: newProperty.amenities || ['WiFi'],
-        address: newProperty.address || '',
-        city: newProperty.city || '',
-        state: newProperty.state || '',
-        pincode: newProperty.pincode || '',
-        type: newProperty.type || 'Mixed',
-        totalCapacity: Number(newProperty.totalCapacity) || 20,
-        totalRooms: Number(newProperty.totalRooms) || 10,
-        occupiedRooms: Number(newProperty.occupiedRooms) || 0,
-        monthlyRent: Number(newProperty.monthlyRent) || 7000,
-        gender: newProperty.gender || (newProperty.type === 'Female' ? 'girls' : newProperty.type === 'Male' ? 'boys' : 'unisex'),
+        location: newProperty.city + ", " + newProperty.state,
+        ownerId: user.id,
+        rentMin: Number(newProperty.monthlyRent),
+        rentMax: Number(newProperty.monthlyRent),
+        description: newProperty.description || "",
+        images: newProperty.images || [],
+        amenities: newProperty.amenities,
+        address: newProperty.address || "",
+        city: newProperty.city || "",
+        state: newProperty.state || "",
+        pincode: newProperty.pincode || "",
+        type: newProperty.type || "Mixed",
+        totalCapacity: Number(newProperty.totalCapacity),
+        totalRooms: Number(newProperty.totalRooms),
+        rooms: String(newProperty.totalRooms || 1),
+        occupiedRooms: Number(newProperty.occupiedRooms),
+        monthlyRent: Number(newProperty.monthlyRent),
+        gender:
+          newProperty.gender ||
+          (newProperty.type === "Female"
+            ? "girls"
+            : newProperty.type === "Male"
+              ? "boys"
+              : "unisex"),
       };
       await createProperty(payload);
-      showToast('"' + newProperty.name + '" saved to database!', 'success');
+      showToast('"' + newProperty.name + '" saved to database!', "success");
       await refreshProperties();
     } catch (err) {
-      const updatedProperties = data.properties.concat(newProperty);
-      const updatedData = Object.assign({}, data, { properties: updatedProperties });
-      setData(updatedData);
-      persistLocalBackup(updatedData);
-      showToast('"' + newProperty.name + '" added locally', 'warning');
+      showToast(err.message || "Could not add property", "error");
+      throw err;
     }
   };
 
@@ -334,36 +349,36 @@ export function OwnerPortal() {
         type: updatedProperty.type,
         totalCapacity: Number(updatedProperty.totalCapacity),
         totalRooms: Number(updatedProperty.totalRooms),
+        rooms: String(updatedProperty.totalRooms || 1),
         occupiedRooms: Number(updatedProperty.occupiedRooms),
         monthlyRent: Number(updatedProperty.monthlyRent),
         amenities: updatedProperty.amenities,
-        gender: updatedProperty.gender || (updatedProperty.type === 'Female' ? 'girls' : updatedProperty.type === 'Male' ? 'boys' : 'unisex'),
+        images: (updatedProperty.images || []).map(url => url.trim()).filter(Boolean),
+        gender:
+          updatedProperty.gender ||
+          (updatedProperty.type === "Female"
+            ? "girls"
+            : updatedProperty.type === "Male"
+              ? "boys"
+              : "unisex"),
       };
       await updateProperty(updatedProperty.id, payload);
-      showToast('Property updated in database!', 'success');
+      showToast("Property updated in database!", "success");
       await refreshProperties();
+      return true;
     } catch (err) {
-      const updatedProperties = data.properties.map((p) =>
-        p.id === updatedProperty.id ? updatedProperty : p
-      );
-      const updatedData = Object.assign({}, data, { properties: updatedProperties });
-      setData(updatedData);
-      persistLocalBackup(updatedData);
-      showToast('Property updated locally', 'info');
+      showToast(err.message || "Could not update property", "error");
+      return false;
     }
   };
 
   const handleDeleteProperty = async (propertyId) => {
     try {
       await deleteProperty(propertyId);
-      showToast('Property deleted from database', 'success');
+      showToast("Property deleted from database", "success");
       await refreshProperties();
     } catch (err) {
-      const updatedProperties = data.properties.filter((p) => p.id !== propertyId);
-      const updatedData = Object.assign({}, data, { properties: updatedProperties });
-      setData(updatedData);
-      persistLocalBackup(updatedData);
-      showToast('Property deleted locally', 'info');
+      showToast(err.message || "Could not delete property", "error");
     }
   };
 
@@ -371,61 +386,47 @@ export function OwnerPortal() {
   const handleUpdateIssueStatus = async (issueId, newStatus) => {
     try {
       const apiStatus =
-        newStatus === 'Open'
-          ? 'open'
-          : newStatus === 'In Progress'
-          ? 'in-progress'
-          : 'resolved';
+        newStatus === "Open"
+          ? "open"
+          : newStatus === "In Progress"
+            ? "in-progress"
+            : "resolved";
       await updateIssueStatus(issueId, apiStatus);
-      showToast('Issue marked as "' + newStatus + '"', 'success');
+      showToast('Issue marked as "' + newStatus + '"', "success");
       await refreshIssues();
     } catch (err) {
-      const updatedIssues = data.issues.map((i) =>
-        String(i.id) === String(issueId)
-          ? Object.assign({}, i, { status: newStatus })
-          : i
-      );
-      const updatedData = Object.assign({}, data, { issues: updatedIssues });
-      setData(updatedData);
-      persistLocalBackup(updatedData);
-      showToast('Issue updated locally', 'info');
+      showToast(err.message || "Could not update issue", "error");
     }
   };
 
   const handleDeleteIssue = async (issueId) => {
     try {
       await deleteIssue(issueId);
-      showToast('Issue deleted from database', 'success');
+      showToast("Issue deleted from database", "success");
       await refreshIssues();
     } catch (err) {
-      const updatedIssues = data.issues.filter((i) => String(i.id) !== String(issueId));
-      const updatedData = Object.assign({}, data, { issues: updatedIssues });
-      setData(updatedData);
-      persistLocalBackup(updatedData);
-      showToast('Issue deleted locally', 'info');
+      showToast(err.message || "Could not delete issue", "error");
     }
   };
 
   const handleAddIssue = async (newIssue) => {
     try {
       const payload = {
-        tenantId: 1,
-        propertyId: Number(newIssue.propertyId) || 1,
+        tenantId: user.id,
+        propertyId: Number(newIssue.propertyId),
         title: newIssue.title,
         description: newIssue.description,
-        category: newIssue.category || 'Maintenance',
-        priority: (newIssue.priority || 'medium').toLowerCase(),
-        reportedBy: newIssue.reportedBy || 'Owner',
+        category: newIssue.category || "Maintenance",
+        priority: (newIssue.priority || "medium").toLowerCase(),
+        reportedBy: newIssue.reportedBy || "Owner",
       };
       await createIssue(payload);
-      showToast('Issue reported and saved!', 'success');
+      showToast("Issue reported and saved!", "success");
       await refreshIssues();
+      return true;
     } catch (err) {
-      const updatedIssues = [newIssue].concat(data.issues);
-      const updatedData = Object.assign({}, data, { issues: updatedIssues });
-      setData(updatedData);
-      persistLocalBackup(updatedData);
-      showToast('Issue added locally', 'info');
+      showToast(err.message || "Could not report issue", "error");
+      return false;
     }
   };
 
@@ -434,11 +435,12 @@ export function OwnerPortal() {
     try {
       await markNotificationRead(id);
     } catch (err) {
-      // ignore
+      showToast(err.message || "Could not mark notification as read", "error");
+      return;
     }
     setData((prev) => {
       const updated = prev.notifications.map((n) =>
-        n.id === id ? Object.assign({}, n, { read: true }) : n
+        n.id === id ? Object.assign({}, n, { read: true }) : n,
       );
       return Object.assign({}, prev, { notifications: updated });
     });
@@ -448,33 +450,47 @@ export function OwnerPortal() {
     try {
       await markAllNotificationsRead();
     } catch (err) {
-      // ignore
+      showToast(err.message || "Could not mark notifications as read", "error");
+      return;
     }
     setData((prev) => {
       const updated = prev.notifications.map((n) =>
-        Object.assign({}, n, { read: true })
+        Object.assign({}, n, { read: true }),
       );
       return Object.assign({}, prev, { notifications: updated });
     });
-    showToast('All notifications marked as read', 'success');
+    showToast("All notifications marked as read", "success");
   };
 
   const handleDeleteNotif = async (id) => {
     try {
       await deleteNotification(id);
     } catch (err) {
-      // ignore
+      showToast(err.message || "Could not delete notification", "error");
+      return;
     }
     setData((prev) => {
-      const updated = prev.notifications.filter((n) => String(n.id) !== String(id));
+      const updated = prev.notifications.filter(
+        (n) => String(n.id) !== String(id),
+      );
       return Object.assign({}, prev, { notifications: updated });
     });
-    showToast('Notification deleted', 'success');
+    showToast("Notification deleted", "success");
   };
 
-  const handleClearAllNotifs = () => {
-    setData((prev) => Object.assign({}, prev, { notifications: [] }));
-    showToast('All notifications cleared', 'success');
+  const handleClearAllNotifs = async () => {
+    try {
+      await Promise.all(
+        data.notifications.map((notification) =>
+          deleteNotification(notification.id),
+        ),
+      );
+      await refreshNotifications();
+      showToast("All notifications cleared", "success");
+    } catch (err) {
+      showToast(err.message || "Could not clear notifications", "error");
+      await refreshNotifications();
+    }
   };
 
   const handleSendNotif = async (newNotif) => {
@@ -482,18 +498,19 @@ export function OwnerPortal() {
       const payload = {
         title: newNotif.title,
         message: newNotif.message,
-        type: newNotif.type || 'reminder',
-        priority: 'normal',
+        type: newNotif.type || "reminder",
+        priority: newNotif.priority || "normal",
         recipients: 1,
-        byUserId: 6,
+        byUserId: user.id,
+        targetRole: (newNotif.targetRole || newNotif.recipient || "all").toLowerCase(),
       };
       await createNotification(payload);
-      showToast('Notification sent!', 'success');
+      showToast("Notification sent to " + (newNotif.recipient || "actors") + "!", "success");
       await refreshNotifications();
+      return true;
     } catch (err) {
-      const updatedNotifs = [newNotif].concat(data.notifications);
-      setData((prev) => Object.assign({}, prev, { notifications: updatedNotifs }));
-      showToast('Notification sent locally', 'info');
+      showToast(err.message || "Could not send notification", "error");
+      return false;
     }
   };
 
@@ -502,88 +519,120 @@ export function OwnerPortal() {
     try {
       const saved = await updatePolicy(newPolicy);
       setData((prev) => Object.assign({}, prev, { policy: saved }));
-      showToast('Policy settings saved!', 'success');
+      showToast("Policy settings saved!", "success");
     } catch (err) {
-      setData((prev) => Object.assign({}, prev, { policy: newPolicy }));
-      showToast('Policy saved locally', 'info');
+      showToast(err.message || "Could not save policy", "error");
     }
   };
 
-  const handleResetPolicy = () => {
-    showToast('Policy reset to defaults', 'info');
+  const handleResetPolicy = async () => {
+    try {
+      const saved = await getPolicy();
+      setData((prev) => ({ ...prev, policy: saved }));
+      showToast("Saved policy reloaded", "success");
+      return true;
+    } catch (err) {
+      showToast(err.message || "Could not reset policy", "error");
+      return false;
+    }
   };
 
   // Profile Handlers
   const handleSaveProfile = async (newProfile) => {
     try {
-      const saved = await updateProfile(newProfile);
+      const { name, email, phone, company, city, state, pincode, bio, avatar } =
+        newProfile;
+      const saved = await updateProfile({
+        name,
+        email,
+        phone,
+        company,
+        city,
+        state,
+        pincode,
+        bio,
+        avatar,
+      });
       setData((prev) => Object.assign({}, prev, { profile: saved }));
       setUser((prev) => Object.assign({}, prev, saved));
-      showToast('Profile updated!', 'success');
+      showToast("Profile updated!", "success");
     } catch (err) {
-      setData((prev) => Object.assign({}, prev, { profile: newProfile }));
-      setUser((prev) => Object.assign({}, prev, newProfile));
-      showToast('Profile updated locally', 'info');
+      showToast(err.message || "Could not update profile", "error");
     }
   };
 
   // Subscription Handler
-  const handleSubscription = async (planName, price) => {
+  const handleSubscription = async (planId) => {
     try {
-      const saved = await updateSubscription({ plan: planName, fee: price });
-      const update = {
-        subscriptionPlan: saved.currentPlan || planName,
-        subscriptionFee: saved.monthlyFee || price,
-      };
-      setUser((prev) => Object.assign({}, prev, update));
-      showToast('Subscribed to ' + planName + ' Plan!', 'success');
+      await updateSubscription({ planId });
+      const subscription = await getSubscription();
+      setData((previous) => ({ ...previous, subscription }));
+      showToast(
+        "Plan request submitted. Activation requires payment confirmation.",
+        "success",
+      );
+      return true;
     } catch (err) {
-      const update = {
-        subscriptionPlan: planName,
-        subscriptionFee: price,
-      };
-      setUser((prev) => Object.assign({}, prev, update));
-      showToast('Subscribed to ' + planName + ' Plan locally', 'info');
+      showToast(err.message || "Could not update subscription", "error");
+      return false;
     }
   };
 
   const handleLogout = () => {
     sessionStorage.removeItem(SESSION_KEY);
-    sessionStorage.removeItem('pg_user');
-    sessionStorage.removeItem('owner_user');
-    sessionStorage.removeItem('guest_user');
-    sessionStorage.removeItem('tenant_user');
-    sessionStorage.removeItem('warden_user');
-    sessionStorage.removeItem('super_admin_token');
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('pg_user');
-    localStorage.removeItem('owner_user');
+    sessionStorage.removeItem("pg_user");
+    sessionStorage.removeItem("owner_user");
+    sessionStorage.removeItem("guest_user");
+    sessionStorage.removeItem("tenant_user");
+    sessionStorage.removeItem("warden_user");
+    sessionStorage.removeItem("super_admin_token");
+    localStorage.removeItem("currentUser");
+    localStorage.removeItem("pg_user");
+    localStorage.removeItem("owner_user");
     try {
-      window.dispatchEvent(new Event('rentbro-logout'));
+      window.dispatchEvent(new Event("rentbro-logout"));
     } catch (_) {}
-    window.location.replace('/login');
+    window.location.replace("/login");
   };
 
-  const unreadNotifsCount = (data.notifications || []).filter((n) => !n.read).length;
+  const unreadNotifsCount = (data.notifications || []).filter(
+    (n) => !n.read,
+  ).length;
   const openIssuesCount = (data.issues || []).filter(
-    (i) => (i.status || '').toLowerCase() === 'open'
+    (i) => (i.status || "").toLowerCase() === "open",
   ).length;
 
   if (!user) {
     return null;
   }
 
+  if (loadError)
+    return (
+      <div className={ownerClasses("portal")}>
+        <div className={ownerClasses("empty-state")} role="alert">
+          <h2>Owner data could not be loaded</h2>
+          <p>{loadError}</p>
+          <button
+            className={ownerClasses("btn btn-primary")}
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+
   if (loading) {
     return (
-      <div className="loading-wrap loading-wrap-mt">
-        <div className="spinner"></div>
-        <p>Connecting to Neon PostgreSQL &amp; Loading Owner Portal...</p>
+      <div className={ownerClasses("portal loading-wrap loading-wrap-mt")}>
+        <div className={ownerClasses("spinner")}></div>
+        <p>Loading your owner portal...</p>
       </div>
     );
   }
 
   return (
-    <>
+    <div className={ownerClasses("portal")}>
       <Toast toasts={toasts} onRemove={removeToast} />
 
       <Routes>
@@ -608,6 +657,7 @@ export function OwnerPortal() {
               />
             }
           />
+
           <Route
             path="properties"
             element={
@@ -618,10 +668,12 @@ export function OwnerPortal() {
               />
             }
           />
+
           <Route
             path="add-property"
             element={<AddProperty onAddProperty={handleAddProperty} />}
           />
+
           <Route
             path="issues"
             element={
@@ -634,6 +686,7 @@ export function OwnerPortal() {
               />
             }
           />
+
           <Route
             path="notifications"
             element={
@@ -647,6 +700,7 @@ export function OwnerPortal() {
               />
             }
           />
+
           <Route
             path="policy"
             element={
@@ -657,6 +711,7 @@ export function OwnerPortal() {
               />
             }
           />
+
           <Route
             path="profile"
             element={
@@ -669,10 +724,12 @@ export function OwnerPortal() {
               />
             }
           />
+
           <Route
             path="subscription"
             element={
               <Subscription
+                subscription={data.subscription}
                 user={user}
                 onSubscribe={handleSubscription}
               />
@@ -680,15 +737,17 @@ export function OwnerPortal() {
           />
         </Route>
       </Routes>
-    </>
+    </div>
   );
 }
 
 export default function App() {
   return (
     <BrowserRouter>
-      <OwnerPortal />
+      <Routes>
+        <Route path="/" element={<Navigate to="/owner" replace />} />
+        <Route path="/owner/*" element={<OwnerPortal />} />
+      </Routes>
     </BrowserRouter>
   );
 }
-

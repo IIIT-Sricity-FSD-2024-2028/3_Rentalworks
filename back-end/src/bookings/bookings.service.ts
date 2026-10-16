@@ -10,6 +10,7 @@ import { Room } from '../rooms/room.entity';
 import { Property } from '../properties/property.entity';
 import { TenantStay } from '../tenant-stays/tenant-stay.entity';
 import { WardenNotification } from '../warden-notifications/warden-notification.entity';
+import { Notification } from '../notifications/notification.entity';
 
 @Injectable()
 export class BookingsService {
@@ -71,7 +72,31 @@ export class BookingsService {
       ...bookingData,
       status: 'pending',
     });
-    return this.bookingsRepository.save(newBooking);
+    const savedBooking = await this.bookingsRepository.save(newBooking);
+
+    if (property && property.ownerId) {
+      try {
+        const notifRepo = this.dataSource.getRepository(Notification);
+        const ownerNotif = notifRepo.create({
+          title: `New Booking Request: ${property.name}`,
+          message: `${user?.name || 'A tenant'} has submitted a booking request for ${property.name}.`,
+          type: 'booking',
+          priority: 'medium',
+          recipients: 1,
+          sentAt: new Date().toISOString(),
+          userId: property.ownerId,
+          byUserId: user?.id,
+          targetRole: 'owner',
+          targetPropertyId: property.id,
+          deliveryStatus: 'delivered',
+        });
+        await notifRepo.save(ownerNotif);
+      } catch (err) {
+        console.warn('Failed to notify owner of booking request:', err);
+      }
+    }
+
+    return savedBooking;
   }
 
   async update(id: number, updateBookingDto: UpdateBookingDto) {
@@ -350,6 +375,29 @@ export class BookingsService {
         sourceReferenceId: savedBooking.id,
       });
       await wardenNotifRepo.save(wardenNotification);
+
+      // 8. Route Automated Notification to Property Owner
+      if (property && property.ownerId) {
+        try {
+          const notifRepo = manager.getRepository(Notification);
+          const ownerNotification = notifRepo.create({
+            title: `New Booking Confirmed: ${propName}`,
+            message: `${user.name} confirmed booking for Room #${roomNum} at ${propName}. Amount: ₹${Number(newPayment.amount).toLocaleString()}.`,
+            type: 'booking',
+            priority: 'high',
+            recipients: 1,
+            sentAt: new Date().toISOString(),
+            userId: property.ownerId,
+            byUserId: user.id,
+            targetRole: 'owner',
+            targetPropertyId: propId,
+            deliveryStatus: 'delivered',
+          });
+          await notifRepo.save(ownerNotification);
+        } catch (err) {
+          console.warn('Failed to route notification to owner on checkout:', err);
+        }
+      }
 
       return {
         success: true,

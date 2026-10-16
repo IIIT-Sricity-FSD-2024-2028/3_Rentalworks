@@ -24,6 +24,11 @@ export class CreateNotificationDto {
   recipients?: number;
 
   @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  sentAt?: string;
+
+  @ApiProperty({ required: false })
   @IsNumber()
   @IsOptional()
   byUserId?: number;
@@ -32,6 +37,24 @@ export class CreateNotificationDto {
   @IsNumber()
   @IsOptional()
   userId?: number;
+
+  @IsString()
+  @IsOptional()
+  targetRole?: string;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  targetPropertyId?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  recipientUserIds?: number[];
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  deliveryStatus?: string;
 
   @ApiProperty({ required: false })
   @IsBoolean()

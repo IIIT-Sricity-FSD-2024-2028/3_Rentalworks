@@ -4,6 +4,8 @@ import {
   IsOptional,
   IsArray,
   IsBoolean,
+  IsInt,
+  Min,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -16,25 +18,38 @@ export class CreatePropertyDto {
   @IsString()
   location: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsNumber()
-  ownerId: number;
+  @IsOptional()
+  ownerId?: number;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsNumber()
-  rentMin: number;
+  @IsOptional()
+  rentMin?: number;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsNumber()
-  rentMax: number;
+  @IsOptional()
+  rentMax?: number;
 
-  @ApiProperty()
-  @IsString()
-  rooms: string;
+  @ApiProperty({ required: false })
+  @IsOptional()
+  rooms?: any;
 
   @ApiProperty()
   @IsArray()
   amenities: string[];
+
+  @IsString() @IsOptional() address?: string;
+  @IsString() @IsOptional() city?: string;
+  @IsString() @IsOptional() state?: string;
+  @IsString() @IsOptional() pincode?: string;
+  @IsString() @IsOptional() type?: string;
+  @IsInt() @Min(0) @IsOptional() totalCapacity?: number;
+  @IsInt() @Min(0) @IsOptional() totalRooms?: number;
+  @IsInt() @Min(0) @IsOptional() occupiedRooms?: number;
+  @IsNumber() @Min(0) @IsOptional() monthlyRent?: number;
 
   @ApiProperty({ required: false, default: 'unisex' })
   @IsString()
@@ -99,9 +114,8 @@ export class UpdatePropertyDto {
   rentMax?: number;
 
   @ApiProperty({ required: false })
-  @IsString()
   @IsOptional()
-  rooms?: string;
+  rooms?: any;
 
   @ApiProperty({ required: false })
   @IsString()
@@ -117,6 +131,16 @@ export class UpdatePropertyDto {
   @IsArray()
   @IsOptional()
   amenities?: string[];
+
+  @IsString() @IsOptional() address?: string;
+  @IsString() @IsOptional() city?: string;
+  @IsString() @IsOptional() state?: string;
+  @IsString() @IsOptional() pincode?: string;
+  @IsString() @IsOptional() type?: string;
+  @IsInt() @Min(0) @IsOptional() totalCapacity?: number;
+  @IsInt() @Min(0) @IsOptional() totalRooms?: number;
+  @IsInt() @Min(0) @IsOptional() occupiedRooms?: number;
+  @IsNumber() @Min(0) @IsOptional() monthlyRent?: number;
 
   @ApiProperty({ required: false })
   @IsArray()

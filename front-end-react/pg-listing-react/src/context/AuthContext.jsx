@@ -112,7 +112,7 @@ export function AuthProvider({ children }) {
     try {
       const res = await fetch(`${API_BASE}/users/${currentUser.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'x-role': currentUser.role || 'tenant', 'x-user-id': String(currentUser.id) },
+        headers: { 'Content-Type': 'application/json', 'x-role': currentUser.role || 'tenant', 'x-user-id': String(currentUser.id), ...(currentUser.token ? { Authorization: `Bearer ${currentUser.token}` } : {}) },
         body: JSON.stringify({ gender }),
       });
       if (res.ok) {

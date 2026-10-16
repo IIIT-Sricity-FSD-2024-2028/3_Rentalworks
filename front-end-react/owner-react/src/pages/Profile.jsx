@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { ownerClasses } from "../classes";
+import Icon from "../components/Icon";
+import React, { useState, useEffect } from "react";
+import { changePassword } from "../services/api";
 
-// Profile: Manage owner credentials, personal info, location, password, 2FA, data export, and logout
+// Profile: Manage owner details, password, data export, and logout.
 export default function Profile({
   profile = {},
   properties = [],
@@ -11,32 +14,31 @@ export default function Profile({
   const [formData, setFormData] = useState(
     Object.assign(
       {
-        name: '',
-        email: '',
-        phone: '',
-        company: '',
-        bio: '',
-        city: '',
-        state: '',
-        pincode: '',
+        name: "",
+        email: "",
+        phone: "",
+        company: "",
+        bio: "",
+        city: "",
+        state: "",
+        pincode: "",
       },
-      profile
-    )
+      profile,
+    ),
   );
 
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [is2FAModalOpen, setIs2FAModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const [passForm, setPassForm] = useState({
-    currPass: '',
-    newPass: '',
-    confPass: '',
+    currPass: "",
+    newPass: "",
+    confPass: "",
   });
 
-  const [profileError, setProfileError] = useState('');
-  const [passError, setPassError] = useState('');
-  const [passSuccess, setPassSuccess] = useState('');
+  const [profileError, setProfileError] = useState("");
+  const [passError, setPassError] = useState("");
+  const [passSuccess, setPassSuccess] = useState("");
 
   useEffect(() => {
     setFormData((prev) => Object.assign({}, prev, profile));
@@ -45,17 +47,17 @@ export default function Profile({
   const totalProps = properties.length;
   const totalRevenue = properties.reduce(
     (sum, p) => sum + (p.occupiedRooms || 0) * (p.monthlyRent || 0),
-    0
+    0,
   );
 
   const formatCurrency = (amount) => {
-    return '₹' + Number(amount || 0).toLocaleString('en-IN');
+    return "₹" + Number(amount || 0).toLocaleString("en-IN");
   };
 
-  const initials = (formData.name || 'Owner')
-    .split(' ')
+  const initials = (formData.name || "Owner")
+    .split(" ")
     .map((w) => w[0])
-    .join('')
+    .join("")
     .toUpperCase()
     .slice(0, 2);
 
@@ -70,50 +72,51 @@ export default function Profile({
   const handleSaveProfile = (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      setProfileError('Full Name is required.');
+      setProfileError("Full Name is required.");
       return;
     }
-    if (!formData.email.trim() || !formData.email.includes('@')) {
-      setProfileError('A valid email address is required.');
+    if (!formData.email.trim() || !formData.email.includes("@")) {
+      setProfileError("A valid email address is required.");
       return;
     }
 
-    setProfileError('');
+    setProfileError("");
     onSaveProfile(formData);
   };
 
-  const handleUpdatePassword = (e) => {
+  const handleUpdatePassword = async (e) => {
     e.preventDefault();
     if (!passForm.currPass || !passForm.newPass || !passForm.confPass) {
-      setPassError('Please fill in all password fields.');
+      setPassError("Please fill in all password fields.");
       return;
     }
-    if (passForm.newPass.length < 6) {
-      setPassError('New password must be at least 6 characters.');
+    if (passForm.newPass.length < 8) {
+      setPassError("New password must be at least 8 characters.");
       return;
     }
     if (passForm.newPass !== passForm.confPass) {
-      setPassError('Passwords do not match.');
+      setPassError("Passwords do not match.");
       return;
     }
 
-    setPassError('');
-    setPassSuccess('Password updated successfully!');
-    setTimeout(() => {
-      setPassForm({ currPass: '', newPass: '', confPass: '' });
-      setPassSuccess('');
-      setIsPasswordModalOpen(false);
-    }, 1200);
+    setPassError("");
+    try {
+      await changePassword(passForm.currPass, passForm.newPass);
+      setPassSuccess("Password updated successfully!");
+      setPassForm({ currPass: "", newPass: "", confPass: "" });
+    } catch (error) {
+      setPassError(error.message || "Could not update password");
+    }
   };
 
   const handleDownloadData = () => {
     const exportData = allData || { profile: formData, properties: properties };
     const jsonString = JSON.stringify(exportData, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
+    const blob = new Blob([jsonString], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
-    link.download = 'pg-manager-data.json';
+    link.download = "pg-manager-data.json";
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -121,50 +124,57 @@ export default function Profile({
   return (
     <div>
       {/* Profile Hero Header Banner */}
-      <div className="profile-hero">
-        <div className="profile-avatar-large" id="profileAvatarLarge">
+      <div className={ownerClasses("profile-hero")}>
+        <div
+          className={ownerClasses("profile-avatar-large")}
+          id="profileAvatarLarge"
+        >
           {initials}
         </div>
-        <div className="profile-hero-info">
-          <div className="name">{formData.name || 'Owner'}</div>
-          <div className="role">Property Owner</div>
-          <div className="email">
-            <span className="material-icons icon-16 icon-middle">email</span>{' '}
-            {formData.email || '—'}
+        <div className={ownerClasses("profile-hero-info")}>
+          <div className={ownerClasses("name")}>{formData.name || "Owner"}</div>
+          <div className={ownerClasses("role")}>Property Owner</div>
+          <div className={ownerClasses("email")}>
+            <Icon className={ownerClasses("icon-16 icon-middle")}>email</Icon>{" "}
+            {formData.email || "—"}
           </div>
         </div>
-        <div className="profile-stats">
-          <div className="profile-stat">
-            <div className="val">{totalProps}</div>
-            <div className="lbl">Properties</div>
+        <div className={ownerClasses("profile-stats")}>
+          <div className={ownerClasses("profile-stat")}>
+            <div className={ownerClasses("val")}>{totalProps}</div>
+            <div className={ownerClasses("lbl")}>Properties</div>
           </div>
-          <div className="profile-stat">
-            <div className="val">{formatCurrency(totalRevenue)}</div>
-            <div className="lbl">Monthly Revenue</div>
+          <div className={ownerClasses("profile-stat")}>
+            <div className={ownerClasses("val")}>
+              {formatCurrency(totalRevenue)}
+            </div>
+            <div className={ownerClasses("lbl")}>Monthly Revenue</div>
           </div>
         </div>
       </div>
 
       {profileError && (
-        <div className="alert-danger-box">{profileError}</div>
+        <div className={ownerClasses("alert-danger-box")}>{profileError}</div>
       )}
 
       {/* Grid: Personal Info & Location/Security */}
-      <div className="grid-2">
-        <div className="form-section mb-0">
-          <div className="form-section-header">
-            <div className="num-badge">01</div>
-            <div className="form-section-title">Personal Information</div>
+      <div className={ownerClasses("grid-2")}>
+        <div className={ownerClasses("form-section mb-0")}>
+          <div className={ownerClasses("form-section-header")}>
+            <div className={ownerClasses("num-badge")}>01</div>
+            <div className={ownerClasses("form-section-title")}>
+              Personal Information
+            </div>
           </div>
 
           <form onSubmit={handleSaveProfile}>
-            <div className="flex-col-gap-16">
-              <div className="form-group">
-                <label className="form-label">
-                  Full Name <span className="req">*</span>
+            <div className={ownerClasses("flex-col-gap-16")}>
+              <div className={ownerClasses("form-group")}>
+                <label className={ownerClasses("form-label")}>
+                  Full Name <span className={ownerClasses("req")}>*</span>
                 </label>
                 <input
-                  className="form-input"
+                  className={ownerClasses("form-input")}
                   id="name"
                   value={formData.name}
                   onChange={handleChange}
@@ -173,13 +183,13 @@ export default function Profile({
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">
-                  Email Address <span className="req">*</span>
+              <div className={ownerClasses("form-group")}>
+                <label className={ownerClasses("form-label")}>
+                  Email Address <span className={ownerClasses("req")}>*</span>
                 </label>
                 <input
                   type="email"
-                  className="form-input"
+                  className={ownerClasses("form-input")}
                   id="email"
                   value={formData.email}
                   onChange={handleChange}
@@ -188,10 +198,12 @@ export default function Profile({
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Phone Number</label>
+              <div className={ownerClasses("form-group")}>
+                <label className={ownerClasses("form-label")}>
+                  Phone Number
+                </label>
                 <input
-                  className="form-input"
+                  className={ownerClasses("form-input")}
                   id="phone"
                   value={formData.phone}
                   onChange={handleChange}
@@ -199,10 +211,12 @@ export default function Profile({
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Company / Business Name</label>
+              <div className={ownerClasses("form-group")}>
+                <label className={ownerClasses("form-label")}>
+                  Company / Business Name
+                </label>
                 <input
-                  className="form-input"
+                  className={ownerClasses("form-input")}
                   id="company"
                   value={formData.company}
                   onChange={handleChange}
@@ -210,10 +224,10 @@ export default function Profile({
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Bio</label>
+              <div className={ownerClasses("form-group")}>
+                <label className={ownerClasses("form-label")}>Bio</label>
                 <textarea
-                  className="form-input"
+                  className={ownerClasses("form-input")}
                   id="bio"
                   rows="3"
                   value={formData.bio}
@@ -223,9 +237,14 @@ export default function Profile({
               </div>
             </div>
 
-            <div className="flex-gap-10 mt-20">
-              <button type="submit" className="btn btn-primary flex-1">
-                <span className="material-icons icon-16 icon-middle">save</span>{' '}
+            <div className={ownerClasses("flex-gap-10 mt-20")}>
+              <button
+                type="submit"
+                className={ownerClasses("btn btn-primary flex-1")}
+              >
+                <Icon className={ownerClasses("icon-16 icon-middle")}>
+                  save
+                </Icon>{" "}
                 Save Changes
               </button>
             </div>
@@ -233,18 +252,18 @@ export default function Profile({
         </div>
 
         {/* Right Column: Location & Security */}
-        <div className="flex-col-gap-16">
-          <div className="form-section mb-0">
-            <div className="form-section-header">
-              <div className="num-badge">02</div>
-              <div className="form-section-title">Location</div>
+        <div className={ownerClasses("flex-col-gap-16")}>
+          <div className={ownerClasses("form-section mb-0")}>
+            <div className={ownerClasses("form-section-header")}>
+              <div className={ownerClasses("num-badge")}>02</div>
+              <div className={ownerClasses("form-section-title")}>Location</div>
             </div>
 
-            <div className="flex-col-gap-14">
-              <div className="form-group">
-                <label className="form-label">City</label>
+            <div className={ownerClasses("flex-col-gap-14")}>
+              <div className={ownerClasses("form-group")}>
+                <label className={ownerClasses("form-label")}>City</label>
                 <input
-                  className="form-input"
+                  className={ownerClasses("form-input")}
                   id="city"
                   value={formData.city}
                   onChange={handleChange}
@@ -252,21 +271,21 @@ export default function Profile({
                 />
               </div>
 
-              <div className="form-grid">
-                <div className="form-group">
-                  <label className="form-label">State</label>
+              <div className={ownerClasses("form-grid")}>
+                <div className={ownerClasses("form-group")}>
+                  <label className={ownerClasses("form-label")}>State</label>
                   <input
-                    className="form-input"
+                    className={ownerClasses("form-input")}
                     id="state"
                     value={formData.state}
                     onChange={handleChange}
                     placeholder="Tamil Nadu"
                   />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Pincode</label>
+                <div className={ownerClasses("form-group")}>
+                  <label className={ownerClasses("form-label")}>Pincode</label>
                   <input
-                    className="form-input"
+                    className={ownerClasses("form-input")}
                     id="pincode"
                     maxLength="6"
                     value={formData.pincode}
@@ -278,45 +297,38 @@ export default function Profile({
             </div>
           </div>
 
-          <div className="form-section mb-0">
-            <div className="form-section-header">
-              <div className="num-badge">03</div>
-              <div className="form-section-title">Security &amp; Account</div>
+          <div className={ownerClasses("form-section mb-0")}>
+            <div className={ownerClasses("form-section-header")}>
+              <div className={ownerClasses("num-badge")}>03</div>
+              <div className={ownerClasses("form-section-title")}>
+                Security &amp; Account
+              </div>
             </div>
 
-            <div className="flex-col-gap-10">
+            <div className={ownerClasses("flex-col-gap-10")}>
               <button
-                className="btn btn-secondary btn-start"
+                className={ownerClasses("btn btn-secondary btn-start")}
                 onClick={() => setIsPasswordModalOpen(true)}
               >
-                <span className="material-icons icon-18">lock</span>{' '}
-                Change Password
+                <Icon className={ownerClasses("icon-18")}>lock</Icon> Change
+                Password
               </button>
 
               <button
-                className="btn btn-secondary btn-start"
-                onClick={() => setIs2FAModalOpen(true)}
-              >
-                <span className="material-icons icon-18">security</span>{' '}
-                Enable Two-Factor Auth
-              </button>
-
-              <button
-                className="btn btn-secondary btn-start"
+                className={ownerClasses("btn btn-secondary btn-start")}
                 onClick={handleDownloadData}
               >
-                <span className="material-icons icon-18">download</span>{' '}
+                <Icon className={ownerClasses("icon-18")}>download</Icon>{" "}
                 Download My Data
               </button>
 
-              <hr className="divider" />
+              <hr className={ownerClasses("divider")} />
 
               <button
-                className="btn btn-danger btn-start"
+                className={ownerClasses("btn btn-danger btn-start")}
                 onClick={() => setIsLogoutModalOpen(true)}
               >
-                <span className="material-icons icon-18">logout</span>{' '}
-                Sign Out
+                <Icon className={ownerClasses("icon-18")}>logout</Icon> Sign Out
               </button>
             </div>
           </div>
@@ -326,21 +338,21 @@ export default function Profile({
       {/* Modal: Change Password */}
       {isPasswordModalOpen && (
         <div
-          className="modal-overlay"
+          className={ownerClasses("modal-overlay")}
           onClick={(e) => {
-            if (e.target.className === 'modal-overlay') setIsPasswordModalOpen(false);
+            if (e.target === e.currentTarget) setIsPasswordModalOpen(false);
           }}
         >
-          <div className="modal">
-            <div className="modal-header">
-              <span className="modal-title">
-                <span className="material-icons icon-22 icon-middle icon-mr-6">
+          <div className={ownerClasses("modal")}>
+            <div className={ownerClasses("modal-header")}>
+              <span className={ownerClasses("modal-title")}>
+                <Icon className={ownerClasses("icon-22 icon-middle icon-mr-6")}>
                   lock
-                </span>{' '}
+                </Icon>{" "}
                 Change Password
               </span>
               <button
-                className="modal-close"
+                className={ownerClasses("modal-close")}
                 onClick={() => setIsPasswordModalOpen(false)}
               >
                 ×
@@ -348,19 +360,23 @@ export default function Profile({
             </div>
 
             {passError && (
-              <div className="alert-danger-sm">{passError}</div>
+              <div className={ownerClasses("alert-danger-sm")}>{passError}</div>
             )}
             {passSuccess && (
-              <div className="alert-success-sm">{passSuccess}</div>
+              <div className={ownerClasses("alert-success-sm")}>
+                {passSuccess}
+              </div>
             )}
 
             <form onSubmit={handleUpdatePassword}>
-              <div className="flex-col-gap-14">
-                <div className="form-group">
-                  <label className="form-label">Current Password</label>
+              <div className={ownerClasses("flex-col-gap-14")}>
+                <div className={ownerClasses("form-group")}>
+                  <label className={ownerClasses("form-label")}>
+                    Current Password
+                  </label>
                   <input
                     type="password"
-                    className="form-input"
+                    className={ownerClasses("form-input")}
                     placeholder="Enter current password"
                     value={passForm.currPass}
                     onChange={(e) => {
@@ -370,11 +386,13 @@ export default function Profile({
                   />
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">New Password</label>
+                <div className={ownerClasses("form-group")}>
+                  <label className={ownerClasses("form-label")}>
+                    New Password
+                  </label>
                   <input
                     type="password"
-                    className="form-input"
+                    className={ownerClasses("form-input")}
                     placeholder="Min 6 characters"
                     value={passForm.newPass}
                     onChange={(e) => {
@@ -384,11 +402,13 @@ export default function Profile({
                   />
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Confirm New Password</label>
+                <div className={ownerClasses("form-group")}>
+                  <label className={ownerClasses("form-label")}>
+                    Confirm New Password
+                  </label>
                   <input
                     type="password"
-                    className="form-input"
+                    className={ownerClasses("form-input")}
                     placeholder="Repeat new password"
                     value={passForm.confPass}
                     onChange={(e) => {
@@ -399,15 +419,18 @@ export default function Profile({
                 </div>
               </div>
 
-              <div className="modal-footer">
+              <div className={ownerClasses("modal-footer")}>
                 <button
                   type="button"
-                  className="btn btn-secondary"
+                  className={ownerClasses("btn btn-secondary")}
                   onClick={() => setIsPasswordModalOpen(false)}
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
+                <button
+                  type="submit"
+                  className={ownerClasses("btn btn-primary")}
+                >
                   Update Password
                 </button>
               </div>
@@ -416,96 +439,38 @@ export default function Profile({
         </div>
       )}
 
-      {/* Modal: 2FA */}
-      {is2FAModalOpen && (
-        <div
-          className="modal-overlay"
-          onClick={(e) => {
-            if (e.target.className === 'modal-overlay') setIs2FAModalOpen(false);
-          }}
-        >
-          <div className="modal">
-            <div className="modal-header">
-              <span className="modal-title">
-                <span className="material-icons icon-22 icon-middle icon-mr-6">
-                  security
-                </span>{' '}
-                Two-Factor Authentication
-              </span>
-              <button
-                className="modal-close"
-                onClick={() => setIs2FAModalOpen(false)}
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="qr-box-wrap">
-              <div className="mb-16">
-                <span className="material-icons icon-48 text-primary-cost">
-                  qr_code_2
-                </span>
-              </div>
-              <p className="modal-desc-text mb-16">
-                Scan the QR code below with your authenticator app
-              </p>
-              <div className="qr-code-box">
-                <div className="qr-code-label">QR CODE SECRET</div>
-                <div className="icon-30 mb-8">
-                  <span className="material-icons icon-30 icon-muted">grid_on</span>
-                </div>
-                <div className="qr-code-secret">JBSW Y3DP EHPK 3PXP</div>
-              </div>
-            </div>
-
-            <div className="modal-footer">
-              <button
-                className="btn btn-secondary"
-                onClick={() => setIs2FAModalOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={() => setIs2FAModalOpen(false)}
-              >
-                <span className="material-icons icon-16 icon-middle">check</span>{' '}
-                Enable 2FA
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Modal: Sign Out Confirmation */}
       {isLogoutModalOpen && (
         <div
-          className="modal-overlay"
+          className={ownerClasses("modal-overlay")}
           onClick={(e) => {
-            if (e.target.className === 'modal-overlay') setIsLogoutModalOpen(false);
+            if (e.target === e.currentTarget) setIsLogoutModalOpen(false);
           }}
         >
-          <div className="modal">
-            <div className="modal-header">
-              <span className="modal-title">Sign Out</span>
+          <div className={ownerClasses("modal")}>
+            <div className={ownerClasses("modal-header")}>
+              <span className={ownerClasses("modal-title")}>Sign Out</span>
               <button
-                className="modal-close"
+                className={ownerClasses("modal-close")}
                 onClick={() => setIsLogoutModalOpen(false)}
               >
                 ×
               </button>
             </div>
-            <p className="modal-desc-text">
+            <p className={ownerClasses("modal-desc-text")}>
               Are you sure you want to sign out of the Owner Dashboard?
             </p>
-            <div className="modal-footer">
+            <div className={ownerClasses("modal-footer")}>
               <button
-                className="btn btn-secondary"
+                className={ownerClasses("btn btn-secondary")}
                 onClick={() => setIsLogoutModalOpen(false)}
               >
                 Cancel
               </button>
-              <button className="btn btn-danger" onClick={onLogout}>
+              <button
+                className={ownerClasses("btn btn-danger")}
+                onClick={onLogout}
+              >
                 Sign Out
               </button>
             </div>

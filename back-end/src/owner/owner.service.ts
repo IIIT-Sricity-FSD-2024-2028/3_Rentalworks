@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ownerPropertySummary } from './property-summary';
+import { Injectable, NotFoundException, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Property } from '../properties/property.entity';
@@ -25,6 +27,7 @@ export class OwnerService {
   async getDashboardStats(ownerId: number) {
     const properties = await this.propertyRepo.find({
       where: { ownerId: ownerId },
+      relations: { roomEntities: true },
     });
 
     let totalRooms = 0;
@@ -32,14 +35,14 @@ export class OwnerService {
     let monthlyRevenue = 0;
 
     for (let i = 0; i < properties.length; i++) {
-      const p = properties[i];
-      const tRooms = p.totalRooms || 10;
+      const p = ownerPropertySummary(properties[i]);
+      const tRooms = p.totalRooms ?? 0;
       const oRooms = p.occupiedRooms || 0;
-      const rent = p.monthlyRent || p.rentMin || 7000;
+      const rent = p.monthlyRent ?? p.rentMin ?? 0;
 
       totalRooms = totalRooms + tRooms;
       occupiedRooms = occupiedRooms + oRooms;
-      monthlyRevenue = monthlyRevenue + (rent * oRooms);
+      monthlyRevenue += 'estimatedMonthlyRent' in p ? p.estimatedMonthlyRent : rent * oRooms;
     }
 
     const occupancyRate =
@@ -70,6 +73,7 @@ export class OwnerService {
     }
 
     const notifications = await this.notificationRepo.find({
+      where: { userId: ownerId },
       order: { id: 'DESC' },
       take: 5,
     });
@@ -100,16 +104,14 @@ export class OwnerService {
       name: user.name,
       email: user.email,
       phone: user.phone,
-      company: user.company || 'Iyer Properties Pvt Ltd',
-      city: user.city || 'Chennai',
-      state: user.state || 'Tamil Nadu',
-      pincode: user.pincode || '600001',
-      bio:
-        user.bio ||
-        'Experienced PG owner with 10+ years in the rental business.',
+      company: user.company || '',
+      city: user.city || '',
+      state: user.state || '',
+      pincode: user.pincode || '',
+      bio: user.bio || '',
       avatar: user.avatar || null,
       role: user.role,
-      subscriptionPlan: user.subscriptionPlan || 'Premium',
+      subscriptionPlan: user.subscriptionPlan || null,
     };
   }
 
@@ -144,29 +146,30 @@ export class OwnerService {
     };
   }
 
+  async changePassword(ownerId: number, currentPassword: string, newPassword: string) {
+    if (typeof newPassword !== 'string' || newPassword.length < 8) {
+      throw new BadRequestException('New password must be at least 8 characters');
+    }
+    const user = await this.userRepo.createQueryBuilder('user')
+      .where('user.id = :ownerId', { ownerId })
+      .addSelect('user.password')
+      .getOne();
+    if (!user || user.role !== 'owner') throw new NotFoundException('Owner not found');
+    if (!await bcrypt.compare(currentPassword || '', user.password || '')) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+    user.password = await bcrypt.hash(newPassword, 12);
+    await this.userRepo.save(user);
+    return { message: 'Password updated' };
+  }
+
   async getPolicy(ownerId: number) {
     const user = await this.userRepo.findOne({ where: { id: ownerId } });
     if (!user) {
       throw new NotFoundException('Owner not found');
     }
 
-    const defaultPolicy = {
-      noticePeriod: 30,
-      securityDeposit: 2,
-      rentDueDay: 5,
-      lateFee: 500,
-      guestPolicy: 'allowed',
-      guestHours: '09:00-21:00',
-      smokingAllowed: false,
-      petsAllowed: false,
-      maintenanceWindow: '09:00-18:00',
-      rentIncrease: 10,
-      rentIncreaseFrequency: 'yearly',
-      autoRenew: true,
-      leaseTermMonths: 11,
-    };
-
-    return user.policy || defaultPolicy;
+    return user.policy || {};
   }
 
   async updatePolicy(ownerId: number, policyData: any) {
@@ -186,84 +189,40 @@ export class OwnerService {
       throw new NotFoundException('Owner not found');
     }
 
-    let subRecord = await this.subscriptionRepo.findOne({
-      where: { ownerId: ownerId },
-      order: { id: 'DESC' },
-    });
-
-    if (!subRecord) {
-      const planName = user.subscriptionPlan || 'Growth';
-      const monthlyFee = user.subscriptionFee ? Number(user.subscriptionFee) : 8000;
-      const today = new Date().toISOString().split('T')[0];
-      const nextYear = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-      subRecord = this.subscriptionRepo.create({
-        ownerId: ownerId,
-        planName: planName,
-        planType: planName,
-        monthlyFee: monthlyFee,
-        amount: monthlyFee,
-        currency: 'INR',
-        status: 'active',
-        billingCycle: 'monthly',
-        startDate: today,
-        endDate: nextYear,
-      });
-      await this.subscriptionRepo.save(subRecord);
-    }
-
-    const propertiesCount = await this.propertyRepo.count({
-      where: { ownerId: ownerId },
-    });
-
+    const plans = await this.subscriptionRepo.query(
+      'SELECT id, name, "displayName", description, price, "durationMonths", currency, features, badge FROM subscription_plans WHERE "isActive" = true ORDER BY "sortOrder", id',
+    );
+    const records = await this.subscriptionRepo.query(
+      `SELECT s.*, p."displayName", p.features FROM subscriptions s
+       LEFT JOIN subscription_plans p ON p.id = s."planId"
+       WHERE s."ownerId" = $1 ORDER BY s.id DESC`, [ownerId],
+    );
+    const current = records.find(record => record.status.toLowerCase() === 'active'
+      && (!record.endDate || new Date(record.endDate).getTime() >= Date.now()));
     return {
-      currentPlan: subRecord.planName,
-      status: subRecord.status,
-      monthlyFee: Number(subRecord.monthlyFee),
-      billingCycle: subRecord.billingCycle,
-      propertiesManaged: propertiesCount,
-      maxProperties: subRecord.planName === 'Standard' ? 1 : 10,
-      renewalDate: subRecord.endDate || '2025-04-15',
-      features: [
-        'Up to ' + (subRecord.planName === 'Standard' ? '1 Property' : '10 Properties'),
-        'Advanced Analytics',
-        'Direct Messaging',
-        'Automated Rent Reminders',
-        'Priority Support',
-      ],
+      currentPlan: current?.displayName || current?.planName || current?.planType || null,
+      status: current?.status || 'inactive',
+      renewalDate: current?.endDate || null,
+      amount: current ? Number(current.amount ?? current.monthlyFee) : null,
+      plans: plans.map(plan => ({ ...plan, price: Number(plan.price), features: typeof plan.features === 'string' ? JSON.parse(plan.features) : plan.features || [] })),
+      requests: records.filter(record => record.status.toLowerCase() === 'pending'),
     };
   }
 
-  async updateSubscription(ownerId: number, planData: any) {
-    const user = await this.userRepo.findOne({ where: { id: ownerId } });
-    if (!user) {
-      throw new NotFoundException('Owner not found');
-    }
-
-    const newPlanName = planData.plan || planData.planName || user.subscriptionPlan || 'Growth';
-    const newFee = planData.fee !== undefined ? Number(planData.fee) : 8000;
-
-    user.subscriptionPlan = newPlanName;
-    user.subscriptionFee = newFee;
-    await this.userRepo.save(user);
-
-    const today = new Date().toISOString().split('T')[0];
-    const nextYear = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
+  async updateSubscription(ownerId: number, planData: { planId: number }) {
+    const [plan] = await this.subscriptionRepo.query(
+      'SELECT * FROM subscription_plans WHERE id = $1 AND "isActive" = true', [planData.planId],
+    );
+    if (!plan) throw new BadRequestException('Choose an available subscription plan');
+    // The server uses the catalog price; the browser cannot choose a price or activate a plan.
+    const pending = await this.subscriptionRepo.findOne({ where: { ownerId, planType: plan.name, status: 'pending' } });
+    if (pending) throw new BadRequestException('This plan already has a pending request');
     const sub = this.subscriptionRepo.create({
-      ownerId: ownerId,
-      planName: newPlanName,
-      planType: newPlanName,
-      monthlyFee: newFee,
-      amount: newFee,
-      currency: 'INR',
-      status: 'active',
-      billingCycle: 'monthly',
-      startDate: today,
-      endDate: nextYear,
+      ownerId, planId: plan.id, planName: plan.displayName, planType: plan.name,
+      amount: Number(plan.price), monthlyFee: 0, currency: plan.currency,
+      status: 'pending', billingCycle: plan.name.toLowerCase(),
     });
     await this.subscriptionRepo.save(sub);
-
-    return this.getSubscription(ownerId);
+    return { status: 'pending', requestedPlan: plan.displayName, amount: Number(plan.price) };
   }
 }

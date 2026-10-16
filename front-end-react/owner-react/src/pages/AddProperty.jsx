@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { ownerClasses } from "../classes";
+import Icon from "../components/Icon";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 const AMENITY_LIST = [
-  { label: 'WiFi', icon: 'wifi' },
-  { label: 'AC', icon: 'ac_unit' },
-  { label: 'Laundry', icon: 'local_laundry_service' },
-  { label: 'Parking', icon: 'local_parking' },
-  { label: 'Gym', icon: 'fitness_center' },
-  { label: 'Mess', icon: 'restaurant' },
-  { label: 'Power Backup', icon: 'power' },
-  { label: 'Security', icon: 'lock' },
+  { label: "WiFi", icon: "wifi" },
+  { label: "AC", icon: "ac_unit" },
+  { label: "Laundry", icon: "local_laundry_service" },
+  { label: "Parking", icon: "local_parking" },
+  { label: "Gym", icon: "fitness_center" },
+  { label: "Mess", icon: "restaurant" },
+  { label: "Power Backup", icon: "power" },
+  { label: "Security", icon: "lock" },
 ];
 
 // AddProperty: Controlled form with validation to add a new property
@@ -17,19 +19,20 @@ export default function AddProperty({ onAddProperty }) {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    name: '',
-    address: '',
-    city: '',
-    state: '',
-    pincode: '',
-    type: '',
-    gender: 'unisex',
-    capacity: '',
-    rooms: '',
-    rent: '',
+    name: "",
+    photoUrls: "",
+    address: "",
+    city: "",
+    state: "",
+    pincode: "",
+    type: "",
+    gender: "unisex",
+    capacity: "",
+    rooms: "",
+    rent: "",
     occupied: 0,
-    status: 'Active',
-    description: '',
+    status: "Active",
+    description: "",
   });
 
   const [selectedAmenities, setSelectedAmenities] = useState([]);
@@ -44,7 +47,7 @@ export default function AddProperty({ onAddProperty }) {
     setFormData((prev) => Object.assign({}, prev, update));
     if (errors[id]) {
       const errUpdate = {};
-      errUpdate[id] = '';
+      errUpdate[id] = "";
       setErrors((prev) => Object.assign({}, prev, errUpdate));
     }
   };
@@ -60,31 +63,53 @@ export default function AddProperty({ onAddProperty }) {
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.name.trim()) newErrors.name = 'Property name is required';
-    if (!formData.address.trim()) newErrors.address = 'Address is required';
-    if (!formData.city.trim()) newErrors.city = 'City is required';
-    if (!formData.state.trim()) newErrors.state = 'State is required';
+    if (!formData.name.trim()) {
+      newErrors.name = "Property Name is required. Please enter the property's name.";
+    }
+    if (!formData.address.trim()) {
+      newErrors.address = "Address is required. Please enter the street or building address.";
+    }
+    if (!formData.city.trim()) {
+      newErrors.city = "City is required. Please enter the city where property is located.";
+    }
+    if (!formData.state.trim()) {
+      newErrors.state = "State is required. Please enter the state name.";
+    }
 
     if (!/^\d{6}$/.test(formData.pincode.trim())) {
-      newErrors.pincode = 'Valid 6-digit pincode required';
+      newErrors.pincode = "Invalid Pincode. Please enter an exact 6-digit postal code (e.g. 600001).";
     }
 
-    if (!formData.type) newErrors.type = 'Please select a type';
+    if (!formData.type) {
+      newErrors.type = "Property Type is required. Please choose Mixed, Male Only, or Female Only.";
+    }
     if (!formData.capacity || Number(formData.capacity) < 1) {
-      newErrors.capacity = 'Capacity is required';
+      newErrors.capacity = "Total Capacity is required. Please enter maximum tenant capacity (at least 1).";
     }
     if (!formData.rooms || Number(formData.rooms) < 1) {
-      newErrors.rooms = 'Total rooms is required';
+      newErrors.rooms = "Total Rooms is required. Please enter the number of rooms (at least 1 room).";
     }
     if (!formData.rent || Number(formData.rent) < 0) {
-      newErrors.rent = 'Rent is required';
+      newErrors.rent = "Monthly Rent is required. Please enter monthly rent in ₹ (e.g. 8000).";
     }
     if (Number(formData.occupied) > Number(formData.rooms)) {
-      newErrors.occupied = 'Occupied rooms cannot exceed total rooms';
+      newErrors.occupied = "Occupancy exceeds rooms. Occupied rooms cannot be greater than Total Rooms.";
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+    const errorKeys = Object.keys(newErrors);
+    if (errorKeys.length > 0) {
+      setTimeout(() => {
+        const firstField = document.getElementById(errorKeys[0]);
+        if (firstField) {
+          firstField.scrollIntoView({ behavior: "smooth", block: "center" });
+          firstField.focus();
+        }
+      }, 60);
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async (e) => {
@@ -92,38 +117,78 @@ export default function AddProperty({ onAddProperty }) {
     if (!validate()) return;
 
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 300));
 
     const newProperty = {
-      id: 'prop_' + Date.now(),
+      id: "prop_" + Date.now(),
       name: formData.name.trim(),
       address: formData.address.trim(),
       city: formData.city.trim(),
       state: formData.state.trim(),
       pincode: formData.pincode.trim(),
       type: formData.type,
-      gender: formData.gender || (formData.type === 'Female' ? 'girls' : formData.type === 'Male' ? 'boys' : 'unisex'),
+      gender:
+        formData.gender ||
+        (formData.type === "Female"
+          ? "girls"
+          : formData.type === "Male"
+            ? "boys"
+            : "unisex"),
       totalCapacity: Number(formData.capacity),
       totalRooms: Number(formData.rooms),
+      rooms: String(formData.rooms),
       occupiedRooms: Number(formData.occupied) || 0,
       monthlyRent: Number(formData.rent),
       amenities: selectedAmenities,
+      images: formData.photoUrls
+        .split("\n")
+        .map((url) => url.trim())
+        .filter(Boolean),
       status: formData.status,
-      addedDate: new Date().toISOString().split('T')[0],
+      addedDate: new Date().toISOString().split("T")[0],
       description: formData.description.trim(),
-      owner: 'Rajesh Kumar',
-      ownerEmail: 'rajesh.k@email.com',
     };
 
-    onAddProperty(newProperty);
-    setIsSubmitting(false);
-    navigate('/properties');
+    try {
+      await onAddProperty(newProperty);
+      navigate("/owner/properties");
+    } catch (err) {
+      const serverMsg = (err?.message || "").toLowerCase();
+      const mappedErrors = {};
+      if (serverMsg.includes("room")) {
+        mappedErrors.rooms = "Total Rooms is required. Please enter a valid number of rooms (e.g. 10).";
+      }
+      if (serverMsg.includes("rent")) {
+        mappedErrors.rent = "Monthly Rent is required. Please enter a valid rent in ₹.";
+      }
+      if (serverMsg.includes("name")) {
+        mappedErrors.name = "Property Name is invalid. Please enter a valid property name.";
+      }
+      if (serverMsg.includes("pincode")) {
+        mappedErrors.pincode = "Pincode is invalid. Please enter a valid 6-digit postal code.";
+      }
+      if (serverMsg.includes("capacity")) {
+        mappedErrors.capacity = "Total Capacity is invalid. Please enter a capacity of 1 or more.";
+      }
+      if (Object.keys(mappedErrors).length > 0) {
+        setErrors((prev) => Object.assign({}, prev, mappedErrors));
+        const firstKey = Object.keys(mappedErrors)[0];
+        setTimeout(() => {
+          const el = document.getElementById(firstKey);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            el.focus();
+          }
+        }, 60);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div>
-      <div className="page-header">
-        <Link to="/properties" className="back-link">
+      <div className={ownerClasses("page-header")}>
+        <Link to="/owner/properties" className={ownerClasses("back-link")}>
           ← Back to Properties
         </Link>
         <h1>Add New Property</h1>
@@ -131,96 +196,186 @@ export default function AddProperty({ onAddProperty }) {
       </div>
 
       <form onSubmit={handleSubmit}>
+        {Object.keys(errors).length > 0 && (
+          <div className={ownerClasses("form-error-banner")}>
+            <Icon className={ownerClasses("icon-22 icon-middle")}>warning</Icon>
+            <div>
+              <strong>Please review and correct the highlighted fields:</strong>
+              <div style={{ marginTop: "4px", fontSize: "13px", opacity: 0.9 }}>
+                {Object.values(errors)[0]}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Section 01: Basic Information */}
-        <div className="form-section">
-          <div className="form-section-header">
-            <div className="num-badge">01</div>
-            <div className="form-section-title">Basic Information</div>
+        <div className={ownerClasses("form-section")}>
+          <div className={ownerClasses("form-section-header")}>
+            <div className={ownerClasses("num-badge")}>01</div>
+            <div className={ownerClasses("form-section-title")}>
+              Basic Information
+            </div>
           </div>
 
-          <div className="form-grid">
-            <div className={errors.name ? 'form-group has-error' : 'form-group'}>
-              <label className="form-label">
-                Property Name <span className="req">*</span>
+          <div className={ownerClasses("form-grid")}>
+            <div
+              className={ownerClasses(
+                errors.name ? "form-group has-error" : "form-group",
+              )}
+            >
+              <label className={ownerClasses("form-label")}>
+                Property Name <span className={ownerClasses("req")}>*</span>
               </label>
               <input
                 type="text"
-                className="form-input"
+                className={ownerClasses(
+                  errors.name ? "form-input has-error input-error" : "form-input",
+                )}
                 id="name"
                 placeholder="e.g. Sunrise PG"
                 value={formData.name}
                 onChange={handleChange}
               />
-              {errors.name && <span className="form-error">{errors.name}</span>}
+
+              {errors.name && (
+                <div className={ownerClasses("field-error-msg")}>
+                  <Icon className={ownerClasses("icon-16 icon-middle")}>
+                    error_outline
+                  </Icon>
+                  <span>{errors.name}</span>
+                </div>
+              )}
             </div>
 
-            <div className={errors.address ? 'form-group has-error' : 'form-group'}>
-              <label className="form-label">
-                Address <span className="req">*</span>
+            <div
+              className={ownerClasses(
+                errors.address ? "form-group has-error" : "form-group",
+              )}
+            >
+              <label className={ownerClasses("form-label")}>
+                Address <span className={ownerClasses("req")}>*</span>
               </label>
               <input
                 type="text"
-                className="form-input"
+                className={ownerClasses(
+                  errors.address ? "form-input has-error input-error" : "form-input",
+                )}
                 id="address"
                 placeholder="Street address"
                 value={formData.address}
                 onChange={handleChange}
               />
-              {errors.address && <span className="form-error">{errors.address}</span>}
+
+              {errors.address && (
+                <div className={ownerClasses("field-error-msg")}>
+                  <Icon className={ownerClasses("icon-16 icon-middle")}>
+                    error_outline
+                  </Icon>
+                  <span>{errors.address}</span>
+                </div>
+              )}
             </div>
 
-            <div className={errors.city ? 'form-group has-error' : 'form-group'}>
-              <label className="form-label">
-                City <span className="req">*</span>
+            <div
+              className={ownerClasses(
+                errors.city ? "form-group has-error" : "form-group",
+              )}
+            >
+              <label className={ownerClasses("form-label")}>
+                City <span className={ownerClasses("req")}>*</span>
               </label>
               <input
                 type="text"
-                className="form-input"
+                className={ownerClasses(
+                  errors.city ? "form-input has-error input-error" : "form-input",
+                )}
                 id="city"
                 placeholder="Chennai"
                 value={formData.city}
                 onChange={handleChange}
               />
-              {errors.city && <span className="form-error">{errors.city}</span>}
+
+              {errors.city && (
+                <div className={ownerClasses("field-error-msg")}>
+                  <Icon className={ownerClasses("icon-16 icon-middle")}>
+                    error_outline
+                  </Icon>
+                  <span>{errors.city}</span>
+                </div>
+              )}
             </div>
 
-            <div className={errors.state ? 'form-group has-error' : 'form-group'}>
-              <label className="form-label">
-                State <span className="req">*</span>
+            <div
+              className={ownerClasses(
+                errors.state ? "form-group has-error" : "form-group",
+              )}
+            >
+              <label className={ownerClasses("form-label")}>
+                State <span className={ownerClasses("req")}>*</span>
               </label>
               <input
                 type="text"
-                className="form-input"
+                className={ownerClasses(
+                  errors.state ? "form-input has-error input-error" : "form-input",
+                )}
                 id="state"
                 placeholder="Tamil Nadu"
                 value={formData.state}
                 onChange={handleChange}
               />
-              {errors.state && <span className="form-error">{errors.state}</span>}
+
+              {errors.state && (
+                <div className={ownerClasses("field-error-msg")}>
+                  <Icon className={ownerClasses("icon-16 icon-middle")}>
+                    error_outline
+                  </Icon>
+                  <span>{errors.state}</span>
+                </div>
+              )}
             </div>
 
-            <div className={errors.pincode ? 'form-group has-error' : 'form-group'}>
-              <label className="form-label">
-                Pincode <span className="req">*</span>
+            <div
+              className={ownerClasses(
+                errors.pincode ? "form-group has-error" : "form-group",
+              )}
+            >
+              <label className={ownerClasses("form-label")}>
+                Pincode <span className={ownerClasses("req")}>*</span>
               </label>
               <input
                 type="text"
-                className="form-input"
+                className={ownerClasses(
+                  errors.pincode ? "form-input has-error input-error" : "form-input",
+                )}
                 id="pincode"
                 placeholder="600001"
                 maxLength="6"
                 value={formData.pincode}
                 onChange={handleChange}
               />
-              {errors.pincode && <span className="form-error">{errors.pincode}</span>}
+
+              {errors.pincode && (
+                <div className={ownerClasses("field-error-msg")}>
+                  <Icon className={ownerClasses("icon-16 icon-middle")}>
+                    error_outline
+                  </Icon>
+                  <span>{errors.pincode}</span>
+                </div>
+              )}
             </div>
 
-            <div className={errors.type ? 'form-group has-error' : 'form-group'}>
-              <label className="form-label">
-                Property Type <span className="req">*</span>
+            <div
+              className={ownerClasses(
+                errors.type ? "form-group has-error" : "form-group",
+              )}
+            >
+              <label className={ownerClasses("form-label")}>
+                Property Type <span className={ownerClasses("req")}>*</span>
               </label>
               <select
-                className="form-input"
+                className={ownerClasses(
+                  errors.type ? "form-input has-error input-error" : "form-input",
+                )}
                 id="type"
                 value={formData.type}
                 onChange={handleChange}
@@ -230,15 +385,22 @@ export default function AddProperty({ onAddProperty }) {
                 <option value="Male">Male Only</option>
                 <option value="Female">Female Only</option>
               </select>
-              {errors.type && <span className="form-error">{errors.type}</span>}
+              {errors.type && (
+                <div className={ownerClasses("field-error-msg")}>
+                  <Icon className={ownerClasses("icon-16 icon-middle")}>
+                    error_outline
+                  </Icon>
+                  <span>{errors.type}</span>
+                </div>
+              )}
             </div>
 
-            <div className="form-group">
-              <label className="form-label">
-                Gender Policy <span className="req">*</span>
+            <div className={ownerClasses("form-group")}>
+              <label className={ownerClasses("form-label")}>
+                Gender Policy <span className={ownerClasses("req")}>*</span>
               </label>
               <select
-                className="form-input"
+                className={ownerClasses("form-input")}
                 id="gender"
                 value={formData.gender}
                 onChange={handleChange}
@@ -247,7 +409,15 @@ export default function AddProperty({ onAddProperty }) {
                 <option value="boys">Boys Only (Male Tenants Only)</option>
                 <option value="girls">Girls Only (Female Tenants Only)</option>
               </select>
-              <span className="text-xs text-muted" style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', display: 'block' }}>
+              <span
+                className={ownerClasses("text-xs text-muted")}
+                style={{
+                  fontSize: "12px",
+                  color: "#64748b",
+                  marginTop: "4px",
+                  display: "block",
+                }}
+              >
                 Enforced by backend booking verification
               </span>
             </div>
@@ -255,79 +425,139 @@ export default function AddProperty({ onAddProperty }) {
         </div>
 
         {/* Section 02: Details */}
-        <div className="form-section">
-          <div className="form-section-header">
-            <div className="num-badge">02</div>
-            <div className="form-section-title">Property Details</div>
+        <div className={ownerClasses("form-section")}>
+          <div className={ownerClasses("form-section-header")}>
+            <div className={ownerClasses("num-badge")}>02</div>
+            <div className={ownerClasses("form-section-title")}>
+              Property Details
+            </div>
           </div>
 
-          <div className="form-grid-3">
-            <div className={errors.capacity ? 'form-group has-error' : 'form-group'}>
-              <label className="form-label">
-                Total Capacity <span className="req">*</span>
+          <div className={ownerClasses("form-grid-3")}>
+            <div
+              className={ownerClasses(
+                errors.capacity ? "form-group has-error" : "form-group",
+              )}
+            >
+              <label className={ownerClasses("form-label")}>
+                Total Capacity <span className={ownerClasses("req")}>*</span>
               </label>
               <input
                 type="number"
-                className="form-input"
+                className={ownerClasses(
+                  errors.capacity ? "form-input has-error input-error" : "form-input",
+                )}
                 id="capacity"
                 placeholder="20"
                 min="1"
                 value={formData.capacity}
                 onChange={handleChange}
               />
-              {errors.capacity && <span className="form-error">{errors.capacity}</span>}
+
+              {errors.capacity && (
+                <div className={ownerClasses("field-error-msg")}>
+                  <Icon className={ownerClasses("icon-16 icon-middle")}>
+                    error_outline
+                  </Icon>
+                  <span>{errors.capacity}</span>
+                </div>
+              )}
             </div>
 
-            <div className={errors.rooms ? 'form-group has-error' : 'form-group'}>
-              <label className="form-label">
-                Total Rooms <span className="req">*</span>
+            <div
+              className={ownerClasses(
+                errors.rooms ? "form-group has-error" : "form-group",
+              )}
+            >
+              <label className={ownerClasses("form-label")}>
+                Total Rooms <span className={ownerClasses("req")}>*</span>
               </label>
               <input
                 type="number"
-                className="form-input"
+                className={ownerClasses(
+                  errors.rooms ? "form-input has-error input-error" : "form-input",
+                )}
                 id="rooms"
                 placeholder="10"
                 min="1"
                 value={formData.rooms}
                 onChange={handleChange}
               />
-              {errors.rooms && <span className="form-error">{errors.rooms}</span>}
+
+              {errors.rooms && (
+                <div className={ownerClasses("field-error-msg")}>
+                  <Icon className={ownerClasses("icon-16 icon-middle")}>
+                    error_outline
+                  </Icon>
+                  <span>{errors.rooms}</span>
+                </div>
+              )}
             </div>
 
-            <div className={errors.rent ? 'form-group has-error' : 'form-group'}>
-              <label className="form-label">
-                Monthly Rent (₹) <span className="req">*</span>
+            <div
+              className={ownerClasses(
+                errors.rent ? "form-group has-error" : "form-group",
+              )}
+            >
+              <label className={ownerClasses("form-label")}>
+                Monthly Rent (₹) <span className={ownerClasses("req")}>*</span>
               </label>
               <input
                 type="number"
-                className="form-input"
+                className={ownerClasses(
+                  errors.rent ? "form-input has-error input-error" : "form-input",
+                )}
                 id="rent"
                 placeholder="8000"
                 min="0"
                 value={formData.rent}
                 onChange={handleChange}
               />
-              {errors.rent && <span className="form-error">{errors.rent}</span>}
+
+              {errors.rent && (
+                <div className={ownerClasses("field-error-msg")}>
+                  <Icon className={ownerClasses("icon-16 icon-middle")}>
+                    error_outline
+                  </Icon>
+                  <span>{errors.rent}</span>
+                </div>
+              )}
             </div>
 
-            <div className={errors.occupied ? 'form-group has-error' : 'form-group'}>
-              <label className="form-label">Currently Occupied</label>
+            <div
+              className={ownerClasses(
+                errors.occupied ? "form-group has-error" : "form-group",
+              )}
+            >
+              <label className={ownerClasses("form-label")}>
+                Currently Occupied
+              </label>
               <input
                 type="number"
-                className="form-input"
+                className={ownerClasses(
+                  errors.occupied ? "form-input has-error input-error" : "form-input",
+                )}
                 id="occupied"
                 placeholder="0"
                 min="0"
                 value={formData.occupied}
                 onChange={handleChange}
               />
-              {errors.occupied && <span className="form-error">{errors.occupied}</span>}
+
+              {errors.occupied && (
+                <div className={ownerClasses("field-error-msg")}>
+                  <Icon className={ownerClasses("icon-16 icon-middle")}>
+                    error_outline
+                  </Icon>
+                  <span>{errors.occupied}</span>
+                </div>
+              )}
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Status</label>
+            <div className={ownerClasses("form-group")}>
+              <label className={ownerClasses("form-label")}>Status</label>
               <select
-                className="form-input"
+                className={ownerClasses("form-input")}
                 id="status"
                 value={formData.status}
                 onChange={handleChange}
@@ -340,22 +570,24 @@ export default function AddProperty({ onAddProperty }) {
         </div>
 
         {/* Section 03: Amenities */}
-        <div className="form-section">
-          <div className="form-section-header">
-            <div className="num-badge">03</div>
-            <div className="form-section-title">Amenities</div>
+        <div className={ownerClasses("form-section")}>
+          <div className={ownerClasses("form-section-header")}>
+            <div className={ownerClasses("num-badge")}>03</div>
+            <div className={ownerClasses("form-section-title")}>Amenities</div>
           </div>
 
-          <div className="amenities-grid" id="amenitiesGrid">
+          <div className={ownerClasses("amenities-grid")} id="amenitiesGrid">
             {AMENITY_LIST.map((a) => {
               const isSelected = selectedAmenities.includes(a.label);
               return (
                 <div
                   key={a.label}
-                  className={`amenity-toggle ${isSelected ? 'selected' : ''}`}
+                  className={ownerClasses(
+                    `amenity-toggle ${isSelected ? "selected" : ""}`,
+                  )}
                   onClick={() => toggleAmenity(a.label)}
                 >
-                  <span className="material-icons icon-16">{a.icon}</span>{' '}
+                  <Icon className={ownerClasses("icon-16")}>{a.icon}</Icon>{" "}
                   {a.label}
                 </div>
               );
@@ -364,18 +596,21 @@ export default function AddProperty({ onAddProperty }) {
         </div>
 
         {/* Section 04: Description */}
-        <div className="form-section">
-          <div className="form-section-header">
-            <div className="num-badge">04</div>
-            <div className="form-section-title">
-              Additional Notes <span className="prop-sub-row">(Optional)</span>
+        <div className={ownerClasses("form-section")}>
+          <div className={ownerClasses("form-section-header")}>
+            <div className={ownerClasses("num-badge")}>04</div>
+            <div className={ownerClasses("form-section-title")}>
+              Additional Notes{" "}
+              <span className={ownerClasses("prop-sub-row")}>(Optional)</span>
             </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Property Description</label>
+          <div className={ownerClasses("form-group")}>
+            <label className={ownerClasses("form-label")}>
+              Property Description
+            </label>
             <textarea
-              className="form-input"
+              className={ownerClasses("form-input")}
               id="description"
               placeholder="Enter any additional details about the property, rules, nearby landmarks"
               rows="4"
@@ -385,22 +620,39 @@ export default function AddProperty({ onAddProperty }) {
           </div>
         </div>
 
+        <div className={ownerClasses("form-group")}>
+          <label className={ownerClasses("form-label")} htmlFor="photoUrls">
+            Photo URLs (one per line)
+          </label>
+          <textarea
+            id="photoUrls"
+            className={ownerClasses("form-input")}
+            value={formData.photoUrls}
+            onChange={handleChange}
+            placeholder="https://..."
+          />
+        </div>
         {/* Action Buttons */}
-        <div className="flex-end-gap mt-8">
-          <Link to="/properties" className="btn btn-secondary btn-lg">
+        <div className={ownerClasses("flex-end-gap mt-8")}>
+          <Link
+            to="/owner/properties"
+            className={ownerClasses("btn btn-secondary btn-lg")}
+          >
             Cancel
           </Link>
           <button
             type="submit"
-            className="btn btn-primary btn-lg"
+            className={ownerClasses("btn btn-primary btn-lg")}
             id="submitBtn"
             disabled={isSubmitting}
           >
             {isSubmitting ? (
-              'Submitting...'
+              "Submitting..."
             ) : (
               <>
-                <span className="material-icons icon-18 icon-middle">check</span>{' '}
+                <Icon className={ownerClasses("icon-18 icon-middle")}>
+                  check
+                </Icon>{" "}
                 Submit for Verification
               </>
             )}

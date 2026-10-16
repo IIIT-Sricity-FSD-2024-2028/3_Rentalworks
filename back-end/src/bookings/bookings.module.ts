@@ -9,6 +9,7 @@ import { Room } from '../rooms/room.entity';
 import { Property } from '../properties/property.entity';
 import { TenantStay } from '../tenant-stays/tenant-stay.entity';
 import { WardenNotification } from '../warden-notifications/warden-notification.entity';
+import { Notification } from '../notifications/notification.entity';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { WardenNotification } from '../warden-notifications/warden-notification.
       Property,
       TenantStay,
       WardenNotification,
+      Notification,
     ]),
   ],
   controllers: [BookingsController],

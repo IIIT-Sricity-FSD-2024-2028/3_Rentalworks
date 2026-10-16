@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import PropertyPhoto from "../components/PropertyPhoto";
+import { ownerClasses } from "../classes";
+import Icon from "../components/Icon";
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
 
 const AMENITY_OPTIONS = [
-  'WiFi',
-  'AC',
-  'Laundry',
-  'Parking',
-  'Gym',
-  'Mess',
-  'Power Backup',
-  'Security',
+  "WiFi",
+  "AC",
+  "Laundry",
+  "Parking",
+  "Gym",
+  "Mess",
+  "Power Backup",
+  "Security",
 ];
 
 // Properties: Displays property listings with search, filter, view, edit, and delete
@@ -18,26 +21,31 @@ export default function Properties({
   onUpdateProperty,
   onDeleteProperty,
 }) {
-  const [search, setSearch] = useState('');
-  const [filterType, setFilterType] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
-  const [filterSort, setFilterSort] = useState('');
+  const [search, setSearch] = useState("");
+  const [filterType, setFilterType] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterSort, setFilterSort] = useState("");
 
   const [viewingProperty, setViewingProperty] = useState(null);
   const [editingProperty, setEditingProperty] = useState(null);
   const [deletingProperty, setDeletingProperty] = useState(null);
-  const [editError, setEditError] = useState('');
+  const [editError, setEditError] = useState("");
+  const [editErrors, setEditErrors] = useState({});
 
   const formatCurrency = (amount) => {
-    return '₹' + Number(amount || 0).toLocaleString('en-IN');
+    return "₹" + Number(amount || 0).toLocaleString("en-IN");
   };
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return '—';
+    if (!dateStr) return "—";
     const d = new Date(dateStr);
     return isNaN(d.getTime())
       ? dateStr
-      : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      : d.toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        });
   };
 
   const getOccupancyPercent = (occupied = 0, total = 0) => {
@@ -46,37 +54,36 @@ export default function Properties({
   };
 
   const getOccupancyClass = (pct) => {
-    if (pct >= 75) return 'high';
-    if (pct >= 40) return 'medium';
-    return 'low';
+    if (pct >= 75) return "high";
+    if (pct >= 40) return "medium";
+    return "low";
   };
 
   const filteredProperties = properties
     .filter((p) => {
       const q = search.toLowerCase().trim();
-      const nameStr = (p.name || '').toLowerCase();
-      const cityStr = (p.city || p.location || '').toLowerCase();
-      const addrStr = (p.address || '').toLowerCase();
+      const nameStr = (p.name || "").toLowerCase();
+      const cityStr = (p.city || p.location || "").toLowerCase();
+      const addrStr = (p.address || "").toLowerCase();
       const matchSearch =
-        !q ||
-        nameStr.includes(q) ||
-        cityStr.includes(q) ||
-        addrStr.includes(q);
+        !q || nameStr.includes(q) || cityStr.includes(q) || addrStr.includes(q);
       const matchType = !filterType || p.type === filterType;
-      const pStatus = (p.status || '').toLowerCase();
+      const pStatus = (p.status || "").toLowerCase();
       const fStatus = filterStatus.toLowerCase();
       const matchStatus =
         !filterStatus ||
         pStatus === fStatus ||
-        (fStatus === 'active' && (pStatus === 'approved' || pStatus === 'active')) ||
-        (fStatus === 'inactive' && (pStatus === 'pending' || pStatus === 'inactive'));
+        (fStatus === "active" &&
+          (pStatus === "approved" || pStatus === "active")) ||
+        (fStatus === "inactive" &&
+          (pStatus === "pending" || pStatus === "inactive"));
       return matchSearch && matchType && matchStatus;
     })
     .sort((a, b) => {
-      if (filterSort === 'name') return a.name.localeCompare(b.name);
-      if (filterSort === 'rent_asc') return a.monthlyRent - b.monthlyRent;
-      if (filterSort === 'rent_desc') return b.monthlyRent - a.monthlyRent;
-      if (filterSort === 'occupancy') {
+      if (filterSort === "name") return a.name.localeCompare(b.name);
+      if (filterSort === "rent_asc") return a.monthlyRent - b.monthlyRent;
+      if (filterSort === "rent_desc") return b.monthlyRent - a.monthlyRent;
+      if (filterSort === "occupancy") {
         const pctA = getOccupancyPercent(a.occupiedRooms, a.totalRooms);
         const pctB = getOccupancyPercent(b.occupiedRooms, b.totalRooms);
         return pctB - pctA;
@@ -94,48 +101,81 @@ export default function Properties({
       : currentAmenities.concat(amenity);
 
     setEditingProperty(
-      Object.assign({}, editingProperty, { amenities: updatedAmenities })
+      Object.assign({}, editingProperty, { amenities: updatedAmenities }),
     );
   };
 
-  const handleSaveEdit = (e) => {
+  const handleSaveEdit = async (e) => {
     e.preventDefault();
     if (!editingProperty) return;
 
-    if (!editingProperty.name.trim() || !editingProperty.city.trim()) {
-      setEditError('Please fill in all required fields.');
+    const errors = {};
+    if (!editingProperty.name || !editingProperty.name.trim()) {
+      errors.name = "Property name is required. Please enter a valid property name.";
+    }
+    if (!editingProperty.city || !editingProperty.city.trim()) {
+      errors.city = "City is required. Please specify the city where the property is located.";
+    }
+    if (editingProperty.monthlyRent === undefined || editingProperty.monthlyRent === "" || Number(editingProperty.monthlyRent) <= 0) {
+      errors.monthlyRent = "Monthly rent must be greater than ₹0. Please enter the monthly rental amount.";
+    }
+    if (!editingProperty.totalRooms || Number(editingProperty.totalRooms) < 1) {
+      errors.totalRooms = "Total rooms must be at least 1. Please specify how many rooms are in this property.";
+    }
+    if (editingProperty.occupiedRooms === undefined || editingProperty.occupiedRooms === "" || Number(editingProperty.occupiedRooms) < 0) {
+      errors.occupiedRooms = "Occupied rooms cannot be negative. Enter 0 if no rooms are currently occupied.";
+    } else if (Number(editingProperty.occupiedRooms) > Number(editingProperty.totalRooms)) {
+      errors.occupiedRooms = `Occupied rooms (${editingProperty.occupiedRooms}) cannot exceed total rooms (${editingProperty.totalRooms}). Please reduce occupied rooms or increase total rooms.`;
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setEditErrors(errors);
+      setEditError("Please correct the highlighted fields with red borders below.");
+      const firstFieldId = "edit-" + Object.keys(errors)[0];
+      setTimeout(() => {
+        const el = document.getElementById(firstFieldId);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.focus();
+        }
+      }, 50);
       return;
     }
 
-    if (editingProperty.occupiedRooms > editingProperty.totalRooms) {
-      setEditError('Occupied rooms cannot exceed total rooms.');
-      return;
+    try {
+      if (await onUpdateProperty(editingProperty)) {
+        setEditingProperty(null);
+        setEditError("");
+        setEditErrors({});
+      }
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || "Failed to update property";
+      setEditError(Array.isArray(msg) ? msg.join(", ") : String(msg));
     }
-
-    onUpdateProperty(editingProperty);
-    setEditingProperty(null);
-    setEditError('');
   };
 
   return (
     <div>
       {/* Top Header */}
-      <div className="flex-between mb-20">
+      <div className={ownerClasses("flex-between mb-20")}>
         <div>
-          <div className="text-sm text-muted">
+          <div className={ownerClasses("text-sm text-muted")}>
             {filteredProperties.length} properties found
           </div>
         </div>
-        <Link to="/add-property" className="btn btn-primary">
-          <span className="material-icons icon-18 icon-middle">add</span>{' '}
-          Add Property
+        <Link
+          to="/owner/add-property"
+          className={ownerClasses("btn btn-primary")}
+        >
+          <Icon className={ownerClasses("icon-18 icon-middle")}>add</Icon> Add
+          Property
         </Link>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="filter-bar">
-        <div className="filter-search">
-          <span className="material-icons icon-20 icon-muted">search</span>
+      <div className={ownerClasses("filter-bar")}>
+        <div className={ownerClasses("filter-search")}>
+          <Icon className={ownerClasses("icon-20 icon-muted")}>search</Icon>
           <input
             type="text"
             id="propSearch"
@@ -146,7 +186,7 @@ export default function Properties({
         </div>
 
         <select
-          className="filter-select"
+          className={ownerClasses("filter-select")}
           id="filterType"
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
@@ -158,7 +198,7 @@ export default function Properties({
         </select>
 
         <select
-          className="filter-select"
+          className={ownerClasses("filter-select")}
           id="filterStatus"
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
@@ -169,7 +209,7 @@ export default function Properties({
         </select>
 
         <select
-          className="filter-select"
+          className={ownerClasses("filter-select")}
           id="filterSort"
           value={filterSort}
           onChange={(e) => setFilterSort(e.target.value)}
@@ -183,16 +223,21 @@ export default function Properties({
       </div>
 
       {/* Properties Grid */}
-      <div className="properties-grid" id="propertiesGrid">
+      <div className={ownerClasses("properties-grid")} id="propertiesGrid">
         {filteredProperties.length === 0 ? (
-          <div className="empty-state empty-state-grid">
-            <div className="empty-icon">
-              <span className="material-icons icon-48 icon-light">apartment</span>
+          <div className={ownerClasses("empty-state empty-state-grid")}>
+            <div className={ownerClasses("empty-icon")}>
+              <Icon className={ownerClasses("icon-48 icon-light")}>
+                apartment
+              </Icon>
             </div>
             <h3>No Properties Found</h3>
             <p>Try adjusting your search filters or add a new property.</p>
-            <Link to="/add-property" className="btn btn-primary">
-              <span className="material-icons icon-18 icon-middle">add</span>{' '}
+            <Link
+              to="/owner/add-property"
+              className={ownerClasses("btn btn-primary")}
+            >
+              <Icon className={ownerClasses("icon-18 icon-middle")}>add</Icon>{" "}
               Add Property
             </Link>
           </div>
@@ -204,95 +249,159 @@ export default function Properties({
             const extraAmenities = (p.amenities || []).length - 4;
 
             return (
-              <div key={p.id} className="property-card" id={`card-${p.id}`}>
-                <div className="property-card-img">
-                  <span className="material-icons prop-bg-icon">
-                    apartment
-                  </span>
-                  <div className="property-card-status" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                    <span className={`badge badge-${(p.status || 'active').toLowerCase()}`}>
+              <div
+                key={p.id}
+                className={ownerClasses("property-card")}
+                id={`card-${p.id}`}
+              >
+                <div className={ownerClasses("property-card-img")}>
+                  <PropertyPhoto images={p.images} name={p.name} />
+                  <div
+                    className={ownerClasses("property-card-status")}
+                    style={{
+                      display: "flex",
+                      gap: "6px",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span
+                      className={ownerClasses(
+                        `badge badge-${(p.status || "active").toLowerCase()}`,
+                      )}
+                    >
                       {p.status}
                     </span>
-                    <span className="badge" style={{
-                      background: p.gender === 'girls' ? '#fdf2f8' : p.gender === 'boys' ? '#eff6ff' : '#f0fdf4',
-                      color: p.gender === 'girls' ? '#db2777' : p.gender === 'boys' ? '#2563eb' : '#16a34a',
-                      border: '1px solid currentColor',
-                      fontSize: '11px',
-                      fontWeight: '600',
-                      padding: '2px 8px',
-                      borderRadius: '12px'
-                    }}>
-                      {p.gender === 'girls' ? '👩 Girls Only' : p.gender === 'boys' ? '👨 Boys Only' : '👫 Co-ed'}
+                    <span
+                      className={ownerClasses("badge")}
+                      style={{
+                        background:
+                          p.gender === "girls"
+                            ? "#fdf2f8"
+                            : p.gender === "boys"
+                              ? "#eff6ff"
+                              : "#f0fdf4",
+                        color:
+                          p.gender === "girls"
+                            ? "#db2777"
+                            : p.gender === "boys"
+                              ? "#2563eb"
+                              : "#16a34a",
+                        border: "1px solid currentColor",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        padding: "2px 8px",
+                        borderRadius: "12px",
+                      }}
+                    >
+                      {p.gender === "girls"
+                        ? "👩 Girls Only"
+                        : p.gender === "boys"
+                          ? "👨 Boys Only"
+                          : "👫 Co-ed"}
                     </span>
                   </div>
                 </div>
 
-                <div className="property-card-body">
-                  <div className="property-card-title">{p.name}</div>
-                  <div className="property-card-addr">
-                    <span className="material-icons icon-14 icon-middle">location_on</span>{' '}
-                    {p.address}, {p.city}, {p.state}
+                <div className={ownerClasses("property-card-body")}>
+                  <div className={ownerClasses("property-card-title")}>
+                    {p.name}
+                  </div>
+                  {p.capacityWarning && (
+                    <p className={ownerClasses("text-danger")}>
+                      Room occupancy exceeds recorded capacity. Please review
+                      room records.
+                    </p>
+                  )}
+                  <div className={ownerClasses("property-card-addr")}>
+                    <Icon className={ownerClasses("icon-14 icon-middle")}>
+                      location_on
+                    </Icon>{" "}
+                    {[p.address, p.city, p.state].filter(Boolean).join(", ")}
                   </div>
 
-                  <div className="property-meta">
-                    <div className="property-meta-item">
-                      <span className="material-icons icon-14 icon-middle">home</span>{' '}
+                  <div className={ownerClasses("property-meta")}>
+                    <div className={ownerClasses("property-meta-item")}>
+                      <Icon className={ownerClasses("icon-14 icon-middle")}>
+                        home
+                      </Icon>{" "}
                       <span>{p.type}</span>
                     </div>
-                    <div className="property-meta-item">
-                      <span className="material-icons icon-14 icon-middle">bed</span>{' '}
+                    <div className={ownerClasses("property-meta-item")}>
+                      <Icon className={ownerClasses("icon-14 icon-middle")}>
+                        bed
+                      </Icon>{" "}
                       <span>{p.totalRooms} rooms</span>
                     </div>
-                    <div className="property-meta-item">
-                      <span className="material-icons icon-14 icon-middle">payments</span>{' '}
+                    <div className={ownerClasses("property-meta-item")}>
+                      <Icon className={ownerClasses("icon-14 icon-middle")}>
+                        payments
+                      </Icon>{" "}
                       <span>{formatCurrency(p.monthlyRent)}/mo</span>
                     </div>
                   </div>
 
-                  <div className="occupancy-bar-wrap">
-                    <div className="occupancy-bar-label">
+                  <div className={ownerClasses("occupancy-bar-wrap")}>
+                    <div className={ownerClasses("occupancy-bar-label")}>
                       <span>Occupancy</span>
-                      <span>{p.occupiedRooms}/{p.totalRooms} ({pct}%)</span>
+                      <span>
+                        {p.occupiedRooms}/{p.totalRooms} ({pct}%)
+                      </span>
                     </div>
-                    <div className="occupancy-bar">
-                      <div className={`occupancy-fill ${cls} pct-${pct}`}></div>
+                    <div className={ownerClasses("occupancy-bar")}>
+                      <div
+                        className={ownerClasses(`occupancy-fill ${cls}`)}
+                        style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
+                      ></div>
                     </div>
                   </div>
 
-                  <div className="property-amenities">
+                  <div className={ownerClasses("property-amenities")}>
                     {amenitiesShown.map((a, i) => (
-                      <span key={i} className="amenity-tag">
+                      <span key={i} className={ownerClasses("amenity-tag")}>
                         {a}
                       </span>
                     ))}
                     {extraAmenities > 0 && (
-                      <span className="amenity-tag">+{extraAmenities} more</span>
+                      <span className={ownerClasses("amenity-tag")}>
+                        +{extraAmenities} more
+                      </span>
                     )}
                   </div>
 
-                  <div className="property-card-actions">
+                  <div className={ownerClasses("property-card-actions")}>
                     <button
-                      className="btn btn-secondary btn-sm flex-1"
+                      className={ownerClasses(
+                        "btn btn-secondary btn-sm flex-1",
+                      )}
                       onClick={() => setViewingProperty(p)}
                     >
-                      <span className="material-icons icon-16 icon-middle">visibility</span>{' '}
+                      <Icon className={ownerClasses("icon-16 icon-middle")}>
+                        visibility
+                      </Icon>{" "}
                       View
                     </button>
                     <button
-                      className="btn btn-secondary btn-sm flex-1"
+                      className={ownerClasses(
+                        "btn btn-secondary btn-sm flex-1",
+                      )}
                       onClick={() => {
                         setEditingProperty(Object.assign({}, p));
-                        setEditError('');
+                        setEditError("");
+                        setEditErrors({});
                       }}
                     >
-                      <span className="material-icons icon-16 icon-middle">edit</span>{' '}
+                      <Icon className={ownerClasses("icon-16 icon-middle")}>
+                        edit
+                      </Icon>{" "}
                       Edit
                     </button>
                     <button
-                      className="btn btn-danger btn-sm"
+                      className={ownerClasses("btn btn-danger btn-sm")}
                       onClick={() => setDeletingProperty(p)}
                     >
-                      <span className="material-icons icon-16 icon-middle">delete</span>
+                      <Icon className={ownerClasses("icon-16 icon-middle")}>
+                        delete
+                      </Icon>
                     </button>
                   </div>
                 </div>
@@ -305,122 +414,189 @@ export default function Properties({
       {/* Modal: View Property Details */}
       {viewingProperty && (
         <div
-          className="modal-overlay"
+          className={ownerClasses("modal-overlay")}
           onClick={(e) => {
-            if (e.target.className === 'modal-overlay') setViewingProperty(null);
+            if (e.target === e.currentTarget) setViewingProperty(null);
           }}
         >
-          <div className="modal">
-            <div className="modal-header">
-              <span className="modal-title">
-                <span className="material-icons icon-22 icon-middle icon-mr-6">
+          <div className={ownerClasses("modal")}>
+            <div className={ownerClasses("modal-header")}>
+              <span className={ownerClasses("modal-title")}>
+                <Icon className={ownerClasses("icon-22 icon-middle icon-mr-6")}>
                   apartment
-                </span>{' '}
+                </Icon>{" "}
                 {viewingProperty.name}
               </span>
               <button
-                className="modal-close"
+                className={ownerClasses("modal-close")}
                 onClick={() => setViewingProperty(null)}
               >
                 ×
               </button>
             </div>
 
-            <div className="flex-col-gap-12">
-              <div className="grid-2-details">
+            <div className={ownerClasses("flex-col-gap-12")}>
+              <div
+                style={{
+                  height: "180px",
+                  borderRadius: "12px",
+                  overflow: "hidden",
+                  marginBottom: "8px",
+                  background: "#f1f5f9",
+                }}
+              >
+                <PropertyPhoto
+                  images={viewingProperty.images}
+                  name={viewingProperty.name}
+                />
+              </div>
+
+              <div className={ownerClasses("grid-2-details")}>
                 <div>
-                  <div className="text-xs text-muted">Address</div>
-                  <div className="font-bold text-sm">
+                  <div className={ownerClasses("text-xs text-muted")}>
+                    Address
+                  </div>
+                  <div className={ownerClasses("font-bold text-sm")}>
                     {viewingProperty.address}, {viewingProperty.city}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted">State / PIN</div>
-                  <div className="font-bold text-sm">
+                  <div className={ownerClasses("text-xs text-muted")}>
+                    State / PIN
+                  </div>
+                  <div className={ownerClasses("font-bold text-sm")}>
                     {viewingProperty.state} — {viewingProperty.pincode}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted">Type</div>
-                  <div className="font-bold text-sm">{viewingProperty.type}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted">Gender Policy</div>
-                  <div className="font-bold text-sm" style={{ textTransform: 'capitalize' }}>
-                    {viewingProperty.gender === 'girls' ? '👩 Girls Only' : viewingProperty.gender === 'boys' ? '👨 Boys Only' : '👫 Co-ed'}
+                  <div className={ownerClasses("text-xs text-muted")}>Type</div>
+                  <div className={ownerClasses("font-bold text-sm")}>
+                    {viewingProperty.type}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted">Status</div>
-                  <span className={`badge badge-${(viewingProperty.status || 'active').toLowerCase()}`}>
+                  <div className={ownerClasses("text-xs text-muted")}>
+                    Gender Policy
+                  </div>
+                  <div
+                    className={ownerClasses("font-bold text-sm")}
+                    style={{ textTransform: "capitalize" }}
+                  >
+                    {viewingProperty.gender === "girls"
+                      ? "👩 Girls Only"
+                      : viewingProperty.gender === "boys"
+                        ? "👨 Boys Only"
+                        : "👫 Co-ed"}
+                  </div>
+                </div>
+                <div>
+                  <div className={ownerClasses("text-xs text-muted")}>
+                    Status
+                  </div>
+                  <span
+                    className={ownerClasses(
+                      `badge badge-${(viewingProperty.status || "active").toLowerCase()}`,
+                    )}
+                  >
                     {viewingProperty.status}
                   </span>
                 </div>
                 <div>
-                  <div className="text-xs text-muted">Total Rooms</div>
-                  <div className="font-bold text-sm">{viewingProperty.totalRooms}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted">Occupied</div>
-                  <div className="font-bold text-sm">
-                    {viewingProperty.occupiedRooms} ({getOccupancyPercent(viewingProperty.occupiedRooms, viewingProperty.totalRooms)}%)
+                  <div className={ownerClasses("text-xs text-muted")}>
+                    Total Rooms
+                  </div>
+                  <div className={ownerClasses("font-bold text-sm")}>
+                    {viewingProperty.totalRooms}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted">Monthly Rent</div>
-                  <div className="font-bold text-sm text-primary-cost">
+                  <div className={ownerClasses("text-xs text-muted")}>
+                    Occupied
+                  </div>
+                  <div className={ownerClasses("font-bold text-sm")}>
+                    {viewingProperty.occupiedRooms} (
+                    {getOccupancyPercent(
+                      viewingProperty.occupiedRooms,
+                      viewingProperty.totalRooms,
+                    )}
+                    %)
+                  </div>
+                </div>
+                <div>
+                  <div className={ownerClasses("text-xs text-muted")}>
+                    Monthly Rent
+                  </div>
+                  <div
+                    className={ownerClasses(
+                      "font-bold text-sm text-primary-cost",
+                    )}
+                  >
                     {formatCurrency(viewingProperty.monthlyRent)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted">Added</div>
-                  <div className="font-bold text-sm">
+                  <div className={ownerClasses("text-xs text-muted")}>
+                    Added
+                  </div>
+                  <div className={ownerClasses("font-bold text-sm")}>
                     {formatDate(viewingProperty.addedDate)}
                   </div>
                 </div>
               </div>
 
               <div>
-                <div className="text-xs text-muted mb-8">Amenities</div>
-                <div className="property-amenities">
+                <div className={ownerClasses("text-xs text-muted mb-8")}>
+                  Amenities
+                </div>
+                <div className={ownerClasses("property-amenities")}>
                   {(viewingProperty.amenities || []).map((a, i) => (
-                    <span key={i} className="amenity-tag">
+                    <span key={i} className={ownerClasses("amenity-tag")}>
                       {a}
                     </span>
                   ))}
                 </div>
               </div>
 
-              <div className="occupancy-bar-wrap">
-                <div className="occupancy-bar-label">
+              <div className={ownerClasses("occupancy-bar-wrap")}>
+                <div className={ownerClasses("occupancy-bar-label")}>
                   <span>Occupancy</span>
                   <span>
-                    {getOccupancyPercent(viewingProperty.occupiedRooms, viewingProperty.totalRooms)}%
+                    {getOccupancyPercent(
+                      viewingProperty.occupiedRooms,
+                      viewingProperty.totalRooms,
+                    )}
+                    %
                   </span>
                 </div>
-                <div className="occupancy-bar">
+                <div className={ownerClasses("occupancy-bar")}>
                   <div
-                    className={`occupancy-fill ${getOccupancyClass(getOccupancyPercent(viewingProperty.occupiedRooms, viewingProperty.totalRooms))}`}
+                    className={ownerClasses(
+                      `occupancy-fill ${getOccupancyClass(getOccupancyPercent(viewingProperty.occupiedRooms, viewingProperty.totalRooms))}`,
+                    )}
                   ></div>
                 </div>
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div className={ownerClasses("modal-footer")}>
               <button
-                className="btn btn-secondary"
+                className={ownerClasses("btn btn-secondary")}
                 onClick={() => setViewingProperty(null)}
               >
                 Close
               </button>
               <button
-                className="btn btn-primary"
+                className={ownerClasses("btn btn-primary")}
                 onClick={() => {
                   setEditingProperty(Object.assign({}, viewingProperty));
+                  setEditError("");
+                  setEditErrors({});
                   setViewingProperty(null);
                 }}
               >
-                <span className="material-icons icon-16 icon-middle">edit</span>{' '}
+                <Icon className={ownerClasses("icon-16 icon-middle")}>
+                  edit
+                </Icon>{" "}
                 Edit
               </button>
             </div>
@@ -431,21 +607,21 @@ export default function Properties({
       {/* Modal: Edit Property */}
       {editingProperty && (
         <div
-          className="modal-overlay"
+          className={ownerClasses("modal-overlay")}
           onClick={(e) => {
-            if (e.target.className === 'modal-overlay') setEditingProperty(null);
+            if (e.target === e.currentTarget) setEditingProperty(null);
           }}
         >
-          <div className="modal">
-            <div className="modal-header">
-              <span className="modal-title">
-                <span className="material-icons icon-22 icon-middle icon-mr-6">
+          <div className={ownerClasses("modal")}>
+            <div className={ownerClasses("modal-header")}>
+              <span className={ownerClasses("modal-title")}>
+                <Icon className={ownerClasses("icon-22 icon-middle icon-mr-6")}>
                   edit
-                </span>{' '}
+                </Icon>{" "}
                 Edit Property
               </span>
               <button
-                className="modal-close"
+                className={ownerClasses("modal-close")}
                 onClick={() => setEditingProperty(null)}
               >
                 ×
@@ -453,33 +629,59 @@ export default function Properties({
             </div>
 
             {editError && (
-              <div className="alert-danger-sm">{editError}</div>
+              <div className={ownerClasses("form-error-banner mb-16")}>
+                <Icon className={ownerClasses("icon-20")}>report_problem</Icon>
+                <div>
+                  <div className={ownerClasses("form-error-banner-title")}>
+                    Please fix the highlighted fields
+                  </div>
+                  <div>{editError}</div>
+                </div>
+              </div>
             )}
 
-            <form onSubmit={handleSaveEdit}>
-              <div className="modal-form-scroll">
-                <div className="form-grid">
-                  <div className="form-group">
-                    <label className="form-label">Property Name</label>
+            <form onSubmit={handleSaveEdit} noValidate>
+              <div className={ownerClasses("modal-form-scroll")}>
+                <div className={ownerClasses("form-grid")}>
+                  <div className={ownerClasses("form-group")}>
+                    <label className={ownerClasses("form-label")}>
+                      Property Name *
+                    </label>
                     <input
-                      className="form-input"
+                      id="edit-name"
+                      className={ownerClasses(
+                        `form-input ${editErrors.name ? "has-error input-error" : ""}`,
+                      )}
                       value={editingProperty.name}
                       onChange={(e) => {
                         const update = { name: e.target.value };
-                        setEditingProperty((prev) => Object.assign({}, prev, update));
+                        setEditingProperty((prev) =>
+                          Object.assign({}, prev, update),
+                        );
+                        if (editErrors.name) {
+                          setEditErrors((prev) => ({ ...prev, name: undefined }));
+                        }
                       }}
-                      required
+                      placeholder="e.g. Sunshine PG"
                     />
+                    {editErrors.name && (
+                      <div className={ownerClasses("field-error-msg")}>
+                        <Icon className={ownerClasses("icon-16")}>error_outline</Icon>
+                        <span>{editErrors.name}</span>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Type</label>
+                  <div className={ownerClasses("form-group")}>
+                    <label className={ownerClasses("form-label")}>Type</label>
                     <select
-                      className="form-input"
+                      className={ownerClasses("form-input")}
                       value={editingProperty.type}
                       onChange={(e) => {
                         const update = { type: e.target.value };
-                        setEditingProperty((prev) => Object.assign({}, prev, update));
+                        setEditingProperty((prev) =>
+                          Object.assign({}, prev, update),
+                        );
                       }}
                     >
                       <option value="Mixed">Mixed</option>
@@ -488,14 +690,18 @@ export default function Properties({
                     </select>
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Gender Policy</label>
+                  <div className={ownerClasses("form-group")}>
+                    <label className={ownerClasses("form-label")}>
+                      Gender Policy
+                    </label>
                     <select
-                      className="form-input"
-                      value={editingProperty.gender || 'unisex'}
+                      className={ownerClasses("form-input")}
+                      value={editingProperty.gender || "unisex"}
                       onChange={(e) => {
                         const update = { gender: e.target.value };
-                        setEditingProperty((prev) => Object.assign({}, prev, update));
+                        setEditingProperty((prev) =>
+                          Object.assign({}, prev, update),
+                        );
                       }}
                     >
                       <option value="unisex">Co-ed (All Welcome)</option>
@@ -504,72 +710,137 @@ export default function Properties({
                     </select>
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">City</label>
+                  <div className={ownerClasses("form-group")}>
+                    <label className={ownerClasses("form-label")}>City *</label>
                     <input
-                      className="form-input"
+                      id="edit-city"
+                      className={ownerClasses(
+                        `form-input ${editErrors.city ? "has-error input-error" : ""}`,
+                      )}
                       value={editingProperty.city}
                       onChange={(e) => {
                         const update = { city: e.target.value };
-                        setEditingProperty((prev) => Object.assign({}, prev, update));
+                        setEditingProperty((prev) =>
+                          Object.assign({}, prev, update),
+                        );
+                        if (editErrors.city) {
+                          setEditErrors((prev) => ({ ...prev, city: undefined }));
+                        }
                       }}
-                      required
+                      placeholder="e.g. Bangalore"
                     />
+                    {editErrors.city && (
+                      <div className={ownerClasses("field-error-msg")}>
+                        <Icon className={ownerClasses("icon-16")}>error_outline</Icon>
+                        <span>{editErrors.city}</span>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Monthly Rent (₹)</label>
+                  <div className={ownerClasses("form-group")}>
+                    <label className={ownerClasses("form-label")}>
+                      Monthly Rent (₹) *
+                    </label>
                     <input
+                      id="edit-monthlyRent"
                       type="number"
-                      className="form-input"
+                      className={ownerClasses(
+                        `form-input ${editErrors.monthlyRent ? "has-error input-error" : ""}`,
+                      )}
                       value={editingProperty.monthlyRent}
                       onChange={(e) => {
                         const update = { monthlyRent: Number(e.target.value) };
-                        setEditingProperty((prev) => Object.assign({}, prev, update));
+                        setEditingProperty((prev) =>
+                          Object.assign({}, prev, update),
+                        );
+                        if (editErrors.monthlyRent) {
+                          setEditErrors((prev) => ({ ...prev, monthlyRent: undefined }));
+                        }
                       }}
                       min="0"
-                      required
                     />
+                    {editErrors.monthlyRent && (
+                      <div className={ownerClasses("field-error-msg")}>
+                        <Icon className={ownerClasses("icon-16")}>error_outline</Icon>
+                        <span>{editErrors.monthlyRent}</span>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Total Rooms</label>
+                  <div className={ownerClasses("form-group")}>
+                    <label className={ownerClasses("form-label")}>
+                      Total Rooms *
+                    </label>
                     <input
+                      id="edit-totalRooms"
                       type="number"
-                      className="form-input"
+                      className={ownerClasses(
+                        `form-input ${editErrors.totalRooms ? "has-error input-error" : ""}`,
+                      )}
+                      disabled={editingProperty.hasRoomRecords}
                       value={editingProperty.totalRooms}
                       onChange={(e) => {
                         const update = { totalRooms: Number(e.target.value) };
-                        setEditingProperty((prev) => Object.assign({}, prev, update));
+                        setEditingProperty((prev) =>
+                          Object.assign({}, prev, update),
+                        );
+                        if (editErrors.totalRooms) {
+                          setEditErrors((prev) => ({ ...prev, totalRooms: undefined }));
+                        }
                       }}
                       min="1"
-                      required
                     />
+                    {editErrors.totalRooms && (
+                      <div className={ownerClasses("field-error-msg")}>
+                        <Icon className={ownerClasses("icon-16")}>error_outline</Icon>
+                        <span>{editErrors.totalRooms}</span>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Occupied Rooms</label>
+                  <div className={ownerClasses("form-group")}>
+                    <label className={ownerClasses("form-label")}>
+                      Occupied Rooms
+                    </label>
                     <input
+                      id="edit-occupiedRooms"
                       type="number"
-                      className="form-input"
+                      className={ownerClasses(
+                        `form-input ${editErrors.occupiedRooms ? "has-error input-error" : ""}`,
+                      )}
+                      disabled={editingProperty.hasRoomRecords}
                       value={editingProperty.occupiedRooms}
                       onChange={(e) => {
-                        const update = { occupiedRooms: Number(e.target.value) };
-                        setEditingProperty((prev) => Object.assign({}, prev, update));
+                        const update = {
+                          occupiedRooms: Number(e.target.value),
+                        };
+                        setEditingProperty((prev) =>
+                          Object.assign({}, prev, update),
+                        );
+                        if (editErrors.occupiedRooms) {
+                          setEditErrors((prev) => ({ ...prev, occupiedRooms: undefined }));
+                        }
                       }}
                       min="0"
-                      required
                     />
+                    {editErrors.occupiedRooms && (
+                      <div className={ownerClasses("field-error-msg")}>
+                        <Icon className={ownerClasses("icon-16")}>error_outline</Icon>
+                        <span>{editErrors.occupiedRooms}</span>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Status</label>
+                  <div className={ownerClasses("form-group")}>
+                    <label className={ownerClasses("form-label")}>Status</label>
                     <select
-                      className="form-input"
+                      className={ownerClasses("form-input")}
                       value={editingProperty.status}
                       onChange={(e) => {
                         const update = { status: e.target.value };
-                        setEditingProperty((prev) => Object.assign({}, prev, update));
+                        setEditingProperty((prev) =>
+                          Object.assign({}, prev, update),
+                        );
                       }}
                     >
                       <option value="Active">Active</option>
@@ -579,14 +850,36 @@ export default function Properties({
                 </div>
 
                 <div>
-                  <div className="form-label mb-8">Amenities</div>
-                  <div className="amenities-grid">
+                  <label className={ownerClasses("form-label")}>
+                    Photo URLs (one per line)
+                  </label>
+                  <textarea
+                    className={ownerClasses("form-input")}
+                    value={(editingProperty.images || []).join("\n")}
+                    onChange={(e) =>
+                      setEditingProperty((previous) => ({
+                        ...previous,
+                        images: e.target.value.split("\n"),
+                      }))
+                    }
+                  />
+                  {editingProperty.hasRoomRecords && (
+                    <p>Room counts are calculated from saved room records.</p>
+                  )}
+                  <div className={ownerClasses("form-label mb-8")}>
+                    Amenities
+                  </div>
+                  <div className={ownerClasses("amenities-grid")}>
                     {AMENITY_OPTIONS.map((a) => {
-                      const isSelected = (editingProperty.amenities || []).includes(a);
+                      const isSelected = (
+                        editingProperty.amenities || []
+                      ).includes(a);
                       return (
                         <div
                           key={a}
-                          className={`amenity-toggle ${isSelected ? 'selected' : ''}`}
+                          className={ownerClasses(
+                            `amenity-toggle ${isSelected ? "selected" : ""}`,
+                          )}
                           onClick={() => handleToggleAmenity(a)}
                         >
                           {a}
@@ -597,16 +890,21 @@ export default function Properties({
                 </div>
               </div>
 
-              <div className="modal-footer">
+              <div className={ownerClasses("modal-footer")}>
                 <button
                   type="button"
-                  className="btn btn-secondary"
+                  className={ownerClasses("btn btn-secondary")}
                   onClick={() => setEditingProperty(null)}
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  <span className="material-icons icon-16 icon-middle">save</span>{' '}
+                <button
+                  type="submit"
+                  className={ownerClasses("btn btn-primary")}
+                >
+                  <Icon className={ownerClasses("icon-16 icon-middle")}>
+                    save
+                  </Icon>{" "}
                   Save Changes
                 </button>
               </div>
@@ -618,33 +916,37 @@ export default function Properties({
       {/* Modal: Delete Property Confirmation */}
       {deletingProperty && (
         <div
-          className="modal-overlay"
+          className={ownerClasses("modal-overlay")}
           onClick={(e) => {
-            if (e.target.className === 'modal-overlay') setDeletingProperty(null);
+            if (e.target === e.currentTarget) setDeletingProperty(null);
           }}
         >
-          <div className="modal">
-            <div className="modal-header">
-              <span className="modal-title">Delete Property</span>
+          <div className={ownerClasses("modal")}>
+            <div className={ownerClasses("modal-header")}>
+              <span className={ownerClasses("modal-title")}>
+                Delete Property
+              </span>
               <button
-                className="modal-close"
+                className={ownerClasses("modal-close")}
                 onClick={() => setDeletingProperty(null)}
               >
                 ×
               </button>
             </div>
-            <p className="modal-desc-text">
-              Are you sure you want to delete "<strong>{deletingProperty.name}</strong>"? This action cannot be undone.
+            <p className={ownerClasses("modal-desc-text")}>
+              Are you sure you want to delete "
+              <strong>{deletingProperty.name}</strong>"? This action cannot be
+              undone.
             </p>
-            <div className="modal-footer">
+            <div className={ownerClasses("modal-footer")}>
               <button
-                className="btn btn-secondary"
+                className={ownerClasses("btn btn-secondary")}
                 onClick={() => setDeletingProperty(null)}
               >
                 Cancel
               </button>
               <button
-                className="btn btn-danger"
+                className={ownerClasses("btn btn-danger")}
                 onClick={() => {
                   onDeleteProperty(deletingProperty.id);
                   setDeletingProperty(null);

@@ -8,6 +8,8 @@ import { Room } from '../rooms/room.entity';
 import { CreateComplaintDto, UpdateComplaintDto } from './complaints.dto';
 import { WardenNotificationsService } from '../warden-notifications/warden-notifications.service';
 
+import { Notification } from '../notifications/notification.entity';
+
 @Injectable()
 export class ComplaintsService {
   constructor(
@@ -19,6 +21,8 @@ export class ComplaintsService {
     private propertyRepository: Repository<Property>,
     @InjectRepository(Room)
     private roomRepository: Repository<Room>,
+    @InjectRepository(Notification)
+    private notificationRepository: Repository<Notification>,
     private wardenNotificationsService: WardenNotificationsService,
   ) { }
 
@@ -32,6 +36,15 @@ export class ComplaintsService {
       relations: { tenant: true, property: true, roomEntity: true },
       order: { id: 'DESC' },
     });
+  }
+
+  findByOwner(ownerId: number) {
+    return this.complaintsRepository.createQueryBuilder('complaint')
+      .innerJoinAndSelect('complaint.property', 'property')
+      .leftJoinAndSelect('complaint.tenant', 'tenant')
+      .where('property.ownerId = :ownerId', { ownerId })
+      .orderBy('complaint.id', 'DESC')
+      .getMany();
   }
 
   async findOne(id: number) {
@@ -58,12 +71,16 @@ export class ComplaintsService {
     // Workflow: Notify Warden in the separate warden_notifications table
     try {
       let tenantName = 'Tenant';
+      let senderRole = 'tenant';
       let propertyName = 'PG Property';
       let roomNumber = '101';
 
       if (saved.tenantId) {
         const u = await this.userRepository.findOne({ where: { id: saved.tenantId } });
-        if (u) tenantName = u.name;
+        if (u) {
+          tenantName = u.name;
+          senderRole = u.role;
+        }
       }
 
       if (saved.propertyId) {
@@ -75,20 +92,42 @@ export class ComplaintsService {
       }
 
       await this.wardenNotificationsService.create({
-        title: `Tenant Issue: ${saved.title || 'Complaint Reported'}`,
+        title: `Issue: ${saved.title || 'Complaint Reported'}`,
         message: saved.description,
         type: 'issue',
         priority: saved.priority || 'medium',
         senderName: tenantName,
-        senderRole: 'tenant',
+        senderRole,
         propertyName: propertyName,
         roomNumber: roomNumber,
         tenantId: saved.tenantId,
         propertyId: saved.propertyId,
         sourceReferenceId: saved.id,
       });
+
+      // Also notify property owner directly
+      if (saved.propertyId) {
+        const prop = await this.propertyRepository.findOne({ where: { id: saved.propertyId } });
+        if (prop && prop.ownerId) {
+          const ownerNotif = this.notificationRepository.create({
+            title: `Issue Reported: ${saved.title || 'Complaint'} at ${propertyName}`,
+            message: `${tenantName} reported: ${saved.description}`,
+            type: 'issue',
+            priority: saved.priority || 'medium',
+            userId: prop.ownerId,
+            targetRole: 'owner',
+            targetPropertyId: saved.propertyId,
+            byUserId: saved.tenantId,
+            sentAt: new Date().toISOString(),
+            read: false,
+            isRead: false,
+            deliveryStatus: 'sent',
+          });
+          await this.notificationRepository.save(ownerNotif);
+        }
+      }
     } catch (notifErr) {
-      console.warn('Could not post auto-notification to warden_notifications:', notifErr);
+      console.warn('Could not post auto-notification:', notifErr);
     }
 
     return saved;

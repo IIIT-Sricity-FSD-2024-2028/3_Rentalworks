@@ -8,9 +8,11 @@ import { Property } from '../properties/property.entity';
 import { Room } from '../rooms/room.entity';
 import { WardenNotificationsModule } from '../warden-notifications/warden-notifications.module';
 
+import { Notification } from '../notifications/notification.entity';
+
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Complaint, User, Property, Room]),
+    TypeOrmModule.forFeature([Complaint, User, Property, Room, Notification]),
     WardenNotificationsModule,
   ],
   controllers: [ComplaintsController],

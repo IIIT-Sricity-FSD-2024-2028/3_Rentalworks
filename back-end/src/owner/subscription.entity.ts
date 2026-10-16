@@ -21,6 +21,9 @@ export class Subscription {
   @Column()
   ownerId: number;
 
+  @Column({ nullable: true })
+  planId: number;
+
   @Column()
   planName: string;
 

@@ -33,10 +33,7 @@ export class NotificationsService {
 
         // Filter for announcements targeting specific recipient IDs if present
         return notifications.filter((n) => {
-          if (!n.recipientUserIds || !Array.isArray(n.recipientUserIds) || n.recipientUserIds.length === 0) {
-            return true;
-          }
-          return n.recipientUserIds.includes(validUserId);
+          return !n.recipientUserIds?.length || n.recipientUserIds.includes(validUserId);
         });
       }
 
@@ -46,6 +43,33 @@ export class NotificationsService {
       });
     } catch (err) {
       // Gracefully fall back to empty list on unexpected database errors
+      return [];
+    }
+  }
+
+  async findForOwner(ownerId: number) {
+    try {
+      const notifications = await this.notificationsRepository
+        .createQueryBuilder('notification')
+        .leftJoinAndSelect('notification.byUser', 'byUser')
+        .where('notification.userId = :ownerId', { ownerId })
+        .orWhere('notification.byUserId = :ownerId', { ownerId })
+        .orWhere('LOWER(notification.targetRole) = :ownerRole', { ownerRole: 'owner' })
+        .orWhere('LOWER(notification.targetRole) = :allRole', { allRole: 'all' })
+        .orWhere('(notification.targetRole IS NULL AND notification.userId IS NULL)')
+        .orderBy('notification.id', 'DESC')
+        .getMany();
+
+      return notifications.filter((notification) => {
+        if (notification.byUserId === ownerId) return true;
+        if (notification.userId === ownerId) return true;
+        if (notification.recipientUserIds && notification.recipientUserIds.length > 0) {
+          return notification.recipientUserIds.includes(ownerId);
+        }
+        return true;
+      });
+    } catch (err) {
+      console.warn('findForOwner fallback:', err);
       return [];
     }
   }
@@ -64,14 +88,14 @@ export class NotificationsService {
   }
 
   async create(createNotificationDto: CreateNotificationDto) {
-    const defaults = {
-      read: false,
-      isRead: false,
+    const newNotification = this.notificationsRepository.create({
+      ...createNotificationDto,
       recipients: createNotificationDto.recipients || 1,
-      sentAt: new Date().toISOString().split('T')[0],
-    };
-    const payload = Object.assign({}, defaults, createNotificationDto);
-    const newNotification = this.notificationsRepository.create(payload);
+      sentAt: createNotificationDto.sentAt || new Date().toISOString().split('T')[0],
+      read: createNotificationDto.read ?? false,
+      isRead: createNotificationDto.isRead ?? false,
+      deliveryStatus: createNotificationDto.deliveryStatus || 'sent',
+    });
     return this.notificationsRepository.save(newNotification);
   }
 
@@ -117,6 +141,15 @@ export class NotificationsService {
 
   async markAllRead() {
     return this.markAllAsRead();
+  }
+
+  async markAllForOwner(ownerId: number) {
+    await this.notificationsRepository.createQueryBuilder()
+      .update(Notification)
+      .set({ read: true, isRead: true })
+      .where('"userId" = :ownerId OR "byUserId" = :ownerId', { ownerId })
+      .execute();
+    return { success: true };
   }
 
   async remove(id: number) {

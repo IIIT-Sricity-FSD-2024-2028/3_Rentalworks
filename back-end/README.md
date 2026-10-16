@@ -28,7 +28,7 @@
 ## Run the backend
 
 1. Pull the latest `react-migration` branch. Stop any other backend process using port 3000 or the same Neon database.
-2. Copy `.env.example` to `.env`. Set your Neon `DATABASE_URL` and a random `SUPER_ADMIN_TOKEN_SECRET` with at least 32 characters. Keep `.env` private.
+2. Copy `.env.example` to `.env`. Set your Neon `DATABASE_URL` and random `SUPER_ADMIN_TOKEN_SECRET` and `OWNER_TOKEN_SECRET` values, each at least 32 characters. Keep `.env` private.
 3. From `back-end`, run `npm install` and `npm run start:dev`.
 
 The backend applies pending additive migrations on startup. Do not run SQL or seed dummy data for the super admin portal. Automatic TypeORM schema synchronization is disabled because an older checkout removed shared database columns.

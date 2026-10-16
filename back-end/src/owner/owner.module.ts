@@ -11,6 +11,7 @@ import { Subscription } from './subscription.entity';
 import { PropertiesModule } from '../properties/properties.module';
 import { ComplaintsModule } from '../complaints/complaints.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { WardenNotificationsModule } from '../warden-notifications/warden-notifications.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     PropertiesModule,
     ComplaintsModule,
     NotificationsModule,
+    WardenNotificationsModule,
   ],
   controllers: [OwnerController, ApiController],
   providers: [OwnerService],
