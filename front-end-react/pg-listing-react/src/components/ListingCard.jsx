@@ -22,6 +22,27 @@ export default function ListingCard({ listing, isDisabled }) {
     <div className="listing-card" style={cardStyle} onClick={handleCardClick}>
       <div className="image-box">
         <img src={image} alt={title} loading="lazy" />
+        {listing.gender === 'girls' && (
+          <span
+            style={{
+              position: 'absolute',
+              top: '12px',
+              left: '12px',
+              background: '#be185d',
+              color: '#fff',
+              fontSize: '11px',
+              fontWeight: 700,
+              padding: '4px 10px',
+              borderRadius: '12px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+              zIndex: 2,
+            }}
+          >
+            👩 Girls Only
+          </span>
+        )}
         <span className="badge badge-rating">
           <span className="material-icons-outlined" style={{ fontSize: '20px' }}>star</span> {rating}
         </span>

@@ -55,20 +55,47 @@ export function OwnerPortal() {
   // User session state
   const [user, setUser] = useState(() => {
     try {
-      const s = sessionStorage.getItem(SESSION_KEY);
-      if (s) return JSON.parse(s);
+      const s = sessionStorage.getItem(SESSION_KEY) || sessionStorage.getItem('pg_user');
+      if (s) {
+        const parsed = JSON.parse(s);
+        if (parsed && parsed.role === 'owner') return parsed;
+      }
     } catch (e) {
       // ignore
     }
-    return {
-      id: 16,
-      name: 'Rajesh Kumar',
-      email: 'rajesh.k@email.com',
-      role: 'owner',
-      subscriptionPlan: 'Growth',
-      subscriptionFee: 8000,
-    };
+    return null;
   });
+
+  // Guard: Verify authentication on mount, bfcache restore, and browser history navigation
+  useEffect(() => {
+    const checkAuth = () => {
+      try {
+        const s = sessionStorage.getItem(SESSION_KEY) || sessionStorage.getItem('pg_user');
+        if (!s) {
+          window.location.replace('/login');
+          return;
+        }
+        const parsed = JSON.parse(s);
+        if (!parsed || parsed.role !== 'owner') {
+          window.location.replace('/login');
+          return;
+        }
+        setUser(parsed);
+      } catch {
+        window.location.replace('/login');
+      }
+    };
+
+    checkAuth();
+    window.addEventListener('pageshow', checkAuth);
+    window.addEventListener('popstate', checkAuth);
+    window.addEventListener('storage', checkAuth);
+    return () => {
+      window.removeEventListener('pageshow', checkAuth);
+      window.removeEventListener('popstate', checkAuth);
+      window.removeEventListener('storage', checkAuth);
+    };
+  }, []);
 
   // Toast notifications state
   const [toasts, setToasts] = useState([]);
@@ -107,6 +134,7 @@ export function OwnerPortal() {
     occupiedRooms: p.occupiedRooms || 10,
     monthlyRent: p.monthlyRent || p.rentMin || 7500,
     amenities: p.amenities || ['WiFi', 'AC'],
+    gender: p.gender || (p.type === 'Female' ? 'girls' : p.type === 'Male' ? 'boys' : 'unisex'),
     status: p.status === 'approved' ? 'Active' : p.status || 'Active',
     addedDate: p.createdAt ? p.createdAt.split('T')[0] : '2024-01-15',
     owner: p.owner ? p.owner.name : 'Rajesh Kumar',
@@ -281,6 +309,7 @@ export function OwnerPortal() {
         totalRooms: Number(newProperty.totalRooms) || 10,
         occupiedRooms: Number(newProperty.occupiedRooms) || 0,
         monthlyRent: Number(newProperty.monthlyRent) || 7000,
+        gender: newProperty.gender || (newProperty.type === 'Female' ? 'girls' : newProperty.type === 'Male' ? 'boys' : 'unisex'),
       };
       await createProperty(payload);
       showToast('"' + newProperty.name + '" saved to database!', 'success');
@@ -308,6 +337,7 @@ export function OwnerPortal() {
         occupiedRooms: Number(updatedProperty.occupiedRooms),
         monthlyRent: Number(updatedProperty.monthlyRent),
         amenities: updatedProperty.amenities,
+        gender: updatedProperty.gender || (updatedProperty.type === 'Female' ? 'girls' : updatedProperty.type === 'Male' ? 'boys' : 'unisex'),
       };
       await updateProperty(updatedProperty.id, payload);
       showToast('Property updated in database!', 'success');
@@ -520,14 +550,28 @@ export function OwnerPortal() {
   const handleLogout = () => {
     sessionStorage.removeItem(SESSION_KEY);
     sessionStorage.removeItem('pg_user');
-    showToast('Signed out successfully', 'info');
-    window.location.href = '/login';
+    sessionStorage.removeItem('owner_user');
+    sessionStorage.removeItem('guest_user');
+    sessionStorage.removeItem('tenant_user');
+    sessionStorage.removeItem('warden_user');
+    sessionStorage.removeItem('super_admin_token');
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('pg_user');
+    localStorage.removeItem('owner_user');
+    try {
+      window.dispatchEvent(new Event('rentbro-logout'));
+    } catch (_) {}
+    window.location.replace('/login');
   };
 
   const unreadNotifsCount = (data.notifications || []).filter((n) => !n.read).length;
   const openIssuesCount = (data.issues || []).filter(
     (i) => (i.status || '').toLowerCase() === 'open'
   ).length;
+
+  if (!user) {
+    return null;
+  }
 
   if (loading) {
     return (

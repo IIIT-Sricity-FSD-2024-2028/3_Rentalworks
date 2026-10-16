@@ -43,7 +43,10 @@ export function SuperAdminPortal() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  if (!signedIn) return <Login onLogin={setUser} />;
+  if (!signedIn) {
+    window.location.replace('/login');
+    return null;
+  }
 
   const pages = data ? {
     dashboard: <Dashboard data={data} />,

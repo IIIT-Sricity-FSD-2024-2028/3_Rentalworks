@@ -167,58 +167,6 @@ export const RAW_LISTINGS = [
         occupied: 1
       }
     ]
-  },
-  {
-    id: 4,
-    title: 'Green Nest Co-Living',
-    location: 'Koramangala, Bangalore',
-    price: 12000,
-    rating: 4.9,
-    reviewsCount: 1620,
-    image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=1600&q=80',
-    room: 'single',
-    food: 'food',
-    foodtype: 'vegnonveg',
-    gender: 'unisex',
-    distance: 1,
-    amenities: ['wifi', 'ac', 'gym', 'laundry', 'parking', 'cctv'],
-    features: [
-      { icon: 'bed', text: 'Single Sharing' },
-      { icon: 'restaurant', text: 'With Food' },
-      { icon: 'fitness_center', text: 'Gym' }
-    ],
-    note: 'Near shopping malls & metro',
-    about: 'Green Nest Co-Living is an upscale smart co-living facility designed for tech entrepreneurs, interns, and young professionals. Features rooftop lounge, dedicated workspace, gym, and high-speed fiber internet.',
-    stats: {
-      residents: '80+',
-      security: '24/7 Guard & Smart Locks',
-      backup: '100% DG Set',
-      established: '3+ Years'
-    },
-    rooms: [
-      {
-        type: 'Single Room',
-        sharing: 'single',
-        rent: 16000,
-        deposit: 5000,
-        image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600',
-        feature: 'King Bed, Workstation & Smart TV',
-        available: true,
-        capacity: 1,
-        occupied: 0
-      },
-      {
-        type: 'Double Sharing',
-        sharing: 'double',
-        rent: 10000,
-        deposit: 4000,
-        image: 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=600',
-        feature: 'Spacious Twin Beds & AC',
-        available: true,
-        capacity: 2,
-        occupied: 0
-      }
-    ]
   }
 ];
 

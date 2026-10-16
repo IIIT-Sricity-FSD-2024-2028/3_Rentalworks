@@ -34,9 +34,8 @@ export default function Login() {
     // optional if rendered outside tenant AuthProvider
   }
 
-  // View states: 'role_select' | 'login' | 'signup' | 'owner_reg' | 'success'
-  const [viewMode, setViewMode] = useState('role_select');
-  const [currentRole, setCurrentRole] = useState(null);
+  // View states: 'login' | 'signup' | 'owner_reg' | 'success'
+  const [viewMode, setViewMode] = useState('login');
 
   // Login form fields
   const [username, setUsername] = useState('');
@@ -53,6 +52,7 @@ export default function Login() {
     name: '',
     email: '',
     phone: '',
+    gender: 'male',
     dob: '',
     city: '',
     address: '',
@@ -101,32 +101,11 @@ export default function Login() {
     };
 
     const dest = routes[role] || '/tenant/dashboard';
-    navigate(dest);
-  };
-
-  // Switch role handler
-  const selectRole = (role) => {
-    setCurrentRole(role);
-    setBanner({ text: '', type: '' });
-    setUsernameErr('');
-    setPasswordErr('');
-
-    // Pre-fill demo credentials for seamless testing
-    const demo = DEMO_CREDENTIALS[role];
-    if (demo) {
-      setUsername(demo.username);
-      setPassword(demo.password);
-    } else {
-      setUsername('');
-      setPassword('');
-    }
-
-    setViewMode('login');
+    navigate(dest, { replace: true });
   };
 
   const goBack = () => {
-    setViewMode('role_select');
-    setCurrentRole(null);
+    setViewMode('login');
     setBanner({ text: '', type: '' });
     setUsernameErr('');
     setPasswordErr('');
@@ -141,17 +120,12 @@ export default function Login() {
     setBanner({ text: '', type: '' });
 
     let valid = true;
-    const label = currentRole === 'guest' ? 'Email / Phone / Username' : 'Username';
-
     if (!username.trim()) {
-      setUsernameErr(`${label} is required`);
+      setUsernameErr('Username or Email is required');
       valid = false;
     }
     if (!password) {
       setPasswordErr('Password is required');
-      valid = false;
-    } else if (password.length < 6) {
-      setPasswordErr('Password must be at least 6 characters');
       valid = false;
     }
     if (!valid) return;
@@ -191,6 +165,7 @@ export default function Login() {
         name: user.name || username,
         email: user.email || `${username}@example.com`,
         phone: user.phone || '',
+        gender: user.gender || '',
         role: user.role,
         property: user.property || '',
         room: user.room || '',
@@ -202,6 +177,7 @@ export default function Login() {
       sessionStorage.setItem('tenant_user', JSON.stringify(sessionObj));
       sessionStorage.setItem('warden_user', JSON.stringify(sessionObj));
       sessionStorage.setItem('guest_user', JSON.stringify(sessionObj));
+      sessionStorage.setItem('owner_user', JSON.stringify(sessionObj));
       if (user.role === 'super_admin' && user.token) {
         sessionStorage.setItem('super_admin_token', user.token);
       }
@@ -217,11 +193,22 @@ export default function Login() {
 
       setTimeout(() => {
         if (location.state?.from) {
-          navigate(location.state.from);
+          const mgmtRoles = ['admin', 'owner', 'warden', 'super_admin'];
+          if (mgmtRoles.includes(user.role)) {
+            setBanner({
+              text: `Unauthorized account: ${user.role.toUpperCase()} accounts cannot make tenant bookings. Directing to your management portal...`,
+              type: 'warning',
+            });
+            setTimeout(() => {
+              routeUser(user.role);
+            }, 1200);
+            return;
+          }
+          navigate(location.state.from, { replace: true });
         } else {
           routeUser(user.role);
         }
-      }, 800);
+      }, 600);
     } catch (err) {
       console.error('Login error:', err);
       setBanner({ text: 'Login encountered an unexpected network error. Please verify backend is running.', type: 'error' });
@@ -292,6 +279,7 @@ export default function Login() {
           name: guestData.name.trim(),
           email: guestData.email.trim(),
           phone: guestData.phone.trim(),
+          gender: guestData.gender || 'male',
           password: guestData.password,
         }),
       });
@@ -310,6 +298,7 @@ export default function Login() {
         name: createdUser.name,
         email: createdUser.email,
         phone: createdUser.phone,
+        gender: createdUser.gender || guestData.gender || 'male',
         role: createdUser.role || 'guest',
         tempPassword: guestData.password,
       };
@@ -425,10 +414,27 @@ export default function Login() {
         <button
           onClick={() => navigate('/')}
           className="home-back-link"
-          style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           title="Return to PG Discovery"
+          style={{
+            position: 'absolute',
+            top: '30px',
+            left: '40px',
+            background: 'linear-gradient(135deg, #d4af37, #b8860b)',
+            color: '#111827',
+            border: 'none',
+            padding: '10px 22px',
+            borderRadius: '30px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontWeight: '700',
+            fontSize: '15px',
+            boxShadow: '0 4px 14px rgba(212, 175, 55, 0.45)',
+            cursor: 'pointer',
+            zIndex: 100,
+          }}
         >
-          <span className="material-icons-outlined" style={{ fontSize: '24px' }}>
+          <span className="material-icons-outlined" style={{ fontSize: '20px', color: '#111827' }}>
             arrow_back
           </span>
           Home
@@ -455,59 +461,21 @@ export default function Login() {
               maxWidth: viewMode === 'signup' ? '950px' : viewMode === 'owner_reg' ? '800px' : '480px',
             }}
           >
-            {/* Back Button */}
-            {viewMode !== 'role_select' && viewMode !== 'success' && (
+            {/* Back Button for signup & owner_reg */}
+            {viewMode !== 'login' && viewMode !== 'success' && (
               <button id="back-btn" className="back-btn" onClick={goBack}>
-                ← Back to Roles
+                ← Back to Login
               </button>
             )}
 
-            {/* 1. ROLE SELECTOR VIEW */}
-            {viewMode === 'role_select' && (
-              <div id="role-selector" className="card role-card">
-                <div className="role-layout">
-                  <div className="role-layout-text">
-                    <h2 className="card-title">Select Your Role</h2>
-                  </div>
-
-                  <div className="role-grid">
-                    <button className="role-btn" onClick={() => selectRole('super_admin')}>
-                      <div className="role-initial">S</div>
-                      Super Admin
-                    </button>
-                    <button className="role-btn" onClick={() => selectRole('admin')}>
-                      <div className="role-initial">A</div>
-                      Admin
-                    </button>
-                    <button className="role-btn" onClick={() => selectRole('tenant')}>
-                      <div className="role-initial">T</div>
-                      Tenant
-                    </button>
-                    <button className="role-btn" onClick={() => selectRole('guest')}>
-                      <div className="role-initial">G</div>
-                      Guest
-                    </button>
-                    <button className="role-btn" onClick={() => selectRole('owner')}>
-                      <div className="role-initial">O</div>
-                      Owner
-                    </button>
-                    <button className="role-btn" onClick={() => selectRole('warden')}>
-                      <div className="role-initial">W</div>
-                      Warden
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 2. LOGIN FORM VIEW */}
-            {viewMode === 'login' && currentRole && (
+            {/* SINGLE COMMON LOGIN FORM VIEW */}
+            {viewMode === 'login' && (
               <div id="login-card-area" className="card login-card">
                 <h2 id="login-role-title" className="card-title">
-                  {ROLE_INFO[currentRole]?.title || 'Login'}
+                  Sign In
                 </h2>
                 <p id="login-role-sub" className="card-sub">
-                  {ROLE_INFO[currentRole]?.sub || 'Enter your credentials'}
+                  Enter your credentials to access your dashboard
                 </p>
 
                 {banner.text && (
@@ -518,9 +486,7 @@ export default function Login() {
 
                 <form id="main-login-form" onSubmit={handleLogin}>
                   <div className="form-field">
-                    <label id="username-label">
-                      {currentRole === 'guest' ? 'Email / Phone No' : 'Username'}
-                    </label>
+                    <label id="username-label">Username or Email</label>
                     <div className="inp-wrap">
                       <span className="inp-ico">
                         <span className="material-icons-outlined" style={{ fontSize: '20px' }}>
@@ -530,13 +496,14 @@ export default function Login() {
                       <input
                         type="text"
                         id="login-username"
-                        placeholder={currentRole === 'guest' ? 'guest@gmail.com' : 'Enter your username'}
+                        placeholder="Enter username, email or phone"
                         value={username}
                         onChange={(e) => {
                           setUsername(e.target.value);
                           setUsernameErr('');
                         }}
                         className={usernameErr ? 'input-error' : ''}
+                        autoComplete="username"
                       />
                     </div>
                     {usernameErr && <div className="login-err-msg">{usernameErr}</div>}
@@ -560,6 +527,7 @@ export default function Login() {
                           setPasswordErr('');
                         }}
                         className={passwordErr ? 'input-error' : ''}
+                        autoComplete="current-password"
                       />
                       <span
                         className="toggle-pw"
@@ -579,38 +547,34 @@ export default function Login() {
                   </button>
                 </form>
 
-                {/* Role Specific Footers */}
-                {currentRole === 'guest' && (
-                  <div id="guest-footer" className="card-footer" style={{ display: 'block' }}>
-                    New to PG Rental Hub?{' '}
-                    <a
-                      href="#signup"
-                      className="footer-link"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setViewMode('signup');
-                      }}
-                    >
-                      Create Guest Account
-                    </a>
-                  </div>
-                )}
+                {/* Footers for Guest Signup & Owner Registration */}
+                <div id="guest-footer" className="card-footer" style={{ display: 'block', marginTop: '20px', textAlign: 'center' }}>
+                  New to RentBro?{' '}
+                  <a
+                    href="#signup"
+                    className="footer-link"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setViewMode('signup');
+                    }}
+                  >
+                    Create Guest Account
+                  </a>
+                </div>
 
-                {currentRole === 'owner' && (
-                  <div id="owner-register-link" className="card-footer" style={{ display: 'block' }}>
-                    Want to list your PG?{' '}
-                    <a
-                      href="#register"
-                      className="footer-link"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setViewMode('owner_reg');
-                      }}
-                    >
-                      Register Property
-                    </a>
-                  </div>
-                )}
+                <div id="owner-register-link" className="card-footer" style={{ display: 'block', marginTop: '8px', textAlign: 'center' }}>
+                  Want to list your PG?{' '}
+                  <a
+                    href="#register"
+                    className="footer-link"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setViewMode('owner_reg');
+                    }}
+                  >
+                    Register Property
+                  </a>
+                </div>
               </div>
             )}
 
@@ -719,6 +683,23 @@ export default function Login() {
                           </div>
                           {guestErr.phone && <div className="reg-err" style={{ display: 'block' }}>{guestErr.phone}</div>}
                         </div>
+
+                        <div className="reg-field full" style={{ marginBottom: 0 }}>
+                          <label>Gender * (Required for PG Booking Eligibility)</label>
+                          <div className="reg-inp-wrap">
+                            <span className="reg-ico">🚻</span>
+                            <select
+                              id="g-gender"
+                              value={guestData.gender}
+                              onChange={(e) => setGuestData({ ...guestData, gender: e.target.value })}
+                              style={{ width: '100%', height: '44px', cursor: 'pointer' }}
+                            >
+                              <option value="male">Male (Eligible for Boys &amp; Co-ed PGs)</option>
+                              <option value="female">Female (Eligible for Girls &amp; Co-ed PGs)</option>
+                              <option value="other">Other (Eligible for Co-ed PGs)</option>
+                            </select>
+                          </div>
+                        </div>
                       </div>
 
                       <div className="reg-actions">
@@ -732,7 +713,7 @@ export default function Login() {
                           href="#login"
                           onClick={(e) => {
                             e.preventDefault();
-                            selectRole('guest');
+                            setViewMode('login');
                           }}
                         >
                           Sign in
@@ -813,7 +794,7 @@ export default function Login() {
                           href="#login"
                           onClick={(e) => {
                             e.preventDefault();
-                            selectRole('guest');
+                            setViewMode('login');
                           }}
                         >
                           Sign in
@@ -1133,7 +1114,7 @@ export default function Login() {
                       href="#login"
                       onClick={(e) => {
                         e.preventDefault();
-                        selectRole('owner');
+                        setViewMode('login');
                       }}
                     >
                       Sign in here

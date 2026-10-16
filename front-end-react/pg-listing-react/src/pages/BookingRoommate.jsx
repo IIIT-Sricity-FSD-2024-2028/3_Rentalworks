@@ -41,6 +41,16 @@ export default function BookingRoommate() {
     }
   }, [selectedRoom, pg.id, navigate, setSelectedRoommate]);
 
+  // CRITICAL: Block ineligible male booking on Girls PG
+  useEffect(() => {
+    const isGirlsPG = (pg.gender || '').toLowerCase() === 'girls' || pg.title?.toLowerCase().includes('girls');
+    const uGender = (currentUser?.gender || '').toLowerCase();
+    if (isGirlsPG && (uGender === 'male' || uGender === 'boy' || uGender === 'm')) {
+      window.alert(`You cannot book this PG! "${pg.title}" is strictly a Girls Only accommodation. Male residents cannot book this property.`);
+      navigate(`/pg/${pg.id}`, { replace: true });
+    }
+  }, [pg, currentUser, navigate]);
+
   // Decision state: 'yes' (Smart Match) or 'no' (Auto-assign by warden)
   const [optInChoice, setOptInChoice] = useState('yes');
 

@@ -33,6 +33,9 @@ export class User {
   @Column({ type: 'varchar', default: 'tenant' })
   role: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  gender?: string;
+
   @Column({ unique: true })
   username: string;
 

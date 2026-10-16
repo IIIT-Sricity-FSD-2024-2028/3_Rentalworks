@@ -22,12 +22,47 @@ export default function Layout() {
   // User state from sessionStorage / localStorage
   const [user, setUser] = useState(() => {
     try {
-      const s = sessionStorage.getItem('pg_user') || localStorage.getItem('pg_user');
-      return s ? JSON.parse(s) : { name: 'Admin', email: 'admin@pgrentals.com', role: 'admin' };
+      const s = sessionStorage.getItem('pg_user') || localStorage.getItem('currentUser') || localStorage.getItem('pg_user');
+      if (s) {
+        const parsed = JSON.parse(s);
+        if (parsed && (parsed.role === 'admin' || parsed.role === 'super_admin')) return parsed;
+      }
     } catch {
-      return { name: 'Admin', email: 'admin@pgrentals.com', role: 'admin' };
+      // ignore
     }
+    return null;
   });
+
+  // Guard: Verify authentication on mount, bfcache restore, and browser history navigation
+  useEffect(() => {
+    const checkAuth = () => {
+      try {
+        const s = sessionStorage.getItem('pg_user') || localStorage.getItem('currentUser') || localStorage.getItem('pg_user');
+        if (!s) {
+          window.location.replace('/login');
+          return;
+        }
+        const parsed = JSON.parse(s);
+        if (!parsed || (parsed.role !== 'admin' && parsed.role !== 'super_admin')) {
+          window.location.replace('/login');
+          return;
+        }
+        setUser(parsed);
+      } catch {
+        window.location.replace('/login');
+      }
+    };
+
+    checkAuth();
+    window.addEventListener('pageshow', checkAuth);
+    window.addEventListener('popstate', checkAuth);
+    window.addEventListener('storage', checkAuth);
+    return () => {
+      window.removeEventListener('pageshow', checkAuth);
+      window.removeEventListener('popstate', checkAuth);
+      window.removeEventListener('storage', checkAuth);
+    };
+  }, []);
 
   // 2FA state
   const [twoFA, setTwoFA] = useState(() => {
@@ -45,10 +80,22 @@ export default function Layout() {
 
   const handleLogout = () => {
     sessionStorage.removeItem('pg_user');
+    sessionStorage.removeItem('guest_user');
+    sessionStorage.removeItem('tenant_user');
+    sessionStorage.removeItem('warden_user');
+    sessionStorage.removeItem('owner_user');
+    sessionStorage.removeItem('super_admin_token');
+    localStorage.removeItem('currentUser');
     localStorage.removeItem('pg_user');
-    toast('info', 'Logged Out', 'You have been logged out.');
-    window.location.href = '/login';
+    try {
+      window.dispatchEvent(new Event('rentbro-logout'));
+    } catch (_) {}
+    window.location.replace('/login');
   };
+
+  if (!user) {
+    return null;
+  }
 
   const handleToggle2FA = (e) => {
     const checked = e.target.checked;

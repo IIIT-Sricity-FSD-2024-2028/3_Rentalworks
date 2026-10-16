@@ -209,9 +209,20 @@ export default function Properties({
                   <span className="material-icons prop-bg-icon">
                     apartment
                   </span>
-                  <div className="property-card-status">
+                  <div className="property-card-status" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                     <span className={`badge badge-${(p.status || 'active').toLowerCase()}`}>
                       {p.status}
+                    </span>
+                    <span className="badge" style={{
+                      background: p.gender === 'girls' ? '#fdf2f8' : p.gender === 'boys' ? '#eff6ff' : '#f0fdf4',
+                      color: p.gender === 'girls' ? '#db2777' : p.gender === 'boys' ? '#2563eb' : '#16a34a',
+                      border: '1px solid currentColor',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      padding: '2px 8px',
+                      borderRadius: '12px'
+                    }}>
+                      {p.gender === 'girls' ? '👩 Girls Only' : p.gender === 'boys' ? '👨 Boys Only' : '👫 Co-ed'}
                     </span>
                   </div>
                 </div>
@@ -332,6 +343,12 @@ export default function Properties({
                 <div>
                   <div className="text-xs text-muted">Type</div>
                   <div className="font-bold text-sm">{viewingProperty.type}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted">Gender Policy</div>
+                  <div className="font-bold text-sm" style={{ textTransform: 'capitalize' }}>
+                    {viewingProperty.gender === 'girls' ? '👩 Girls Only' : viewingProperty.gender === 'boys' ? '👨 Boys Only' : '👫 Co-ed'}
+                  </div>
                 </div>
                 <div>
                   <div className="text-xs text-muted">Status</div>
@@ -468,6 +485,22 @@ export default function Properties({
                       <option value="Mixed">Mixed</option>
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Gender Policy</label>
+                    <select
+                      className="form-input"
+                      value={editingProperty.gender || 'unisex'}
+                      onChange={(e) => {
+                        const update = { gender: e.target.value };
+                        setEditingProperty((prev) => Object.assign({}, prev, update));
+                      }}
+                    >
+                      <option value="unisex">Co-ed (All Welcome)</option>
+                      <option value="boys">Boys Only</option>
+                      <option value="girls">Girls Only</option>
                     </select>
                   </div>
 

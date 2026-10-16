@@ -69,9 +69,15 @@ export class UsersController {
     return this.usersService.login(loginDto);
   }
 
+  @Post('guest-login')
+  @ApiOperation({ summary: 'Login specifically for guest booking workflow' })
+  guestLogin(@Body() loginDto: LoginDto) {
+    return this.usersService.guestLogin(loginDto);
+  }
+
   @Post('guest-register')
   @ApiOperation({ summary: 'Register or authenticate guest user' })
-  guestRegister(@Body() dto: { name: string; email: string; phone: string; password?: string }) {
+  guestRegister(@Body() dto: { name: string; email: string; phone: string; password?: string; gender?: string }) {
     return this.usersService.guestRegister(dto);
   }
 

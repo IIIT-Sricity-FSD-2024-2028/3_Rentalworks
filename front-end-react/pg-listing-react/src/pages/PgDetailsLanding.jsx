@@ -14,16 +14,40 @@ const DEFAULT_IMAGES = [
   '/room_images/5h.webp',
 ];
 
+const AMENITY_META = {
+  wifi: { label: 'High-Speed WiFi', desc: '100 Mbps fiber broadband', icon: 'wifi' },
+  ac: { label: 'Air Conditioning', desc: 'Individual climate control', icon: 'ac_unit' },
+  cctv: { label: '24/7 Security', desc: 'Guard & CCTV monitoring', icon: 'shield' },
+  security: { label: '24/7 Security Guard', desc: 'Guard & CCTV monitoring', icon: 'shield' },
+  parking: { label: 'Parking Space', desc: 'Secure parking space', icon: 'local_parking' },
+  laundry: { label: 'Laundry Service', desc: 'Automated washing machines', icon: 'local_laundry_service' },
+  meals: { label: '3 Healthy Meals', desc: 'Breakfast, lunch & dinner', icon: 'restaurant' },
+  food: { label: 'Healthy Meals', desc: 'Nutritious daily meals', icon: 'restaurant' },
+  geyser: { label: 'Hot Water Geyser', desc: '24/7 hot water supply', icon: 'hot_tub' },
+  backup: { label: 'Power Backup', desc: '100% generator backup', icon: 'bolt' },
+  water: { label: '24/7 Water Supply', desc: 'RO purified drinking water', icon: 'water_drop' },
+  gym: { label: 'Gym Facility', desc: 'Fitness equipment for residents', icon: 'fitness_center' },
+  mess: { label: 'Dining Hall', desc: 'Hygienic communal mess', icon: 'lunch_dining' },
+};
+
 export default function PgDetailsLanding() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { setSelectedPG, setSelectedRoom, setSelectedRoommate } = useBooking();
-  const { currentUser } = useAuth();
+  const { currentUser, requireAuth, updateUserGender } = useAuth();
 
   const [expandedFaq, setExpandedFaq] = useState(null);
   const [propertyData, setPropertyData] = useState(null);
   const [dbRooms, setDbRooms] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Gender policy and booking workflow states
+  const [eligibilityError, setEligibilityError] = useState('');
+  const [roleError, setRoleError] = useState('');
+  const [promptGenderModalOpen, setPromptGenderModalOpen] = useState(false);
+  const [selectedGenderChoice, setSelectedGenderChoice] = useState('female');
+  const [genderSaving, setGenderSaving] = useState(false);
+  const [pendingRoom, setPendingRoom] = useState(null);
 
   // Fetch real property details and rooms from Neon PostgreSQL backend
   useEffect(() => {
@@ -55,25 +79,46 @@ export default function PgDetailsLanding() {
 
   // Merge property data with fallback info
   const fallback = RAW_LISTINGS.find(p => String(p.id) === String(id)) || RAW_LISTINGS[0];
+  const propertyGender = (propertyData?.gender || fallback?.gender || 'unisex').toLowerCase();
+  const pgSafetyScore = propertyData?.safetyScore || fallback?.safetyScore || (propertyGender === 'girls' ? '9.6' : '9.5');
+  const pgAbout = propertyData?.description || fallback?.about || 'Welcome to this premier accommodation offering premium living spaces designed for comfort, convenience, and community.';
+  const rawAmenities = propertyData?.amenities && propertyData.amenities.length > 0
+    ? propertyData.amenities
+    : (fallback?.amenities || ['wifi', 'ac', 'cctv', 'parking', 'water', 'backup']);
+
   const pg = propertyData ? {
     id: propertyData.id,
     title: propertyData.name || fallback.title,
-    location: propertyData.location || fallback.location,
+    location: propertyData.location || (propertyData.city ? `${propertyData.address ? propertyData.address + ', ' : ''}${propertyData.city}` : fallback.location),
     price: propertyData.rentMin || propertyData.monthlyRent || fallback.price,
     rating: propertyData.safetyScore ? parseFloat(propertyData.safetyScore) : fallback.rating,
+    safetyScore: pgSafetyScore,
     reviewsCount: fallback.reviewsCount || 1350,
     image: (propertyData.images && propertyData.images[0]) || fallback.image || DEFAULT_IMAGES[0],
-    amenities: propertyData.amenities && propertyData.amenities.length > 0 ? propertyData.amenities : fallback.amenities,
-    about: propertyData.description || fallback.about,
+    amenities: rawAmenities,
+    about: pgAbout,
+    gender: propertyGender,
+    safetyLabel: propertyGender === 'girls'
+      ? 'Female Safety Score'
+      : 'Safety Score',
     owner: propertyData.owner || null,
     compliance: propertyData.compliance || 'Verified',
-    stats: fallback.stats || {
-      residents: '50+',
-      security: '24/7',
+    stats: {
+      residents: propertyData.totalRooms ? `${propertyData.totalRooms * 2}+` : (fallback.stats?.residents || '50+'),
+      security: propertyGender === 'girls' ? '24/7 CCTV & Biometric' : '24/7 CCTV & Security',
       backup: '100%',
-      established: '5+ Years'
+      established: fallback.stats?.established || '5+ Years'
     }
-  } : fallback;
+  } : {
+    ...fallback,
+    gender: propertyGender,
+    safetyScore: pgSafetyScore,
+    safetyLabel: propertyGender === 'girls'
+      ? 'Female Safety Score'
+      : 'Safety Score',
+    about: pgAbout,
+    amenities: rawAmenities,
+  };
 
   // Derive rooms from database room entities
   const displayRooms = (dbRooms.length > 0 ? dbRooms : (propertyData?.roomEntities && propertyData.roomEntities.length > 0 ? propertyData.roomEntities : (fallback.rooms || []))).map(r => {
@@ -98,28 +143,98 @@ export default function PgDetailsLanding() {
     };
   });
 
-  const handleBookRoom = (room) => {
-    if (!room.available) return;
+  const isManagementRole = (role) =>
+    ['admin', 'owner', 'warden', 'super_admin'].includes((role || '').toLowerCase());
 
+  const checkAndProceedBooking = (user, room) => {
+    if (!room || !room.available) return;
+
+    if (user && isManagementRole(user.role)) {
+      const msg = `Unauthorized Access: Management accounts (${user.role.toUpperCase()}) cannot make tenant bookings. Please log in with a guest or tenant account.`;
+      setRoleError(msg);
+      window.alert(msg);
+      return;
+    }
+
+    // Gender Policy Verification: Only girls can book a Girls PG
+    const pGender = (pg.gender || '').toLowerCase();
+    const uGender = (user?.gender || '').toLowerCase();
+    const isGirlsPG = pGender === 'girls' || pg.title?.toLowerCase().includes('girls');
+
+    if (isGirlsPG) {
+      if (uGender === 'male' || uGender === 'boy' || uGender === 'm') {
+        const msg = `You cannot book this PG! "${pg.title}" is strictly a Girls Only accommodation. Male residents cannot book this property.`;
+        setEligibilityError(msg);
+        window.alert(msg);
+        return;
+      }
+      if (!uGender) {
+        setPendingRoom(room);
+        setPromptGenderModalOpen(true);
+        return;
+      }
+      if (uGender !== 'female' && uGender !== 'f' && uGender !== 'girl') {
+        const msg = `You cannot book this PG! "${pg.title}" is strictly a Girls Only accommodation.`;
+        setEligibilityError(msg);
+        window.alert(msg);
+        return;
+      }
+    }
+
+    // Eligible! Proceed to roommate selection or direct review
     const isSingle = room.sharing === 'single' || room.capacity === 1;
     setSelectedPG(pg);
     setSelectedRoom(room);
 
     if (isSingle) {
       setSelectedRoommate(null);
-    }
-
-    // Check if user is authenticated
-    if (!currentUser) {
-      const returnUrl = isSingle ? `/book/${pg.id}/review` : `/book/${pg.id}/roommate`;
-      navigate('/login', { state: { from: returnUrl } });
-      return;
-    }
-
-    if (isSingle) {
       navigate(`/book/${pg.id}/review`);
     } else {
       navigate(`/book/${pg.id}/roommate`);
+    }
+  };
+
+  const handleBookRoom = (room) => {
+    if (!room || !room.available) return;
+    setEligibilityError('');
+    setRoleError('');
+
+    setSelectedPG(pg);
+    setSelectedRoom(room);
+
+    // If not authenticated, navigate to the initial sign-in page (/login)
+    if (!currentUser) {
+      navigate('/login', { state: { from: `/pg/${pg.id}` } });
+      return;
+    }
+
+    checkAndProceedBooking(currentUser, room);
+  };
+
+  const handleSaveMissingGender = async () => {
+    setGenderSaving(true);
+    try {
+      const isGirlsPG = (pg.gender || '').toLowerCase() === 'girls' || pg.title?.toLowerCase().includes('girls');
+      if (isGirlsPG && selectedGenderChoice === 'male') {
+        setPromptGenderModalOpen(false);
+        const msg = `You cannot book this PG! "${pg.title}" is strictly a Girls Only accommodation. Male residents cannot book this property.`;
+        setEligibilityError(msg);
+        window.alert(msg);
+        return;
+      }
+
+      const updatedUser = await updateUserGender(selectedGenderChoice);
+      setPromptGenderModalOpen(false);
+      const roomToContinue = pendingRoom;
+      setPendingRoom(null);
+      if (roomToContinue) {
+        checkAndProceedBooking(updatedUser || { ...currentUser, gender: selectedGenderChoice }, roomToContinue);
+      }
+    } catch (err) {
+      console.error('Failed to update gender:', err);
+      setPromptGenderModalOpen(false);
+    } finally {
+      setGenderSaving(false);
     }
   };
 
@@ -147,8 +262,27 @@ export default function PgDetailsLanding() {
         }}
       >
         <div className="container" style={{ width: '100%', maxWidth: '1140px', margin: '0 auto', padding: '0 24px', color: '#fff' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(202,138,4,0.9)', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-            ✓ {pg.compliance || 'Verified'} Accommodation
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(202,138,4,0.9)', padding: '5px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>
+              ✓ {pg.compliance || 'Verified'} Accommodation
+            </div>
+            {pg.gender === 'girls' && (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: '#be185d',
+                padding: '5px 14px',
+                borderRadius: '20px',
+                fontSize: '12px',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.8px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+              }}>
+                👩 Girls Only
+              </div>
+            )}
           </div>
           <h1 style={{ fontSize: '38px', fontWeight: 800, marginBottom: '8px', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
             {pg.title}
@@ -186,7 +320,7 @@ export default function PgDetailsLanding() {
         <section className="detail-section" id="About">
           <h2 className="section-title">About This Property</h2>
           <p className="section-text" style={{ lineHeight: 1.8, color: '#475569', fontSize: '16px', marginBottom: '24px' }}>
-            {pg.about || 'Welcome to this premium paying guest accommodation designed for students and working professionals. Our property offers comfortable living spaces equipped with state-of-the-art facilities, healthy meals, and high-speed fiber connectivity.'}
+            {pg.about}
           </p>
           <div className="stats-grid">
             <div className="stat-box">
@@ -195,15 +329,15 @@ export default function PgDetailsLanding() {
             </div>
             <div className="stat-box">
               <span className="stat-number">{pg.stats?.security || '24/7'}</span>
-              <span className="stat-desc">CCTV &amp; Security</span>
+              <span className="stat-desc">Security &amp; Monitoring</span>
             </div>
             <div className="stat-box">
               <span className="stat-number">{pg.stats?.backup || '100%'}</span>
               <span className="stat-desc">Power Backup</span>
             </div>
             <div className="stat-box">
-              <span className="stat-number">9.4/10</span>
-              <span className="stat-desc">Female Safety Score</span>
+              <span className="stat-number">{pg.safetyScore}/10</span>
+              <span className="stat-desc">{pg.safetyLabel}</span>
             </div>
           </div>
         </section>
@@ -212,67 +346,115 @@ export default function PgDetailsLanding() {
         <section className="detail-section" id="Amenities" style={{ marginTop: '50px' }}>
           <h2 className="section-title">Included Amenities</h2>
           <div className="amenities-grid">
-            <div className="amenity-card">
-              <div className="amenity-icon"><span className="material-icons-outlined">wifi</span></div>
-              <div>
-                <strong>High-Speed WiFi</strong>
-                <p>100 Mbps fiber broadband</p>
-              </div>
-            </div>
-            <div className="amenity-card">
-              <div className="amenity-icon"><span className="material-icons-outlined">restaurant</span></div>
-              <div>
-                <strong>3 Healthy Meals</strong>
-                <p>Breakfast, lunch &amp; dinner</p>
-              </div>
-            </div>
-            <div className="amenity-card">
-              <div className="amenity-icon"><span className="material-icons-outlined">local_parking</span></div>
-              <div>
-                <strong>Parking Space</strong>
-                <p>Secure two-wheeler parking</p>
-              </div>
-            </div>
-            <div className="amenity-card">
-              <div className="amenity-icon"><span className="material-icons-outlined">local_laundry_service</span></div>
-              <div>
-                <strong>Laundry Service</strong>
-                <p>Automated washing machines</p>
-              </div>
-            </div>
-            <div className="amenity-card">
-              <div className="amenity-icon"><span className="material-icons-outlined">ac_unit</span></div>
-              <div>
-                <strong>Air Conditioning</strong>
-                <p>Individual climate control</p>
-              </div>
-            </div>
-            <div className="amenity-card">
-              <div className="amenity-icon"><span className="material-icons-outlined">shield</span></div>
-              <div>
-                <strong>24/7 Security</strong>
-                <p>Guard &amp; CCTV monitoring</p>
-              </div>
-            </div>
-            <div className="amenity-card">
-              <div className="amenity-icon"><span className="material-icons-outlined">bolt</span></div>
-              <div>
-                <strong>Power Backup</strong>
-                <p>100% generator backup</p>
-              </div>
-            </div>
-            <div className="amenity-card">
-              <div className="amenity-icon"><span className="material-icons-outlined">water_drop</span></div>
-              <div>
-                <strong>24/7 Water Supply</strong>
-                <p>RO purified drinking water</p>
-              </div>
-            </div>
+            {(pg.amenities || ['wifi', 'ac', 'cctv', 'parking', 'water', 'backup']).map((key, idx) => {
+              const meta = AMENITY_META[key.toLowerCase()] || {
+                label: key.charAt(0).toUpperCase() + key.slice(1),
+                desc: 'Verified facility for all residents',
+                icon: 'check_circle'
+              };
+              return (
+                <div key={idx} className="amenity-card">
+                  <div className="amenity-icon">
+                    <span className="material-icons-outlined">{meta.icon}</span>
+                  </div>
+                  <div>
+                    <strong>{meta.label}</strong>
+                    <p>{meta.desc}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
 
         {/* AVAILABLE ROOMS SECTION (CORE BOOKING GATEWAY) */}
         <section className="detail-section" id="Rooms" style={{ marginTop: '60px' }}>
+          {eligibilityError && (
+            <div style={{
+              background: '#fef2f2',
+              border: '2px solid #ef4444',
+              borderRadius: '12px',
+              padding: '16px 20px',
+              marginBottom: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              boxShadow: '0 4px 12px rgba(239, 68, 68, 0.15)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span className="material-icons-outlined" style={{ fontSize: '32px', color: '#dc2626' }}>
+                  block
+                </span>
+                <div>
+                  <strong style={{ display: 'block', color: '#991b1b', fontSize: '15px', marginBottom: '2px' }}>
+                    Gender Policy Eligibility Notice
+                  </strong>
+                  <span style={{ color: '#b91c1c', fontSize: '14px', lineHeight: 1.5 }}>
+                    {eligibilityError}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setEligibilityError('')}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '20px',
+                  color: '#991b1b',
+                  cursor: 'pointer',
+                  padding: '4px 8px',
+                  fontWeight: 700
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {roleError && (
+            <div style={{
+              background: '#fffbeb',
+              border: '2px solid #f59e0b',
+              borderRadius: '12px',
+              padding: '16px 20px',
+              marginBottom: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              boxShadow: '0 4px 12px rgba(245, 158, 11, 0.15)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span className="material-icons-outlined" style={{ fontSize: '32px', color: '#d97706' }}>
+                  admin_panel_settings
+                </span>
+                <div>
+                  <strong style={{ display: 'block', color: '#92400e', fontSize: '15px', marginBottom: '2px' }}>
+                    Unauthorized Booking Role
+                  </strong>
+                  <span style={{ color: '#b45309', fontSize: '14px', lineHeight: 1.5 }}>
+                    {roleError}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setRoleError('')}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '20px',
+                  color: '#92400e',
+                  cursor: 'pointer',
+                  padding: '4px 8px',
+                  fontWeight: 700
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
             <div>
               <h2 className="section-title" style={{ margin: 0 }}>Available Rooms &amp; Rates</h2>
@@ -454,6 +636,137 @@ export default function PgDetailsLanding() {
           </div>
         </section>
       </div>
+
+      {/* MODAL: PROMPT TENANT FOR GENDER IF MISSING */}
+      {promptGenderModalOpen && (
+        <div
+          className="modal-backdrop"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '16px'
+          }}
+        >
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: '16px',
+              padding: '32px',
+              maxWidth: '440px',
+              width: '100%',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)',
+              position: 'relative'
+            }}
+          >
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <div
+                style={{
+                  width: '56px',
+                  height: '56px',
+                  background: '#fef3c7',
+                  color: '#d97706',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 12px'
+                }}
+              >
+                <span className="material-icons-outlined" style={{ fontSize: '32px' }}>wc</span>
+              </div>
+              <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#1e293b', marginBottom: '6px' }}>
+                Select Your Gender
+              </h3>
+              <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.5 }}>
+                {pg.gender === 'girls'
+                  ? `${pg.title} is strictly a Girls Only accommodation. Please confirm your gender to verify booking eligibility.`
+                  : 'Please confirm your gender to proceed with reservation.'}
+              </p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
+              {[
+                { key: 'female', label: 'Female', icon: 'female' },
+                { key: 'male', label: 'Male', icon: 'male' },
+                { key: 'other', label: 'Other', icon: 'person' },
+              ].map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => setSelectedGenderChoice(opt.key)}
+                  style={{
+                    padding: '14px 8px',
+                    borderRadius: '10px',
+                    border: selectedGenderChoice === opt.key ? '2px solid #ca8a04' : '1px solid #cbd5e1',
+                    background: selectedGenderChoice === opt.key ? '#fffbeb' : '#fff',
+                    color: selectedGenderChoice === opt.key ? '#b45309' : '#475569',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <span className="material-icons-outlined" style={{ fontSize: '24px' }}>{opt.icon}</span>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setPromptGenderModalOpen(false);
+                  setPendingRoom(null);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  background: '#fff',
+                  color: '#475569',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={genderSaving}
+                onClick={handleSaveMissingGender}
+                style={{
+                  flex: 2,
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #d4af37, #b8860b)',
+                  color: '#fff',
+                  fontWeight: 700,
+                  cursor: genderSaving ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 4px 12px rgba(212, 175, 55, 0.3)'
+                }}
+              >
+                {genderSaving ? 'Saving...' : 'Confirm & Continue'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

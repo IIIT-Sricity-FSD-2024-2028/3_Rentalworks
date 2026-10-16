@@ -10,8 +10,17 @@ export default function Shell({ user, section, setSection, onLogout, toast, chil
   function logout() {
     sessionStorage.removeItem('pg_user');
     sessionStorage.removeItem('super_admin_token');
+    sessionStorage.removeItem('guest_user');
+    sessionStorage.removeItem('tenant_user');
+    sessionStorage.removeItem('warden_user');
+    sessionStorage.removeItem('owner_user');
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('pg_user');
+    try {
+      window.dispatchEvent(new Event('rentbro-logout'));
+    } catch (_) {}
     onLogout();
-    window.location.href = '/login';
+    window.location.replace('/login');
   }
 
   return <>

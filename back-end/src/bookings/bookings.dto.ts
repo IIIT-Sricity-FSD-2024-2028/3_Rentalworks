@@ -85,6 +85,11 @@ export class CheckoutBookingDto {
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
+  gender?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
   password?: string;
 
   @ApiProperty()
