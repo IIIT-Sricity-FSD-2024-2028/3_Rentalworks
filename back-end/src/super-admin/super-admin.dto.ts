@@ -23,10 +23,6 @@ export class ChangePasswordDto {
   @IsString() @MinLength(6) newPassword: string;
 }
 
-export class TwoFactorCodeDto {
-  @IsString() @MinLength(6) @MaxLength(6) code: string;
-}
-
 export class CreateAnnouncementDto {
   @IsString() @MinLength(1) @MaxLength(200) title: string;
   @IsString() @MinLength(1) message: string;

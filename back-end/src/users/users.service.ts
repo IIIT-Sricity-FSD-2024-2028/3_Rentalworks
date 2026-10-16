@@ -21,7 +21,6 @@ import {
 } from './users.dto';
 import * as bcrypt from 'bcrypt';
 import { issueSuperAdminToken } from '../super-admin/super-admin-token';
-import { verifyTotp } from '../super-admin/totp';
 import { ensureSharedColumns } from '../migrations/ensure-shared-columns';
 
 @Injectable()
@@ -104,14 +103,6 @@ export class UsersService {
       user.password || '',
     );
     if (!isMatch) throw new UnauthorizedException('Invalid credentials');
-
-    if (user.role === 'super_admin' && user.twoFactorEnabled) {
-      const withSecret = await this.usersRepository.createQueryBuilder('user')
-        .addSelect('user.twoFactorSecret').where('user.id = :id', { id: user.id }).getOne();
-      if (!withSecret?.twoFactorSecret || !verifyTotp(withSecret.twoFactorSecret, loginDto.otp || '')) {
-        throw new UnauthorizedException('Enter the current authenticator code');
-      }
-    }
 
     const result = Object.assign({}, user);
     delete (result as any).password;

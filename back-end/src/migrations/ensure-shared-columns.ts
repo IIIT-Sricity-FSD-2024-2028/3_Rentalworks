@@ -3,7 +3,7 @@ import { DataSource } from 'typeorm';
 import { RestoreSharedColumns1800000001000 } from './1800000001000-RestoreSharedColumns';
 
 const requiredColumns: Record<string, string[]> = {
-  users: ['company', 'city', 'state', 'pincode', 'bio', 'avatar', 'policy', 'twoFactorSecret', 'twoFactorEnabled'],
+  users: ['company', 'city', 'state', 'pincode', 'bio', 'avatar', 'policy'],
   properties: ['address', 'city', 'state', 'pincode', 'type', 'totalCapacity', 'totalRooms', 'occupiedRooms', 'monthlyRent', 'rules'],
   complaints: ['category', 'reportedBy'],
   notifications: ['read', 'recipientUserIds', 'targetRole', 'targetPropertyId', 'deliveryStatus'],

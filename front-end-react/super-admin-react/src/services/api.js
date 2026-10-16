@@ -20,15 +20,12 @@ async function request(path, method = 'GET', body = null, authenticated = true) 
 }
 
 export const api = {
-  login: (username, password, otp) => request('/users/login', 'POST', { username, password, otp }, false),
+  login: (username, password) => request('/users/login', 'POST', { username, password }, false),
   overview: () => request('/super-admin/overview'),
   profile: () => request('/super-admin/profile'),
   createAdmin: details => request('/super-admin/regional-admins', 'POST', details),
   updateAdmin: (id, details) => request(`/super-admin/regional-admins/${id}`, 'PUT', details),
   updateProfile: details => request('/super-admin/profile', 'PUT', details),
   changePassword: details => request('/super-admin/password', 'PUT', details),
-  setupTwoFactor: () => request('/super-admin/two-factor/setup', 'POST'),
-  confirmTwoFactor: code => request('/super-admin/two-factor/confirm', 'POST', { code }),
-  disableTwoFactor: code => request('/super-admin/two-factor/disable', 'POST', { code }),
   sendNotification: details => request('/super-admin/announcements', 'POST', details),
 };

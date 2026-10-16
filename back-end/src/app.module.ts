@@ -44,6 +44,8 @@ import { ServiceRequest } from './service-requests/service-request.entity';
 import { IssuesModule } from './issues/issues.module';
 import { ServicesModule } from './services/services.module';
 import { ServiceRequestsModule } from './service-requests/service-requests.module';
+import { RemoveSuperAdminTwoFactor1900000000000 } from './migrations/1900000000000-RemoveSuperAdminTwoFactor';
+import { DropLegacyAuthenticatorColumns1910000000000 } from './migrations/1910000000000-DropLegacyAuthenticatorColumns';
 
 @Module({
   imports: [
@@ -89,6 +91,8 @@ import { ServiceRequestsModule } from './service-requests/service-requests.modul
             RestoreSharedColumns1800000001000,
             RecoverSharedColumns1800000002000,
             CreateOwnersTable1850000000000,
+            RemoveSuperAdminTwoFactor1900000000000,
+            DropLegacyAuthenticatorColumns1910000000000,
           ],
           migrationsRun: true,
         }) as any,

@@ -9,7 +9,6 @@ import { Booking } from '../bookings/booking.entity';
 import { TenantStay } from '../tenant-stays/tenant-stay.entity';
 import { Notification } from '../notifications/notification.entity';
 import { ChangePasswordDto, CreateAnnouncementDto, CreateRegionalAdminDto, UpdateProfileDto, UpdateRegionalAdminDto } from './super-admin.dto';
-import { newTotpSecret, verifyTotp } from './totp';
 import { ensureSharedColumns } from '../migrations/ensure-shared-columns';
 
 @Injectable()
@@ -85,7 +84,7 @@ export class SuperAdminService implements OnModuleInit, OnModuleDestroy {
   async profile(id: number) {
     const user = await this.users.findOneBy({ id, role: 'super_admin' });
     if (!user) throw new NotFoundException('Super admin not found');
-    return { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, status: user.status, twoFactorEnabled: user.twoFactorEnabled };
+    return { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, status: user.status };
   }
 
   async updateProfile(id: number, dto: UpdateProfileDto) {
@@ -107,34 +106,6 @@ export class SuperAdminService implements OnModuleInit, OnModuleDestroy {
     user.password = await bcrypt.hash(dto.newPassword, 10);
     await this.users.save(user);
     return { message: 'Password changed' };
-  }
-
-  async startTwoFactor(id: number) {
-    const user = await this.users.findOneBy({ id, role: 'super_admin' });
-    if (!user) throw new NotFoundException('Super admin not found');
-    if (user.twoFactorEnabled) throw new BadRequestException('Two-factor authentication is already enabled');
-    const secret = newTotpSecret();
-    await this.users.update(id, { twoFactorSecret: secret });
-    return { secret, account: user.email, issuer: 'RentBro' };
-  }
-
-  async confirmTwoFactor(id: number, code: string) {
-    const user = await this.users.createQueryBuilder('user').addSelect('user.twoFactorSecret')
-      .where('user.id = :id AND user.role = :role', { id, role: 'super_admin' }).getOne();
-    if (!user?.twoFactorSecret || !verifyTotp(user.twoFactorSecret, code)) throw new BadRequestException('Invalid authenticator code');
-    user.twoFactorEnabled = true;
-    await this.users.save(user);
-    return { twoFactorEnabled: true };
-  }
-
-  async disableTwoFactor(id: number, code: string) {
-    const user = await this.users.createQueryBuilder('user').addSelect('user.twoFactorSecret')
-      .where('user.id = :id AND user.role = :role', { id, role: 'super_admin' }).getOne();
-    if (!user?.twoFactorEnabled || !user.twoFactorSecret || !verifyTotp(user.twoFactorSecret, code)) throw new BadRequestException('Invalid authenticator code');
-    user.twoFactorEnabled = false;
-    user.twoFactorSecret = null as any;
-    await this.users.save(user);
-    return { twoFactorEnabled: false };
   }
 
   async announce(senderId: number, dto: CreateAnnouncementDto) {
