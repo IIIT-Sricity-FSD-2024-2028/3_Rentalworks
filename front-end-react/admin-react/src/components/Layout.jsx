@@ -64,11 +64,6 @@ export default function Layout() {
     };
   }, []);
 
-  // 2FA state
-  const [twoFA, setTwoFA] = useState(() => {
-    return localStorage.getItem('admin_2fa_enabled') === 'true';
-  });
-
   // Password fields
   const [currPass, setCurrPass] = useState('');
   const [newPass, setNewPass] = useState('');
@@ -96,13 +91,6 @@ export default function Layout() {
   if (!user) {
     return null;
   }
-
-  const handleToggle2FA = (e) => {
-    const checked = e.target.checked;
-    setTwoFA(checked);
-    localStorage.setItem('admin_2fa_enabled', checked ? 'true' : 'false');
-    toast('success', 'Two-Factor Authentication', checked ? '2FA has been enabled' : '2FA has been disabled');
-  };
 
   const handleUpdatePassword = () => {
     if (!currPass) {
@@ -308,20 +296,6 @@ export default function Layout() {
               >
                 Update Password
               </button>
-            </div>
-
-            <div className="profile-section">
-              <h4 className="profile-section-title">🛡️ System Security</h4>
-              <div className="twofa-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <strong style={{ fontSize: 13 }}>Two-Factor Authentication (2FA)</strong>
-                  <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Add an extra layer of security</div>
-                </div>
-                <label className="toggle-switch">
-                  <input type="checkbox" id="twofa-toggle" checked={twoFA} onChange={handleToggle2FA} />
-                  <span className="toggle-slider" />
-                </label>
-              </div>
             </div>
 
             <div className="profile-section" style={{ borderBottom: 'none' }}>

@@ -129,6 +129,25 @@ export async function updateComplaintApi(id, data) {
   return handleResponse(res);
 }
 
+export async function getIssuesApi() {
+  try {
+    const res = await fetch(`${API_BASE}/issues`, {
+      headers: getHeaders(),
+    });
+    if (res.ok) return await res.json();
+  } catch (_) {}
+  return [];
+}
+
+export async function updateIssueApi(id, data) {
+  const res = await fetch(`${API_BASE}/issues/${id}`, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
+}
+
 export async function getNotificationsApi() {
   try {
     const res = await fetch(`${API_BASE}/notifications`, {

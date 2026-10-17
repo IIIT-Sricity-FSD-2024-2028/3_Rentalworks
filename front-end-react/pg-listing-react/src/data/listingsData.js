@@ -221,6 +221,23 @@ export const RAW_ROOMMATES = [
     foodHabit: 'Flexible Diet',
     img: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500',
     compatibility: 88
+  },
+  {
+    id: 104,
+    name: 'Vikas Malhotra',
+    pg: 'Sunrise PG Residency',
+    room: 'Room 202',
+    roomNum: '202',
+    sharing: 'Triple Sharing',
+    age: 23,
+    job: 'Cloud Analyst',
+    company: 'Infosys',
+    hobbies: ['Gaming', 'Coding', 'Music'],
+    sleepHabit: 'Night Owl (12 AM - 8 AM)',
+    cleanliness: 'High (Daily Cleanup)',
+    foodHabit: 'Vegetarian',
+    img: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=500',
+    compatibility: 93
   }
 ];
 

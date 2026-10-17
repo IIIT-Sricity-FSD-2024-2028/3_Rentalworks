@@ -21,8 +21,8 @@ async function main() {
     `, ['Guest User', 'guest@gmail.com', '+91 98765 00099', 'guest', 'guest', passwordHash, 'active']);
     console.log('✓ Created guest user:', res.rows[0]);
   } else {
-    await client.query('UPDATE users SET password = $1 WHERE id = $2', [passwordHash, existing.rows[0].id]);
-    console.log('✓ Updated password for existing guest user:', existing.rows[0]);
+    await client.query('UPDATE users SET password = $1, role = \'guest\' WHERE id = $2', [passwordHash, existing.rows[0].id]);
+    console.log('✓ Updated password and role=guest for existing guest user:', existing.rows[0]);
   }
   await client.end();
 }

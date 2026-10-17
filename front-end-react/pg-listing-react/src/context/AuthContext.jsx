@@ -18,7 +18,7 @@ export function AuthProvider({ children }) {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalCallback, setAuthModalCallback] = useState(null);
 
-  // Sync state with storage on bfcache restore, history back/forward, and logout events
+  // Sync state with storage on bfcache restore, history back/forward, and login/logout events
   useEffect(() => {
     const syncUser = () => {
       try {
@@ -33,16 +33,26 @@ export function AuthProvider({ children }) {
       }
     };
 
+    const handleLoginEvent = (e) => {
+      if (e?.detail) {
+        setCurrentUser(e.detail);
+      } else {
+        syncUser();
+      }
+    };
+
     window.addEventListener('storage', syncUser);
     window.addEventListener('pageshow', syncUser);
     window.addEventListener('popstate', syncUser);
     window.addEventListener('rentbro-logout', syncUser);
+    window.addEventListener('rentbro-login', handleLoginEvent);
 
     return () => {
       window.removeEventListener('storage', syncUser);
       window.removeEventListener('pageshow', syncUser);
       window.removeEventListener('popstate', syncUser);
       window.removeEventListener('rentbro-logout', syncUser);
+      window.removeEventListener('rentbro-login', handleLoginEvent);
     };
   }, []);
 

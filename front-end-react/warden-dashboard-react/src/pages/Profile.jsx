@@ -12,7 +12,7 @@ export default function Profile() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [property, setProperty] = useState('Green Nest PG');
+  const [property, setProperty] = useState('Sunrise PG Residency');
   const [address, setAddress] = useState('');
 
   // Password Modal State
@@ -33,7 +33,7 @@ export default function Profile() {
       // Identify authenticated user from session or default warden ID 9 in Neon
       const sessionUser = JSON.parse(sessionStorage.getItem('warden_user')) || 
                           JSON.parse(sessionStorage.getItem('pg_user')) || 
-                          { id: 9, role: 'warden', username: 'warden' };
+                          { id: 9, role: 'warden', username: 'warden', property: 'Sunrise PG Residency', propertyId: 1 };
       const userId = sessionUser.id || 9;
 
       try {
@@ -43,10 +43,10 @@ export default function Profile() {
         setEmail(liveUser.email || '');
         setPhone(liveUser.phone || '');
         setAddress(liveUser.address || '');
-        setProperty(sessionUser.property || 'Green Nest PG');
+        setProperty(liveUser.property || sessionUser.property || 'Sunrise PG Residency');
 
         // Sync session storage with live Neon DB record
-        const updatedSession = { ...sessionUser, ...liveUser };
+        const updatedSession = { ...sessionUser, ...liveUser, property: liveUser.property || sessionUser.property || 'Sunrise PG Residency', propertyId: 1 };
         sessionStorage.setItem('warden_user', JSON.stringify(updatedSession));
         if (sessionStorage.getItem('pg_user')) {
           sessionStorage.setItem('pg_user', JSON.stringify(updatedSession));
@@ -230,13 +230,6 @@ export default function Profile() {
             <span>Securely hashed and protected</span>
           </div>
           <button className="btn-change-password" onClick={openPwdModal}>Change Password</button>
-        </div>
-        <div className="security-row">
-          <div className="sec-info">
-            <strong>Two-Factor Authentication</strong>
-            <span>Add an extra layer of security</span>
-          </div>
-          <button className="btn-enable-2fa" onClick={() => showToast('info', 'Coming Soon', '2FA will be available soon')}>Enable</button>
         </div>
       </div>
 

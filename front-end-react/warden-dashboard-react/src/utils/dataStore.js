@@ -3,6 +3,7 @@ import {
   getRoomsApi,
   getTenantsApi,
   getComplaintsApi,
+  getIssuesApi,
   getWardenNotificationsApi,
   getRuleViolationsApi,
 } from './api';
@@ -39,7 +40,7 @@ export function mapRoomFromDb(r) {
     lastUpdated: r.updatedAt
       ? new Date(r.updatedAt).toLocaleDateString('en-US')
       : new Date().toLocaleDateString('en-US'),
-    property: r.property?.name || 'Green Nest PG',
+    property: r.property?.name || 'Sunrise PG Residency',
   };
 }
 
@@ -54,6 +55,47 @@ export function mapTenantFromDb(t) {
     rent: Number(t.rent) || 8000,
     paymentStatus: t.paymentStatus || 'paid',
     status: t.status || 'active',
+  };
+}
+
+export function mapIssueFromDb(iss, tenantsList = []) {
+  let tenantName = iss.tenant?.name || 'Arun Kumar';
+  let tenantRoom = iss.location || (iss.roomEntity ? String(iss.roomEntity.roomNumber) : '102');
+  let tenantId = iss.tenantId;
+
+  if (Array.isArray(tenantsList) && tenantsList.length > 0 && tenantId) {
+    const matched = tenantsList.find(t => String(t.id) === String(tenantId));
+    if (matched) {
+      tenantName = matched.name || tenantName;
+      tenantRoom = matched.room || tenantRoom;
+    }
+  }
+
+  const dateStr = iss.createdAt
+    ? new Date(iss.createdAt).toLocaleDateString('en-US')
+    : new Date().toLocaleDateString('en-US');
+
+  return {
+    id: iss.id,
+    sourceType: 'issue',
+    tenant: tenantName,
+    tenantId: tenantId,
+    room: tenantRoom,
+    type: iss.category || 'Maintenance',
+    title: iss.title,
+    priority: (iss.priority || 'medium').toLowerCase(),
+    status: iss.status || 'open',
+    severity: iss.priority === 'high' ? 'High' : iss.priority === 'low' ? 'Low' : 'Medium',
+    date: dateStr,
+    description: iss.description || iss.title || '',
+    timeline: [
+      {
+        time: dateStr,
+        event: 'Issue registered by tenant',
+        by: tenantName,
+      },
+    ],
+    property: iss.property?.name || 'Sunrise PG Residency',
   };
 }
 
@@ -95,7 +137,9 @@ export function mapComplaintFromDb(c, tenantsList = []) {
 
   return {
     id: c.id,
+    sourceType: 'complaint',
     tenant: tenantName,
+    tenantId: tenantId,
     room: tenantRoom,
     type: compType,
     title: c.title || compType,
@@ -111,7 +155,7 @@ export function mapComplaintFromDb(c, tenantsList = []) {
         by: tenantName
       }
     ],
-    property: c.property?.name || 'Green Nest PG',
+    property: c.property?.name || 'Sunrise PG Residency',
   };
 }
 
@@ -134,7 +178,7 @@ export function mapWardenNotificationFromDb(n) {
     read: Boolean(n.read),
     senderName: n.senderName || 'Anonymous',
     senderRole: n.senderRole || 'tenant',
-    propertyName: n.propertyName || 'Green Nest PG',
+    propertyName: n.propertyName || 'Sunrise PG Residency',
     roomNumber: n.roomNumber || '',
     time: time,
     icon: iconType,
@@ -183,10 +227,11 @@ function notifyListeners() {
 
 export async function fetchLiveWardenData() {
   try {
-    const [roomsRes, tenantsRes, complaintsRes, notifsRes, violsRes] = await Promise.allSettled([
+    const [roomsRes, tenantsRes, complaintsRes, issuesRes, notifsRes, violsRes] = await Promise.allSettled([
       getRoomsApi(),
       getTenantsApi(),
       getComplaintsApi(),
+      getIssuesApi(),
       getWardenNotificationsApi(),
       getRuleViolationsApi(),
     ]);
@@ -200,7 +245,19 @@ export async function fetchLiveWardenData() {
     const rawComplaints = complaintsRes.status === 'fulfilled' && Array.isArray(complaintsRes.value) 
       ? complaintsRes.value 
       : [];
-    const complaints = rawComplaints.map(c => mapComplaintFromDb(c, tenants));
+    const mappedComplaints = rawComplaints
+      .filter(c => !c.propertyId || c.propertyId === 1 || (c.property?.name || '').includes('Sunrise') || c.tenantId === 1 || c.tenantId === 19)
+      .map(c => mapComplaintFromDb(c, tenants));
+
+    const rawIssues = issuesRes.status === 'fulfilled' && Array.isArray(issuesRes.value)
+      ? issuesRes.value
+      : [];
+    const mappedIssues = rawIssues
+      .filter(i => !i.propertyId || i.propertyId === 1 || (i.property?.name || '').includes('Sunrise') || i.tenantId === 1 || i.tenantId === 19)
+      .map(i => mapIssueFromDb(i, tenants));
+
+    // Unified list of complaints and issues for Sunrise PG Warden
+    const complaints = [...mappedIssues, ...mappedComplaints];
 
     const rawNotifs = notifsRes.status === 'fulfilled' && Array.isArray(notifsRes.value) 
       ? notifsRes.value 

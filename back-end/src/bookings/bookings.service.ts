@@ -191,8 +191,15 @@ export class BookingsService {
         .toLowerCase()
         .replace(/[^a-z0-9]/g, '');
 
-      if (user) {
-        // Upgrade existing user (e.g. guest) to active tenant
+      const isDemoGuest = user && (
+        user.id === 18 ||
+        user.id === 31 ||
+        ['guest', 'guestuser'].includes((user.username || '').toLowerCase()) ||
+        ['guest@gmail.com', 'guestuser@gmail.com'].includes((user.email || '').toLowerCase())
+      );
+
+      if (user && !isDemoGuest) {
+        // Upgrade existing personal user to active tenant
         user.role = 'tenant';
         user.status = 'active';
         user.name = dto.name.trim() || user.name;
@@ -202,11 +209,15 @@ export class BookingsService {
         user.joinDate = dto.checkIn || user.joinDate || new Date().toISOString().split('T')[0];
         await userRepo.save(user);
       } else {
-        // Create new user directly as active tenant
+        // Create new dedicated tenant user directly so demo guest user is NOT mutated or taken as tenant
         const username = `tenant_${sanitizedName}_${timestamp.toString().slice(-4)}`;
+        let tenantEmail = dto.email?.trim() || `${sanitizedName}.${timestamp.toString().slice(-4)}@tenant.pgrentals.com`;
+        if (['guest@gmail.com', 'guestuser@gmail.com'].includes(tenantEmail.toLowerCase())) {
+          tenantEmail = `${sanitizedName}.${timestamp.toString().slice(-4)}@tenant.pgrentals.com`;
+        }
         user = userRepo.create({
           name: dto.name.trim(),
-          email: dto.email.trim(),
+          email: tenantEmail,
           phone: dto.phone.trim(),
           role: 'tenant',
           gender: normalizedGender,

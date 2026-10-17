@@ -29,6 +29,15 @@ export class RoommatesService {
       });
     }
 
+    const requestedSharing = (guestProfile.roomType || guestProfile.sharing || '').toLowerCase();
+    if (requestedSharing.includes('triple') || requestedSharing.includes('3')) {
+      tenants = tenants.filter(t => (t.roomType || '').toLowerCase().includes('triple') || (t.roomType || '').includes('3'));
+    } else if (requestedSharing.includes('double') || requestedSharing.includes('2')) {
+      tenants = tenants.filter(t => (t.roomType || '').toLowerCase().includes('double') || (t.roomType || '').includes('2'));
+    }
+    // Always eliminate single room occupants from roommate choices
+    tenants = tenants.filter(t => !(t.roomType || '').toLowerCase().includes('single'));
+
     const guestInterests = Array.isArray(guestProfile.interests)
       ? guestProfile.interests.map((i: string) => i.toLowerCase().replace(/#/g, ''))
       : [];

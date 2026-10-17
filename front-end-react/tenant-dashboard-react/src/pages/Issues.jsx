@@ -60,6 +60,13 @@ const Issues = () => {
 
   useEffect(() => {
     fetchIssues();
+    const handleSync = () => fetchIssues();
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('focus', handleSync);
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('focus', handleSync);
+    };
   }, [tenant]);
 
   const handleSubmit = async (e) => {
@@ -83,6 +90,23 @@ const Issues = () => {
           roomId: activeBooking?.roomId || 1,
         }),
       });
+
+      // Send live alert to Sunrise PG Warden Officer
+      apiFetch('/warden-notifications', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: `New Issue: ${title.trim()}`,
+          message: `${title.trim()} (${selectedCategory}) - ${description.trim()}`,
+          type: 'issue',
+          priority: selectedPriority || 'medium',
+          senderName: tenant.name || 'Arun Kumar',
+          senderRole: 'tenant',
+          propertyName: activeBooking?.property?.name || 'Sunrise PG Residency',
+          roomNumber: activeBooking?.room || location.trim() || '102',
+          tenantId: tenant.id,
+          propertyId: activeBooking?.propertyId || 1,
+        }),
+      }).catch(() => {});
 
       // Reset form
       setTitle('');

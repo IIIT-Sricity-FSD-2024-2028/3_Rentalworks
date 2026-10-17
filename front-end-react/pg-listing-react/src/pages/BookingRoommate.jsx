@@ -156,6 +156,22 @@ export default function BookingRoommate() {
     }).sort((a, b) => b.matchPercentage - a.matchPercentage);
   };
 
+  const selectedSharingStr = (selectedRoom?.sharing || selectedRoom?.type || 'Double Sharing').toLowerCase();
+  const isTripleRoom = selectedSharingStr.includes('triple') || selectedSharingStr.includes('3');
+  const isDoubleRoom = selectedSharingStr.includes('double') || selectedSharingStr.includes('2');
+
+  const matchesRoomSharing = (item) => {
+    const itemSharing = (item.sharing || item.roomType || '').toLowerCase();
+    if (itemSharing.includes('single') || itemSharing.includes('1')) return false;
+    if (isTripleRoom) {
+      return itemSharing.includes('triple') || itemSharing.includes('3');
+    }
+    if (isDoubleRoom) {
+      return itemSharing.includes('double') || itemSharing.includes('2');
+    }
+    return true;
+  };
+
   const handleCalculateMatches = async () => {
     setIsLoading(true);
     const guestData = {
@@ -163,6 +179,8 @@ export default function BookingRoommate() {
       propertyId: pg.id || 1,
       optedSmartMatch: true,
       userId: currentUser?.id || null,
+      roomType: selectedRoom?.type || (isTripleRoom ? 'Triple Sharing' : 'Double Sharing'),
+      sharing: isTripleRoom ? 'triple' : 'double',
     };
 
     setGuestLifestyleProfile(guestData);
@@ -185,34 +203,40 @@ export default function BookingRoommate() {
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
-          const formatted = data.map(item => ({
-            id: item.id,
-            name: item.name,
-            job: item.profession,
-            profession: item.profession,
-            age: item.age,
-            company: item.company,
-            room: item.roomNumber ? `Room ${item.roomNumber}` : 'Room 101',
-            roomNum: item.roomNumber || '101',
-            sharing: item.roomType || selectedRoom?.type || 'Double Sharing',
-            sleepHabit: item.sleepSchedule,
-            cleanliness: item.cleanliness,
-            foodHabit: item.foodHabit,
-            hobbies: Array.isArray(item.interests) ? item.interests : ['Gaming', 'Coding'],
-            img: item.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500',
-            matchPercentage: item.matchPercentage || item.compatibility || 90,
-            compatibility: item.matchPercentage || item.compatibility || 90,
-          }));
-          setMatchedRoommates(formatted.sort((a, b) => b.matchPercentage - a.matchPercentage));
-          setHasCalculated(true);
-          setIsLoading(false);
-          return;
+          const formatted = data
+            .filter(matchesRoomSharing)
+            .map(item => ({
+              id: item.id,
+              name: item.name,
+              job: item.profession,
+              profession: item.profession,
+              age: item.age,
+              company: item.company,
+              room: item.roomNumber ? `Room ${item.roomNumber}` : 'Room 101',
+              roomNum: item.roomNumber || '101',
+              sharing: item.roomType || (isTripleRoom ? 'Triple Sharing' : 'Double Sharing'),
+              sleepHabit: item.sleepSchedule,
+              cleanliness: item.cleanliness,
+              foodHabit: item.foodHabit,
+              hobbies: Array.isArray(item.interests) ? item.interests : ['Gaming', 'Coding'],
+              img: item.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500',
+              matchPercentage: item.matchPercentage || item.compatibility || 90,
+              compatibility: item.matchPercentage || item.compatibility || 90,
+            }));
+
+          if (formatted.length > 0) {
+            setMatchedRoommates(formatted.sort((a, b) => b.matchPercentage - a.matchPercentage));
+            setHasCalculated(true);
+            setIsLoading(false);
+            return;
+          }
         }
       }
     } catch (_) {}
 
-    // Fallback to local calculation on RAW_ROOMMATES
-    const localRanked = calculateLocalMatches(form, RAW_ROOMMATES);
+    // Fallback to local calculation on RAW_ROOMMATES strictly filtered by sharing type
+    const eligibleRoommates = RAW_ROOMMATES.filter(matchesRoomSharing);
+    const localRanked = calculateLocalMatches(form, eligibleRoommates);
     setMatchedRoommates(localRanked);
     setHasCalculated(true);
     setIsLoading(false);

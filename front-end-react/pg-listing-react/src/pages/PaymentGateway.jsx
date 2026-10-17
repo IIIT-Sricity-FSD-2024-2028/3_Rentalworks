@@ -51,6 +51,11 @@ export default function PaymentGateway() {
   const handleProcessPayment = async () => {
     setError('');
 
+    if (!currentUser) {
+      navigate('/login', { state: { from: `/book/${pg.id}/payment` } });
+      return;
+    }
+
     // Validation per payment method
     if (paymentMethod === 'upi') {
       if (!upiId.trim() || !upiId.includes('@')) {

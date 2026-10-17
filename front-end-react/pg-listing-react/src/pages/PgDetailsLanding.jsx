@@ -202,9 +202,12 @@ export default function PgDetailsLanding() {
     setSelectedPG(pg);
     setSelectedRoom(room);
 
-    // If not authenticated, navigate to the initial sign-in page (/login)
+    const isSingle = room.sharing === 'single' || room.capacity === 1;
+    const targetBookingPage = isSingle ? `/book/${pg.id}/review` : `/book/${pg.id}/roommate`;
+
+    // If not authenticated, navigate to the initial sign-in page (/login) with the target booking page
     if (!currentUser) {
-      navigate('/login', { state: { from: `/pg/${pg.id}` } });
+      navigate('/login', { state: { from: targetBookingPage } });
       return;
     }
 
@@ -455,14 +458,13 @@ export default function PgDetailsLanding() {
             </div>
           )}
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
+          <div style={{ marginBottom: '24px' }}>
             <div>
               <h2 className="section-title" style={{ margin: 0 }}>Available Rooms &amp; Rates</h2>
               <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px' }}>
-                Select a room to begin reservation. Real-time availability verified with Neon Database.
+                Select a room to begin reservation.
               </p>
             </div>
-            <span className="badge-live-available">🟢 Live Neon Availability</span>
           </div>
 
           <div className="rooms-grid">

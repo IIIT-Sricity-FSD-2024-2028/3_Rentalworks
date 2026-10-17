@@ -11,15 +11,15 @@ const Dashboard = () => {
   const [paymentsDue, setPaymentsDue] = useState(0);
   const [pendingServicesCount, setPendingServicesCount] = useState(0);
 
-  useEffect(() => {
-    // Animate bars
-    const bars = document.querySelectorAll('.bar');
-    bars.forEach(bar => {
-      setTimeout(() => {
-        bar.style.height = bar.dataset.height + 'px';
-      }, 100);
-    });
-  }, []);
+  const [paymentHistoryBars, setPaymentHistoryBars] = useState([]);
+  const [expenseBreakdown, setExpenseBreakdown] = useState({
+    rentAmount: 0,
+    servicesAmount: 0,
+    depositAmount: 0,
+    rentPercent: 85,
+    servicesPercent: 15,
+    depositPercent: 0,
+  });
 
   useEffect(() => {
     // Fetch stats
@@ -27,7 +27,7 @@ const Dashboard = () => {
       try {
         if (!tenant) return;
         
-        // Fetch complaints & issues
+        // Fetch complaints & issues & payments & services
         const [allComplaints, myIssues, allPayments, myServiceRequests] = await Promise.all([
           apiFetch('/complaints').catch(() => []),
           apiFetch('/issues/my').catch(() => []),
@@ -46,11 +46,15 @@ const Dashboard = () => {
         // Fetch payments
         const curM = new Date().getMonth();
         const curY = new Date().getFullYear();
-        const userCompletedThisMonth = (Array.isArray(allPayments) ? allPayments : []).filter(
-          p => p.tenantId === tenant.id && (p.status === 'completed' || p.status === 'success' || p.status === 'verified') &&
-          new Date(p.paidDate || p.createdAt).getMonth() === curM &&
-          new Date(p.paidDate || p.createdAt).getFullYear() === curY
+        const userCompleted = (Array.isArray(allPayments) ? allPayments : []).filter(
+          p => p.tenantId === tenant.id && (p.status === 'completed' || p.status === 'success' || p.status === 'verified')
         );
+
+        const userCompletedThisMonth = userCompleted.filter(
+          p => new Date(p.paidDate || p.createdAt).getMonth() === curM &&
+               new Date(p.paidDate || p.createdAt).getFullYear() === curY
+        );
+
         const monthlyRentVal = activeBooking ? Number(activeBooking.rent || 0) : 0;
         const paidSoFar = userCompletedThisMonth.reduce((sum, p) => sum + Number(p.amount || 0), 0);
         const remainingDue = monthlyRentVal > 0 ? Math.max(0, monthlyRentVal - paidSoFar) : 0;
@@ -61,6 +65,60 @@ const Dashboard = () => {
           s => s.status === 'pending' || s.status === 'in_progress' || s.status === 'scheduled'
         );
         setPendingServicesCount(activeServices.length);
+
+        // Dynamic 5-month payment histogram from backend payments
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const now = new Date();
+        const pastMonths = [];
+        for (let i = 4; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          pastMonths.push({
+            year: d.getFullYear(),
+            month: d.getMonth(),
+            label: monthNames[d.getMonth()],
+            amount: 0,
+          });
+        }
+
+        userCompleted.forEach(p => {
+          const pDate = new Date(p.paidDate || p.createdAt);
+          const m = pDate.getMonth();
+          const y = pDate.getFullYear();
+          const target = pastMonths.find(pm => pm.month === m && pm.year === y);
+          if (target) {
+            target.amount += Number(p.amount || 0);
+          }
+        });
+
+        const maxMonthly = Math.max(...pastMonths.map(m => m.amount), 1);
+        const calculatedBars = pastMonths.map(m => ({
+          label: m.label,
+          amount: m.amount,
+          heightPercent: m.amount > 0 ? Math.min(80, Math.max(20, Math.round((m.amount / maxMonthly) * 80))) : 4,
+        }));
+        setPaymentHistoryBars(calculatedBars);
+
+        // Dynamic Expense Breakdown
+        const rentTotal = userCompleted.reduce((sum, p) => sum + Number(p.amount || 0), 0) || (activeBooking ? Number(activeBooking.rent || 0) : 0);
+        const servicesTotal = (Array.isArray(myServiceRequests) ? myServiceRequests : []).reduce((sum, s) => {
+          return sum + (s.status === 'completed' || s.status === 'scheduled' || s.status === 'in_progress' ? (Number(s.cost) || 500) : 0);
+        }, 0);
+        const depositTotal = Number(activeBooking?.deposit || 0);
+
+        const totalExpenses = rentTotal + servicesTotal + depositTotal;
+        const rentPct = totalExpenses > 0 ? Math.round((rentTotal / totalExpenses) * 100) : 85;
+        const servPct = totalExpenses > 0 ? Math.round((servicesTotal / totalExpenses) * 100) : 15;
+        const depPct = Math.max(0, 100 - rentPct - servPct);
+
+        setExpenseBreakdown({
+          rentAmount: rentTotal,
+          servicesAmount: servicesTotal,
+          depositAmount: depositTotal,
+          rentPercent: rentPct,
+          servicesPercent: servPct,
+          depositPercent: depPct,
+        });
+
       } catch (error) {
         console.error('Failed to fetch stats:', error);
       }
@@ -141,37 +199,60 @@ const Dashboard = () => {
       <div className="grid-2 mb-20" style={{ marginBottom: '20px' }}>
         <div className="card">
           <div className="card-body">
-            <div className="card-title">Payment History</div>
-            <div className="bar-chart mt-14" style={{ marginTop: '14px' }}>
-              <div className="bar-wrapper"><div className="bar" data-height="110" style={{height: 0}}></div><div className="bar-label">Oct</div></div>
-              <div className="bar-wrapper"><div className="bar" data-height="115" style={{height: 0}}></div><div className="bar-label">Nov</div></div>
-              <div className="bar-wrapper"><div className="bar" data-height="120" style={{height: 0}}></div><div className="bar-label">Dec</div></div>
-              <div className="bar-wrapper"><div className="bar" data-height="118" style={{height: 0}}></div><div className="bar-label">Jan</div></div>
-              <div className="bar-wrapper"><div className="bar" data-height="122" style={{height: 0}}></div><div className="bar-label">Feb</div></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="card-title" style={{ margin: 0 }}>Payment History</div>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Verified Payments</span>
+            </div>
+            <div className="bar-chart" style={{ marginTop: '16px' }}>
+              {paymentHistoryBars.map((item, idx) => (
+                <div key={idx} className="bar-wrapper" title={`${item.label}: ₹${item.amount.toLocaleString()}`}>
+                  {item.amount > 0 && (
+                    <div className="bar-val-tip">₹{item.amount >= 1000 ? `${(item.amount / 1000).toFixed(0)}k` : item.amount}</div>
+                  )}
+                  <div
+                    className="bar"
+                    style={{
+                      height: `${item.heightPercent}%`,
+                      opacity: item.amount > 0 ? 1 : 0.25,
+                    }}
+                  ></div>
+                  <div className="bar-label">{item.label}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
+
         <div className="card">
           <div className="card-body">
             <div className="card-title">Expense Breakdown</div>
-            <div style={{display: 'flex', alignItems: 'center', gap: '20px', marginTop: '14px'}}>
-              <div className="pie-chart"><div className="pie-center"></div></div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginTop: '14px' }}>
+              <div
+                className="pie-chart"
+                style={{
+                  background: `conic-gradient(var(--primary) 0% ${expenseBreakdown.rentPercent}%, #f59e0b ${expenseBreakdown.rentPercent}% ${expenseBreakdown.rentPercent + expenseBreakdown.servicesPercent}%, #3b82f6 ${expenseBreakdown.rentPercent + expenseBreakdown.servicesPercent}% 100%)`
+                }}
+              >
+                <div className="pie-center"></div>
+              </div>
               <div className="pie-legend">
-                <div className="pie-legend-item"><span className="pie-dot" style={{background: 'var(--primary)'}}></span> Rent 75%</div>
-                <div className="pie-legend-item"><span className="pie-dot" style={{background: '#f59e0b'}}></span> Services 9%</div>
-                <div className="pie-legend-item"><span className="pie-dot" style={{background: '#3b82f6'}}></span> Utilities 16%</div>
+                <div className="pie-legend-item">
+                  <span className="pie-dot" style={{ background: 'var(--primary)' }}></span>
+                  Rent {expenseBreakdown.rentPercent}% (₹{expenseBreakdown.rentAmount.toLocaleString()})
+                </div>
+                <div className="pie-legend-item">
+                  <span className="pie-dot" style={{ background: '#f59e0b' }}></span>
+                  Services {expenseBreakdown.servicesPercent}% (₹{expenseBreakdown.servicesAmount.toLocaleString()})
+                </div>
+                {expenseBreakdown.depositAmount > 0 && (
+                  <div className="pie-legend-item">
+                    <span className="pie-dot" style={{ background: '#3b82f6' }}></span>
+                    Security Deposit {expenseBreakdown.depositPercent}% (₹{expenseBreakdown.depositAmount.toLocaleString()})
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="payment-reminder">
-        <div className="reminder-icon"><span className="material-icons-outlined" style={{fontSize: '24px'}}>schedule</span></div>
-        <div className="reminder-text">Your monthly rent payment of <strong>₹{rent.toLocaleString()}</strong> is due on <strong>{rentDueDate}</strong>. Please make the payment before the due date to avoid penalties.</div>
-        <div className="reminder-actions">
-          <button className="btn btn-primary btn-sm" onClick={() => navigate('/payments')}>Pay Rent Now</button>
-          <button className="btn btn-outline btn-sm" onClick={() => alert('Reminder set for Mar 9, 2026')}>Set Reminder</button>
         </div>
       </div>
     </div>

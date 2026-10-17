@@ -58,6 +58,10 @@ export default function BookingReview() {
       setError('Please provide your friend’s full name and phone number');
       return;
     }
+    if (!currentUser) {
+      navigate('/login', { state: { from: `/book/${pg.id}/payment` } });
+      return;
+    }
     setError('');
     navigate(`/book/${pg.id}/payment`);
   };

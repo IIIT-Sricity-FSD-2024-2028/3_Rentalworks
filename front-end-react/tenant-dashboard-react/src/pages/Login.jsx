@@ -9,7 +9,7 @@ const DEMO_CREDENTIALS = {
   super_admin: { username: 'superadmin', password: 'admin123', name: 'Super Admin', role: 'super_admin' },
   admin: { username: 'admin', password: 'password123', name: 'System Admin', role: 'admin' },
   tenant: { username: 'tenant1', password: 'password123', name: 'Arun Kumar', role: 'tenant', property: 'Sunrise PG Residency', room: '102' },
-  guest: { username: 'testguest@example.com', password: 'tenant123', name: 'Demo Guest', role: 'guest' },
+  guest: { username: 'guest', password: 'guest123', name: 'Guest User', role: 'guest' },
   owner: { username: 'owner1', password: 'password123', name: 'PG Owner One', role: 'owner', status: 'approved' },
   warden: { username: 'warden', password: 'warden123', name: 'Warden Officer', role: 'warden' },
 };
@@ -90,6 +90,7 @@ export default function Login() {
   });
 
   // Navigation router connecting to all React portals in front-end-react
+  // Navigation router connecting to all React portals in front-end-react
   const routeUser = (role) => {
     const routes = {
       tenant: '/tenant/dashboard',
@@ -100,7 +101,7 @@ export default function Login() {
       super_admin: '/super-admin',
     };
 
-    const dest = routes[role] || '/tenant/dashboard';
+    const dest = routes[role] || '/listings';
     navigate(dest, { replace: true });
   };
 
@@ -184,12 +185,18 @@ export default function Login() {
       localStorage.setItem('currentUser', JSON.stringify(sessionObj));
       localStorage.setItem('pg_user', JSON.stringify(sessionObj));
 
-      if (setTenantSession) {
+      if (setTenantSession && user.role === 'tenant') {
         setTenantSession(sessionObj);
       }
 
-      const formattedRole = (user.role || 'user').charAt(0).toUpperCase() + (user.role || 'user').slice(1).replace('_', ' ');
-      setBanner({ text: `Directing ${sessionObj.name} to ${formattedRole} portal...`, type: 'success' });
+      // Dispatch event to sync other React contexts in the current tab immediately
+      try {
+        window.dispatchEvent(new CustomEvent('rentbro-login', { detail: sessionObj }));
+        window.dispatchEvent(new Event('storage'));
+      } catch (_) {}
+
+      const formattedRole = user.role === 'guest' ? 'PG Discovery' : (user.role || 'user').charAt(0).toUpperCase() + (user.role || 'user').slice(1).replace('_', ' ') + ' portal';
+      setBanner({ text: location.state?.from ? 'Login successful! Continuing to your booking...' : `Directing ${sessionObj.name} to ${formattedRole}...`, type: 'success' });
 
       setTimeout(() => {
         if (location.state?.from) {
@@ -208,7 +215,7 @@ export default function Login() {
         } else {
           routeUser(user.role);
         }
-      }, 600);
+      }, 500);
     } catch (err) {
       console.error('Login error:', err);
       setBanner({ text: 'Login encountered an unexpected network error. Please verify backend is running.', type: 'error' });

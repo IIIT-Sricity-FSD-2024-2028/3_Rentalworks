@@ -67,9 +67,6 @@ export default function Header() {
         <p>{currentUser.email || ''}</p>
       </div>
       <div className="navbar-right">
-        <div className="nav-icon-btn" onClick={() => navigate('/listings')} title="Browse PG Discovery Listings">
-          <span className="material-icons-outlined" style={{ fontSize: '24px' }}>storefront</span>
-        </div>
         <div className="nav-icon-btn" onClick={() => navigate('/warden/notifications')} title="Notifications">
           <span className="material-icons-outlined" style={{ fontSize: '24px' }}>notifications</span>
           {unreadCount > 0 && <span className="notif-badge" />}
