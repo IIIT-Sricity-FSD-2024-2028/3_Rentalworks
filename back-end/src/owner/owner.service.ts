@@ -281,7 +281,7 @@ export class OwnerService {
     return { success: true };
   }
 
-  async sendNotification(ownerId: number, body: { title: string; message: string; targetRole?: string }) {
+  async sendNotification(ownerId: number, body: { title: string; message: string; targetRole?: string; priority?: string }) {
     const owner = await this.getProfile(ownerId);
     if (!body.title?.trim() || !body.message?.trim()) throw new BadRequestException('Title and message are required');
     const role = (body.targetRole || 'all').toLowerCase();
