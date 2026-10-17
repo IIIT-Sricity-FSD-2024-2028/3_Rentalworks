@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Property } from './property.entity';
@@ -50,6 +50,7 @@ export class PropertiesService {
   }
 
   async create(createPropertyDto: CreatePropertyDto) {
+    this.validateRooms(createPropertyDto);
     const defaults = {
       occupancy: 0,
       safetyScore: 8.5,
@@ -74,8 +75,13 @@ export class PropertiesService {
     const cleanDto = Object.fromEntries(
       Object.entries(updatePropertyDto).filter(([_, v]) => v !== undefined),
     );
+    this.validateRooms(Object.assign({}, property, cleanDto));
     Object.assign(property, cleanDto);
     return this.propertiesRepository.save(property);
+  }
+
+  private validateRooms(data: { totalRooms?: number; occupiedRooms?: number; monthlyRent?: number }) {
+    if (data.occupiedRooms != null && data.totalRooms != null && data.occupiedRooms > data.totalRooms) throw new BadRequestException('Occupied rooms cannot exceed total rooms');
   }
 
   async remove(id: number) {

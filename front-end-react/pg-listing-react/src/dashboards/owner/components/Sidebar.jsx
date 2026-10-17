@@ -1,3 +1,4 @@
+import Icon from './Icon';
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 
@@ -40,7 +41,7 @@ export default function Sidebar({
       <aside className={`sidebar ${isOpen ? 'open' : ''}`} id="sidebar">
         <div className="sidebar-logo">
           <div className="logo-icon">
-            <span className="material-icons-outlined icon-24">apartment</span>
+            <Icon className="material-icons-outlined icon-24">apartment</Icon>
           </div>
           <div>
             <div className="logo-text">RentBro</div>
@@ -58,7 +59,7 @@ export default function Sidebar({
               className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
             >
               <span className="nav-icon">
-                <span className="material-icons-outlined icon-20">{item.icon}</span>
+                <Icon className="material-icons-outlined icon-20">{item.icon}</Icon>
               </span>
               <span>{item.label}</span>
 

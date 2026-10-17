@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Complaint } from './complaint.entity';
 import { User } from '../users/user.entity';
 import { Property } from '../properties/property.entity';
+
 import { Room } from '../rooms/room.entity';
 import { CreateComplaintDto, UpdateComplaintDto } from './complaints.dto';
 import { Notification } from '../notifications/notification.entity';
@@ -23,7 +24,7 @@ export class ComplaintsService {
     @InjectRepository(Notification)
     private notificationsRepository: Repository<Notification>,
     private wardenNotificationsService: WardenNotificationsService,
-  ) { }
+  ) {}
 
   findAll(tenantId?: number, propertyId?: number) {
     const where: any = {};
@@ -62,18 +63,44 @@ export class ComplaintsService {
     try {
       let tenantName = 'Tenant';
       let propertyName = 'PG Property';
-      let roomNumber = '101';
+      let roomNumber = '';
+      let senderRole = 'tenant';
 
       if (saved.tenantId) {
-        const u = await this.userRepository.findOne({ where: { id: saved.tenantId } });
-        if (u) tenantName = u.name;
+        const u = await this.userRepository.findOne({
+          where: { id: saved.tenantId },
+        });
+        if (u) {
+          tenantName = u.name;
+          senderRole = u.role;
+        }
       }
 
       if (saved.propertyId) {
-        const p = await this.propertyRepository.findOne({ where: { id: saved.propertyId } });
-        if (p) propertyName = p.name;
+        const p = await this.propertyRepository.findOne({
+          where: { id: saved.propertyId },
+        });
+        if (p) {
+          propertyName = p.name;
+          if (p.ownerId !== saved.tenantId)
+            await this.complaintsRepository.manager
+              .getRepository(Notification)
+              .save({
+                title: 'New issue: ' + (saved.title || 'Complaint'),
+                message: createComplaintDto.description,
+                type: 'issue',
+                priority: saved.priority,
+                byUserId: saved.tenantId,
+                userId: p.ownerId,
+                sentAt: new Date().toISOString(),
+              });
+        }
 
-        const r = await this.roomRepository.findOne({ where: { propertyId: saved.propertyId } });
+        const r = saved.roomId
+          ? await this.roomRepository.findOne({
+              where: { id: saved.roomId, propertyId: saved.propertyId },
+            })
+          : null;
         if (r) roomNumber = r.roomNumber;
       }
 
@@ -83,7 +110,7 @@ export class ComplaintsService {
         type: 'issue',
         priority: saved.priority || 'medium',
         senderName: tenantName,
-        senderRole: 'tenant',
+        senderRole,
         propertyName: propertyName,
         roomNumber: roomNumber,
         tenantId: saved.tenantId,
@@ -91,7 +118,10 @@ export class ComplaintsService {
         sourceReferenceId: saved.id,
       });
     } catch (notifErr) {
-      console.warn('Could not post auto-notification to warden_notifications:', notifErr);
+      console.warn(
+        'Could not post auto-notification to warden_notifications:',
+        notifErr,
+      );
     }
 
     return saved;
@@ -107,27 +137,20 @@ export class ComplaintsService {
       cleanDto.resolvedAt = new Date().toISOString().split('T')[0];
     }
     Object.assign(complaint, cleanDto);
-    const saved = await this.complaintsRepository.save(complaint);
-
-    if (cleanDto.status && cleanDto.status !== oldStatus) {
-      try {
-        const notif = this.notificationsRepository.create({
-          title: 'Complaint Status Updated',
-          message: `Your complaint "${complaint.title || complaint.description}" status has changed to ${complaint.status}.`,
-          type: 'complaint_status',
-          priority: complaint.priority || 'medium',
-          recipients: 1,
+    return this.complaintsRepository.manager.transaction(async (manager) => {
+      const saved = await manager.getRepository(Complaint).save(complaint);
+      if (updateComplaintDto.status)
+        await manager.getRepository(Notification).save({
+          title: 'Issue updated',
+          message:
+            (complaint.title || 'Your complaint') + ': ' + complaint.status,
+          type: 'issue',
+          priority: complaint.priority,
           userId: complaint.tenantId,
-          isRead: false,
           sentAt: new Date().toISOString(),
         });
-        await this.notificationsRepository.save(notif);
-      } catch (err) {
-        // Non-critical background notification log
-      }
-    }
-
-    return saved;
+      return saved;
+    });
   }
 
   async remove(id: number) {

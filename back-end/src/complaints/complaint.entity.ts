@@ -40,6 +40,9 @@ export class Complaint {
   @Column({ nullable: true })
   title?: string;
 
+  @Column({ nullable: true })
+  category?: string;
+
   @Column({ default: 'medium' })
   priority: string;
 

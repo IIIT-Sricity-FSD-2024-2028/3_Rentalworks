@@ -1,5 +1,5 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { Outlet } from 'react-router-dom';
+import { performLogout, getStoredUser } from '../../utils/auth';
 
 // Layout & Components
 import Layout from './components/Layout';
@@ -30,603 +30,172 @@ import {
   markAllNotificationsRead,
   createNotification,
   deleteNotification,
+  clearAllNotifications,
   getPolicy,
   updatePolicy,
   getProfile,
   updateProfile,
   getSubscription,
-  updateSubscription,
 } from './services/api';
 
 import './style.css';
 
-const STORAGE_KEY = 'pg_manager_data_storage';
-const SESSION_KEY = 'pg_user';
+// Map raw API property object to client schema
+const mapProperty = (p) => ({
+  id: p.id,
+  images: p.images || [],
+  description: p.description || '',
+  name: p.name,
+  address: p.address || p.location || '',
+  city: p.city || '',
+  state: p.state || '',
+  pincode: p.pincode || '',
+  type: p.type || 'Mixed',
+  totalCapacity: p.totalCapacity ?? 0,
+  totalRooms: p.totalRooms ?? 0,
+  occupiedRooms: p.occupiedRooms ?? 0,
+  monthlyRent: Number(p.monthlyRent ?? p.rentMin ?? 0),
+  amenities: p.amenities || [],
+  gender: p.gender || (p.type === 'Female' ? 'girls' : p.type === 'Male' ? 'boys' : 'unisex'),
+  status: p.status === 'approved' ? 'Active' : p.status || 'Pending',
+  addedDate: p.createdAt ? p.createdAt.split('T')[0] : '',
+  owner: p.owner ? p.owner.name : '',
+  ownerEmail: p.owner ? p.owner.email : '',
+});
+
+// Map raw API issue object to client schema
+const mapIssue = (i) => ({
+  id: i.id,
+  propertyId: i.propertyId,
+  propertyName: i.property ? i.property.name : '',
+  title: i.title || i.description || 'Issue reported',
+  description: i.description || '',
+  category: i.category || 'Maintenance',
+  priority: i.priority
+    ? i.priority.charAt(0).toUpperCase() + i.priority.slice(1)
+    : 'Medium',
+  status:
+    i.status === 'open'
+      ? 'Open'
+      : ['in-progress', 'in progress', 'in_progress'].includes(i.status)
+      ? 'In Progress'
+      : i.status === 'resolved' ? 'Resolved' : i.status || 'Unknown',
+  reportedBy: i.reportedBy || (i.tenant ? i.tenant.name : 'Tenant'),
+  reportedDate: i.reportedAt || '',
+});
+
+// Map raw API notification object to client schema
+const mapNotification = (n) => ({
+  id: n.id,
+  title: n.title,
+  message: n.message,
+  type: n.type || 'reminder',
+  read: Boolean(n.read || n.isRead),
+  date: n.sentAt ? n.sentAt.split('T')[0] : '',
+});
+
 
 export const OwnerContext = createContext(null);
-export function useOwner() {
-  const ctx = useContext(OwnerContext);
-  if (!ctx) throw new Error('useOwner must be used within OwnerLayout/OwnerProvider');
-  return ctx;
-}
+export function useOwner() { return useContext(OwnerContext); }
 
 export default function OwnerLayout() {
-  const [data, setData] = useState({
-    properties: [],
-    issues: [],
-    notifications: [],
-    policy: {},
-    profile: {},
-  });
-
+  const [data, setData] = useState({ properties: [], issues: [], notifications: [], policy: {}, profile: {} });
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // User session state
-  const [user, setUser] = useState(() => {
-    try {
-      const s = sessionStorage.getItem(SESSION_KEY) || sessionStorage.getItem('pg_user') || localStorage.getItem('currentUser');
-      if (s) {
-        const parsed = JSON.parse(s);
-        if (parsed && parsed.role === 'owner') return parsed;
-      }
-    } catch (e) {
-      // ignore
-    }
-    return null;
-  });
-
-  // Guard: Verify authentication on mount, bfcache restore, and browser history navigation
-  useEffect(() => {
-    const checkAuth = () => {
-      try {
-        const s = sessionStorage.getItem(SESSION_KEY) || sessionStorage.getItem('pg_user') || localStorage.getItem('currentUser');
-        if (!s) {
-          window.location.replace('/login');
-          return;
-        }
-        const parsed = JSON.parse(s);
-        if (!parsed || parsed.role !== 'owner') {
-          window.location.replace('/login');
-          return;
-        }
-        setUser(parsed);
-      } catch {
-        window.location.replace('/login');
-      }
-    };
-
-    checkAuth();
-    window.addEventListener('pageshow', checkAuth);
-    window.addEventListener('popstate', checkAuth);
-    window.addEventListener('storage', checkAuth);
-    return () => {
-      window.removeEventListener('pageshow', checkAuth);
-      window.removeEventListener('popstate', checkAuth);
-      window.removeEventListener('storage', checkAuth);
-    };
-  }, []);
-
-  // Toast notifications state
+  const [error, setError] = useState('');
   const [toasts, setToasts] = useState([]);
+  const [busy, setBusy] = useState(false);
 
-  const showToast = (message, type = 'info') => {
-    const id = Date.now() + Math.random();
-    setToasts((prev) => prev.concat({ id, message, type }));
-    setTimeout(() => {
-      removeToast(id);
-    }, 3500);
-  };
+  function showToast(message, type = 'success') {
+    setToasts([{ id: Date.now(), message, type }]);
+  }
 
-  const removeToast = (id) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
+  async function loadData() {
+    const [properties, issues, notifications, policy, profile, subscription] = await Promise.all([
+      getProperties(), getIssues(), getNotifications(), getPolicy(), getProfile(), getSubscription(),
+    ]);
+    setData({ properties: properties.map(mapProperty), issues: issues.map(mapIssue), notifications: notifications.map(mapNotification), policy, profile });
+    setUser(Object.assign({}, profile, { subscriptionPlan: subscription.currentPlan, subscriptionFee: subscription.monthlyFee }));
+    setError('');
+  }
 
-  const persistLocalBackup = (newData) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-    } catch (e) {
-      // ignore
-    }
-  };
-
-  // Map raw API property object to client schema
-  const mapProperty = (p) => ({
-    id: p.id,
-    name: p.name,
-    address: p.address || p.location || '',
-    city: p.city || 'Chennai',
-    state: p.state || 'Tamil Nadu',
-    pincode: p.pincode || '600001',
-    type: p.type || 'Mixed',
-    totalCapacity: p.totalCapacity || 30,
-    totalRooms: p.totalRooms || 15,
-    occupiedRooms: p.occupiedRooms || 10,
-    monthlyRent: p.monthlyRent || p.rentMin || 7500,
-    amenities: p.amenities || ['WiFi', 'AC'],
-    gender: p.gender || (p.type === 'Female' ? 'girls' : p.type === 'Male' ? 'boys' : 'unisex'),
-    status: p.status === 'approved' ? 'Active' : p.status || 'Active',
-    addedDate: p.createdAt ? p.createdAt.split('T')[0] : '2024-01-15',
-    owner: p.owner ? p.owner.name : 'Rajesh Kumar',
-    ownerEmail: p.owner ? p.owner.email : 'rajesh.k@email.com',
-  });
-
-  // Map raw API issue object to client schema
-  const mapIssue = (i) => ({
-    id: i.id,
-    propertyId: i.propertyId,
-    propertyName: i.property ? i.property.name : 'Sunrise PG',
-    title: i.title || i.description || 'Issue reported',
-    description: i.description || '',
-    category: i.category || 'Maintenance',
-    priority: i.priority
-      ? i.priority.charAt(0).toUpperCase() + i.priority.slice(1)
-      : 'Medium',
-    status:
-      i.status === 'open'
-        ? 'Open'
-        : i.status === 'in-progress' || i.status === 'in progress'
-        ? 'In Progress'
-        : 'Resolved',
-    reportedBy: i.reportedBy || (i.tenant ? i.tenant.name : 'Tenant'),
-    reportedDate: i.reportedAt || '2025-03-20',
-  });
-
-  // Map raw API notification object to client schema
-  const mapNotification = (n) => ({
-    id: n.id,
-    title: n.title,
-    message: n.message,
-    type: n.type || 'reminder',
-    read: Boolean(n.read),
-    date: n.sentAt ? n.sentAt.split('T')[0] : '2025-03-25',
-  });
-
-  // Initial Data Loading from NestJS REST API
   useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      try {
-        const results = await Promise.all([
-          getProperties(16).catch(() => null),
-          getIssues().catch(() => null),
-          getNotifications().catch(() => null),
-          getPolicy().catch(() => null),
-          getProfile().catch(() => null),
-          getSubscription().catch(() => null),
-        ]);
-
-        const apiProps = results[0];
-        const apiIssues = results[1];
-        const apiNotifs = results[2];
-        const apiPolicy = results[3];
-        const apiProfile = results[4];
-        const apiSub = results[5];
-
-        let loadedData = {
-          properties: [],
-          issues: [],
-          notifications: [],
-          policy: {},
-          profile: {},
-        };
-
-        if (apiProps && Array.isArray(apiProps) && apiProps.length > 0) {
-          loadedData.properties = apiProps.map(mapProperty);
-        }
-        if (apiIssues && Array.isArray(apiIssues)) {
-          loadedData.issues = apiIssues.map(mapIssue);
-        }
-        if (apiNotifs && Array.isArray(apiNotifs)) {
-          loadedData.notifications = apiNotifs.map(mapNotification);
-        }
-        if (apiPolicy && Object.keys(apiPolicy).length > 0) {
-          loadedData.policy = apiPolicy;
-        }
-        if (apiProfile && apiProfile.name) {
-          loadedData.profile = apiProfile;
-          const userUpdate = {
-            id: apiProfile.id || 4,
-            name: apiProfile.name,
-            email: apiProfile.email,
-            phone: apiProfile.phone,
-            subscriptionPlan: (apiSub && apiSub.currentPlan) || apiProfile.subscriptionPlan || 'Growth',
-            subscriptionFee: (apiSub && apiSub.monthlyFee) || 8000,
-          };
-          setUser((prev) => Object.assign({}, prev, userUpdate));
-        }
-        setData(loadedData);
-        persistLocalBackup(loadedData);
-      } catch (err) {
-        console.error('Data load error:', err);
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          setData(JSON.parse(stored));
-        }
-      } finally {
-        setLoading(false);
-      }
+    const session = getStoredUser();
+    if (!session || session.role !== 'owner' || !session.token) {
+      window.location.replace('/login');
+      return;
     }
-
-    loadData();
+    let active = true;
+    async function refresh() {
+      try { if (active) await loadData(); }
+      catch (err) { if (active) setError(err.message); }
+      finally { if (active) setLoading(false); }
+    }
+    refresh();
+    const timer = setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    return () => { active = false; clearInterval(timer); window.removeEventListener('focus', refresh); };
   }, []);
 
-  const refreshProperties = async () => {
+  // One write path: show success only after persistence; never save business data in storage.
+  async function save(action, message) {
+    setBusy(true);
     try {
-      const apiProps = await getProperties(16);
-      if (apiProps && Array.isArray(apiProps)) {
-        const mapped = apiProps.map(mapProperty);
-        setData((prev) => {
-          const updated = Object.assign({}, prev, { properties: mapped });
-          persistLocalBackup(updated);
-          return updated;
-        });
-      }
+      const res = await action();
+      await loadData();
+      showToast(message);
+      return res !== false;
     } catch (err) {
-      console.error(err);
+      showToast(err.message || 'Operation failed', 'error');
+      return false;
+    } finally {
+      setBusy(false);
     }
-  };
-
-  const refreshIssues = async () => {
-    try {
-      const apiIssues = await getIssues();
-      if (apiIssues && Array.isArray(apiIssues)) {
-        const mapped = apiIssues.map(mapIssue);
-        setData((prev) => {
-          const updated = Object.assign({}, prev, { issues: mapped });
-          persistLocalBackup(updated);
-          return updated;
-        });
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const refreshNotifications = async () => {
-    try {
-      const apiNotifs = await getNotifications();
-      if (apiNotifs && Array.isArray(apiNotifs)) {
-        const mapped = apiNotifs.map(mapNotification);
-        setData((prev) => {
-          const updated = Object.assign({}, prev, { notifications: mapped });
-          persistLocalBackup(updated);
-          return updated;
-        });
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // Property Handlers
-  const handleAddProperty = async (newProperty) => {
-    try {
-      const payload = {
-        name: newProperty.name,
-        location: (newProperty.city || 'Chennai') + ', ' + (newProperty.state || 'Tamil Nadu'),
-        ownerId: 16,
-        rentMin: Number(newProperty.monthlyRent) || 7000,
-        rentMax: (Number(newProperty.monthlyRent) || 7000) + 2000,
-        rooms: (newProperty.occupiedRooms || 0) + '/' + (newProperty.totalRooms || 10),
-        amenities: newProperty.amenities || ['WiFi'],
-        address: newProperty.address || '',
-        city: newProperty.city || '',
-        state: newProperty.state || '',
-        pincode: newProperty.pincode || '',
-        type: newProperty.type || 'Mixed',
-        totalCapacity: Number(newProperty.totalCapacity) || 20,
-        totalRooms: Number(newProperty.totalRooms) || 10,
-        occupiedRooms: Number(newProperty.occupiedRooms) || 0,
-        monthlyRent: Number(newProperty.monthlyRent) || 7000,
-        gender: newProperty.gender || (newProperty.type === 'Female' ? 'girls' : newProperty.type === 'Male' ? 'boys' : 'unisex'),
-      };
-      await createProperty(payload);
-      showToast('"' + newProperty.name + '" saved to database!', 'success');
-      await refreshProperties();
-    } catch (err) {
-      const updatedProperties = data.properties.concat(newProperty);
-      const updatedData = Object.assign({}, data, { properties: updatedProperties });
-      setData(updatedData);
-      persistLocalBackup(updatedData);
-      showToast('"' + newProperty.name + '" added locally', 'warning');
-    }
-  };
-
-  const handleUpdateProperty = async (updatedProperty) => {
-    try {
-      const payload = {
-        name: updatedProperty.name,
-        address: updatedProperty.address,
-        city: updatedProperty.city,
-        state: updatedProperty.state,
-        pincode: updatedProperty.pincode,
-        type: updatedProperty.type,
-        totalCapacity: Number(updatedProperty.totalCapacity),
-        totalRooms: Number(updatedProperty.totalRooms),
-        occupiedRooms: Number(updatedProperty.occupiedRooms),
-        monthlyRent: Number(updatedProperty.monthlyRent),
-        amenities: updatedProperty.amenities,
-        gender: updatedProperty.gender || (updatedProperty.type === 'Female' ? 'girls' : updatedProperty.type === 'Male' ? 'boys' : 'unisex'),
-      };
-      await updateProperty(updatedProperty.id, payload);
-      showToast('Property updated in database!', 'success');
-      await refreshProperties();
-    } catch (err) {
-      const updatedProperties = data.properties.map((p) =>
-        p.id === updatedProperty.id ? updatedProperty : p
-      );
-      const updatedData = Object.assign({}, data, { properties: updatedProperties });
-      setData(updatedData);
-      persistLocalBackup(updatedData);
-      showToast('Property updated locally', 'info');
-    }
-  };
-
-  const handleDeleteProperty = async (propertyId) => {
-    try {
-      await deleteProperty(propertyId);
-      showToast('Property deleted from database', 'success');
-      await refreshProperties();
-    } catch (err) {
-      const updatedProperties = data.properties.filter((p) => p.id !== propertyId);
-      const updatedData = Object.assign({}, data, { properties: updatedProperties });
-      setData(updatedData);
-      persistLocalBackup(updatedData);
-      showToast('Property deleted locally', 'info');
-    }
-  };
-
-  // Issue Handlers
-  const handleUpdateIssueStatus = async (issueId, newStatus) => {
-    try {
-      const apiStatus =
-        newStatus === 'Open'
-          ? 'open'
-          : newStatus === 'In Progress'
-          ? 'in-progress'
-          : 'resolved';
-      await updateIssueStatus(issueId, apiStatus);
-      showToast('Issue marked as "' + newStatus + '"', 'success');
-      await refreshIssues();
-    } catch (err) {
-      const updatedIssues = data.issues.map((i) =>
-        String(i.id) === String(issueId)
-          ? Object.assign({}, i, { status: newStatus })
-          : i
-      );
-      const updatedData = Object.assign({}, data, { issues: updatedIssues });
-      setData(updatedData);
-      persistLocalBackup(updatedData);
-      showToast('Issue updated locally', 'info');
-    }
-  };
-
-  const handleDeleteIssue = async (issueId) => {
-    try {
-      await deleteIssue(issueId);
-      showToast('Issue deleted from database', 'success');
-      await refreshIssues();
-    } catch (err) {
-      const updatedIssues = data.issues.filter((i) => String(i.id) !== String(issueId));
-      const updatedData = Object.assign({}, data, { issues: updatedIssues });
-      setData(updatedData);
-      persistLocalBackup(updatedData);
-      showToast('Issue deleted locally', 'info');
-    }
-  };
-
-  const handleAddIssue = async (newIssue) => {
-    try {
-      const payload = {
-        tenantId: 1,
-        propertyId: Number(newIssue.propertyId) || 1,
-        title: newIssue.title,
-        description: newIssue.description,
-        category: newIssue.category || 'Maintenance',
-        priority: (newIssue.priority || 'medium').toLowerCase(),
-        reportedBy: newIssue.reportedBy || 'Owner',
-      };
-      await createIssue(payload);
-      showToast('Issue reported and saved!', 'success');
-      await refreshIssues();
-    } catch (err) {
-      const updatedIssues = [newIssue].concat(data.issues);
-      const updatedData = Object.assign({}, data, { issues: updatedIssues });
-      setData(updatedData);
-      persistLocalBackup(updatedData);
-      showToast('Issue added locally', 'info');
-    }
-  };
-
-  // Notification Handlers
-  const handleMarkNotifRead = async (id) => {
-    try {
-      await markNotificationRead(id);
-    } catch (err) {
-      // ignore
-    }
-    setData((prev) => {
-      const updated = prev.notifications.map((n) =>
-        n.id === id ? Object.assign({}, n, { read: true }) : n
-      );
-      return Object.assign({}, prev, { notifications: updated });
-    });
-  };
-
-  const handleMarkAllNotifsRead = async () => {
-    try {
-      await markAllNotificationsRead();
-    } catch (err) {
-      // ignore
-    }
-    setData((prev) => {
-      const updated = prev.notifications.map((n) =>
-        Object.assign({}, n, { read: true })
-      );
-      return Object.assign({}, prev, { notifications: updated });
-    });
-    showToast('All notifications marked as read', 'success');
-  };
-
-  const handleDeleteNotif = async (id) => {
-    try {
-      await deleteNotification(id);
-    } catch (err) {
-      // ignore
-    }
-    setData((prev) => {
-      const updated = prev.notifications.filter((n) => String(n.id) !== String(id));
-      return Object.assign({}, prev, { notifications: updated });
-    });
-    showToast('Notification deleted', 'success');
-  };
-
-  const handleClearAllNotifs = () => {
-    setData((prev) => Object.assign({}, prev, { notifications: [] }));
-    showToast('All notifications cleared', 'success');
-  };
-
-  const handleSendNotif = async (newNotif) => {
-    try {
-      const payload = {
-        title: newNotif.title,
-        message: newNotif.message,
-        type: newNotif.type || 'reminder',
-        priority: 'normal',
-        recipients: 1,
-        byUserId: 4,
-      };
-      await createNotification(payload);
-      showToast('Notification sent!', 'success');
-      await refreshNotifications();
-    } catch (err) {
-      const updatedNotifs = [newNotif].concat(data.notifications);
-      setData((prev) => Object.assign({}, prev, { notifications: updatedNotifs }));
-      showToast('Notification sent locally', 'info');
-    }
-  };
-
-  // Policy Handlers
-  const handleSavePolicy = async (newPolicy) => {
-    try {
-      const saved = await updatePolicy(newPolicy);
-      setData((prev) => Object.assign({}, prev, { policy: saved }));
-      showToast('Policy settings saved!', 'success');
-    } catch (err) {
-      setData((prev) => Object.assign({}, prev, { policy: newPolicy }));
-      showToast('Policy saved locally', 'info');
-    }
-  };
-
-  const handleResetPolicy = () => {
-    showToast('Policy reset to defaults', 'info');
-  };
-
-  // Profile Handlers
-  const handleSaveProfile = async (newProfile) => {
-    try {
-      const saved = await updateProfile(newProfile);
-      setData((prev) => Object.assign({}, prev, { profile: saved }));
-      setUser((prev) => Object.assign({}, prev, saved));
-      showToast('Profile updated!', 'success');
-    } catch (err) {
-      setData((prev) => Object.assign({}, prev, { profile: newProfile }));
-      setUser((prev) => Object.assign({}, prev, newProfile));
-      showToast('Profile updated locally', 'info');
-    }
-  };
-
-  // Subscription Handler
-  const handleSubscription = async (planName, price) => {
-    try {
-      const saved = await updateSubscription({ plan: planName, fee: price });
-      const update = {
-        subscriptionPlan: saved.currentPlan || planName,
-        subscriptionFee: saved.monthlyFee || price,
-      };
-      setUser((prev) => Object.assign({}, prev, update));
-      showToast('Subscribed to ' + planName + ' Plan!', 'success');
-    } catch (err) {
-      const update = {
-        subscriptionPlan: planName,
-        subscriptionFee: price,
-      };
-      setUser((prev) => Object.assign({}, prev, update));
-      showToast('Subscribed to ' + planName + ' Plan locally', 'info');
-    }
-  };
-
-  const handleLogout = () => {
-    sessionStorage.removeItem(SESSION_KEY);
-    sessionStorage.removeItem('pg_user');
-    sessionStorage.removeItem('owner_user');
-    sessionStorage.removeItem('guest_user');
-    sessionStorage.removeItem('tenant_user');
-    sessionStorage.removeItem('warden_user');
-    sessionStorage.removeItem('super_admin_token');
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('pg_user');
-    localStorage.removeItem('owner_user');
-    try {
-      window.dispatchEvent(new Event('rentbro-logout'));
-    } catch (_) {}
-    window.location.replace('/login');
-  };
-
-  const unreadNotifsCount = (data.notifications || []).filter((n) => !n.read).length;
-  const openIssuesCount = (data.issues || []).filter(
-    (i) => (i.status || '').toLowerCase() === 'open'
-  ).length;
-
-  if (!user) {
-    return null;
   }
 
-  if (loading) {
-    return (
-      <div className="loading-wrap loading-wrap-mt">
-        <div className="spinner"></div>
-        <p>Connecting to Neon PostgreSQL &amp; Loading Owner Portal...</p>
-      </div>
-    );
+  function propertyPayload(p) {
+    return {
+      name: p.name, address: p.address, city: p.city, state: p.state, pincode: p.pincode,
+      location: p.city + ', ' + p.state, type: p.type, gender: p.gender,
+      totalCapacity: Number(p.totalCapacity), totalRooms: Number(p.totalRooms), occupiedRooms: Number(p.occupiedRooms),
+      monthlyRent: Number(p.monthlyRent), rentMin: Number(p.monthlyRent), rentMax: Number(p.monthlyRent),
+      rooms: p.occupiedRooms + '/' + p.totalRooms, amenities: p.amenities, description: p.description,
+      images: p.images || [],
+    };
   }
 
+  const unreadNotifsCount = data.notifications.filter(n => !n.read).length;
+  const openIssuesCount = data.issues.filter(i => i.status === 'Open').length;
+  const handleLogout = performLogout;
   const contextValue = {
-    data,
-    user,
-    unreadNotifsCount,
-    openIssuesCount,
-    handleAddProperty,
-    handleUpdateProperty,
-    handleDeleteProperty,
-    handleUpdateIssueStatus,
-    handleDeleteIssue,
-    handleAddIssue,
-    handleMarkNotifRead,
-    handleMarkAllNotifsRead,
-    handleDeleteNotif,
-    handleClearAllNotifs,
-    handleSendNotif,
-    handleSavePolicy,
-    handleResetPolicy,
-    handleSaveProfile,
-    handleSubscription,
-    handleLogout,
+    data, user, unreadNotifsCount, openIssuesCount, handleLogout,
+    handleAddProperty: p => save(() => createProperty(propertyPayload(p)), 'Property submitted for review'),
+    handleUpdateProperty: p => save(() => updateProperty(p.id, propertyPayload(p)), 'Property updated'),
+    handleDeleteProperty: id => save(() => deleteProperty(id), 'Property deleted'),
+    handleAddIssue: i => save(() => createIssue({ propertyId: Number(i.propertyId), title: i.title, description: i.description, category: i.category, priority: i.priority.toLowerCase() }), 'Issue reported'),
+    handleUpdateIssueStatus: (id, status) => save(() => updateIssueStatus(id, status.toLowerCase().replace(' ', '-')), 'Issue updated'),
+    handleDeleteIssue: id => save(() => deleteIssue(id), 'Issue deleted'),
+    handleMarkNotifRead: id => save(() => markNotificationRead(id), 'Notification marked as read'),
+    handleMarkAllNotifsRead: () => save(markAllNotificationsRead, 'Notifications marked as read'),
+    handleDeleteNotif: id => save(() => deleteNotification(id), 'Notification deleted'),
+    handleClearAllNotifs: () => save(() => clearAllNotifications(), 'Notifications cleared'),
+    handleSendNotif: n => save(() => createNotification({ title: n.title, message: n.message, type: 'info', priority: 'normal', targetRole: n.recipient.toLowerCase() }), 'Notification sent'),
+    handleSavePolicy: policy => save(() => updatePolicy(policy), 'Policy saved'),
+    handleResetPolicy: policy => save(() => updatePolicy(policy), 'Policy reset'),
+    handleSaveProfile: profile => save(() => updateProfile(profile), 'Profile updated'),
   };
 
-  return (
-    <OwnerContext.Provider value={contextValue}>
-      <div className="portal-owner-scope">
-        <Toast toasts={toasts} onRemove={removeToast} />
-        <Layout
-          unreadNotifsCount={unreadNotifsCount}
-          openIssuesCount={openIssuesCount}
-          user={user}
-          onLogout={handleLogout}
-        />
+  if (loading) return <p role="status">Loading owner portal…</p>;
+  if (!user) return <div role="alert">{error || 'Please sign in'} <button onClick={() => window.location.reload()}>Retry</button><a href="/login">Sign in</a></div>;
+  return <OwnerContext.Provider value={contextValue}>
+    <div className="portal-owner-scope">
+      {error && <p role="alert">Data refresh failed: {error}</p>}
+      <Toast toasts={toasts} onRemove={() => setToasts([])} />
+      <div style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+        <Layout unreadNotifsCount={unreadNotifsCount} openIssuesCount={openIssuesCount} user={user} onLogout={handleLogout} />
       </div>
-    </OwnerContext.Provider>
-  );
+    </div>
+  </OwnerContext.Provider>;
 }
 
 // Connected page route components that consume the OwnerContext
@@ -661,11 +230,11 @@ export function OwnerPolicyRoute() {
 }
 
 export function OwnerProfileRoute() {
-  const { data, user, handleSaveProfile, handleLogout } = useOwner();
+  const { data, handleSaveProfile, handleLogout } = useOwner();
   return <Profile profile={data.profile} properties={data.properties} onSaveProfile={handleSaveProfile} onLogout={handleLogout} allData={data} />;
 }
 
 export function OwnerSubscriptionRoute() {
-  const { user, handleSubscription } = useOwner();
-  return <Subscription user={user} onSubscribe={handleSubscription} />;
+  const { user } = useOwner();
+  return <Subscription user={user} />;
 }

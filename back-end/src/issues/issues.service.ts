@@ -8,10 +8,10 @@ import { Repository } from 'typeorm';
 import { Issue, IssueStatus } from './issue.entity';
 import { CreateIssueDto, UpdateIssueDto } from './issues.dto';
 import { Notification } from '../notifications/notification.entity';
-import { User } from '../users/user.entity';
 import { Property } from '../properties/property.entity';
-import { Room } from '../rooms/room.entity';
-import { WardenNotificationsService } from '../warden-notifications/warden-notifications.service';
+import { Room } from 'src/rooms/room.entity';
+import { User } from 'src/users/user.entity';
+import { WardenNotificationsService } from 'src/warden-notifications/warden-notifications.service';
 
 @Injectable()
 export class IssuesService {
@@ -56,6 +56,23 @@ export class IssuesService {
         sentAt: new Date().toISOString(),
       });
       await this.notificationsRepository.save(notif);
+      if (savedIssue.propertyId) {
+        const property = await this.issuesRepository.manager
+          .getRepository(Property)
+          .findOneBy({ id: savedIssue.propertyId });
+        if (property)
+          await this.notificationsRepository.save(
+            this.notificationsRepository.create({
+              title: 'New property issue',
+              message: savedIssue.title,
+              type: 'issue',
+              priority: savedIssue.priority,
+              userId: property.ownerId,
+              byUserId: finalTenantId,
+              sentAt: new Date().toISOString(),
+            }),
+          );
+      }
     } catch (err) {
       // Non-critical background notification log
     }
@@ -67,17 +84,23 @@ export class IssuesService {
       let roomNumber = '102';
 
       if (finalTenantId) {
-        const u = await this.userRepository.findOne({ where: { id: finalTenantId } });
+        const u = await this.userRepository.findOne({
+          where: { id: finalTenantId },
+        });
         if (u) tenantName = u.name;
       }
 
       if (savedIssue.propertyId) {
-        const p = await this.propertyRepository.findOne({ where: { id: savedIssue.propertyId } });
+        const p = await this.propertyRepository.findOne({
+          where: { id: savedIssue.propertyId },
+        });
         if (p) propertyName = p.name;
       }
 
       if (savedIssue.roomId) {
-        const r = await this.roomRepository.findOne({ where: { id: savedIssue.roomId } });
+        const r = await this.roomRepository.findOne({
+          where: { id: savedIssue.roomId },
+        });
         if (r) roomNumber = r.roomNumber;
       } else if (savedIssue.location) {
         roomNumber = savedIssue.location.replace(/^Room\s*/i, '');
@@ -97,7 +120,10 @@ export class IssuesService {
         sourceReferenceId: savedIssue.id,
       });
     } catch (notifErr) {
-      console.warn('Could not post auto-notification to warden_notifications:', notifErr);
+      console.warn(
+        'Could not post auto-notification to warden_notifications:',
+        notifErr,
+      );
     }
 
     return savedIssue;
@@ -123,7 +149,11 @@ export class IssuesService {
     });
   }
 
-  async findOne(id: number, currentUserId?: number, role?: string): Promise<Issue> {
+  async findOne(
+    id: number,
+    currentUserId?: number,
+    role?: string,
+  ): Promise<Issue> {
     const issue = await this.issuesRepository.findOne({
       where: { id },
       relations: { tenant: true, property: true, roomEntity: true },
@@ -133,8 +163,14 @@ export class IssuesService {
       throw new NotFoundException(`Issue with ID ${id} not found`);
     }
 
-    if (role === 'tenant' && currentUserId && issue.tenantId !== currentUserId) {
-      throw new ForbiddenException('You can only view your own reported issues.');
+    if (
+      role === 'tenant' &&
+      currentUserId &&
+      issue.tenantId !== currentUserId
+    ) {
+      throw new ForbiddenException(
+        'You can only view your own reported issues.',
+      );
     }
 
     return issue;
@@ -150,7 +186,11 @@ export class IssuesService {
 
     const oldStatus = issue.status;
 
-    if (updateDto.status && updateDto.status === IssueStatus.RESOLVED && !issue.resolvedAt) {
+    if (
+      updateDto.status &&
+      updateDto.status === IssueStatus.RESOLVED &&
+      !issue.resolvedAt
+    ) {
       updateDto.resolvedAt = new Date();
     }
 
@@ -179,7 +219,11 @@ export class IssuesService {
     return updated;
   }
 
-  async remove(id: number, currentUserId?: number, role?: string): Promise<Issue> {
+  async remove(
+    id: number,
+    currentUserId?: number,
+    role?: string,
+  ): Promise<Issue> {
     const issue = await this.findOne(id, currentUserId, role);
     const clone = { ...issue };
     await this.issuesRepository.remove(issue);

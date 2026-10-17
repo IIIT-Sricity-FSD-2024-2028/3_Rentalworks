@@ -1,3 +1,4 @@
+import Icon from '../components/Icon';
 import React, { useState } from 'react';
 
 // Issues: Track, filter, resolve, report, and delete complaints
@@ -87,25 +88,19 @@ export default function Issues({
     return matchSearch && matchStatus && matchPriority && matchCategory;
   });
 
-  const handleCreateIssue = (e) => {
+  const handleCreateIssue = async (e) => {
     e.preventDefault();
     if (!newIssue.title.trim()) {
       setAddError('Issue title is required.');
       return;
     }
 
-    const selectedProp = properties.find((p) => p.id === newIssue.propertyId);
-    const propName = selectedProp
-      ? selectedProp.name
-      : properties.length > 0
-      ? properties[0].name
-      : 'General Property';
-    const propId = selectedProp
-      ? selectedProp.id
-      : properties.length > 0
-      ? properties[0].id
-      : 'prop_001';
-
+    const targetPropId = newIssue.propertyId || (properties.length > 0 ? properties[0].id : '');
+    const selectedProp = properties.find(p => String(p.id) === String(targetPropId));
+    if (!selectedProp) { setAddError('Select a property.'); return; }
+    if (!newIssue.description.trim()) { setAddError('Enter an issue description.'); return; }
+    const propName = selectedProp.name;
+    const propId = selectedProp.id;
     const issueToSubmit = {
       id: 'issue_' + Date.now(),
       propertyId: propId,
@@ -119,7 +114,7 @@ export default function Issues({
       description: newIssue.description.trim() || 'No description provided.',
     };
 
-    onAddIssue(issueToSubmit);
+    if (await onAddIssue(issueToSubmit) === false) return;
     setIsAddModalOpen(false);
     setNewIssue({
       propertyId: '',
@@ -138,7 +133,7 @@ export default function Issues({
       <div className="grid-3-stats">
         <div className="stat-card">
           <div className="stat-icon red">
-            <span className="material-icons icon-22 icon-danger">error</span>
+            <Icon className="material-icons icon-22 icon-danger">error</Icon>
           </div>
           <div className="stat-info">
             <div className="stat-value">{openCount}</div>
@@ -148,7 +143,7 @@ export default function Issues({
 
         <div className="stat-card">
           <div className="stat-icon orange">
-            <span className="material-icons icon-22 icon-warning">pending</span>
+            <Icon className="material-icons icon-22 icon-warning">pending</Icon>
           </div>
           <div className="stat-info">
             <div className="stat-value">{inProgressCount}</div>
@@ -158,7 +153,7 @@ export default function Issues({
 
         <div className="stat-card">
           <div className="stat-icon green">
-            <span className="material-icons icon-22 icon-success">check_circle</span>
+            <Icon className="material-icons icon-22 icon-success">check_circle</Icon>
           </div>
           <div className="stat-info">
             <div className="stat-value">{resolvedCount}</div>
@@ -170,7 +165,7 @@ export default function Issues({
       {/* Filter and Search Bar */}
       <div className="filter-bar">
         <div className="filter-search">
-          <span className="material-icons icon-20 icon-muted">search</span>
+          <Icon className="material-icons icon-20 icon-muted">search</Icon>
           <input
             type="text"
             id="issueSearch"
@@ -224,7 +219,7 @@ export default function Issues({
             className="btn btn-primary"
             onClick={() => setIsAddModalOpen(true)}
           >
-            <span className="material-icons icon-18 icon-middle">add</span>{' '}
+            <Icon className="material-icons icon-18 icon-middle">add</Icon>{' '}
             Report Issue
           </button>
         </div>
@@ -235,7 +230,7 @@ export default function Issues({
         {filteredIssues.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">
-              <span className="material-icons icon-48 icon-success">check_circle</span>
+              <Icon className="material-icons icon-48 icon-success">check_circle</Icon>
             </div>
             <h3>No Issues Found</h3>
             <p>Try adjusting your filters, or all issues are resolved!</p>
@@ -244,26 +239,26 @@ export default function Issues({
           filteredIssues.map((issue) => (
             <div key={issue.id} className="issue-card" id={`issue-card-${issue.id}`}>
               <div className={`issue-icon ${issue.priority ? issue.priority.toLowerCase() : 'medium'}`}>
-                <span className="material-icons icon-18">
+                <Icon className="material-icons icon-18">
                   {getCategoryIcon(issue.category)}
-                </span>
+                </Icon>
               </div>
 
               <div className="issue-body">
                 <div className="issue-title">{issue.title}</div>
                 <div className="issue-meta">
                   <span className="badge badge-owner-tag">
-                    <span className="material-icons icon-14 icon-middle">person</span>{' '}
+                    <Icon className="material-icons icon-14 icon-middle">person</Icon>{' '}
                     Reported by: {issue.reportedBy || 'Warden'}
                   </span>
                   <span>•</span>
                   <span>
-                    <span className="material-icons icon-14 icon-middle">apartment</span>{' '}
+                    <Icon className="material-icons icon-14 icon-middle">apartment</Icon>{' '}
                     {issue.propertyName || 'Sunrise PG'}
                   </span>
                   <span>•</span>
                   <span>
-                    <span className="material-icons icon-14 icon-middle">calendar_today</span>{' '}
+                    <Icon className="material-icons icon-14 icon-middle">calendar_today</Icon>{' '}
                     {formatDate(issue.reportedDate)}
                   </span>
                   <span>•</span>
@@ -276,13 +271,13 @@ export default function Issues({
 
                   {issue._escalatedByWarden && (
                     <span className="badge badge-escalated">
-                      <span className="material-icons icon-12 icon-middle">warning</span>{' '}
+                      <Icon className="material-icons icon-12 icon-middle">warning</Icon>{' '}
                       Escalated by Warden
                     </span>
                   )}
                   {issue._isGlobal && !issue._escalatedByWarden && (
                     <span className="badge badge-tenant">
-                      <span className="material-icons icon-12 icon-middle">mail</span>{' '}
+                      <Icon className="material-icons icon-12 icon-middle">mail</Icon>{' '}
                       Reported by Tenant
                     </span>
                   )}
@@ -294,37 +289,59 @@ export default function Issues({
               </div>
 
               <div className="issue-actions">
-                {issue.status !== 'Resolved' ? (
+                {issue.status === 'Resolved' ? (
+                  <>
+                    <button
+                      className="btn btn-success btn-sm btn-status-resolved"
+                      title="Click to reopen this issue as Open"
+                      onClick={() => onUpdateIssueStatus(issue.id, 'Open')}
+                    >
+                      <Icon className="material-icons icon-14 icon-middle">check_circle</Icon>{' '}
+                      Resolved
+                    </button>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      title="Reopen issue"
+                      onClick={() => onUpdateIssueStatus(issue.id, 'Open')}
+                    >
+                      <Icon className="material-icons icon-14 icon-middle">restart_alt</Icon>{' '}
+                      Reopen
+                    </button>
+                  </>
+                ) : (
                   <>
                     <button
                       className="btn btn-success btn-sm"
                       onClick={() => onUpdateIssueStatus(issue.id, 'Resolved')}
                     >
-                      <span className="material-icons icon-16 icon-middle">check</span>{' '}
+                      <Icon className="material-icons icon-16 icon-middle">check</Icon>{' '}
                       Resolve
                     </button>
-                    {issue.status === 'Open' && (
+                    {issue.status === 'Open' ? (
                       <button
                         className="btn btn-warning btn-sm"
                         onClick={() => onUpdateIssueStatus(issue.id, 'In Progress')}
                       >
-                        <span className="material-icons icon-16 icon-middle">schedule</span>{' '}
+                        <Icon className="material-icons icon-16 icon-middle">schedule</Icon>{' '}
                         In Progress
+                      </button>
+                    ) : (
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => onUpdateIssueStatus(issue.id, 'Open')}
+                      >
+                        <Icon className="material-icons icon-16 icon-middle">restart_alt</Icon>{' '}
+                        Back to Open
                       </button>
                     )}
                   </>
-                ) : (
-                  <span className="badge badge-resolved">
-                    <span className="material-icons icon-14 icon-middle">check_circle</span>{' '}
-                    Resolved
-                  </span>
                 )}
 
                 <button
                   className="btn btn-danger btn-sm"
                   onClick={() => setDeletingIssue(issue)}
                 >
-                  <span className="material-icons icon-16 icon-middle">delete</span>{' '}
+                  <Icon className="material-icons icon-16 icon-middle">delete</Icon>{' '}
                   Delete
                 </button>
               </div>
@@ -336,17 +353,17 @@ export default function Issues({
       {/* Modal: Report New Issue */}
       {isAddModalOpen && (
         <div
-          className="modal-overlay"
+          className="modal-overlay show active"
           onClick={(e) => {
-            if (e.target.className === 'modal-overlay') setIsAddModalOpen(false);
+            if (e.target.classList.contains('modal-overlay')) setIsAddModalOpen(false);
           }}
         >
           <div className="modal">
             <div className="modal-header">
               <span className="modal-title">
-                <span className="material-icons icon-22 icon-middle icon-mr-6">
+                <Icon className="material-icons icon-22 icon-middle icon-mr-6">
                   warning
-                </span>{' '}
+                </Icon>{' '}
                 Report New Issue
               </span>
               <button
@@ -369,7 +386,7 @@ export default function Issues({
                   </label>
                   <select
                     className="form-input"
-                    value={newIssue.propertyId}
+                    value={newIssue.propertyId || (properties[0]?.id || '')}
                     onChange={(e) => {
                       const update = { propertyId: e.target.value };
                       setNewIssue((prev) => Object.assign({}, prev, update));
@@ -474,7 +491,7 @@ export default function Issues({
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  <span className="material-icons icon-16 icon-middle">add</span>{' '}
+                  <Icon className="material-icons icon-16 icon-middle">add</Icon>{' '}
                   Add Issue
                 </button>
               </div>
@@ -486,9 +503,9 @@ export default function Issues({
       {/* Modal: Delete Issue Confirmation */}
       {deletingIssue && (
         <div
-          className="modal-overlay"
+          className="modal-overlay show active"
           onClick={(e) => {
-            if (e.target.className === 'modal-overlay') setDeletingIssue(null);
+            if (e.target.classList.contains('modal-overlay')) setDeletingIssue(null);
           }}
         >
           <div className="modal">
@@ -513,8 +530,8 @@ export default function Issues({
               </button>
               <button
                 className="btn btn-danger"
-                onClick={() => {
-                  onDeleteIssue(deletingIssue.id);
+                onClick={async () => {
+                  if (await onDeleteIssue(deletingIssue.id) === false) return;
                   setDeletingIssue(null);
                 }}
               >

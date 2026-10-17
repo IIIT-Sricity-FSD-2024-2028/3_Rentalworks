@@ -36,7 +36,7 @@ export class SuperAdminService implements OnModuleInit, OnModuleDestroy {
     const users = await this.users.find({ order: { id: 'ASC' } });
     const properties = await this.properties.find({ relations: { owner: true }, order: { id: 'ASC' } });
     const payments = await this.payments.find({ order: { id: 'ASC' } });
-    const notifications = await this.notifications.find({ where: { byUser: { role: 'super_admin' } }, relations: { byUser: true }, order: { id: 'DESC' } });
+    const notifications = await this.notifications.find({ relations: { byUser: true, user: true }, order: { id: 'DESC' }, take: 100 });
     const activeBookings = await this.bookings.find({ where: { status: 'active' } });
     const activeStays = await this.stays.find({ where: { status: 'active' } });
     const userProperties: Record<number, number[]> = {};

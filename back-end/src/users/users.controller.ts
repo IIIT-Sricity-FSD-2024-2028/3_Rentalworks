@@ -1,3 +1,4 @@
+import { OwnerRegistrationDto } from '../owner/owner-registration.dto';
 import {
   Controller,
   Get,
@@ -74,6 +75,9 @@ export class UsersController {
   guestLogin(@Body() loginDto: LoginDto) {
     return this.usersService.guestLogin(loginDto);
   }
+
+  @Post('owner-register')
+  registerOwner(@Body() dto: OwnerRegistrationDto) { return this.usersService.registerOwner(dto); }
 
   @Post('guest-register')
   @ApiOperation({ summary: 'Register or authenticate guest user' })

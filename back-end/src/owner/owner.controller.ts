@@ -8,22 +8,16 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { OwnerService } from './owner.service';
-import { RolesGuard } from '../common/guards/roles.guard';
+import { OwnerGuard } from './owner.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 
 @ApiTags('owner')
 @Controller('owner')
-@UseGuards(RolesGuard)
+@UseGuards(OwnerGuard)
 export class OwnerController {
   constructor(private readonly ownerService: OwnerService) {}
 
-  private getEffectiveOwnerId(userIdHeader?: string): number {
-    if (userIdHeader && !isNaN(Number(userIdHeader))) {
-      const parsed = Number(userIdHeader);
-      return parsed === 6 ? 16 : parsed;
-    }
-    return 16; // Default to Rajesh Kumar in Neon Cloud (id 16)
-  }
+  private getEffectiveOwnerId(userIdHeader?: string): number { return Number(userIdHeader); }
 
   @Get('dashboard-stats')
   @Roles('owner', 'admin')
