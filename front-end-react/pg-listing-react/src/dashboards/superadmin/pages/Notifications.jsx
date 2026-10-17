@@ -1,0 +1,100 @@
+import { useState } from 'react';
+import { api } from '../services/api';
+
+const priorityColors = {
+  routine: { background: '#f1f5f9', color: '#64748b' },
+  important: { background: '#fef9c3', color: '#b45309' },
+  urgent: { background: '#fee2e2', color: '#dc2626' },
+};
+
+export default function Notifications({ data, refresh, showToast }) {
+  const { users, properties, notifications } = data;
+  const [type, setType] = useState('announcement');
+  const [priority, setPriority] = useState('routine');
+  const [role, setRole] = useState('all');
+  const [property, setProperty] = useState('all');
+  const [targetUser, setTargetUser] = useState('all');
+  const [title, setTitle] = useState('');
+  const [message, setMessage] = useState('');
+  const [scheduleAt, setScheduleAt] = useState('');
+  const [sending, setSending] = useState(false);
+
+  const activeUsers = users.filter(user => user.status === 'active');
+  const recipients = activeUsers.filter(user =>
+    (role === 'all' || user.role === role) &&
+    (property === 'all' || (user.propertyIds || []).includes(Number(property))) &&
+    (targetUser === 'all' || String(user.id) === targetUser)
+  );
+  const canSelectProperty = role === 'tenant' || role === 'warden';
+  const matchingUsers = activeUsers.filter(user => user.role === role && (user.propertyIds || []).includes(Number(property)));
+  const history = notifications;
+
+  async function submit(isScheduled) {
+    if (!title.trim() || !message.trim()) { showToast('error', 'Required', 'Enter a title and message.'); return; }
+    if (!recipients.length) { showToast('error', 'No Recipients', 'Your current filters select 0 users.'); return; }
+    if (isScheduled && (!scheduleAt || new Date(scheduleAt) <= new Date())) {
+      showToast('error', 'No Schedule Time', 'Pick a future date and time.'); return;
+    }
+    const notification = { title: title.trim(), message: message.trim(), type, priority, targetRole: role };
+    if (property !== 'all') notification.targetPropertyId = Number(property);
+    if (targetUser !== 'all') notification.targetUserId = Number(targetUser);
+    if (isScheduled) notification.scheduledFor = new Date(scheduleAt).toISOString();
+    setSending(true);
+    try {
+      await api.sendNotification(notification);
+      await refresh();
+      showToast('success', isScheduled ? 'Announcement Scheduled' : 'Announcement Sent', `${recipients.length} recipients`);
+      setTitle(''); setMessage(''); setScheduleAt('');
+    } catch (error) { showToast('error', 'Error', error.message); }
+    finally { setSending(false); }
+  }
+
+  return <section id="notifications-sec" className="section active">
+    <div className="sec-hdr"><h2>Platform Announcements</h2><p>Broadcast system-wide updates to all users</p></div>
+    <div className="notif-layout">
+      <div className="notif-compose"><h3><span className="material-icons-outlined" style={{ fontSize: 24 }}>outbox</span> Create Announcement</h3><p>Compose and broadcast platform-level announcements</p>
+        <div className="notif-type-btns">
+          {[['announcement', 'notifications', 'Announcement'], ['alert', null, '✉️ Alert'], ['update', 'outbox', 'Update']].map(([value, icon, label]) =>
+            <button key={value} className={`type-btn ${type === value ? 'active' : ''}`} onClick={() => setType(value)}>{icon && <span className="material-icons-outlined" style={{ fontSize: 24 }}>{icon}</span>} {label}</button>
+          )}
+        </div>
+        <div className="notif-field"><label>Priority Level</label><div className="priority-btns">
+          {[['routine', '🟢 Routine'], ['important', '🟡 Important'], ['urgent', 'Urgent']].map(([value, label]) =>
+            <button key={value} className={`priority-btn ${priority === value ? 'active' : ''}`} onClick={() => setPriority(value)}>{value === 'urgent' && <span className="material-icons-outlined" style={{ fontSize: 24 }}>error</span>} {label}</button>
+          )}
+        </div></div>
+        <div className="notif-field"><label>Target Audience *</label><div className="cascading-targeting" style={{ display: 'flex', gap: 10 }}>
+          <select style={selectStyle} value={role} onChange={event => { setRole(event.target.value); setProperty('all'); setTargetUser('all'); }}>
+            <option value="all">Broadcast to All Users</option><option value="tenant">Tenants Only</option><option value="warden">Wardens Only</option><option value="owner">Owners Only</option>
+          </select>
+          {canSelectProperty && <select style={selectStyle} value={property} onChange={event => { setProperty(event.target.value); setTargetUser('all'); }}>
+            <option value="all">All Properties</option>{properties.map(pg => <option key={pg.id} value={pg.id}>{pg.name}</option>)}
+          </select>}
+          {canSelectProperty && property !== 'all' && <select style={selectStyle} value={targetUser} onChange={event => setTargetUser(event.target.value)}>
+            <option value="all">All Members in this PG</option>{matchingUsers.map(user => <option key={user.id} value={user.id}>{user.name}</option>)}
+          </select>}
+        </div></div>
+        <div className="notif-field"><label>Title *</label><input value={title} onChange={event => setTitle(event.target.value)} placeholder="Enter announcement title..." /></div>
+        <div className="notif-field"><label>Message *</label><textarea value={message} onChange={event => setMessage(event.target.value)} placeholder="Enter announcement message..." /></div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+          <button className="btn-send" style={{ flex: 1 }} disabled={sending} onClick={() => submit(false)}><span className="material-icons-outlined" style={{ fontSize: 24 }}>outbox</span> Send Now</button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}><input type="datetime-local" style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #e2e8f0', borderRadius: 6, fontSize: 12 }} value={scheduleAt} onChange={event => setScheduleAt(event.target.value)} /><button className="btn-schedule" disabled={sending} onClick={() => submit(true)}><span className="material-icons-outlined" style={{ fontSize: 24 }}>calendar_today</span> Schedule Send</button></div>
+        </div>
+      </div>
+      <div><div className="recipients-card"><h4>Recipient Counts</h4>
+        {[['all', 'group', 'All Users', activeUsers.length], ['tenants', 'person', 'All Tenants', activeUsers.filter(user => user.role === 'tenant').length], ['owners', 'apartment', 'Property Owners', activeUsers.filter(user => user.role === 'owner').length], ['wardens', null, 'Wardens', activeUsers.filter(user => user.role === 'warden').length]].map(([key, icon, label, count]) =>
+          <div key={key} className={`recipient-item ${role === key || (role === 'tenant' && key === 'tenants') || (role === 'owner' && key === 'owners') || (role === 'warden' && key === 'wardens') ? 'selected' : ''}`}>
+            <div className="rec-left">{icon ? <span className="material-icons-outlined" style={{ fontSize: 24 }}>{icon}</span> : '👮'} {label}</div><span className="rec-count" style={{ color: key === 'owners' ? '#7c3aed' : key === 'all' ? undefined : '#16a34a' }}>{count}</span>
+          </div>
+        )}
+      </div><div className="notif-stats-card"><h4>Announcement Stats</h4><div className="ns-row"><span>Total Sent</span><strong>{notifications.filter(item => item.deliveryStatus !== 'scheduled').length}</strong></div><div className="ns-row"><span>Total Reach</span><strong>{notifications.filter(item => item.deliveryStatus !== 'scheduled').reduce((sum, item) => sum + Number(item.recipients || 0), 0).toLocaleString()}</strong></div></div></div>
+    </div>
+    <div className="notif-history"><h3>Announcement History</h3>{history.length ? history.map(item => <div className="nh-item" key={item.id || `${item.title}-${item.sentAt}`}>
+      <div className={`nh-icon ${item.type}`}>{item.type === 'announcement' ? '🔔' : item.type === 'update' ? '📤' : '✉️'}</div>
+      <div className="nh-content"><strong>{item.title}</strong> <span style={Object.assign({ fontSize: 10, padding: '2px 6px', borderRadius: 10, fontWeight: 600, marginLeft: 6 }, priorityColors[item.priority || 'routine'])}>{item.priority || 'routine'}</span><p>{item.message}</p><div className="nh-meta"><span>👥 {Number(item.recipients || 0).toLocaleString()} recipients</span><span>{item.deliveryStatus === 'scheduled' ? 'Scheduled' : 'Sent'}: {item.sentAt ? new Date(item.sentAt).toLocaleString('en-IN') : ''}</span><span>By: {item.byUser?.name || 'Super Admin'}</span>{item.deliveryStatus === 'scheduled' && <span style={{ color: '#7c3aed' }}>📅 Scheduled</span>}</div></div>
+      <span className={`nh-type-badge ${item.type}`}>{item.type}</span>
+    </div>) : <p style={{ color: '#94a3b8', textAlign: 'center', padding: 24, fontSize: 13 }}>No announcements sent yet</p>}</div>
+  </section>;
+}
+
+const selectStyle = { padding: 8, borderRadius: 6, border: '1px solid #cbd5e1', flex: 1, background: 'white', color: '#1e293b' };

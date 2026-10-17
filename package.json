@@ -3,6 +3,10 @@
   "version": "2.0.0",
   "description": "RentBro PG Rental & Property Management System",
   "keywords": ["pg-rental", "morphism", "glassmorphism", "neumorphism"],
-  "author": "RentBro Engineering",
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "dev": "npm --prefix front-end-react/pg-listing-react run dev",
+    "start": "npm --prefix front-end-react/pg-listing-react run dev",
+    "build": "npm --prefix front-end-react/pg-listing-react run build"
+  }
 }
