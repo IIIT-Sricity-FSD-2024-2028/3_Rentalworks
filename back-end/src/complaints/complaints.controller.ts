@@ -11,6 +11,8 @@ import {
   UseInterceptors,
   UploadedFile,
   Headers,
+  UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { createUploadOptions } from '../middleware/file-upload.middleware';
@@ -18,7 +20,7 @@ import { ComplaintsService } from './complaints.service';
 import { CreateComplaintDto, UpdateComplaintDto } from './complaints.dto';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
-import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiQuery, ApiHeader } from '@nestjs/swagger';
 
 @ApiTags('complaints')
 @Controller('complaints')
@@ -45,14 +47,33 @@ export class ComplaintsController {
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    const numId = parseInt(id, 10);
+    if (isNaN(numId)) {
+      throw new NotFoundException(`Invalid complaint ID: ${id}`);
+    }
     const filePath = file.path.replace(/\\/g, '/');
-    await this.complaintsService.update(+id, { attachment: filePath });
+    await this.complaintsService.update(numId, { attachment: filePath });
     return {
       message: 'Complaint attachment uploaded successfully',
-      complaintId: id,
+      complaintId: numId,
       filename: file.filename,
       path: filePath,
     };
+  }
+
+  @Get('my')
+  @Roles('tenant', 'admin', 'super_admin')
+  @ApiOperation({ summary: 'Get current tenant complaints' })
+  @ApiHeader({ name: 'x-user-id', required: true, description: 'Tenant user ID' })
+  async findMy(
+    @Headers('x-user-id') headerUserId?: string,
+    @Query('tenantId') queryTenantId?: string,
+  ) {
+    const tenantId = headerUserId ? parseInt(headerUserId, 10) : queryTenantId ? parseInt(queryTenantId, 10) : null;
+    if (!tenantId || isNaN(tenantId)) {
+      throw new UnauthorizedException('x-user-id header or tenantId query is required');
+    }
+    return this.complaintsService.findAll(tenantId);
   }
 
   @Get()
@@ -74,13 +95,27 @@ export class ComplaintsController {
   @Roles('admin', 'warden', 'tenant', 'owner')
   @ApiOperation({ summary: 'Get complaint by ID' })
   findOne(@Param('id') id: string) {
-    return this.complaintsService.findOne(+id);
+    const numId = parseInt(id, 10);
+    if (isNaN(numId)) {
+      throw new NotFoundException(`Invalid complaint ID: ${id}`);
+    }
+    return this.complaintsService.findOne(numId);
   }
 
   @Post()
   @Roles('admin', 'tenant', 'owner')
   @ApiOperation({ summary: 'Submit new complaint' })
-  create(@Body() createComplaintDto: CreateComplaintDto) {
+  @ApiHeader({ name: 'x-user-id', required: false, description: 'Tenant user ID' })
+  create(
+    @Body() createComplaintDto: CreateComplaintDto,
+    @Headers('x-user-id') headerUserId?: string,
+  ) {
+    if (!createComplaintDto.tenantId && headerUserId) {
+      const parsed = parseInt(headerUserId, 10);
+      if (!isNaN(parsed)) {
+        createComplaintDto.tenantId = parsed;
+      }
+    }
     return this.complaintsService.create(createComplaintDto);
   }
 
@@ -91,13 +126,21 @@ export class ComplaintsController {
     @Param('id') id: string,
     @Body() updateComplaintDto: UpdateComplaintDto,
   ) {
-    return this.complaintsService.update(+id, updateComplaintDto);
+    const numId = parseInt(id, 10);
+    if (isNaN(numId)) {
+      throw new NotFoundException(`Invalid complaint ID: ${id}`);
+    }
+    return this.complaintsService.update(numId, updateComplaintDto);
   }
 
   @Delete(':id')
   @Roles('admin', 'tenant', 'owner')
   @ApiOperation({ summary: 'Delete complaint' })
   remove(@Param('id') id: string) {
-    return this.complaintsService.remove(+id);
+    const numId = parseInt(id, 10);
+    if (isNaN(numId)) {
+      throw new NotFoundException(`Invalid complaint ID: ${id}`);
+    }
+    return this.complaintsService.remove(numId);
   }
 }

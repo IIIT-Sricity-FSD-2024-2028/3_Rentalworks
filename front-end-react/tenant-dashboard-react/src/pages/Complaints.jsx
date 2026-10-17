@@ -6,57 +6,68 @@ import { StatCard, StatusBadge, FilterBar, EmptyState } from '../components';
 const parseComplaint = (c) => {
   const raw = c.description || '';
   let text = raw;
-  let priority = 'medium';
+  let priority = c.priority || 'medium';
 
-  // Extract [Priority: ...] if present
+  // Extract legacy [Priority: ...] if present in description
   const match = text.match(/^\[Priority:\s*([a-zA-Z]+)\]\s*/i);
   if (match) {
-    priority = match[1].toLowerCase();
+    if (!c.priority) priority = match[1].toLowerCase();
     text = text.replace(match[0], '').trim();
   }
 
-  let title = '';
+  let title = c.title || '';
   let desc = text;
-  const dashIndex = text.indexOf(' - ');
-  if (dashIndex !== -1) {
-    title = text.substring(0, dashIndex).trim();
-    desc = text.substring(dashIndex + 3).trim();
-  } else if (text.length > 55) {
-    title = text.substring(0, 50) + '...';
-  } else {
-    title = text || 'General Maintenance';
+  if (!title) {
+    const dashIndex = text.indexOf(' - ');
+    if (dashIndex !== -1) {
+      title = text.substring(0, dashIndex).trim();
+      desc = text.substring(dashIndex + 3).trim();
+    } else if (text.length > 55) {
+      title = text.substring(0, 50) + '...';
+    } else {
+      title = text || 'General Maintenance';
+    }
   }
 
   // Infer category & icon
-  const combined = (title + ' ' + desc).toLowerCase();
-  let category = 'General';
+  let category = c.category;
   let categoryIcon = 'report_problem';
 
-  if (/water|tap|pipe|leak|plumb|sink|flush|drain|toilet|shower/.test(combined)) {
-    category = 'Plumbing';
-    categoryIcon = 'water_drop';
-  } else if (/light|power|electric|switch|fan|ac|air|cooler|fuse|plug|voltage/.test(combined)) {
-    category = 'Electrical';
-    categoryIcon = 'bolt';
-  } else if (/wifi|internet|network|router|speed|lan|connect/.test(combined)) {
-    category = 'Internet / WiFi';
-    categoryIcon = 'wifi';
-  } else if (/clean|garbage|trash|dust|pest|roach|smell|odor|dirty/.test(combined)) {
-    category = 'Sanitation';
-    categoryIcon = 'cleaning_services';
-  } else if (/noise|loud|music|party|shout|bark|barking|sound/.test(combined)) {
-    category = 'Disturbance';
-    categoryIcon = 'volume_up';
-  } else if (/door|lock|key|handle|window|latch|security|safe/.test(combined)) {
-    category = 'Security';
-    categoryIcon = 'lock';
+  if (!category || category.toLowerCase() === 'general') {
+    const combined = ((title || '') + ' ' + (desc || '')).toLowerCase();
+    if (/water|tap|pipe|leak|plumb|sink|flush|drain|toilet|shower/.test(combined)) {
+      category = 'Plumbing';
+    } else if (/light|power|electric|switch|fan|ac|air|cooler|fuse|plug|voltage/.test(combined)) {
+      category = 'Electrical';
+    } else if (/wifi|internet|network|router|speed|lan|connect/.test(combined)) {
+      category = 'Internet / WiFi';
+    } else if (/clean|garbage|trash|dust|pest|roach|smell|odor|dirty/.test(combined)) {
+      category = 'Sanitation';
+    } else if (/noise|loud|music|party|shout|bark|barking|sound/.test(combined)) {
+      category = 'Disturbance';
+    } else if (/door|lock|key|handle|window|latch|security|safe/.test(combined)) {
+      category = 'Security';
+    } else {
+      category = 'General';
+    }
   }
+
+  const catLower = (category || '').toLowerCase();
+  if (catLower.includes('plumb')) categoryIcon = 'water_drop';
+  else if (catLower.includes('elect')) categoryIcon = 'bolt';
+  else if (catLower.includes('wifi') || catLower.includes('internet')) categoryIcon = 'wifi';
+  else if (catLower.includes('clean') || catLower.includes('sanit')) categoryIcon = 'cleaning_services';
+  else if (catLower.includes('disturb') || catLower.includes('noise')) categoryIcon = 'volume_up';
+  else if (catLower.includes('secur')) categoryIcon = 'lock';
+
+  const normStatus = (c.status || 'open').replace('-', '_');
 
   return {
     ...c,
+    status: normStatus,
     parsedTitle: title || 'General Complaint',
     parsedDesc: desc,
-    parsedPriority: priority,
+    parsedPriority: priority.toLowerCase(),
     parsedCategory: category,
     categoryIcon,
   };
@@ -77,6 +88,7 @@ const Complaints = () => {
   // Form State
   const [title, setTitle] = useState('');
   const [priority, setPriority] = useState('medium');
+  const [category, setCategory] = useState('General');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -84,8 +96,15 @@ const Complaints = () => {
     if (!tenant) return;
     try {
       setLoading(true);
-      const data = await apiFetch('/complaints');
-      const userComplaints = (Array.isArray(data) ? data : []).filter((c) => c.tenantId === tenant.id);
+      let data = [];
+      try {
+        data = await apiFetch(`/complaints/my?tenantId=${tenant.id}`);
+      } catch (err) {
+        data = await apiFetch(`/complaints?tenantId=${tenant.id}`);
+      }
+      const userComplaints = (Array.isArray(data) ? data : []).filter(
+        (c) => Number(c.tenantId) === Number(tenant.id)
+      );
       setComplaints(userComplaints);
     } catch (error) {
       console.error('Failed to fetch complaints:', error);
@@ -99,22 +118,24 @@ const Complaints = () => {
   }, [tenant]);
 
   const handleSubmit = async () => {
-    if (!title || !description) {
-      alert('Please fill out all required fields.');
+    if (!title.trim() || !description.trim()) {
+      alert('Please fill out all required fields (Title, Description).');
       return;
     }
 
     try {
       setSubmitting(true);
 
-      const fullDescription = `[Priority: ${priority}] ${title} - ${description}`;
-
       await apiFetch('/complaints', {
         method: 'POST',
         body: JSON.stringify({
-          tenantId: tenant.id,
-          propertyId: activeBooking?.propertyId || 1, // Fallback if no active booking
-          description: fullDescription,
+          tenantId: Number(tenant?.id || 1),
+          propertyId: Number(activeBooking?.propertyId || activeBooking?.property?.id || 1),
+          roomId: activeBooking?.roomId ? Number(activeBooking.roomId) : undefined,
+          title: title.trim(),
+          description: description.trim(),
+          priority,
+          category,
         }),
       });
 
@@ -122,7 +143,8 @@ const Complaints = () => {
       setTitle('');
       setDescription('');
       setPriority('medium');
-      fetchComplaints(); // Refresh list
+      setCategory('General');
+      await fetchComplaints();
     } catch (error) {
       alert('Failed to submit complaint.');
       console.error(error);
@@ -131,11 +153,24 @@ const Complaints = () => {
     }
   };
 
-  const openCount = complaints.filter((c) => c.status === 'open').length;
-  const progressCount = complaints.filter((c) => c.status === 'in_progress').length;
-  const resolvedCount = complaints.filter((c) => c.status === 'resolved').length;
+  const handleDelete = async (complaintId) => {
+    if (!window.confirm('Are you sure you want to withdraw or delete this complaint?')) {
+      return;
+    }
+    try {
+      await apiFetch(`/complaints/${complaintId}`, { method: 'DELETE' });
+      await fetchComplaints();
+    } catch (err) {
+      console.error('Failed to delete complaint:', err);
+      alert('Failed to delete complaint.');
+    }
+  };
 
   const parsedComplaints = complaints.map(parseComplaint);
+
+  const openCount = parsedComplaints.filter((c) => c.status === 'open').length;
+  const progressCount = parsedComplaints.filter((c) => c.status === 'in_progress').length;
+  const resolvedCount = parsedComplaints.filter((c) => c.status === 'resolved').length;
 
   const filteredComplaints = parsedComplaints.filter((c) => {
     if (statusFilter !== 'all' && c.status !== statusFilter) {
@@ -217,7 +252,7 @@ const Complaints = () => {
             >
               sync
             </span>
-            <p style={{ marginTop: '10px', fontSize: '14px' }}>Loading complaints...</p>
+            <p style={{ marginTop: '10px', fontSize: '14px' }}>Loading complaints from Neon...</p>
           </div>
         ) : filteredComplaints.length === 0 ? (
           <EmptyState
@@ -275,16 +310,27 @@ const Complaints = () => {
                     <span className="material-icons-outlined" style={{ fontSize: '16px' }}>
                       calendar_today
                     </span>
-                    {c.reportedAt
-                      ? new Date(c.reportedAt).toLocaleDateString(undefined, {
+                    {c.reportedAt || c.createdAt
+                      ? new Date(c.reportedAt || c.createdAt).toLocaleDateString(undefined, {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric',
                         })
                       : 'N/A'}
                   </div>
-                  <div style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: 600 }}>
-                    #CMP-{c.id}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: 600 }}>
+                      #CMP-{c.id}
+                    </span>
+                    <button
+                      className="record-delete-btn"
+                      onClick={() => handleDelete(c.id)}
+                      title="Withdraw or delete complaint"
+                    >
+                      <span className="material-icons-outlined" style={{ fontSize: '17px' }}>
+                        delete_outline
+                      </span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -302,6 +348,7 @@ const Complaints = () => {
                   <th>Priority</th>
                   <th>Status</th>
                   <th>Reported Date</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -333,13 +380,24 @@ const Complaints = () => {
                       <StatusBadge status={c.status || 'open'} />
                     </td>
                     <td style={{ color: 'var(--text-muted)', fontSize: '12.5px', whiteSpace: 'nowrap' }}>
-                      {c.reportedAt
-                        ? new Date(c.reportedAt).toLocaleDateString(undefined, {
+                      {c.reportedAt || c.createdAt
+                        ? new Date(c.reportedAt || c.createdAt).toLocaleDateString(undefined, {
                             month: 'short',
                             day: 'numeric',
                             year: 'numeric',
                           })
                         : 'N/A'}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button
+                        className="record-delete-btn"
+                        onClick={() => handleDelete(c.id)}
+                        title="Delete complaint"
+                      >
+                        <span className="material-icons-outlined" style={{ fontSize: '17px' }}>
+                          delete_outline
+                        </span>
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -381,13 +439,27 @@ const Complaints = () => {
                   onChange={(e) => setTitle(e.target.value)}
                 />
               </div>
-              <div className="form-group">
-                <label>Priority</label>
-                <select value={priority} onChange={(e) => setPriority(e.target.value)}>
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="form-group">
+                  <label>Category</label>
+                  <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                    <option value="General">General</option>
+                    <option value="Plumbing">Plumbing</option>
+                    <option value="Electrical">Electrical</option>
+                    <option value="Internet / WiFi">Internet / WiFi</option>
+                    <option value="Sanitation">Sanitation</option>
+                    <option value="Security">Security</option>
+                    <option value="Disturbance">Disturbance</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Priority</label>
+                  <select value={priority} onChange={(e) => setPriority(e.target.value)}>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
               </div>
               <div className="form-group">
                 <label>
@@ -397,6 +469,7 @@ const Complaints = () => {
                   placeholder="Describe your complaint in detail..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                  rows={4}
                 ></textarea>
               </div>
             </div>

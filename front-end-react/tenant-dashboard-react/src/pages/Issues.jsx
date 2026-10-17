@@ -48,7 +48,7 @@ const Issues = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await apiFetch('/issues/my');
+      const data = await apiFetch(`/issues/my?tenantId=${tenant.id}`);
       setIssues(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to fetch issues:', err);
@@ -78,9 +78,10 @@ const Issues = () => {
           description: description.trim(),
           category: selectedCategory,
           priority: selectedPriority,
-          location: location.trim() || undefined,
-          propertyId: activeBooking?.propertyId || activeBooking?.property?.id || 1,
-          roomId: activeBooking?.roomId || 1,
+          location: location.trim() || (activeBooking?.room ? `Room ${activeBooking.room}` : undefined),
+          propertyId: Number(activeBooking?.propertyId || activeBooking?.property?.id || 1),
+          roomId: activeBooking?.roomId ? Number(activeBooking.roomId) : undefined,
+          tenantId: Number(tenant?.id || 1),
         }),
       });
 
@@ -114,13 +115,15 @@ const Issues = () => {
     }
   };
 
+  const normStatus = (s) => (s || 'open').replace('-', '_');
+
   const totalCount = issues.length;
-  const openCount = issues.filter((i) => i.status === 'open').length;
-  const inProgressCount = issues.filter((i) => i.status === 'in_progress').length;
-  const resolvedCount = issues.filter((i) => i.status === 'resolved').length;
+  const openCount = issues.filter((i) => normStatus(i.status) === 'open').length;
+  const inProgressCount = issues.filter((i) => normStatus(i.status) === 'in_progress').length;
+  const resolvedCount = issues.filter((i) => normStatus(i.status) === 'resolved').length;
 
   const filteredIssues = issues.filter((iss) => {
-    if (statusFilter !== 'all' && iss.status !== statusFilter) {
+    if (statusFilter !== 'all' && normStatus(iss.status) !== statusFilter) {
       return false;
     }
     if (searchQuery.trim()) {
