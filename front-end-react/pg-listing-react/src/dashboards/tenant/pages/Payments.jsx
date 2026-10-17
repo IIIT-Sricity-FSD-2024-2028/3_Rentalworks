@@ -57,16 +57,23 @@ const Payments = () => {
   // Receipt Modal State
   const [receiptData, setReceiptData] = useState(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [services, setServices] = useState([]);
 
   const fetchPayments = async () => {
     if (!tenant) return;
     try {
       setLoading(true);
-      const data = await apiFetch('/payments');
-      const userPayments = Array.isArray(data)
-        ? data.filter((p) => p.tenantId === tenant.id)
+      const [payData, servData] = await Promise.allSettled([
+        apiFetch('/payments'),
+        apiFetch(`/service-requests/my?tenantId=${tenant.id}`),
+      ]);
+      const userPayments = payData.status === 'fulfilled' && Array.isArray(payData.value)
+        ? payData.value.filter((p) => p.tenantId === tenant.id)
         : [];
       setPayments(userPayments);
+      if (servData.status === 'fulfilled' && Array.isArray(servData.value)) {
+        setServices(servData.value);
+      }
     } catch (error) {
       console.error('Failed to fetch payments:', error);
     } finally {
@@ -827,219 +834,427 @@ const Payments = () => {
   // MAIN PAYMENTS DASHBOARD VIEW
   return (
     <div className="payments-page">
-      <div className="page-header page-header-row">
+      <div className="payments-header-wrap">
         <div>
-          <h1>Payments</h1>
-          <p>Manage your stay rent, track transactions and download receipts</p>
+          <h1 className="payments-title">Payments</h1>
+          <p className="payments-subtitle">
+            Manage your stay rent, track transactions and download receipts
+          </p>
+        </div>
+        <div className="payments-security-pill">
+          <span className="material-icons-outlined" style={{ fontSize: '16px' }}>verified_user</span>
+          <span>Encrypted PG Stay Billing</span>
         </div>
       </div>
 
-      {/* STATS OVERVIEW CARDS */}
-      <div className="stats-grid mb-20" style={{ marginBottom: '20px' }}>
-        <div className="stat-card">
-          <div className="stat-label">
-            Total Pending{' '}
-            <span className="stat-icon">
-              <span className="material-icons-outlined" style={{ fontSize: '28px', color: isPaidThisMonth ? 'var(--success)' : 'var(--warning)' }}>
+      {/* TOP STATS OVERVIEW CARDS (4 EQUAL SPACIOUS COLUMNS) */}
+      <div className="payment-stats-grid">
+        <div className="payment-stat-card">
+          <div className="stat-card-header">
+            <span className="stat-card-title">Total Pending</span>
+            <div className={`stat-card-icon ${isPaidThisMonth ? 'green' : 'amber'}`}>
+              <span className="material-icons-outlined" style={{ fontSize: '24px' }}>
                 {isPaidThisMonth ? 'check_circle' : 'pending_actions'}
               </span>
-            </span>
+            </div>
           </div>
-          <div className="stat-value" style={{ color: isPaidThisMonth ? 'var(--success)' : 'var(--warning)' }}>
+          <div className={`stat-card-value ${isPaidThisMonth ? 'green' : 'amber'}`}>
             ₹{remainingPending.toLocaleString()}
           </div>
-          {isPaidThisMonth && (
-            <div style={{ fontSize: '12px', color: 'var(--success)', fontWeight: 600, marginTop: '4px' }}>
-              ✓ All dues cleared for this month
-            </div>
-          )}
+          <div className="stat-card-footer">
+            {isPaidThisMonth ? (
+              <span className="stat-badge green">
+                <span className="material-icons-outlined" style={{ fontSize: '13px' }}>done_all</span>
+                All dues cleared
+              </span>
+            ) : (
+              <span className="stat-badge amber">
+                <span className="material-icons-outlined" style={{ fontSize: '13px' }}>schedule</span>
+                Dues pending for this month
+              </span>
+            )}
+          </div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-label">
-            Paid this Month{' '}
-            <span className="stat-icon">
-              <span className="material-icons-outlined" style={{ fontSize: '28px', color: 'var(--success)' }}>
+        <div className="payment-stat-card">
+          <div className="stat-card-header">
+            <span className="stat-card-title">Paid this Month</span>
+            <div className="stat-card-icon green">
+              <span className="material-icons-outlined" style={{ fontSize: '24px' }}>
                 verified
               </span>
-            </span>
+            </div>
           </div>
-          <div className="stat-value" style={{ color: 'var(--success)' }}>
+          <div className="stat-card-value green">
             ₹{paidThisMonth.toLocaleString()}
           </div>
+          <div className="stat-card-footer">
+            <span className="stat-badge green">
+              <span className="material-icons-outlined" style={{ fontSize: '13px' }}>check</span>
+              Current Billing Cycle
+            </span>
+          </div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-label">
-            Monthly Rent{' '}
-            <span className="stat-icon">
-              <span className="material-icons-outlined" style={{ fontSize: '28px' }}>
+        <div className="payment-stat-card">
+          <div className="stat-card-header">
+            <span className="stat-card-title">Monthly Rent</span>
+            <div className="stat-card-icon blue">
+              <span className="material-icons-outlined" style={{ fontSize: '24px' }}>
                 payments
               </span>
+            </div>
+          </div>
+          <div className="stat-card-value">
+            ₹{monthlyRent.toLocaleString()}
+          </div>
+          <div className="stat-card-footer">
+            <span className="stat-badge gray">
+              Room {activeBooking?.room || '101'} &bull; Base Rent
             </span>
           </div>
-          <div className="stat-value">₹{monthlyRent.toLocaleString()}</div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-label">
-            Next Rent Due{' '}
-            <span className="stat-icon">
-              <span className="material-icons-outlined" style={{ fontSize: '28px' }}>
+        <div className="payment-stat-card">
+          <div className="stat-card-header">
+            <span className="stat-card-title">Next Rent Due</span>
+            <div className="stat-card-icon purple">
+              <span className="material-icons-outlined" style={{ fontSize: '24px' }}>
                 calendar_month
               </span>
-            </span>
+            </div>
           </div>
-          <div className="stat-value" style={{ fontSize: '18px', paddingTop: '4px' }}>
+          <div className="stat-card-value date-val" title={rentDueDate}>
             {rentDueDate}
+          </div>
+          <div className="stat-card-footer">
+            <span className="stat-badge purple">
+              <span className="material-icons-outlined" style={{ fontSize: '13px' }}>event</span>
+              Upcoming Billing Date
+            </span>
           </div>
         </div>
       </div>
 
       {/* CONDITIONAL RENDER: IF HE PAYS, THE UPCOMING PAYMENT BILL CARD VANISHES! */}
       {isPaidThisMonth ? (
-        <div className="card mb-20 payment-cleared-banner" style={{ marginBottom: '20px' }}>
-          <div className="card-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', flexWrap: 'wrap', gap: '14px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div className="cleared-icon-wrap">
-                <span className="material-icons-outlined" style={{ fontSize: '30px' }}>verified</span>
-              </div>
-              <div>
-                <div style={{ fontWeight: '800', fontSize: '16px', color: '#0f172a' }}>
-                  Rent Fully Paid for {new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })}!
-                </div>
-                <div style={{ fontSize: '13px', color: '#475569', marginTop: '2px' }}>
-                  No pending rent dues for this cycle. The upcoming payment bill has vanished. Next cycle commences on <strong>{rentDueDate}</strong>.
-                </div>
-              </div>
+        <div className="payment-cleared-banner-card">
+          <div className="banner-left">
+            <div className="banner-icon-circle">
+              <span className="material-icons-outlined">verified</span>
             </div>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <span className="badge badge-success" style={{ fontSize: '12px', padding: '6px 14px' }}>
-                Cleared
-              </span>
-              {currentMonthPayments.length > 0 && (
-                <button
-                  className="btn btn-outline btn-sm"
-                  onClick={() => handleViewReceipt(currentMonthPayments[0])}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
-                >
-                  <span className="material-icons-outlined" style={{ fontSize: '16px' }}>receipt</span>
-                  View Receipt
-                </button>
-              )}
+            <div>
+              <h3 className="banner-title">
+                Rent Fully Paid for {new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })}!
+              </h3>
+              <p className="banner-desc">
+                No pending rent dues for this cycle. The upcoming payment bill has vanished. Next cycle commences on <strong>{rentDueDate}</strong>.
+              </p>
             </div>
+          </div>
+          <div className="banner-actions">
+            <span className="banner-status-badge">
+              <span className="material-icons-outlined" style={{ fontSize: '15px' }}>check_circle</span>
+              Cleared
+            </span>
+            {currentMonthPayments.length > 0 && (
+              <button
+                type="button"
+                className="btn-banner-receipt"
+                onClick={() => handleViewReceipt(currentMonthPayments[0])}
+              >
+                <span className="material-icons-outlined" style={{ fontSize: '16px', color: '#64748b' }}>receipt</span>
+                <span>View Receipt</span>
+              </button>
+            )}
           </div>
         </div>
       ) : (
         /* UPCOMING PAYMENT BILL (VISIBLE ONLY WHEN RENT IS PENDING) */
-        <div className="card mb-20" style={{ marginBottom: '20px' }}>
-          <div className="card-body">
-            <div className="card-title">Upcoming Payments</div>
-            <div className="mt-14" style={{ marginTop: '14px' }}>
-              <div className="payment-item">
-                <div className="payment-info">
-                  <div className="payment-type" style={{ fontWeight: '700', fontSize: '15px' }}>
-                    Monthly Rent &bull; Room {activeBooking?.room || '101'}
-                  </div>
-                  <div className="payment-sub">
-                    Due Date: <strong style={{ color: 'var(--text-primary)' }}>{rentDueDate}</strong> &bull; {activeBooking?.property?.name || 'Sunrise PG'}
-                  </div>
-                </div>
-                <div className="payment-right" style={{ textAlign: 'right' }}>
-                  <div className="payment-amount" style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)' }}>
-                    ₹{remainingPending.toLocaleString()}
-                  </div>
-                  <button
-                    className="btn btn-primary btn-sm"
-                    style={{ marginTop: '6px', minWidth: '110px' }}
-                    onClick={() => {
-                      setErrors({});
-                      setTouched({});
-                      setIsPaying(true);
-                    }}
-                  >
-                    Pay Now →
-                  </button>
-                </div>
+        <div className="upcoming-bill-card">
+          <div style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontWeight: 800, fontSize: '16px', color: '#0f172a' }}>
+            Upcoming Payments
+          </div>
+          <div className="upcoming-bill-inner">
+            <div className="payment-info">
+              <div className="payment-type" style={{ fontWeight: '700', fontSize: '15.5px', color: '#0f172a' }}>
+                Monthly Rent &bull; Room {activeBooking?.room || '101'}
               </div>
+              <div className="payment-sub" style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
+                Due Date: <strong style={{ color: '#0f172a' }}>{rentDueDate}</strong> &bull; {activeBooking?.property?.name || 'Sunrise PG'}
+              </div>
+            </div>
+            <div className="payment-right" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div className="payment-amount" style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a' }}>
+                ₹{remainingPending.toLocaleString()}
+              </div>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                style={{ minWidth: '120px', height: '40px', fontSize: '14px', fontWeight: '700' }}
+                onClick={() => {
+                  setErrors({});
+                  setTouched({});
+                  setIsPaying(true);
+                }}
+              >
+                Pay Now →
+              </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* REAL-DATA PAYMENT HISTORY ANALYTICS & EXPENSE BREAKDOWN */}
+      {(() => {
+        const completedPayments = payments.filter((p) => {
+          return p.status === 'completed' || p.status === 'success' || p.status === 'verified';
+        });
+
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const chartMonths = [];
+        const now = new Date();
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const mIdx = d.getMonth();
+          const y = d.getFullYear();
+          const mPayments = completedPayments.filter(p => {
+            const pDate = new Date(p.paidDate || p.createdAt);
+            return pDate.getMonth() === mIdx && pDate.getFullYear() === y;
+          });
+          const totalAmount = mPayments.reduce((acc, p) => acc + Number(p.amount || 0), 0);
+          chartMonths.push({
+            label: monthNames[mIdx],
+            year: y,
+            total: totalAmount,
+          });
+        }
+        const maxMonthAmount = Math.max(...chartMonths.map(m => m.total), 1);
+
+        const totalRentPaid = completedPayments.reduce((acc, p) => acc + Number(p.amount || 0), 0);
+        const completedServices = services.filter(s => s.status === 'completed');
+        const totalServicesPaid = completedServices.reduce((acc, s) => acc + Number(s.amount || 0), 0);
+        const totalExpense = totalRentPaid + totalServicesPaid;
+
+        const rentPct = totalExpense > 0 ? Math.round((totalRentPaid / totalExpense) * 100) : (totalRentPaid > 0 ? 100 : 0);
+        const servPct = totalExpense > 0 ? 100 - rentPct : 0;
+
+        return (
+          <div className="payment-analytics-grid">
+            <div className="analytics-card">
+              <div className="analytics-card-header">
+                <span className="analytics-card-title">Payment History (Last 6 Months)</span>
+                <span className="analytics-card-badge">Monthly Totals</span>
+              </div>
+              <div className="bar-chart" style={{ display: 'flex', alignItems: 'flex-end', gap: '16px', minHeight: '140px', padding: '10px 0 0' }}>
+                {chartMonths.map((m, idx) => {
+                  const barHeight = m.total > 0 ? Math.max(22, Math.round((m.total / maxMonthAmount) * 110)) : 6;
+                  return (
+                    <div key={idx} className="bar-wrapper" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          color: m.total > 0 ? '#0f172a' : '#94a3b8',
+                          marginBottom: '6px',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {m.total > 0 ? `₹${(m.total / 1000).toFixed(m.total % 1000 === 0 ? 0 : 1)}k` : '₹0'}
+                      </div>
+                      <div
+                        className="bar"
+                        style={{
+                          height: `${barHeight}px`,
+                          width: '100%',
+                          maxWidth: '42px',
+                          background: m.total > 0 ? 'var(--primary, #c49a1a)' : '#e2e8f0',
+                          borderRadius: '6px 6px 0 0',
+                          transition: 'all 0.3s ease',
+                          cursor: 'pointer',
+                        }}
+                        title={`${m.label} ${m.year}: ₹${m.total.toLocaleString()}`}
+                      />
+                      <div className="bar-label" style={{ fontSize: '12px', fontWeight: 600, marginTop: '8px', color: '#64748b' }}>
+                        {m.label}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="analytics-card">
+              <div className="analytics-card-header">
+                <span className="analytics-card-title">Expense Breakdown</span>
+                <span className="analytics-card-badge">Total: ₹{totalExpense.toLocaleString()}</span>
+              </div>
+              {totalExpense === 0 ? (
+                <div style={{ padding: '36px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
+                  No completed payments recorded yet.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '28px', marginTop: '10px', flexWrap: 'wrap' }}>
+                  <div
+                    className="pie-chart"
+                    style={{
+                      position: 'relative',
+                      width: '116px',
+                      height: '116px',
+                      borderRadius: '50%',
+                      background: servPct > 0
+                        ? `conic-gradient(var(--primary, #c49a1a) 0% ${rentPct}%, #f59e0b ${rentPct}% 100%)`
+                        : 'var(--primary, #c49a1a)',
+                      flexShrink: 0,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+                    }}
+                  >
+                    <div className="pie-center" style={{ position: 'absolute', inset: '22px', background: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, color: '#64748b' }}>
+                      100%
+                    </div>
+                  </div>
+                  <div className="pie-legend" style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, minWidth: '160px' }}>
+                    <div style={{ background: '#f8fafc', padding: '8px 12px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: 'var(--primary, #c49a1a)' }} />
+                          <span style={{ fontWeight: 600, color: '#0f172a' }}>Rent</span>
+                        </div>
+                        <span style={{ fontWeight: 700, color: '#0f172a' }}>{rentPct}%</span>
+                      </div>
+                      <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px', paddingLeft: '18px' }}>
+                        ₹{totalRentPaid.toLocaleString()}
+                      </div>
+                    </div>
+                    {servPct > 0 && (
+                      <div style={{ background: '#f8fafc', padding: '8px 12px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#f59e0b' }} />
+                            <span style={{ fontWeight: 600, color: '#0f172a' }}>Services</span>
+                          </div>
+                          <span style={{ fontWeight: 700, color: '#0f172a' }}>{servPct}%</span>
+                        </div>
+                        <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px', paddingLeft: '18px' }}>
+                          ₹{totalServicesPaid.toLocaleString()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* RECORDED PAYMENT HISTORY */}
-      <div className="card">
-        <div className="card-body">
-          <div className="card-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>Recorded Payment History</span>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>
-              {payments.length} Transaction{payments.length === 1 ? '' : 's'} recorded
-            </span>
+      <div className="payment-history-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <div style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontWeight: 800, fontSize: '16px', color: '#0f172a' }}>
+              Recorded Payment History
+            </div>
+            <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>
+              Official records of verified rent and stay transactions
+            </div>
           </div>
-          <div className="mt-14" style={{ marginTop: '14px', overflowX: 'auto' }}>
-            {loading ? (
-              <p style={{ color: 'var(--text-muted)' }}>Loading payment records...</p>
-            ) : payments.length === 0 ? (
-              <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>
-                No payment history recorded yet.
-              </p>
-            ) : (
-              <table className="payment-table">
-                <thead>
-                  <tr>
-                    <th>Ref ID</th>
-                    <th>Type</th>
-                    <th>Amount</th>
-                    <th>Date</th>
-                    <th>Channel</th>
-                    <th>Status</th>
-                    <th style={{ textAlign: 'right' }}>Receipt</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {payments.map((p) => {
-                    const isSuccess =
-                      p.status === 'completed' || p.status === 'success' || p.status === 'verified';
-                    return (
-                      <tr key={p.id}>
-                        <td style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                          {p.transactionId || `TXN-${p.id}`}
-                        </td>
-                        <td style={{ fontWeight: 600 }}>Rent ({p.room ? `Rm ${p.room}` : 'Stay'})</td>
-                        <td style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
-                          ₹{Number(p.amount).toLocaleString()}
-                        </td>
-                        <td>{p.paidDate ? new Date(p.paidDate).toLocaleDateString() : 'N/A'}</td>
-                        <td style={{ textTransform: 'uppercase', fontSize: '12px', fontWeight: 600 }}>
+          <span style={{ fontSize: '12px', color: '#475569', fontWeight: 600, background: '#f1f5f9', padding: '5px 12px', borderRadius: '20px' }}>
+            {payments.length} Transaction{payments.length === 1 ? '' : 's'}
+          </span>
+        </div>
+
+        <div className="table-responsive-wrap">
+          {loading ? (
+            <p style={{ color: 'var(--text-muted)', padding: '24px' }}>Loading payment records...</p>
+          ) : payments.length === 0 ? (
+            <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '32px' }}>
+              No payment history recorded yet.
+            </p>
+          ) : (
+            <table className="payments-modern-table">
+              <thead>
+                <tr>
+                  <th>Ref ID</th>
+                  <th>Type</th>
+                  <th>Amount</th>
+                  <th>Date</th>
+                  <th>Channel</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: 'right' }}>Receipt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map((p) => {
+                  const isSuccess =
+                    p.status === 'completed' || p.status === 'success' || p.status === 'verified';
+                  return (
+                    <tr key={p.id}>
+                      <td style={{ fontFamily: 'monospace', fontSize: '12.5px', color: '#475569', fontWeight: 600 }}>
+                        {p.transactionId || `TXN-${p.id}`}
+                      </td>
+                      <td style={{ fontWeight: 600, color: '#0f172a' }}>
+                        Rent ({p.room ? `Room ${p.room}` : 'Stay'})
+                      </td>
+                      <td style={{ fontWeight: 800, color: '#0f172a', fontSize: '14.5px' }}>
+                        ₹{Number(p.amount).toLocaleString()}
+                      </td>
+                      <td style={{ color: '#475569' }}>
+                        {p.paidDate ? new Date(p.paidDate).toLocaleDateString() : 'N/A'}
+                      </td>
+                      <td>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            padding: '3px 8px',
+                            background: '#f1f5f9',
+                            borderRadius: '6px',
+                            textTransform: 'uppercase',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            letterSpacing: '0.5px',
+                            color: '#334155',
+                          }}
+                        >
                           {p.method}
-                        </td>
-                        <td>
-                          <span
-                            className={isSuccess ? 'badge badge-success' : 'badge badge-warning'}
-                            style={{ textTransform: 'capitalize' }}
-                          >
-                            {p.status}
+                        </span>
+                      </td>
+                      <td>
+                        <span
+                          className={isSuccess ? 'badge badge-success' : 'badge badge-warning'}
+                          style={{ textTransform: 'capitalize', padding: '4px 10px' }}
+                        >
+                          {p.status}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          style={{
+                            fontSize: '12px',
+                            padding: '6px 10px',
+                            borderRadius: '8px',
+                            border: '1px solid #e2e8f0',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                          onClick={() => handleViewReceipt(p)}
+                          title="View or print official receipt"
+                        >
+                          <span className="material-icons-outlined" style={{ fontSize: '16px' }}>
+                            description
                           </span>
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <button
-                            className="btn btn-ghost btn-sm"
-                            style={{ fontSize: '12px', padding: '4px 10px' }}
-                            onClick={() => handleViewReceipt(p)}
-                            title="View or print receipt"
-                          >
-                            <span className="material-icons-outlined" style={{ fontSize: '15px' }}>
-                              description
-                            </span>
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
+                          <span>Receipt</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 

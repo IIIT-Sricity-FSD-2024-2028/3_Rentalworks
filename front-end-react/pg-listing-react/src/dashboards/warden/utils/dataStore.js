@@ -3,6 +3,7 @@ import {
   getRoomsApi,
   getTenantsApi,
   getComplaintsApi,
+  getIssuesApi,
   getWardenNotificationsApi,
   getRuleViolationsApi,
 } from './api';
@@ -39,7 +40,7 @@ export function mapRoomFromDb(r) {
     lastUpdated: r.updatedAt
       ? new Date(r.updatedAt).toLocaleDateString('en-US')
       : new Date().toLocaleDateString('en-US'),
-    property: r.property?.name || 'Green Nest PG',
+    property: r.property?.name || 'Sunrise PG Residency',
   };
 }
 
@@ -111,7 +112,7 @@ export function mapComplaintFromDb(c, tenantsList = []) {
         by: tenantName
       }
     ],
-    property: c.property?.name || 'Green Nest PG',
+    property: c.property?.name || 'Sunrise PG Residency',
   };
 }
 
@@ -134,7 +135,7 @@ export function mapWardenNotificationFromDb(n) {
     read: Boolean(n.read),
     senderName: n.senderName || 'Anonymous',
     senderRole: n.senderRole || 'tenant',
-    propertyName: n.propertyName || 'Green Nest PG',
+    propertyName: n.propertyName || 'Sunrise PG Residency',
     roomNumber: n.roomNumber || '',
     time: time,
     icon: iconType,
@@ -183,10 +184,11 @@ function notifyListeners() {
 
 export async function fetchLiveWardenData() {
   try {
-    const [roomsRes, tenantsRes, complaintsRes, notifsRes, violsRes] = await Promise.allSettled([
+    const [roomsRes, tenantsRes, complaintsRes, issuesRes, notifsRes, violsRes] = await Promise.allSettled([
       getRoomsApi(),
       getTenantsApi(),
       getComplaintsApi(),
+      getIssuesApi(),
       getWardenNotificationsApi(),
       getRuleViolationsApi(),
     ]);
@@ -200,7 +202,42 @@ export async function fetchLiveWardenData() {
     const rawComplaints = complaintsRes.status === 'fulfilled' && Array.isArray(complaintsRes.value) 
       ? complaintsRes.value 
       : [];
-    const complaints = rawComplaints.map(c => mapComplaintFromDb(c, tenants));
+    const rawIssues = issuesRes.status === 'fulfilled' && Array.isArray(issuesRes.value) 
+      ? issuesRes.value 
+      : [];
+
+    const mappedComplaints = rawComplaints.map(c => ({
+      ...mapComplaintFromDb(c, tenants),
+      entityType: 'complaint'
+    }));
+
+    const mappedIssues = rawIssues.map(i => ({
+      id: i.id,
+      entityType: 'issue',
+      tenantId: i.tenantId,
+      tenant: i.tenant?.name || (i.tenantId === 1 ? 'Arun Kumar' : 'Tenant'),
+      room: i.location ? i.location.replace(/^Room\s*/i, '') : (i.roomEntity?.roomNumber || '102'),
+      type: i.title || i.category || 'Maintenance',
+      title: i.title || i.category || 'Maintenance',
+      category: i.category || 'General',
+      priority: (i.priority || 'medium').toLowerCase(),
+      status: (i.status || 'open').toLowerCase().replace('-', '_'),
+      severity: (i.priority === 'high' ? 'High' : i.priority === 'low' ? 'Low' : 'Medium'),
+      date: i.createdAt ? new Date(i.createdAt).toLocaleDateString('en-US') : new Date().toLocaleDateString('en-US'),
+      createdAt: i.createdAt,
+      description: i.description || i.title || '',
+      timeline: [
+        {
+          time: i.createdAt ? new Date(i.createdAt).toLocaleDateString('en-US') : new Date().toLocaleDateString('en-US'),
+          event: `Issue submitted by ${i.tenant?.name || 'Arun Kumar'}`,
+          by: i.tenant?.name || 'Arun Kumar'
+        }
+      ],
+      property: i.property?.name || 'Sunrise PG Residency',
+      propertyId: i.propertyId || 1,
+    }));
+
+    const complaints = [...mappedComplaints, ...mappedIssues];
 
     const rawNotifs = notifsRes.status === 'fulfilled' && Array.isArray(notifsRes.value) 
       ? notifsRes.value 

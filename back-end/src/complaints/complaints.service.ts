@@ -6,6 +6,7 @@ import { User } from '../users/user.entity';
 import { Property } from '../properties/property.entity';
 import { Room } from '../rooms/room.entity';
 import { CreateComplaintDto, UpdateComplaintDto } from './complaints.dto';
+import { Notification } from '../notifications/notification.entity';
 import { WardenNotificationsService } from '../warden-notifications/warden-notifications.service';
 
 @Injectable()
@@ -19,6 +20,8 @@ export class ComplaintsService {
     private propertyRepository: Repository<Property>,
     @InjectRepository(Room)
     private roomRepository: Repository<Room>,
+    @InjectRepository(Notification)
+    private notificationsRepository: Repository<Notification>,
     private wardenNotificationsService: WardenNotificationsService,
   ) { }
 
@@ -96,6 +99,7 @@ export class ComplaintsService {
 
   async update(id: number, updateComplaintDto: UpdateComplaintDto) {
     const complaint = await this.findOne(id);
+    const oldStatus = complaint.status;
     const cleanDto = Object.fromEntries(
       Object.entries(updateComplaintDto).filter(([_, v]) => v !== undefined),
     );
@@ -103,7 +107,27 @@ export class ComplaintsService {
       cleanDto.resolvedAt = new Date().toISOString().split('T')[0];
     }
     Object.assign(complaint, cleanDto);
-    return this.complaintsRepository.save(complaint);
+    const saved = await this.complaintsRepository.save(complaint);
+
+    if (cleanDto.status && cleanDto.status !== oldStatus) {
+      try {
+        const notif = this.notificationsRepository.create({
+          title: 'Complaint Status Updated',
+          message: `Your complaint "${complaint.title || complaint.description}" status has changed to ${complaint.status}.`,
+          type: 'complaint_status',
+          priority: complaint.priority || 'medium',
+          recipients: 1,
+          userId: complaint.tenantId,
+          isRead: false,
+          sentAt: new Date().toISOString(),
+        });
+        await this.notificationsRepository.save(notif);
+      } catch (err) {
+        // Non-critical background notification log
+      }
+    }
+
+    return saved;
   }
 
   async remove(id: number) {

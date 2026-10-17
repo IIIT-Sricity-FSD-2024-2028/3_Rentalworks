@@ -41,6 +41,13 @@ export default function BookingRoommate() {
     }
   }, [selectedRoom, pg.id, navigate, setSelectedRoommate]);
 
+  // Reset roommate selection and candidate results when selected room changes
+  useEffect(() => {
+    setMatchedRoommates([]);
+    setHasCalculated(false);
+    setSelectedRoommate(null);
+  }, [selectedRoom?.id, selectedRoom?.sharing, selectedRoom?.type, setSelectedRoommate]);
+
   // CRITICAL: Block ineligible male booking on Girls PG
   useEffect(() => {
     const isGirlsPG = (pg.gender || '').toLowerCase() === 'girls' || pg.title?.toLowerCase().includes('girls');
@@ -87,7 +94,26 @@ export default function BookingRoommate() {
 
   // Local fallback compatibility scoring algorithm matching closeness
   const calculateLocalMatches = (profile, list) => {
-    return list.map(rm => {
+    const targetSharing = (selectedRoom?.sharing || selectedRoom?.type || '').toLowerCase();
+    const capacity = Number(selectedRoom?.capacity) || 0;
+
+    if (targetSharing.includes('single') || capacity === 1) {
+      return [];
+    }
+
+    // Filter candidate roommates strictly matching room sharing type
+    const eligibleList = list.filter(rm => {
+      const rmSharing = (rm.sharing || rm.roomType || '').toLowerCase();
+      if (targetSharing.includes('triple') || capacity === 3) {
+        return rmSharing.includes('triple') || rmSharing.includes('3');
+      }
+      if (targetSharing.includes('double') || capacity === 2) {
+        return rmSharing.includes('double') || rmSharing.includes('2');
+      }
+      return true;
+    });
+
+    return eligibleList.map(rm => {
       let score = 50;
 
       // Sleep schedule closeness
@@ -158,14 +184,31 @@ export default function BookingRoommate() {
 
   const handleCalculateMatches = async () => {
     setIsLoading(true);
+
+    const targetCapacity = Number(selectedRoom?.capacity) || (selectedRoom?.sharing === 'triple' ? 3 : selectedRoom?.sharing === 'single' ? 1 : 2);
+    const targetSharing = selectedRoom?.sharing || (selectedRoom?.type?.toLowerCase().includes('triple') ? 'triple' : selectedRoom?.type?.toLowerCase().includes('single') ? 'single' : 'double');
+
     const guestData = {
       ...form,
       propertyId: pg.id || 1,
       optedSmartMatch: true,
       userId: currentUser?.id || null,
+      roomId: selectedRoom?.id || null,
+      roomNumber: selectedRoom?.roomNumber || null,
+      roomType: selectedRoom?.type || (targetCapacity === 3 ? 'Triple Sharing' : targetCapacity === 1 ? 'Single Room' : 'Double Sharing'),
+      sharingType: targetSharing,
+      capacity: targetCapacity,
     };
 
     setGuestLifestyleProfile(guestData);
+
+    // If single room, no roommates eligible
+    if (targetSharing === 'single' || targetCapacity === 1) {
+      setMatchedRoommates([]);
+      setHasCalculated(true);
+      setIsLoading(false);
+      return;
+    }
 
     try {
       // 1. Save profile to backend table roommate_profiles
@@ -184,7 +227,7 @@ export default function BookingRoommate() {
 
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           const formatted = data.map(item => ({
             id: item.id,
             name: item.name,
@@ -194,7 +237,7 @@ export default function BookingRoommate() {
             company: item.company,
             room: item.roomNumber ? `Room ${item.roomNumber}` : 'Room 101',
             roomNum: item.roomNumber || '101',
-            sharing: item.roomType || selectedRoom?.type || 'Double Sharing',
+            sharing: item.roomType || (targetCapacity === 3 ? 'Triple Sharing' : 'Double Sharing'),
             sleepHabit: item.sleepSchedule,
             cleanliness: item.cleanliness,
             foodHabit: item.foodHabit,
@@ -211,7 +254,7 @@ export default function BookingRoommate() {
       }
     } catch (_) {}
 
-    // Fallback to local calculation on RAW_ROOMMATES
+    // Fallback to local calculation on RAW_ROOMMATES filtered by room sharing type
     const localRanked = calculateLocalMatches(form, RAW_ROOMMATES);
     setMatchedRoommates(localRanked);
     setHasCalculated(true);
@@ -492,63 +535,74 @@ export default function BookingRoommate() {
               <span className="matches-order-pill">⚡ Sorted in Maximum Match Order</span>
             </div>
 
-            <div className="roommate-cards-grid">
-              {matchedRoommates.map((rm) => {
-                const isSelected = selectedRoommate?.id === rm.id;
-                const matchVal = rm.matchPercentage || rm.compatibility || 90;
-                const badgeBg = matchVal >= 90 ? '#dcfce7' : matchVal >= 80 ? '#e0f2fe' : '#fef3c7';
-                const badgeColor = matchVal >= 90 ? '#15803d' : matchVal >= 80 ? '#0369a1' : '#b45309';
+            {matchedRoommates.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '32px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <p style={{ color: '#64748b', fontSize: '15px', margin: 0 }}>
+                  No compatible roommates currently found for {selectedRoom?.type || 'this room sharing type'}.
+                </p>
+                <p style={{ color: '#94a3b8', fontSize: '13px', marginTop: '6px' }}>
+                  You can proceed with auto-assignment and the warden will allocate a matching roommate upon check-in.
+                </p>
+              </div>
+            ) : (
+              <div className="roommate-cards-grid">
+                {matchedRoommates.map((rm) => {
+                  const isSelected = selectedRoommate?.id === rm.id;
+                  const matchVal = rm.matchPercentage || rm.compatibility || 90;
+                  const badgeBg = matchVal >= 90 ? '#dcfce7' : matchVal >= 80 ? '#e0f2fe' : '#fef3c7';
+                  const badgeColor = matchVal >= 90 ? '#15803d' : matchVal >= 80 ? '#0369a1' : '#b45309';
 
-                return (
-                  <div key={rm.id} className={`roommate-profile-card ${isSelected ? 'selected' : ''}`}>
-                    <div className="rm-card-top">
-                      <img src={rm.img || rm.avatar} alt={rm.name} className="rm-avatar" />
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <strong className="rm-name">{rm.name}</strong>
-                          <span
-                            className="compatibility-badge"
-                            style={{ background: badgeBg, color: badgeColor }}
-                          >
-                            ⚡ {matchVal}% Match
-                          </span>
+                  return (
+                    <div key={rm.id} className={`roommate-profile-card ${isSelected ? 'selected' : ''}`}>
+                      <div className="rm-card-top">
+                        <img src={rm.img || rm.avatar} alt={rm.name} className="rm-avatar" />
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <strong className="rm-name">{rm.name}</strong>
+                            <span
+                              className="compatibility-badge"
+                              style={{ background: badgeBg, color: badgeColor }}
+                            >
+                              ⚡ {matchVal}% Match
+                            </span>
+                          </div>
+                          <p className="rm-job">{rm.job || rm.profession} • {rm.age} yrs • {rm.company}</p>
+                          <span className="rm-room-chip">{rm.room} ({rm.sharing})</span>
                         </div>
-                        <p className="rm-job">{rm.job || rm.profession} • {rm.age} yrs • {rm.company}</p>
-                        <span className="rm-room-chip">{rm.room} ({rm.sharing})</span>
                       </div>
-                    </div>
 
-                    <div className="rm-habits-list">
-                      <div className="habit-row">
-                        <span className="habit-label">Sleep Schedule:</span>
-                        <span className="habit-val">{rm.sleepHabit}</span>
+                      <div className="rm-habits-list">
+                        <div className="habit-row">
+                          <span className="habit-label">Sleep Schedule:</span>
+                          <span className="habit-val">{rm.sleepHabit}</span>
+                        </div>
+                        <div className="habit-row">
+                          <span className="habit-label">Cleanliness:</span>
+                          <span className="habit-val">{rm.cleanliness}</span>
+                        </div>
+                        <div className="habit-row">
+                          <span className="habit-label">Food Habit:</span>
+                          <span className="habit-val">{rm.foodHabit}</span>
+                        </div>
                       </div>
-                      <div className="habit-row">
-                        <span className="habit-label">Cleanliness:</span>
-                        <span className="habit-val">{rm.cleanliness}</span>
-                      </div>
-                      <div className="habit-row">
-                        <span className="habit-label">Food Habit:</span>
-                        <span className="habit-val">{rm.foodHabit}</span>
-                      </div>
-                    </div>
 
-                    <div className="rm-hobbies-chips">
-                      {(rm.hobbies || []).map((h, i) => (
-                        <span key={i} className="hobby-chip">#{h}</span>
-                      ))}
-                    </div>
+                      <div className="rm-hobbies-chips">
+                        {(rm.hobbies || []).map((h, i) => (
+                          <span key={i} className="hobby-chip">#{h}</span>
+                        ))}
+                      </div>
 
-                    <button
-                      className={`btn-select-rm ${isSelected ? 'btn-selected' : ''}`}
-                      onClick={() => handleSelectRoommate(rm)}
-                    >
-                      {isSelected ? '✓ Selected Roommate' : 'Choose as Roommate →'}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+                      <button
+                        className={`btn-select-rm ${isSelected ? 'btn-selected' : ''}`}
+                        onClick={() => handleSelectRoommate(rm)}
+                      >
+                        {isSelected ? '✓ Selected Roommate' : 'Choose as Roommate →'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

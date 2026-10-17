@@ -25,7 +25,6 @@ export default function Profile({
   );
 
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [is2FAModalOpen, setIs2FAModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const [passForm, setPassForm] = useState({
@@ -295,14 +294,6 @@ export default function Profile({
 
               <button
                 className="btn btn-secondary btn-start"
-                onClick={() => setIs2FAModalOpen(true)}
-              >
-                <span className="material-icons icon-18">security</span>{' '}
-                Enable Two-Factor Auth
-              </button>
-
-              <button
-                className="btn btn-secondary btn-start"
                 onClick={handleDownloadData}
               >
                 <span className="material-icons icon-18">download</span>{' '}
@@ -412,67 +403,6 @@ export default function Profile({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal: 2FA */}
-      {is2FAModalOpen && (
-        <div
-          className="modal-overlay"
-          onClick={(e) => {
-            if (e.target.className === 'modal-overlay') setIs2FAModalOpen(false);
-          }}
-        >
-          <div className="modal">
-            <div className="modal-header">
-              <span className="modal-title">
-                <span className="material-icons icon-22 icon-middle icon-mr-6">
-                  security
-                </span>{' '}
-                Two-Factor Authentication
-              </span>
-              <button
-                className="modal-close"
-                onClick={() => setIs2FAModalOpen(false)}
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="qr-box-wrap">
-              <div className="mb-16">
-                <span className="material-icons icon-48 text-primary-cost">
-                  qr_code_2
-                </span>
-              </div>
-              <p className="modal-desc-text mb-16">
-                Scan the QR code below with your authenticator app
-              </p>
-              <div className="qr-code-box">
-                <div className="qr-code-label">QR CODE SECRET</div>
-                <div className="icon-30 mb-8">
-                  <span className="material-icons icon-30 icon-muted">grid_on</span>
-                </div>
-                <div className="qr-code-secret">JBSW Y3DP EHPK 3PXP</div>
-              </div>
-            </div>
-
-            <div className="modal-footer">
-              <button
-                className="btn btn-secondary"
-                onClick={() => setIs2FAModalOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={() => setIs2FAModalOpen(false)}
-              >
-                <span className="material-icons icon-16 icon-middle">check</span>{' '}
-                Enable 2FA
-              </button>
-            </div>
           </div>
         </div>
       )}

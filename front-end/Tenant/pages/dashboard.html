@@ -14,7 +14,6 @@
         <div class="stay-item"><div class="stay-label">Check-out Date</div><div class="stay-value">Jul 14, 2026</div></div>
         <div class="stay-item"><div class="stay-label">Rent Due Date</div><div class="stay-value">Mar 10, 2026</div></div>
         <div class="stay-item"><div class="stay-label">Monthly Rent</div><div class="stay-value">₹12,000</div></div>
-        <div class="stay-item"><div class="stay-label">Booking Status</div><div class="stay-value"><span class="badge-active">Active</span></div></div>
         <div class="stay-item"><div class="stay-label">Utilities</div><div class="utility-icons"><span class="utility-icon"><span class="material-icons-outlined" style="font-size:24px;">bolt</span></span><span class="utility-icon">💧</span><span class="utility-icon"><span class="material-icons-outlined" style="font-size:24px;">wifi</span></span></div></div>
       </div>
     </div>
@@ -43,23 +42,12 @@
         <div class="section-header"><span class="section-title">Expense Breakdown</span></div>
         <div class="section-body">
           <div style="display:flex;align-items:center;gap:20px;">
-            <div class="pie-chart"><div class="pie-center"></div></div>
+            <div class="pie-chart" style="background: conic-gradient(var(--primary) 0% 100%);"><div class="pie-center"></div></div>
             <div class="pie-legend">
-              <div class="pie-legend-item"><span class="pie-dot" style="background:var(--primary)"></span> Rent 75%</div>
-              <div class="pie-legend-item"><span class="pie-dot" style="background:#f59e0b"></span> Services 9%</div>
-              <div class="pie-legend-item"><span class="pie-dot" style="background:#3b82f6"></span> Utilities 16%</div>
+              <div class="pie-legend-item"><span class="pie-dot" style="background:var(--primary)"></span> Rent 100%</div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
-
-    <div class="payment-reminder">
-      <div class="reminder-icon"><span class="material-icons-outlined" style="font-size:24px;">schedule</span></div>
-      <div class="reminder-text">Your monthly rent payment of <strong>₹12,000</strong> is due on <strong>Mar 10, 2026</strong>. Please make the payment before the due date to avoid penalties.</div>
-      <div class="reminder-actions">
-        <button class="btn btn-primary btn-sm" onclick="Navigation.navigate('payments')">Pay Rent Now</button>
-        <button class="btn btn-outline btn-sm" onclick="UI.showToast('Reminder set for Mar 9, 2026','success')">Set Reminder</button>
       </div>
     </div>
   </div>

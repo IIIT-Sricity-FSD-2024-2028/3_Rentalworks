@@ -107,9 +107,6 @@ function renderProfilePage(profile, totalProps, totalRevenue) {
             <button class="btn btn-secondary" style="justify-content:flex-start;gap:12px" onclick="changePassword()">
               <span class="material-icons" style="font-size:18px">lock</span> Change Password
             </button>
-            <button class="btn btn-secondary" style="justify-content:flex-start;gap:12px" onclick="enableTwoFactor()">
-              <span class="material-icons" style="font-size:18px">security</span> Enable Two-Factor Auth
-            </button>
             <button class="btn btn-secondary" style="justify-content:flex-start;gap:12px" onclick="downloadData()">
               <span class="material-icons" style="font-size:18px">download</span> Download My Data
             </button>
@@ -197,27 +194,7 @@ function submitChangePassword() {
   showToast('Password updated successfully!', 'success');
 }
 
-function enableTwoFactor() {
-  openModal(`
-    <div class="modal-header">
-      <span class="modal-title"><span class="material-icons" style="font-size:22px;vertical-align:middle">security</span> Two-Factor Authentication</span>
-      <button class="modal-close" onclick="closeModal()">×</button>
-    </div>
-    <div style="text-align:center;padding:20px 0">
-      <div style="font-size:48px;margin-bottom:16px"><span class="material-icons" style="font-size:48px;color:var(--primary)">qr_code_2</span></div>
-      <p style="font-size:14px;color:var(--text-body);margin-bottom:16px">Scan the QR code below with your authenticator app (Google Authenticator, Authy, etc.)</p>
-      <div style="background:var(--bg-main);border-radius:12px;padding:20px;display:inline-block;margin-bottom:16px">
-        <div style="font-size:11px;color:var(--text-muted);letter-spacing:3px">QR CODE PLACEHOLDER</div>
-        <div style="font-size:30px;margin:8px 0"><span class="material-icons" style="font-size:30px;color:var(--text-muted)">grid_on</span></div>
-        <div style="font-size:12px;font-family:monospace;background:#fff;padding:6px 10px;border-radius:6px;border:1px solid var(--border)">JBSW Y3DP EHPK 3PXP</div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="closeModal();showToast('2FA enabled!','success')"><span class="material-icons" style="font-size:16px;vertical-align:middle">check</span> Enable 2FA</button>
-    </div>
-  `);
-}
+
 
 function downloadData() {
   const data = getData();

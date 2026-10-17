@@ -2,12 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RoommateProfile } from './roommate-profile.entity';
+import { Room } from '../rooms/room.entity';
 
 @Injectable()
 export class RoommatesService {
   constructor(
     @InjectRepository(RoommateProfile)
     private readonly roommateProfileRepo: Repository<RoommateProfile>,
+    @InjectRepository(Room)
+    private readonly roomRepo: Repository<Room>,
   ) {}
 
   async findTenantsByProperty(propertyId: number): Promise<RoommateProfile[]> {
@@ -19,6 +22,46 @@ export class RoommatesService {
 
   async calculateMatches(guestProfile: any): Promise<any[]> {
     const propertyId = guestProfile.propertyId ? Number(guestProfile.propertyId) : 1;
+
+    // Canonical source of truth for room sharing type
+    let targetSharing = '';
+    let targetCapacity = guestProfile.capacity ? Number(guestProfile.capacity) : 0;
+
+    if (guestProfile.roomId) {
+      try {
+        const room = await this.roomRepo.findOne({ where: { id: Number(guestProfile.roomId) } });
+        if (room) {
+          targetCapacity = room.capacity;
+          const rType = (room.roomType || '').toLowerCase();
+          if (room.capacity === 1 || rType.includes('single')) {
+            targetSharing = 'single';
+          } else if (room.capacity === 3 || rType.includes('triple')) {
+            targetSharing = 'triple';
+          } else if (room.capacity === 2 || rType.includes('double')) {
+            targetSharing = 'double';
+          }
+        }
+      } catch (err) {
+        // fallback to guestProfile attributes
+      }
+    }
+
+    if (!targetSharing) {
+      const raw = (guestProfile.sharingType || guestProfile.roomType || guestProfile.sharing || '').toLowerCase();
+      if (raw.includes('single') || targetCapacity === 1) {
+        targetSharing = 'single';
+      } else if (raw.includes('triple') || targetCapacity === 3) {
+        targetSharing = 'triple';
+      } else if (raw.includes('double') || targetCapacity === 2) {
+        targetSharing = 'double';
+      }
+    }
+
+    // Single sharing room has NO roommates
+    if (targetSharing === 'single' || targetCapacity === 1) {
+      return [];
+    }
+
     let tenants = await this.roommateProfileRepo.find({
       where: { propertyId, isTenant: true },
     });
@@ -27,6 +70,24 @@ export class RoommatesService {
       tenants = await this.roommateProfileRepo.find({
         where: { isTenant: true },
       });
+    }
+
+    // Filter candidate tenants strictly by sharing type BEFORE calculating compatibility
+    if (targetSharing) {
+      tenants = tenants.filter((tenant) => {
+        const tenantSharing = (tenant.roomType || '').toLowerCase();
+        if (targetSharing === 'triple') {
+          return tenantSharing.includes('triple') || tenantSharing.includes('3');
+        }
+        if (targetSharing === 'double') {
+          return tenantSharing.includes('double') || tenantSharing.includes('2');
+        }
+        return true;
+      });
+    }
+
+    if (tenants.length === 0) {
+      return [];
     }
 
     const guestInterests = Array.isArray(guestProfile.interests)

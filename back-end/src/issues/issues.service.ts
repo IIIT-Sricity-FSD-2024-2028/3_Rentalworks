@@ -8,6 +8,10 @@ import { Repository } from 'typeorm';
 import { Issue, IssueStatus } from './issue.entity';
 import { CreateIssueDto, UpdateIssueDto } from './issues.dto';
 import { Notification } from '../notifications/notification.entity';
+import { User } from '../users/user.entity';
+import { Property } from '../properties/property.entity';
+import { Room } from '../rooms/room.entity';
+import { WardenNotificationsService } from '../warden-notifications/warden-notifications.service';
 
 @Injectable()
 export class IssuesService {
@@ -16,6 +20,13 @@ export class IssuesService {
     private readonly issuesRepository: Repository<Issue>,
     @InjectRepository(Notification)
     private readonly notificationsRepository: Repository<Notification>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    @InjectRepository(Property)
+    private readonly propertyRepository: Repository<Property>,
+    @InjectRepository(Room)
+    private readonly roomRepository: Repository<Room>,
+    private readonly wardenNotificationsService: WardenNotificationsService,
   ) {}
 
   async create(createDto: CreateIssueDto, tenantId: number): Promise<Issue> {
@@ -47,6 +58,46 @@ export class IssuesService {
       await this.notificationsRepository.save(notif);
     } catch (err) {
       // Non-critical background notification log
+    }
+
+    // Automatically notify Warden in warden_notifications table
+    try {
+      let tenantName = 'Arun Kumar';
+      let propertyName = 'Sunrise PG Residency';
+      let roomNumber = '102';
+
+      if (finalTenantId) {
+        const u = await this.userRepository.findOne({ where: { id: finalTenantId } });
+        if (u) tenantName = u.name;
+      }
+
+      if (savedIssue.propertyId) {
+        const p = await this.propertyRepository.findOne({ where: { id: savedIssue.propertyId } });
+        if (p) propertyName = p.name;
+      }
+
+      if (savedIssue.roomId) {
+        const r = await this.roomRepository.findOne({ where: { id: savedIssue.roomId } });
+        if (r) roomNumber = r.roomNumber;
+      } else if (savedIssue.location) {
+        roomNumber = savedIssue.location.replace(/^Room\s*/i, '');
+      }
+
+      await this.wardenNotificationsService.create({
+        title: `Tenant Issue: ${savedIssue.title}`,
+        message: savedIssue.description,
+        type: 'issue',
+        priority: savedIssue.priority || 'medium',
+        senderName: tenantName,
+        senderRole: 'tenant',
+        propertyName: propertyName,
+        roomNumber: roomNumber,
+        tenantId: savedIssue.tenantId,
+        propertyId: savedIssue.propertyId || 1,
+        sourceReferenceId: savedIssue.id,
+      });
+    } catch (notifErr) {
+      console.warn('Could not post auto-notification to warden_notifications:', notifErr);
     }
 
     return savedIssue;

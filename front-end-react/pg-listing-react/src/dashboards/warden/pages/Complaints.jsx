@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useWardenData } from '../utils/dataStore';
-import { updateComplaintApi } from '../utils/api';
+import { updateComplaintApi, updateIssueApi, sendTenantNotificationApi } from '../utils/api';
 import Modal from '../components/Modal';
 
 export default function Complaints() {
@@ -83,22 +83,38 @@ export default function Complaints() {
     updateComplaint(selectedComplaint.id, { status: newStatus });
 
     try {
-      await updateComplaintApi(selectedComplaint.id, {
-        status: newStatus,
-        resolution: newStatus === 'resolved' ? 'Resolved by Warden' : undefined,
+      if (selectedComplaint.entityType === 'issue') {
+        await updateIssueApi(selectedComplaint.id, {
+          status: newStatus,
+        });
+      } else {
+        await updateComplaintApi(selectedComplaint.id, {
+          status: newStatus,
+          resolution: newStatus === 'resolved' ? 'Resolved by Warden' : undefined,
+        });
+      }
+
+      // Send persistent notification to tenant Arun Kumar
+      await sendTenantNotificationApi({
+        userId: selectedComplaint.tenantId || 1,
+        title: `${selectedComplaint.entityType === 'issue' ? 'Issue' : 'Complaint'} Status Updated`,
+        message: `Your ${selectedComplaint.entityType === 'issue' ? 'issue' : 'complaint'} "${selectedComplaint.title || selectedComplaint.description}" is now ${getStatusLabel(newStatus)}.`,
+        type: newStatus === 'resolved' ? 'success' : 'update',
+        priority: 'high',
+        sentAt: new Date().toISOString(),
       });
     } catch (apiErr) {
-      console.warn('Backend updateComplaint failed, falling back:', apiErr);
+      console.warn('Backend status update failed, falling back:', apiErr);
     }
 
-    showToast('success', 'Status Updated', `Complaint marked as ${newStatus.replace('_', ' ')}`);
+    showToast('success', 'Status Updated', `${selectedComplaint.entityType === 'issue' ? 'Issue' : 'Complaint'} marked as ${newStatus.replace('_', ' ')}`);
 
     // Notify Tenant and optionally Owner
     let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
     crossNotifs.push({
       id: Date.now(),
-      title: 'Complaint Status Updated',
-      message: `Your complaint "${selectedComplaint.description || selectedComplaint.type}" is now ${getStatusLabel(newStatus)}.`,
+      title: `${selectedComplaint.entityType === 'issue' ? 'Issue' : 'Complaint'} Status Updated`,
+      message: `Your ${selectedComplaint.entityType === 'issue' ? 'issue' : 'complaint'} "${selectedComplaint.description || selectedComplaint.type}" is now ${getStatusLabel(newStatus)}.`,
       type: newStatus === 'resolved' ? 'success' : 'update',
       priority: 'important',
       targetRole: 'tenant',

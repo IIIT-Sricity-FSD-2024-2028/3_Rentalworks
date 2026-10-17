@@ -32,12 +32,24 @@ export default function BookingReview() {
 
   const isSingleRoom = selectedRoom?.sharing === 'single' || selectedRoom?.capacity === 1;
 
-  // CRITICAL: Ensure no roommate is retained for a Single Room
+  // CRITICAL: Ensure no incompatible roommate is retained
   useEffect(() => {
     if (isSingleRoom && selectedRoommate) {
       setSelectedRoommate(null);
+    } else if (selectedRoommate && selectedRoom) {
+      const targetSharing = (selectedRoom.sharing || selectedRoom.type || '').toLowerCase();
+      const rmSharing = (selectedRoommate.sharing || selectedRoommate.roomType || '').toLowerCase();
+      const capacity = Number(selectedRoom.capacity) || 0;
+      const isMismatch = (targetSharing.includes('triple') || capacity === 3)
+        ? (!rmSharing.includes('triple') && !rmSharing.includes('3'))
+        : (targetSharing.includes('double') || capacity === 2)
+          ? (!rmSharing.includes('double') && !rmSharing.includes('2'))
+          : false;
+      if (isMismatch) {
+        setSelectedRoommate(null);
+      }
     }
-  }, [isSingleRoom, selectedRoommate, setSelectedRoommate]);
+  }, [isSingleRoom, selectedRoom, selectedRoommate, setSelectedRoommate]);
 
   // CRITICAL: Block ineligible male booking on Girls PG
   useEffect(() => {

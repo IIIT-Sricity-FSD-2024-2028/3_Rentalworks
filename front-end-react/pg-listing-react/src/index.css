@@ -356,7 +356,8 @@ body {
 }
 
 /* ======= BADGES ======= */
-.badge {
+.listing-card .badge,
+.image-box .badge {
   position: absolute;
   padding: 5px 11px;
   border-radius: 50px;
@@ -1201,7 +1202,8 @@ input[type="checkbox"] {
   color: var(--text);
 }
 
-.stats-grid {
+.detail-section .stats-grid,
+.landing-stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;

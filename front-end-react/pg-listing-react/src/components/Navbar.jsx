@@ -41,10 +41,12 @@ export default function Navbar() {
             </button>
           )}
 
-          <button className="btn-nav-text" onClick={() => navigate('/my-bookings')}>
-            <span className="material-icons-outlined" style={{ fontSize: '18px' }}>assignment</span>
-            My Bookings
-          </button>
+          {currentUser && (
+            <button className="btn-nav-text" onClick={() => navigate('/my-bookings')}>
+              <span className="material-icons-outlined" style={{ fontSize: '18px' }}>assignment</span>
+              My Bookings
+            </button>
+          )}
 
           {currentUser ? (
             <div className="user-profile-menu">

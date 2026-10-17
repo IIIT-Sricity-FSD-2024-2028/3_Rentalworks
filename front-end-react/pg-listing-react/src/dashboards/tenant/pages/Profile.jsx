@@ -4,7 +4,6 @@ import { apiFetch } from '../services/api';
 
 const Profile = () => {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [twoFA, setTwoFA] = useState(false);
   
   const { tenant, activeBooking, loading } = useAuth();
   
@@ -117,16 +116,6 @@ const Profile = () => {
                     </div>
                   </div>
                   <button className="btn btn-outline btn-sm" onClick={() => setIsChangingPassword(true)}>Change Password</button>
-                </div>
-                <div className="security-item">
-                  <div style={{display: 'flex', alignItems: 'center'}}>
-                    <div className="security-icon" style={{background: '#f0fdf4'}}><span className="material-icons-outlined" style={{fontSize: '24px'}}>lock</span></div>
-                    <div className="security-info">
-                      <div className="security-title">Two-Factor Authentication</div>
-                      <div className="security-sub">Add an extra layer of security</div>
-                    </div>
-                  </div>
-                  <button className="btn btn-primary btn-sm" onClick={() => setTwoFA(!twoFA)}>{twoFA ? 'Disable' : 'Enable'}</button>
                 </div>
               </div>
             </div>

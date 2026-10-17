@@ -28,7 +28,7 @@ export class BookingsController {
   }
 
   @Get()
-  @Roles('admin', 'warden', 'tenant', 'owner')
+  @Roles('admin', 'warden', 'tenant', 'owner', 'guest', 'super_admin')
   @ApiOperation({ summary: 'Get all bookings' })
   @ApiQuery({ name: 'userId', required: false })
   @ApiQuery({ name: 'tenantId', required: false })
@@ -46,7 +46,7 @@ export class BookingsController {
   }
 
   @Get(':id')
-  @Roles('admin', 'warden', 'tenant', 'owner')
+  @Roles('admin', 'warden', 'tenant', 'owner', 'guest', 'super_admin')
   @ApiOperation({ summary: 'Get booking by ID' })
   findOne(@Param('id') id: string) {
     return this.bookingsService.findOne(+id);

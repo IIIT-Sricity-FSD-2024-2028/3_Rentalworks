@@ -32,17 +32,9 @@ const Dashboard = () => {
   const [pendingServicesCount, setPendingServicesCount] = useState(0);
   const [recentIssues, setRecentIssues] = useState([]);
   const [recentComplaints, setRecentComplaints] = useState([]);
+  const [tenantCompletedPayments, setTenantCompletedPayments] = useState([]);
+  const [tenantServicesList, setTenantServicesList] = useState([]);
   const [loadingItems, setLoadingItems] = useState(true);
-
-  useEffect(() => {
-    // Animate bars
-    const bars = document.querySelectorAll('.bar');
-    bars.forEach(bar => {
-      setTimeout(() => {
-        bar.style.height = bar.dataset.height + 'px';
-      }, 100);
-    });
-  }, []);
 
   useEffect(() => {
     // Fetch stats and lists
@@ -81,11 +73,15 @@ const Dashboard = () => {
         // Fetch payments
         const curM = new Date().getMonth();
         const curY = new Date().getFullYear();
-        const userCompletedThisMonth = (Array.isArray(allPayments) ? allPayments : []).filter(
+        const allCompletedUserPayments = (Array.isArray(allPayments) ? allPayments : []).filter(
           p => Number(p.tenantId) === Number(tenant.id) && 
-          (p.status === 'completed' || p.status === 'success' || p.status === 'verified') &&
-          new Date(p.paidDate || p.createdAt).getMonth() === curM &&
-          new Date(p.paidDate || p.createdAt).getFullYear() === curY
+          (p.status === 'completed' || p.status === 'success' || p.status === 'verified')
+        );
+        setTenantCompletedPayments(allCompletedUserPayments);
+
+        const userCompletedThisMonth = allCompletedUserPayments.filter(
+          p => new Date(p.paidDate || p.createdAt).getMonth() === curM &&
+               new Date(p.paidDate || p.createdAt).getFullYear() === curY
         );
         const monthlyRentVal = activeBooking ? Number(activeBooking.rent || 0) : 0;
         const paidSoFar = userCompletedThisMonth.reduce((sum, p) => sum + Number(p.amount || 0), 0);
@@ -93,7 +89,9 @@ const Dashboard = () => {
         setPaymentsDue(remainingDue);
 
         // Service requests
-        const activeServices = (Array.isArray(myServiceRequests) ? myServiceRequests : []).filter(
+        const sList = Array.isArray(myServiceRequests) ? myServiceRequests : [];
+        setTenantServicesList(sList);
+        const activeServices = sList.filter(
           s => s.status === 'pending' || s.status === 'in_progress' || s.status === 'scheduled'
         );
         setPendingServicesCount(activeServices.length);
@@ -157,7 +155,6 @@ const Dashboard = () => {
           <div className="stay-item"><div className="stay-label">Check-out Date</div><div className="stay-value">{checkOutDate}</div></div>
           <div className="stay-item"><div className="stay-label">Rent Due Date</div><div className="stay-value">{rentDueDate}</div></div>
           <div className="stay-item"><div className="stay-label">Monthly Rent</div><div className="stay-value">₹{Number(rent).toLocaleString()}</div></div>
-          <div className="stay-item"><div className="stay-label">Booking Status</div><div className="stay-value"><span className={`badge-${status === 'active' || status === 'confirmed' ? 'active' : 'warning'}`} style={{textTransform: 'capitalize'}}>{status}</span></div></div>
           <div className="stay-item">
             <div className="stay-label">Utilities Included</div>
             <div className="utility-icons">
@@ -356,42 +353,122 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="grid-2 mb-20" style={{ marginBottom: '20px' }}>
-        <div className="card">
-          <div className="card-body">
-            <div className="card-title">Payment History</div>
-            <div className="bar-chart mt-14" style={{ marginTop: '14px' }}>
-              <div className="bar-wrapper"><div className="bar" data-height="110" style={{height: 0}}></div><div className="bar-label">Oct</div></div>
-              <div className="bar-wrapper"><div className="bar" data-height="115" style={{height: 0}}></div><div className="bar-label">Nov</div></div>
-              <div className="bar-wrapper"><div className="bar" data-height="120" style={{height: 0}}></div><div className="bar-label">Dec</div></div>
-              <div className="bar-wrapper"><div className="bar" data-height="118" style={{height: 0}}></div><div className="bar-label">Jan</div></div>
-              <div className="bar-wrapper"><div className="bar" data-height="122" style={{height: 0}}></div><div className="bar-label">Feb</div></div>
+      {/* REAL-DATA PAYMENT HISTORY HISTOGRAM & EXPENSE BREAKDOWN */}
+      {(() => {
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const chartMonths = [];
+        const now = new Date();
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const mIdx = d.getMonth();
+          const y = d.getFullYear();
+          const mPayments = tenantCompletedPayments.filter(p => {
+            const pDate = new Date(p.paidDate || p.createdAt);
+            return pDate.getMonth() === mIdx && pDate.getFullYear() === y;
+          });
+          const totalAmount = mPayments.reduce((acc, p) => acc + Number(p.amount || 0), 0);
+          chartMonths.push({
+            label: monthNames[mIdx],
+            year: y,
+            total: totalAmount,
+          });
+        }
+        const maxMonthAmount = Math.max(...chartMonths.map(m => m.total), 1);
+
+        const totalRentPaid = tenantCompletedPayments.reduce((acc, p) => acc + Number(p.amount || 0), 0);
+        const completedServices = tenantServicesList.filter(s => s.status === 'completed');
+        const totalServicesPaid = completedServices.reduce((acc, s) => acc + Number(s.amount || 0), 0);
+        const totalExpense = totalRentPaid + totalServicesPaid;
+
+        const rentPct = totalExpense > 0 ? Math.round((totalRentPaid / totalExpense) * 100) : 100;
+        const servPct = totalExpense > 0 ? 100 - rentPct : 0;
+
+        return (
+          <div className="grid-2 mb-20" style={{ marginBottom: '20px' }}>
+            <div className="card">
+              <div className="card-body">
+                <div className="card-title">Payment History</div>
+                <div className="bar-chart mt-14" style={{ marginTop: '14px', display: 'flex', alignItems: 'flex-end', gap: '16px', minHeight: '130px' }}>
+                  {chartMonths.map((m, idx) => {
+                    const barHeight = m.total > 0 ? Math.max(18, Math.round((m.total / maxMonthAmount) * 110)) : 6;
+                    return (
+                      <div key={idx} className="bar-wrapper" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <div
+                          className="bar"
+                          style={{
+                            height: `${barHeight}px`,
+                            width: '100%',
+                            maxWidth: '38px',
+                            background: m.total > 0 ? 'var(--primary)' : '#e2e8f0',
+                            borderRadius: '4px 4px 0 0',
+                            transition: 'height 0.4s ease',
+                          }}
+                          title={`${m.label} ${m.year}: ₹${m.total.toLocaleString()}`}
+                        />
+                        <div className="bar-label" style={{ fontSize: '11px', marginTop: '6px', color: 'var(--text-secondary)' }}>
+                          {m.label}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-        <div className="card">
-          <div className="card-body">
-            <div className="card-title">Expense Breakdown</div>
-            <div style={{display: 'flex', alignItems: 'center', gap: '20px', marginTop: '14px'}}>
-              <div className="pie-chart"><div className="pie-center"></div></div>
-              <div className="pie-legend">
-                <div className="pie-legend-item"><span className="pie-dot" style={{background: 'var(--primary)'}}></span> Rent 75%</div>
-                <div className="pie-legend-item"><span className="pie-dot" style={{background: '#f59e0b'}}></span> Services 9%</div>
-                <div className="pie-legend-item"><span className="pie-dot" style={{background: '#3b82f6'}}></span> Utilities 16%</div>
+
+            <div className="card">
+              <div className="card-body">
+                <div className="card-title">Expense Breakdown</div>
+                {totalExpense === 0 ? (
+                  <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+                    No completed payments recorded yet.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginTop: '14px' }}>
+                    <div
+                      className="pie-chart"
+                      style={{
+                        position: 'relative',
+                        width: '110px',
+                        height: '110px',
+                        borderRadius: '50%',
+                        background: servPct > 0
+                          ? `conic-gradient(var(--primary) 0% ${rentPct}%, #f59e0b ${rentPct}% 100%)`
+                          : 'var(--primary)',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <div className="pie-center" style={{ position: 'absolute', inset: '18px', background: 'white', borderRadius: '50%' }} />
+                    </div>
+                    <div className="pie-legend" style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                      <div className="pie-legend-item" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span className="pie-dot" style={{ width: '10px', height: '10px', borderRadius: '3px', background: 'var(--primary)', flexShrink: 0 }} />
+                        <strong>Rent</strong> {rentPct}% (₹{totalRentPaid.toLocaleString()})
+                      </div>
+                      {servPct > 0 && (
+                        <div className="pie-legend-item" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span className="pie-dot" style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#f59e0b', flexShrink: 0 }} />
+                          <strong>Services</strong> {servPct}% (₹{totalServicesPaid.toLocaleString()})
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        );
+      })()}
 
-      <div className="payment-reminder">
-        <div className="reminder-icon"><span className="material-icons-outlined" style={{fontSize: '24px'}}>schedule</span></div>
-        <div className="reminder-text">Your monthly rent payment of <strong>₹{Number(rent).toLocaleString()}</strong> is due on <strong>{rentDueDate}</strong>. Please make the payment before the due date to avoid penalties.</div>
-        <div className="reminder-actions">
-          <button className="btn btn-primary btn-sm" onClick={() => navigate('/payments')}>Pay Rent Now</button>
-          <button className="btn btn-outline btn-sm" onClick={() => alert('Reminder set for Mar 9, 2026')}>Set Reminder</button>
+      {/* RENT DUE BANNER (ONLY DISPLAYED IF PAYMENT IS ACTUALLY DUE) */}
+      {paymentsDue > 0 && (
+        <div className="payment-reminder">
+          <div className="reminder-icon"><span className="material-icons-outlined" style={{fontSize: '24px'}}>schedule</span></div>
+          <div className="reminder-text">Your monthly rent payment of <strong>₹{Number(paymentsDue).toLocaleString()}</strong> is due on <strong>{rentDueDate}</strong>. Please make the payment before the due date to avoid penalties.</div>
+          <div className="reminder-actions">
+            <button className="btn btn-primary btn-sm" onClick={() => navigate('/tenant/payments')}>Pay Rent Now</button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

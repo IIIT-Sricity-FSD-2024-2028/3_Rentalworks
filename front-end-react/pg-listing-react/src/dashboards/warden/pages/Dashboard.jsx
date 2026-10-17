@@ -15,29 +15,35 @@ function StatCard({ icon, color, label, value, sub, materialIcon }) {
   );
 }
 
-function ComplaintsChart() {
-  const data = [
-    { label: 'Electrical', val: 12 },
-    { label: 'Plumbing', val: 8 },
-    { label: 'Others', val: 6 },
-    { label: 'Cleanliness', val: 4 }
-  ];
-  const max = Math.max(...data.map(d => d.val)) || 1;
+function ComplaintsChart({ complaints = [] }) {
+  const catCounts = {};
+  complaints.forEach(c => {
+    let cat = c.category || c.type || 'General';
+    cat = cat.charAt(0).toUpperCase() + cat.slice(1);
+    catCounts[cat] = (catCounts[cat] || 0) + 1;
+  });
+
+  let data = Object.entries(catCounts).map(([label, val]) => ({ label, val }));
+  if (data.length === 0) {
+    data = [{ label: 'General', val: 0 }];
+  }
+
+  const max = Math.max(...data.map(d => d.val), 1);
 
   return (
     <div className="chart-card">
-      <h3>Complaints by Type</h3>
+      <h3>Complaints &amp; Issues by Type</h3>
       <div className="bar-chart" id="bar-chart-canvas">
         {data.map(d => (
           <div key={d.label} className="bar-group">
             <div className="bar" style={{ height: `${(d.val / max) * 100}px` }} title={d.val}></div>
-            <span className="bar-label">{d.label}</span>
+            <span className="bar-label">{d.label} ({d.val})</span>
           </div>
         ))}
       </div>
       <div className="bar-legend">
         <div className="bar-legend-dot"></div>
-        <span>Complaints</span>
+        <span>Complaints &amp; Issues</span>
       </div>
     </div>
   );
@@ -189,7 +195,7 @@ export default function Dashboard() {
       </div>
 
       <div className="charts-row">
-        <ComplaintsChart />
+        <ComplaintsChart complaints={complaints} />
         <RoomStatusChart rooms={rooms} />
       </div>
 

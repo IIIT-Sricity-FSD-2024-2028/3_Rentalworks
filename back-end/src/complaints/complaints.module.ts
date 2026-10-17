@@ -6,11 +6,12 @@ import { Complaint } from './complaint.entity';
 import { User } from '../users/user.entity';
 import { Property } from '../properties/property.entity';
 import { Room } from '../rooms/room.entity';
+import { Notification } from '../notifications/notification.entity';
 import { WardenNotificationsModule } from '../warden-notifications/warden-notifications.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Complaint, User, Property, Room]),
+    TypeOrmModule.forFeature([Complaint, User, Property, Room, Notification]),
     WardenNotificationsModule,
   ],
   controllers: [ComplaintsController],

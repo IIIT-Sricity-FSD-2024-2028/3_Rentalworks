@@ -459,10 +459,9 @@ export default function PgDetailsLanding() {
             <div>
               <h2 className="section-title" style={{ margin: 0 }}>Available Rooms &amp; Rates</h2>
               <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px' }}>
-                Select a room to begin reservation. Real-time availability verified with Neon Database.
+                Select a room to begin reservation. Real-time room availability is verified.
               </p>
             </div>
-            <span className="badge-live-available">🟢 Live Neon Availability</span>
           </div>
 
           <div className="rooms-grid">
