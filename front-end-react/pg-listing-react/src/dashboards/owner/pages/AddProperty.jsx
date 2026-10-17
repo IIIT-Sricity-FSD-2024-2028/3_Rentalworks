@@ -1,3 +1,4 @@
+import Icon from '../components/Icon';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -30,6 +31,7 @@ export default function AddProperty({ onAddProperty }) {
     occupied: 0,
     status: 'Active',
     description: '',
+    imageUrl: '',
   });
 
   const [selectedAmenities, setSelectedAmenities] = useState([]);
@@ -108,22 +110,21 @@ export default function AddProperty({ onAddProperty }) {
       occupiedRooms: Number(formData.occupied) || 0,
       monthlyRent: Number(formData.rent),
       amenities: selectedAmenities,
+      images: formData.imageUrl.trim() ? [formData.imageUrl.trim()] : [],
       status: formData.status,
       addedDate: new Date().toISOString().split('T')[0],
       description: formData.description.trim(),
-      owner: 'Rajesh Kumar',
-      ownerEmail: 'rajesh.k@email.com',
     };
 
-    onAddProperty(newProperty);
+    if (await onAddProperty(newProperty) === false) { setIsSubmitting(false); return; }
     setIsSubmitting(false);
-    navigate('/properties');
+    navigate('/dashboard/owner/properties');
   };
 
   return (
     <div>
       <div className="page-header">
-        <Link to="/properties" className="back-link">
+        <Link to="/dashboard/owner/properties" className="back-link">
           ← Back to Properties
         </Link>
         <h1>Add New Property</h1>
@@ -355,7 +356,7 @@ export default function AddProperty({ onAddProperty }) {
                   className={`amenity-toggle ${isSelected ? 'selected' : ''}`}
                   onClick={() => toggleAmenity(a.label)}
                 >
-                  <span className="material-icons icon-16">{a.icon}</span>{' '}
+                  <Icon className="material-icons icon-16">{a.icon}</Icon>{' '}
                   {a.label}
                 </div>
               );
@@ -373,6 +374,8 @@ export default function AddProperty({ onAddProperty }) {
           </div>
 
           <div className="form-group">
+            <label className="form-label" htmlFor="imageUrl">Property photo URL (optional)</label>
+            <input className="form-input" type="url" id="imageUrl" value={formData.imageUrl} onChange={handleChange} placeholder="https://…" />
             <label className="form-label">Property Description</label>
             <textarea
               className="form-input"
@@ -387,7 +390,7 @@ export default function AddProperty({ onAddProperty }) {
 
         {/* Action Buttons */}
         <div className="flex-end-gap mt-8">
-          <Link to="/properties" className="btn btn-secondary btn-lg">
+          <Link to="/dashboard/owner/properties" className="btn btn-secondary btn-lg">
             Cancel
           </Link>
           <button
@@ -400,7 +403,7 @@ export default function AddProperty({ onAddProperty }) {
               'Submitting...'
             ) : (
               <>
-                <span className="material-icons icon-18 icon-middle">check</span>{' '}
+                <Icon className="material-icons icon-18 icon-middle">check</Icon>{' '}
                 Submit for Verification
               </>
             )}

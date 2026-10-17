@@ -1,3 +1,4 @@
+import Icon from './Icon';
 import React from 'react';
 
 // Toast: notification alerts (success, error, warning, info)
@@ -16,9 +17,9 @@ export default function Toast({ toasts, onRemove }) {
     <div className="toast-container">
       {toasts.map((toast) => (
         <div key={toast.id} className={`toast ${toast.type || 'info'}`}>
-          <span className="toast-icon material-icons toast-icon-size">
+          <Icon className="toast-icon material-icons toast-icon-size">
             {getIcon(toast.type)}
-          </span>
+          </Icon>
           <span className="toast-msg">{toast.message}</span>
           <button
             className="toast-close"

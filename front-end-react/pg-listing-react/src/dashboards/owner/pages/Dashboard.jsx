@@ -1,3 +1,4 @@
+import Icon from '../components/Icon';
 import React from 'react';
 import { Link } from 'react-router-dom';
 
@@ -70,7 +71,7 @@ export default function Dashboard({ properties = [], issues = [], notifications 
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-icon purple">
-            <span className="material-icons">apartment</span>
+            <Icon className="material-icons">apartment</Icon>
           </div>
           <div className="stat-info">
             <div className="stat-value">{totalProps}</div>
@@ -81,7 +82,7 @@ export default function Dashboard({ properties = [], issues = [], notifications 
 
         <div className="stat-card">
           <div className="stat-icon green">
-            <span className="material-icons">bed</span>
+            <Icon className="material-icons">bed</Icon>
           </div>
           <div className="stat-info">
             <div className="stat-value">{occupancyPct}%</div>
@@ -94,7 +95,7 @@ export default function Dashboard({ properties = [], issues = [], notifications 
 
         <div className="stat-card">
           <div className="stat-icon orange">
-            <span className="material-icons">payments</span>
+            <Icon className="material-icons">payments</Icon>
           </div>
           <div className="stat-info">
             <div className="stat-value">{formatCurrency(monthlyRevenue)}</div>
@@ -105,7 +106,7 @@ export default function Dashboard({ properties = [], issues = [], notifications 
 
         <div className="stat-card">
           <div className="stat-icon red">
-            <span className="material-icons icon-22 icon-danger">warning</span>
+            <Icon className="material-icons icon-22 icon-danger">warning</Icon>
           </div>
           <div className="stat-info">
             <div className="stat-value">{openIssues}</div>
@@ -125,7 +126,7 @@ export default function Dashboard({ properties = [], issues = [], notifications 
               <div className="card-title">Recent Issues</div>
               <div className="card-subtitle">{issues.length} total issues reported</div>
             </div>
-            <Link to="/issues" className="btn btn-secondary btn-sm">
+            <Link to="/dashboard/owner/issues" className="btn btn-secondary btn-sm">
               View All
             </Link>
           </div>
@@ -133,7 +134,7 @@ export default function Dashboard({ properties = [], issues = [], notifications 
           {recentIssues.length === 0 ? (
             <div className="empty-state p-30-20">
               <div className="empty-icon">
-                <span className="material-icons icon-48 icon-success">check_circle</span>
+                <Icon className="material-icons icon-48 icon-success">check_circle</Icon>
               </div>
               <h3>No Issues</h3>
               <p>All properties are running smoothly</p>
@@ -142,13 +143,13 @@ export default function Dashboard({ properties = [], issues = [], notifications 
             recentIssues.map((issue) => (
               <Link
                 key={issue.id}
-                to="/issues"
+                to="/dashboard/owner/issues"
                 className="issue-card issue-link-card"
               >
                 <div className={`issue-icon ${issue.priority ? issue.priority.toLowerCase() : 'medium'}`}>
-                  <span className="material-icons icon-18">
+                  <Icon className="material-icons icon-18">
                     {getCategoryIcon(issue.category)}
-                  </span>
+                  </Icon>
                 </div>
                 <div className="issue-body">
                   <div className="issue-title icon-14">{issue.title}</div>
@@ -175,7 +176,7 @@ export default function Dashboard({ properties = [], issues = [], notifications 
               <div className="card-title">Property Overview</div>
               <div className="card-subtitle">Occupancy breakdown</div>
             </div>
-            <Link to="/properties" className="btn btn-secondary btn-sm">
+            <Link to="/dashboard/owner/properties" className="btn btn-secondary btn-sm">
               Manage
             </Link>
           </div>
@@ -183,11 +184,11 @@ export default function Dashboard({ properties = [], issues = [], notifications 
           {properties.length === 0 ? (
             <div className="empty-state p-30-20">
               <div className="empty-icon">
-                <span className="material-icons icon-48 icon-light">apartment</span>
+                <Icon className="material-icons icon-48 icon-light">apartment</Icon>
               </div>
               <h3>No Properties</h3>
               <p>
-                <Link to="/add-property" className="text-primary-cost">
+                <Link to="/dashboard/owner/add-property" className="text-primary-cost">
                   Add your first property
                 </Link>
               </p>
@@ -234,7 +235,7 @@ export default function Dashboard({ properties = [], issues = [], notifications 
               <div className="card-title">Notifications</div>
               <div className="card-subtitle">{unreadNotifs} unread</div>
             </div>
-            <Link to="/notifications" className="btn btn-secondary btn-sm">
+            <Link to="/dashboard/owner/notifications" className="btn btn-secondary btn-sm">
               View All
             </Link>
           </div>
@@ -242,14 +243,14 @@ export default function Dashboard({ properties = [], issues = [], notifications 
           {recentNotifs.map((n) => (
             <Link
               key={n.id}
-              to="/notifications"
+              to="/dashboard/owner/notifications"
               className={`notif-card ${!n.read ? 'unread' : ''} notif-link-card`}
             >
               {!n.read && <div className="unread-dot"></div>}
               <div className={`notif-icon notif-${n.type || 'info'}`}>
-                <span className="material-icons icon-18">
+                <Icon className="material-icons icon-18">
                   {getNotifIcon(n.type)}
-                </span>
+                </Icon>
               </div>
               <div className="notif-body">
                 <div className="notif-title">{n.title}</div>
@@ -270,31 +271,31 @@ export default function Dashboard({ properties = [], issues = [], notifications 
           </div>
 
           <div className="flex-col-gap-12">
-            <Link to="/add-property" className="btn btn-primary btn-start">
-              <span className="material-icons icon-18">add</span> Add New Property
+            <Link to="/dashboard/owner/add-property" className="btn btn-primary btn-start">
+              <Icon className="material-icons icon-18">add</Icon> Add New Property
             </Link>
-            <Link to="/issues" className="btn btn-secondary btn-start">
-              <span className="material-icons icon-18">warning</span> Manage Issues
+            <Link to="/dashboard/owner/issues" className="btn btn-secondary btn-start">
+              <Icon className="material-icons icon-18">warning</Icon> Manage Issues
               <span className="nav-badge badge-danger ml-auto">{openIssues}</span>
             </Link>
-            <Link to="/policy" className="btn btn-secondary btn-start">
-              <span className="material-icons icon-18">description</span> Review Policy
+            <Link to="/dashboard/owner/policy" className="btn btn-secondary btn-start">
+              <Icon className="material-icons icon-18">description</Icon> Review Policy
             </Link>
-            <Link to="/notifications" className="btn btn-secondary btn-start">
-              <span className="material-icons icon-18">notifications</span> Notifications
+            <Link to="/dashboard/owner/notifications" className="btn btn-secondary btn-start">
+              <Icon className="material-icons icon-18">notifications</Icon> Notifications
               <span className="nav-badge ml-auto">{unreadNotifs}</span>
             </Link>
-            <Link to="/profile" className="btn btn-secondary btn-start">
-              <span className="material-icons icon-18">person</span> Update Profile
+            <Link to="/dashboard/owner/profile" className="btn btn-secondary btn-start">
+              <Icon className="material-icons icon-18">person</Icon> Update Profile
             </Link>
           </div>
 
           <div className="monthly-summary-box">
             <div className="monthly-summary-title">
-              <span className="material-icons icon-16 icon-middle">bar_chart</span> Monthly Summary
+              <Icon className="material-icons icon-16 icon-middle">bar_chart</Icon> Monthly Summary
             </div>
             <div className="monthly-summary-row">
-              <span>Total Tenants</span>
+              <span>Occupied Rooms</span>
               <strong>{occupiedRooms}</strong>
             </div>
             <div className="monthly-summary-row">

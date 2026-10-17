@@ -4,10 +4,55 @@ import {
   IsOptional,
   IsArray,
   IsBoolean,
+  IsInt,
+  Min,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class CreatePropertyDto {
+class PropertyDetailsDto {
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @IsOptional()
+  @IsString()
+  pincode?: string;
+
+  @IsOptional()
+  @IsString()
+  type?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  totalCapacity?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  totalRooms?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  occupiedRooms?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  monthlyRent?: number;
+
+}
+
+export class CreatePropertyDto extends PropertyDetailsDto {
   @ApiProperty()
   @IsString()
   name: string;
@@ -57,7 +102,7 @@ export class CreatePropertyDto {
   images?: string[];
 }
 
-export class UpdatePropertyDto {
+export class UpdatePropertyDto extends PropertyDetailsDto {
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()

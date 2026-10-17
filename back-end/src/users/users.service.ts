@@ -1,3 +1,6 @@
+import { OwnerRegistrationDto } from '../owner/owner-registration.dto';
+import { Property } from '../properties/property.entity';
+import { Notification } from '../notifications/notification.entity';
 import {
   Injectable,
   NotFoundException,
@@ -99,7 +102,7 @@ export class UsersService {
       .addSelect('user.password')
       .getOne();
 
-    if (!user) throw new UnauthorizedException('Invalid credentials');
+    if (!user || user.status !== 'active') throw new UnauthorizedException('Invalid credentials or inactive account');
 
     const isMatch = await bcrypt.compare(
       loginDto.password || '',
@@ -109,10 +112,21 @@ export class UsersService {
 
     const result = Object.assign({}, user);
     delete (result as any).password;
-    if (user.role === 'super_admin' && user.status === 'active') {
+    if (['super_admin', 'owner'].includes(user.role) && user.status === 'active') {
       return Object.assign(result, { token: issueSuperAdminToken(user.id) });
     }
     return result;
+  }
+
+  async registerOwner(dto: OwnerRegistrationDto) {
+    if (await this.usersRepository.existsBy({ email: dto.email.trim().toLowerCase() })) throw new BadRequestException('An account with this email already exists');
+    return this.dataSource.transaction(async manager => {
+      const user = await manager.getRepository(User).save({ name: dto.name.trim(), email: dto.email.trim().toLowerCase(), username: dto.email.trim().toLowerCase(), phone: dto.phone, role: 'owner', status: 'pending', city: dto.city, state: dto.state });
+      const property = await manager.getRepository(Property).save({ name: dto.propertyName, address: dto.propertyAddress, city: dto.city, state: dto.state, location: dto.city + ', ' + dto.state, totalRooms: dto.totalRooms, totalCapacity: dto.totalCapacity, occupiedRooms: 0, rooms: '0/' + dto.totalRooms, ownerId: user.id, rentMin: 0, rentMax: 0, amenities: dto.amenities, status: 'pending', docsVerified: false, inspectionPassed: false, compliance: 'Pending', fireSafety: 'Unverified', safetyScore: 0, images: [] });
+      const admins = await manager.getRepository(User).findBy({ role: 'admin', status: 'active' });
+      for (const admin of admins) await manager.getRepository(Notification).save({ title: 'New owner application', message: user.name + ' submitted ' + property.name + ' for review.', type: 'info', priority: 'normal', userId: admin.id, byUserId: user.id, sentAt: new Date().toISOString() });
+      return { id: user.id, propertyId: property.id, status: 'pending' };
+    });
   }
 
   async guestLogin(loginDto: LoginDto) {

@@ -1,3 +1,5 @@
+import { NotificationReceipt } from './owner/notification-receipt.entity';
+import { NotificationReceipts1920000000000 } from './migrations/1920000000000-NotificationReceipts';
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -72,6 +74,7 @@ import { DropLegacyAuthenticatorColumns1910000000000 } from './migrations/191000
             Payment,
             Complaint,
             Notification,
+            NotificationReceipt,
             WardenNotification,
             RuleViolation,
             Room,
@@ -86,6 +89,7 @@ import { DropLegacyAuthenticatorColumns1910000000000 } from './migrations/191000
           ],
           synchronize: false,
           migrations: [
+            NotificationReceipts1920000000000,
             OwnerApplicationIntegration1710000000000,
             SuperAdminAnnouncements1800000000000,
             RestoreSharedColumns1800000001000,

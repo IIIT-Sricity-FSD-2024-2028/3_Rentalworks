@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Complaint } from './complaint.entity';
 import { User } from '../users/user.entity';
 import { Property } from '../properties/property.entity';
+import { Notification } from '../notifications/notification.entity';
 import { Room } from '../rooms/room.entity';
 import { CreateComplaintDto, UpdateComplaintDto } from './complaints.dto';
 import { WardenNotificationsService } from '../warden-notifications/warden-notifications.service';
@@ -59,18 +60,22 @@ export class ComplaintsService {
     try {
       let tenantName = 'Tenant';
       let propertyName = 'PG Property';
-      let roomNumber = '101';
+      let roomNumber = '';
+      let senderRole = 'tenant';
 
       if (saved.tenantId) {
         const u = await this.userRepository.findOne({ where: { id: saved.tenantId } });
-        if (u) tenantName = u.name;
+        if (u) { tenantName = u.name; senderRole = u.role; }
       }
 
       if (saved.propertyId) {
         const p = await this.propertyRepository.findOne({ where: { id: saved.propertyId } });
-        if (p) propertyName = p.name;
+        if (p) {
+          propertyName = p.name;
+          if (p.ownerId !== saved.tenantId) await this.complaintsRepository.manager.getRepository(Notification).save({ title: 'New issue: ' + (saved.title || 'Complaint'), message: createComplaintDto.description, type: 'issue', priority: saved.priority, byUserId: saved.tenantId, userId: p.ownerId, sentAt: new Date().toISOString() });
+        }
 
-        const r = await this.roomRepository.findOne({ where: { propertyId: saved.propertyId } });
+        const r = saved.roomId ? await this.roomRepository.findOne({ where: { id: saved.roomId, propertyId: saved.propertyId } }) : null;
         if (r) roomNumber = r.roomNumber;
       }
 
@@ -80,7 +85,7 @@ export class ComplaintsService {
         type: 'issue',
         priority: saved.priority || 'medium',
         senderName: tenantName,
-        senderRole: 'tenant',
+        senderRole,
         propertyName: propertyName,
         roomNumber: roomNumber,
         tenantId: saved.tenantId,
@@ -103,7 +108,11 @@ export class ComplaintsService {
       cleanDto.resolvedAt = new Date().toISOString().split('T')[0];
     }
     Object.assign(complaint, cleanDto);
-    return this.complaintsRepository.save(complaint);
+    return this.complaintsRepository.manager.transaction(async manager => {
+      const saved = await manager.getRepository(Complaint).save(complaint);
+      if (updateComplaintDto.status) await manager.getRepository(Notification).save({ title: 'Issue updated', message: (complaint.title || 'Your complaint') + ': ' + complaint.status, type: 'issue', priority: complaint.priority, userId: complaint.tenantId, sentAt: new Date().toISOString() });
+      return saved;
+    });
   }
 
   async remove(id: number) {

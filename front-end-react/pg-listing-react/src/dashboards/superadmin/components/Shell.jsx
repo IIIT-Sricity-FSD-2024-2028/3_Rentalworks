@@ -5,7 +5,7 @@ const navigation = [
   ['dashboard', 'dashboard', 'Global Dashboard', '/dashboard/superadmin'],
   ['regional_admins', 'admin_panel_settings', 'Regional Admins', '/dashboard/superadmin/regional-admins'],
   ['global_reports', 'assessment', 'Global Reports', '/dashboard/superadmin/global-reports'],
-  ['notifications', 'notifications', 'System Alerts', '/dashboard/superadmin/notifications'],
+  ['notifications', 'notifications', 'Notifications', '/dashboard/superadmin/notifications'],
   ['profile', 'person', 'Profile', '/dashboard/superadmin/profile'],
 ];
 
@@ -66,7 +66,7 @@ export default function Shell({ user, section, setSection, onLogout, toast, chil
           <div className="nb-left"><h4>Welcome back, {user?.name || 'Super Admin'}</h4><p>{user?.email || 'admin@pgrentals.com'}</p></div>
           <div className="nb-right">
             <div className="nb-icon" title="Browse PG Discovery Listings" onClick={() => navigate('/listings')}><span className="material-icons-outlined" style={{ fontSize: 24 }}>storefront</span></div>
-            <div className="nb-icon" onClick={() => handleNavClick('notifications', '/dashboard/superadmin/notifications')}><span className="material-icons-outlined" style={{ fontSize: 24 }}>notifications</span><span className="nb-dot" /></div>
+            <div className="nb-icon" title="Notifications & Alerts" onClick={() => handleNavClick('notifications', '/dashboard/superadmin/notifications')}><span className="material-icons-outlined" style={{ fontSize: 24 }}>notifications</span><span className="nb-dot" /></div>
             <div className="nb-icon" title="Settings & Profile" onClick={() => handleNavClick('profile', '/dashboard/superadmin/profile')}><span className="material-icons-outlined" style={{ fontSize: 24 }}>settings</span></div>
             <button className="btn-logout" onClick={logout}>↪ Logout</button>
           </div>

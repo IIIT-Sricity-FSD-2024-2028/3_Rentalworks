@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import Icon from '../components/Icon';
+import React, { useState } from 'react';
 
 // Default policy rules
 const DEFAULT_POLICY = {
@@ -25,9 +26,6 @@ export default function Policy({ policy = {}, onSavePolicy, onResetPolicy }) {
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  useEffect(() => {
-    setFormData((prev) => Object.assign({}, prev, policy));
-  }, [policy]);
 
   const handleChange = (e) => {
     const id = e.target.id;
@@ -54,9 +52,9 @@ export default function Policy({ policy = {}, onSavePolicy, onResetPolicy }) {
     onSavePolicy(formData);
   };
 
-  const handleConfirmReset = () => {
+  const handleConfirmReset = async () => {
+    if (await onResetPolicy(DEFAULT_POLICY) === false) return;
     setFormData(DEFAULT_POLICY);
-    onResetPolicy();
     setIsResetModalOpen(false);
   };
 
@@ -66,6 +64,7 @@ export default function Policy({ policy = {}, onSavePolicy, onResetPolicy }) {
         <div className="alert-danger-box">{errorMessage}</div>
       )}
 
+      {Object.keys(policy).length === 0 && <p>No policy has been saved. The values below are suggested settings; review and save them.</p>}
       <form onSubmit={handleSave}>
         {/* Section 01: Financials */}
         <div className="form-section">
@@ -278,11 +277,11 @@ export default function Policy({ policy = {}, onSavePolicy, onResetPolicy }) {
             className="btn btn-secondary btn-lg"
             onClick={() => setIsResetModalOpen(true)}
           >
-            <span className="material-icons icon-18 icon-middle">restart_alt</span>{' '}
+            <Icon className="material-icons icon-18 icon-middle">restart_alt</Icon>{' '}
             Reset to Default
           </button>
           <button type="submit" className="btn btn-primary btn-lg">
-            <span className="material-icons icon-18 icon-middle">save</span>{' '}
+            <Icon className="material-icons icon-18 icon-middle">save</Icon>{' '}
             Save Policy
           </button>
         </div>
@@ -291,9 +290,9 @@ export default function Policy({ policy = {}, onSavePolicy, onResetPolicy }) {
       {/* Reset Modal */}
       {isResetModalOpen && (
         <div
-          className="modal-overlay"
+          className="modal-overlay show active"
           onClick={(e) => {
-            if (e.target.className === 'modal-overlay') setIsResetModalOpen(false);
+            if (e.target.classList.contains('modal-overlay')) setIsResetModalOpen(false);
           }}
         >
           <div className="modal">

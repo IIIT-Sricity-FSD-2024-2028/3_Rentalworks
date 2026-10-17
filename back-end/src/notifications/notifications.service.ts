@@ -46,7 +46,7 @@ export class NotificationsService {
       });
     } catch (err) {
       // Gracefully fall back to empty list on unexpected database errors
-      return [];
+      throw err;
     }
   }
 
@@ -109,7 +109,7 @@ export class NotificationsService {
       .update(Notification)
       .set({ read: true, isRead: true });
     if (validUserId) {
-      qb.where('"userId" = :userId OR "userId" IS NULL', { userId: validUserId });
+      qb.where('"userId" = :userId', { userId: validUserId });
     }
     await qb.execute();
     return { success: true, message: 'All notifications marked as read' };

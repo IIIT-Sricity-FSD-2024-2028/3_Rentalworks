@@ -3,16 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Login.css';
 
-const API_BASE = 'http://localhost:3000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-const DEMO_CREDENTIALS = {
-  super_admin: { username: 'superadmin', password: 'admin123', name: 'Super Admin', role: 'super_admin' },
-  admin: { username: 'admin', password: 'password123', name: 'System Admin', role: 'admin' },
-  tenant: { username: 'tenant1', password: 'password123', name: 'Arun Kumar', role: 'tenant', property: 'Sunrise PG Residency', room: '102' },
-  guest: { username: 'testguest@example.com', password: 'tenant123', name: 'Demo Guest', role: 'guest' },
-  owner: { username: 'owner1', password: 'password123', name: 'PG Owner One', role: 'owner', status: 'approved' },
-  warden: { username: 'warden', password: 'warden123', name: 'Warden Officer', role: 'warden' },
-};
 
 const ROLE_INFO = {
   super_admin: { title: 'Super Admin Login', sub: 'Global system administration access' },
@@ -26,13 +18,8 @@ const ROLE_INFO = {
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  let setTenantSession = null;
-  try {
-    const auth = useAuth?.();
-    if (auth) setTenantSession = auth.setTenantSession;
-  } catch (_) {
-    // optional if rendered outside tenant AuthProvider
-  }
+  const auth = useAuth();
+  const setTenantSession = auth?.setTenantSession;
 
   // View states: 'login' | 'signup' | 'owner_reg' | 'success'
   const [viewMode, setViewMode] = useState('login');
@@ -163,7 +150,7 @@ export default function Login() {
       const sessionObj = {
         id: user.id,
         name: user.name || username,
-        email: user.email || `${username}@example.com`,
+        email: user.email || '',
         phone: user.phone || '',
         gender: user.gender || '',
         role: user.role,
@@ -184,6 +171,7 @@ export default function Login() {
       localStorage.setItem('currentUser', JSON.stringify(sessionObj));
       localStorage.setItem('pg_user', JSON.stringify(sessionObj));
 
+      window.dispatchEvent(new Event('storage'));
       if (setTenantSession) {
         setTenantSession(sessionObj);
       }
@@ -330,7 +318,7 @@ export default function Login() {
   };
 
   // Owner Registration Submit
-  const handleOwnerRegSubmit = (e) => {
+  const handleOwnerRegSubmit = async (e) => {
     e.preventDefault();
     const errs = {};
     if (!ownerData.name.trim()) errs.name = 'Full name is required';
@@ -351,9 +339,7 @@ export default function Login() {
       return;
     }
 
-    const registeredOwners = JSON.parse(localStorage.getItem('registered_owners') || '[]');
     const newOwner = {
-      id: Date.now(),
       name: ownerData.name.trim(),
       email: ownerData.email.trim(),
       phone: ownerData.phone.trim(),
@@ -365,29 +351,15 @@ export default function Login() {
       totalCapacity: parseInt(ownerData.capacity),
       amenities: ownerData.amenities,
       commissionAgreed: true,
-      role: 'owner',
-      status: 'pending',
-      registeredOn: new Date().toISOString().split('T')[0],
-      docsVerified: false,
-      inspectionPassed: false,
     };
 
-    registeredOwners.push(newOwner);
-    localStorage.setItem('registered_owners', JSON.stringify(registeredOwners));
-
-    // Admin cross notification
-    const crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
-    crossNotifs.push({
-      id: Date.now(),
-      title: 'New Property Registration',
-      message: `Owner ${ownerData.name} submitted property "${ownerData.propname}" for verification.`,
-      type: 'warning',
-      priority: 'urgent',
-      targetRole: 'admin',
-      by: ownerData.name,
-      sentAt: new Date().toLocaleString(),
-    });
-    localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
+    setLoading(true);
+    try {
+      const response = await fetch(API_BASE + '/users/owner-register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newOwner) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(Array.isArray(result.message) ? result.message.join(', ') : result.message || 'Registration failed');
+    } catch (err) { setOwnerErr({ commission: err.message }); return; }
+    finally { setLoading(false); }
 
     setSuccessInfo({
       title: 'Registration Submitted',
@@ -1039,54 +1011,7 @@ export default function Login() {
                     </div>
                   </div>
 
-                  {/* Documentation Notice */}
-                  <div className="reg-field full doc-section">
-                    <h4 className="doc-title">📄 Documentation Required for Verification</h4>
-                    <p className="doc-note">
-                      These documents will be reviewed by the admin before your property goes live on the platform.
-                    </p>
-                    <div className="doc-grid">
-                      <div className="reg-field">
-                        <label>ID Proof (Aadhaar / PAN / Driving License)</label>
-                        <div className="file-inp-wrap">
-                          <span className="reg-ico">📋</span>
-                          <input
-                            type="file"
-                            accept=".pdf,.jpg,.jpeg,.png"
-                            className="file-input"
-                            onChange={(e) => setOwnerData({ ...ownerData, idproof: e.target.files[0]?.name })}
-                          />
-                          <span className="file-label">
-                            {ownerData.idproof || 'Choose file...'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="reg-field">
-                        <label>Property Images (Multiple)</label>
-                        <div className="file-inp-wrap">
-                          <span className="reg-ico">🖼️</span>
-                          <input
-                            type="file"
-                            accept=".jpg,.jpeg,.png"
-                            multiple
-                            className="file-input"
-                            onChange={(e) =>
-                              setOwnerData({
-                                ...ownerData,
-                                images: Array.from(e.target.files).map((f) => f.name),
-                              })
-                            }
-                          />
-                          <span className="file-label">
-                            {ownerData.images.length > 0
-                              ? `${ownerData.images.length} files selected`
-                              : 'Choose files...'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <p className="doc-note">The administrator will arrange document verification after reviewing your application. File upload is not available on this form.</p>
 
                   <div className="reg-field full" style={{ marginTop: '8px' }}>
                     <label className="amenity-check commission-check">

@@ -1,3 +1,4 @@
+import Icon from '../components/Icon';
 import React, { useState } from 'react';
 
 // Notifications: View, filter, mark read, send messages, and clear alerts
@@ -37,7 +38,7 @@ export default function Notifications({
     return true;
   });
 
-  const handleSendSubmit = (e) => {
+  const handleSendSubmit = async (e) => {
     e.preventDefault();
     if (!sendForm.title.trim() || !sendForm.message.trim()) {
       setSendError('Please fill in both title and message.');
@@ -55,7 +56,7 @@ export default function Notifications({
       date: new Date().toISOString().split('T')[0],
     };
 
-    onSendNotification(newNotification);
+    if (await onSendNotification(newNotification) === false) return;
     setIsSendModalOpen(false);
     setSendForm({ recipient: 'Warden', title: '', message: '' });
     setSendError('');
@@ -79,7 +80,7 @@ export default function Notifications({
         <div className="flex-gap-10">
           {unreadCount > 0 && (
             <button className="btn btn-secondary" onClick={onMarkAllRead}>
-              <span className="material-icons icon-16 icon-middle">done_all</span>{' '}
+              <Icon className="material-icons icon-16 icon-middle">done_all</Icon>{' '}
               Mark All Read
             </button>
           )}
@@ -89,7 +90,7 @@ export default function Notifications({
               className="btn btn-danger btn-sm"
               onClick={() => setIsClearAllModalOpen(true)}
             >
-              <span className="material-icons icon-16 icon-middle">delete_sweep</span>{' '}
+              <Icon className="material-icons icon-16 icon-middle">delete_sweep</Icon>{' '}
               Clear All
             </button>
           )}
@@ -98,7 +99,7 @@ export default function Notifications({
             className="btn btn-primary"
             onClick={() => setIsSendModalOpen(true)}
           >
-            <span className="material-icons icon-16 icon-middle">add</span>{' '}
+            <Icon className="material-icons icon-16 icon-middle">add</Icon>{' '}
             Send Notification
           </button>
         </div>
@@ -143,9 +144,9 @@ export default function Notifications({
         {filteredNotifications.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">
-              <span className="material-icons icon-48 icon-light">
+              <Icon className="material-icons icon-48 icon-light">
                 notifications_none
-              </span>
+              </Icon>
             </div>
             <h3>No Notifications</h3>
             <p>You have no notifications in this category.</p>
@@ -173,9 +174,9 @@ export default function Notifications({
                 </div>
 
                 <div className="notif-date">
-                  <span className="material-icons icon-14 icon-middle">
+                  <Icon className="material-icons icon-14 icon-middle">
                     calendar_today
-                  </span>{' '}
+                  </Icon>{' '}
                   {formatDate(n.date || n.sentAt)}
                 </div>
               </div>
@@ -189,7 +190,7 @@ export default function Notifications({
                     setDeletingNotif(n);
                   }}
                 >
-                  <span className="material-icons icon-18">delete</span>
+                  <Icon className="material-icons icon-18">delete</Icon>
                 </button>
               </div>
             </div>
@@ -200,17 +201,17 @@ export default function Notifications({
       {/* Modal: Send Notification */}
       {isSendModalOpen && (
         <div
-          className="modal-overlay"
+          className="modal-overlay show active"
           onClick={(e) => {
-            if (e.target.className === 'modal-overlay') setIsSendModalOpen(false);
+            if (e.target.classList.contains('modal-overlay')) setIsSendModalOpen(false);
           }}
         >
           <div className="modal">
             <div className="modal-header">
               <span className="modal-title">
-                <span className="material-icons icon-22 icon-middle icon-mr-6">
+                <Icon className="material-icons icon-22 icon-middle icon-mr-6">
                   campaign
-                </span>{' '}
+                </Icon>{' '}
                 Send Notification
               </span>
               <button
@@ -241,7 +242,9 @@ export default function Notifications({
                     }
                   >
                     <option value="Warden">Warden</option>
+                    <option value="Tenant">Tenant</option>
                     <option value="Admin">Admin</option>
+                    <option value="All">All Actors</option>
                   </select>
                 </div>
 
@@ -290,7 +293,7 @@ export default function Notifications({
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  <span className="material-icons icon-16 icon-middle">send</span>{' '}
+                  <Icon className="material-icons icon-16 icon-middle">send</Icon>{' '}
                   Send Notification
                 </button>
               </div>
@@ -302,9 +305,9 @@ export default function Notifications({
       {/* Modal: Delete Single Notification */}
       {deletingNotif && (
         <div
-          className="modal-overlay"
+          className="modal-overlay show active"
           onClick={(e) => {
-            if (e.target.className === 'modal-overlay') setDeletingNotif(null);
+            if (e.target.classList.contains('modal-overlay')) setDeletingNotif(null);
           }}
         >
           <div className="modal">
@@ -329,8 +332,8 @@ export default function Notifications({
               </button>
               <button
                 className="btn btn-danger"
-                onClick={() => {
-                  onDeleteNotification(deletingNotif.id);
+                onClick={async () => {
+                  if (await onDeleteNotification(deletingNotif.id) === false) return;
                   setDeletingNotif(null);
                 }}
               >
@@ -344,9 +347,9 @@ export default function Notifications({
       {/* Modal: Clear All Notifications */}
       {isClearAllModalOpen && (
         <div
-          className="modal-overlay"
+          className="modal-overlay show active"
           onClick={(e) => {
-            if (e.target.className === 'modal-overlay') setIsClearAllModalOpen(false);
+            if (e.target.classList.contains('modal-overlay')) setIsClearAllModalOpen(false);
           }}
         >
           <div className="modal">
@@ -371,8 +374,8 @@ export default function Notifications({
               </button>
               <button
                 className="btn btn-danger"
-                onClick={() => {
-                  onClearAllNotifications();
+                onClick={async () => {
+                  if (await onClearAllNotifications() === false) return;
                   setIsClearAllModalOpen(false);
                 }}
               >

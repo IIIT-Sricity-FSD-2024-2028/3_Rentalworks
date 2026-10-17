@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { apiRequest } from '../services/api';
+import Icon from '../components/Icon';
+import React, { useState } from 'react';
 
 // Profile: Manage owner credentials, personal info, location, password, 2FA, data export, and logout
 export default function Profile({
@@ -25,7 +27,6 @@ export default function Profile({
   );
 
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [is2FAModalOpen, setIs2FAModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const [passForm, setPassForm] = useState({
@@ -38,9 +39,6 @@ export default function Profile({
   const [passError, setPassError] = useState('');
   const [passSuccess, setPassSuccess] = useState('');
 
-  useEffect(() => {
-    setFormData((prev) => Object.assign({}, prev, profile));
-  }, [profile]);
 
   const totalProps = properties.length;
   const totalRevenue = properties.reduce(
@@ -82,14 +80,14 @@ export default function Profile({
     onSaveProfile(formData);
   };
 
-  const handleUpdatePassword = (e) => {
+  const handleUpdatePassword = async (e) => {
     e.preventDefault();
     if (!passForm.currPass || !passForm.newPass || !passForm.confPass) {
       setPassError('Please fill in all password fields.');
       return;
     }
-    if (passForm.newPass.length < 6) {
-      setPassError('New password must be at least 6 characters.');
+    if (passForm.newPass.length < 8) {
+      setPassError('New password must be at least 8 characters.');
       return;
     }
     if (passForm.newPass !== passForm.confPass) {
@@ -98,7 +96,10 @@ export default function Profile({
     }
 
     setPassError('');
-    setPassSuccess('Password updated successfully!');
+    try {
+      await apiRequest('/api/profile/password', 'PUT', { currentPassword: passForm.currPass, newPassword: passForm.newPass });
+      setPassSuccess('Password updated successfully!');
+    } catch (err) { setPassError(err.message); return; }
     setTimeout(() => {
       setPassForm({ currPass: '', newPass: '', confPass: '' });
       setPassSuccess('');
@@ -129,7 +130,7 @@ export default function Profile({
           <div className="name">{formData.name || 'Owner'}</div>
           <div className="role">Property Owner</div>
           <div className="email">
-            <span className="material-icons icon-16 icon-middle">email</span>{' '}
+            <Icon className="material-icons icon-16 icon-middle">email</Icon>{' '}
             {formData.email || '—'}
           </div>
         </div>
@@ -225,7 +226,7 @@ export default function Profile({
 
             <div className="flex-gap-10 mt-20">
               <button type="submit" className="btn btn-primary flex-1">
-                <span className="material-icons icon-16 icon-middle">save</span>{' '}
+                <Icon className="material-icons icon-16 icon-middle">save</Icon>{' '}
                 Save Changes
               </button>
             </div>
@@ -289,15 +290,15 @@ export default function Profile({
                 className="btn btn-secondary btn-start"
                 onClick={() => setIsPasswordModalOpen(true)}
               >
-                <span className="material-icons icon-18">lock</span>{' '}
+                <Icon className="material-icons icon-18">lock</Icon>{' '}
                 Change Password
               </button>
 
               <button
                 className="btn btn-secondary btn-start"
-                onClick={() => setIs2FAModalOpen(true)}
+                disabled title="Two-factor authentication is not configured"
               >
-                <span className="material-icons icon-18">security</span>{' '}
+                <Icon className="material-icons icon-18">security</Icon>{' '}
                 Enable Two-Factor Auth
               </button>
 
@@ -305,7 +306,7 @@ export default function Profile({
                 className="btn btn-secondary btn-start"
                 onClick={handleDownloadData}
               >
-                <span className="material-icons icon-18">download</span>{' '}
+                <Icon className="material-icons icon-18">download</Icon>{' '}
                 Download My Data
               </button>
 
@@ -315,7 +316,7 @@ export default function Profile({
                 className="btn btn-danger btn-start"
                 onClick={() => setIsLogoutModalOpen(true)}
               >
-                <span className="material-icons icon-18">logout</span>{' '}
+                <Icon className="material-icons icon-18">logout</Icon>{' '}
                 Sign Out
               </button>
             </div>
@@ -326,17 +327,17 @@ export default function Profile({
       {/* Modal: Change Password */}
       {isPasswordModalOpen && (
         <div
-          className="modal-overlay"
+          className="modal-overlay show active"
           onClick={(e) => {
-            if (e.target.className === 'modal-overlay') setIsPasswordModalOpen(false);
+            if (e.target.classList.contains('modal-overlay')) setIsPasswordModalOpen(false);
           }}
         >
           <div className="modal">
             <div className="modal-header">
               <span className="modal-title">
-                <span className="material-icons icon-22 icon-middle icon-mr-6">
+                <Icon className="material-icons icon-22 icon-middle icon-mr-6">
                   lock
-                </span>{' '}
+                </Icon>{' '}
                 Change Password
               </span>
               <button
@@ -375,7 +376,7 @@ export default function Profile({
                   <input
                     type="password"
                     className="form-input"
-                    placeholder="Min 6 characters"
+                    placeholder="Min 8 characters"
                     value={passForm.newPass}
                     onChange={(e) => {
                       const update = { newPass: e.target.value };
@@ -416,73 +417,12 @@ export default function Profile({
         </div>
       )}
 
-      {/* Modal: 2FA */}
-      {is2FAModalOpen && (
-        <div
-          className="modal-overlay"
-          onClick={(e) => {
-            if (e.target.className === 'modal-overlay') setIs2FAModalOpen(false);
-          }}
-        >
-          <div className="modal">
-            <div className="modal-header">
-              <span className="modal-title">
-                <span className="material-icons icon-22 icon-middle icon-mr-6">
-                  security
-                </span>{' '}
-                Two-Factor Authentication
-              </span>
-              <button
-                className="modal-close"
-                onClick={() => setIs2FAModalOpen(false)}
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="qr-box-wrap">
-              <div className="mb-16">
-                <span className="material-icons icon-48 text-primary-cost">
-                  qr_code_2
-                </span>
-              </div>
-              <p className="modal-desc-text mb-16">
-                Scan the QR code below with your authenticator app
-              </p>
-              <div className="qr-code-box">
-                <div className="qr-code-label">QR CODE SECRET</div>
-                <div className="icon-30 mb-8">
-                  <span className="material-icons icon-30 icon-muted">grid_on</span>
-                </div>
-                <div className="qr-code-secret">JBSW Y3DP EHPK 3PXP</div>
-              </div>
-            </div>
-
-            <div className="modal-footer">
-              <button
-                className="btn btn-secondary"
-                onClick={() => setIs2FAModalOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={() => setIs2FAModalOpen(false)}
-              >
-                <span className="material-icons icon-16 icon-middle">check</span>{' '}
-                Enable 2FA
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Modal: Sign Out Confirmation */}
       {isLogoutModalOpen && (
         <div
-          className="modal-overlay"
+          className="modal-overlay show active"
           onClick={(e) => {
-            if (e.target.className === 'modal-overlay') setIsLogoutModalOpen(false);
+            if (e.target.classList.contains('modal-overlay')) setIsLogoutModalOpen(false);
           }}
         >
           <div className="modal">

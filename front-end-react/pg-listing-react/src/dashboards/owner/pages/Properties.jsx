@@ -1,5 +1,7 @@
+import PropertyImage from '../components/PropertyImage';
+import Icon from '../components/Icon';
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 const AMENITY_OPTIONS = [
   'WiFi',
@@ -18,7 +20,9 @@ export default function Properties({
   onUpdateProperty,
   onDeleteProperty,
 }) {
-  const [search, setSearch] = useState('');
+  const [params, setParams] = useSearchParams();
+  const search = params.get('q') || '';
+  const setSearch = value => setParams({ q: value }, { replace: true });
   const [filterType, setFilterType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterSort, setFilterSort] = useState('');
@@ -98,7 +102,7 @@ export default function Properties({
     );
   };
 
-  const handleSaveEdit = (e) => {
+  const handleSaveEdit = async (e) => {
     e.preventDefault();
     if (!editingProperty) return;
 
@@ -112,7 +116,7 @@ export default function Properties({
       return;
     }
 
-    onUpdateProperty(editingProperty);
+    if (await onUpdateProperty(editingProperty) === false) return;
     setEditingProperty(null);
     setEditError('');
   };
@@ -126,8 +130,8 @@ export default function Properties({
             {filteredProperties.length} properties found
           </div>
         </div>
-        <Link to="/add-property" className="btn btn-primary">
-          <span className="material-icons icon-18 icon-middle">add</span>{' '}
+        <Link to="/dashboard/owner/add-property" className="btn btn-primary">
+          <Icon className="material-icons icon-18 icon-middle">add</Icon>{' '}
           Add Property
         </Link>
       </div>
@@ -135,7 +139,7 @@ export default function Properties({
       {/* Filter and Search Bar */}
       <div className="filter-bar">
         <div className="filter-search">
-          <span className="material-icons icon-20 icon-muted">search</span>
+          <Icon className="material-icons icon-20 icon-muted">search</Icon>
           <input
             type="text"
             id="propSearch"
@@ -187,12 +191,12 @@ export default function Properties({
         {filteredProperties.length === 0 ? (
           <div className="empty-state empty-state-grid">
             <div className="empty-icon">
-              <span className="material-icons icon-48 icon-light">apartment</span>
+              <Icon className="material-icons icon-48 icon-light">apartment</Icon>
             </div>
             <h3>No Properties Found</h3>
             <p>Try adjusting your search filters or add a new property.</p>
-            <Link to="/add-property" className="btn btn-primary">
-              <span className="material-icons icon-18 icon-middle">add</span>{' '}
+            <Link to="/dashboard/owner/add-property" className="btn btn-primary">
+              <Icon className="material-icons icon-18 icon-middle">add</Icon>{' '}
               Add Property
             </Link>
           </div>
@@ -206,9 +210,7 @@ export default function Properties({
             return (
               <div key={p.id} className="property-card" id={`card-${p.id}`}>
                 <div className="property-card-img">
-                  <span className="material-icons prop-bg-icon">
-                    apartment
-                  </span>
+                  <PropertyImage key={p.images?.[0]} src={p.images?.[0]} name={p.name} />
                   <div className="property-card-status" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                     <span className={`badge badge-${(p.status || 'active').toLowerCase()}`}>
                       {p.status}
@@ -230,21 +232,21 @@ export default function Properties({
                 <div className="property-card-body">
                   <div className="property-card-title">{p.name}</div>
                   <div className="property-card-addr">
-                    <span className="material-icons icon-14 icon-middle">location_on</span>{' '}
+                    <Icon className="material-icons icon-14 icon-middle">location_on</Icon>{' '}
                     {p.address}, {p.city}, {p.state}
                   </div>
 
                   <div className="property-meta">
                     <div className="property-meta-item">
-                      <span className="material-icons icon-14 icon-middle">home</span>{' '}
+                      <Icon className="material-icons icon-14 icon-middle">home</Icon>{' '}
                       <span>{p.type}</span>
                     </div>
                     <div className="property-meta-item">
-                      <span className="material-icons icon-14 icon-middle">bed</span>{' '}
+                      <Icon className="material-icons icon-14 icon-middle">bed</Icon>{' '}
                       <span>{p.totalRooms} rooms</span>
                     </div>
                     <div className="property-meta-item">
-                      <span className="material-icons icon-14 icon-middle">payments</span>{' '}
+                      <Icon className="material-icons icon-14 icon-middle">payments</Icon>{' '}
                       <span>{formatCurrency(p.monthlyRent)}/mo</span>
                     </div>
                   </div>
@@ -275,7 +277,7 @@ export default function Properties({
                       className="btn btn-secondary btn-sm flex-1"
                       onClick={() => setViewingProperty(p)}
                     >
-                      <span className="material-icons icon-16 icon-middle">visibility</span>{' '}
+                      <Icon className="material-icons icon-16 icon-middle">visibility</Icon>{' '}
                       View
                     </button>
                     <button
@@ -285,14 +287,14 @@ export default function Properties({
                         setEditError('');
                       }}
                     >
-                      <span className="material-icons icon-16 icon-middle">edit</span>{' '}
+                      <Icon className="material-icons icon-16 icon-middle">edit</Icon>{' '}
                       Edit
                     </button>
                     <button
                       className="btn btn-danger btn-sm"
                       onClick={() => setDeletingProperty(p)}
                     >
-                      <span className="material-icons icon-16 icon-middle">delete</span>
+                      <Icon className="material-icons icon-16 icon-middle">delete</Icon>
                     </button>
                   </div>
                 </div>
@@ -305,17 +307,17 @@ export default function Properties({
       {/* Modal: View Property Details */}
       {viewingProperty && (
         <div
-          className="modal-overlay"
+          className="modal-overlay show active"
           onClick={(e) => {
-            if (e.target.className === 'modal-overlay') setViewingProperty(null);
+            if (e.target.classList.contains('modal-overlay')) setViewingProperty(null);
           }}
         >
           <div className="modal">
             <div className="modal-header">
               <span className="modal-title">
-                <span className="material-icons icon-22 icon-middle icon-mr-6">
+                <Icon className="material-icons icon-22 icon-middle icon-mr-6">
                   apartment
-                </span>{' '}
+                </Icon>{' '}
                 {viewingProperty.name}
               </span>
               <button
@@ -420,7 +422,7 @@ export default function Properties({
                   setViewingProperty(null);
                 }}
               >
-                <span className="material-icons icon-16 icon-middle">edit</span>{' '}
+                <Icon className="material-icons icon-16 icon-middle">edit</Icon>{' '}
                 Edit
               </button>
             </div>
@@ -431,17 +433,17 @@ export default function Properties({
       {/* Modal: Edit Property */}
       {editingProperty && (
         <div
-          className="modal-overlay"
+          className="modal-overlay show active"
           onClick={(e) => {
-            if (e.target.className === 'modal-overlay') setEditingProperty(null);
+            if (e.target.classList.contains('modal-overlay')) setEditingProperty(null);
           }}
         >
           <div className="modal">
             <div className="modal-header">
               <span className="modal-title">
-                <span className="material-icons icon-22 icon-middle icon-mr-6">
+                <Icon className="material-icons icon-22 icon-middle icon-mr-6">
                   edit
-                </span>{' '}
+                </Icon>{' '}
                 Edit Property
               </span>
               <button
@@ -606,7 +608,7 @@ export default function Properties({
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  <span className="material-icons icon-16 icon-middle">save</span>{' '}
+                  <Icon className="material-icons icon-16 icon-middle">save</Icon>{' '}
                   Save Changes
                 </button>
               </div>
@@ -618,9 +620,9 @@ export default function Properties({
       {/* Modal: Delete Property Confirmation */}
       {deletingProperty && (
         <div
-          className="modal-overlay"
+          className="modal-overlay show active"
           onClick={(e) => {
-            if (e.target.className === 'modal-overlay') setDeletingProperty(null);
+            if (e.target.classList.contains('modal-overlay')) setDeletingProperty(null);
           }}
         >
           <div className="modal">
@@ -645,8 +647,8 @@ export default function Properties({
               </button>
               <button
                 className="btn btn-danger"
-                onClick={() => {
-                  onDeleteProperty(deletingProperty.id);
+                onClick={async () => {
+                  if (await onDeleteProperty(deletingProperty.id) === false) return;
                   setDeletingProperty(null);
                 }}
               >

@@ -2,6 +2,10 @@ import { IsString, IsNumber, IsOptional, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateNotificationDto {
+  @IsString()
+  @IsOptional()
+  targetRole?: string;
+
   @ApiProperty()
   @IsString()
   title: string;
@@ -10,13 +14,15 @@ export class CreateNotificationDto {
   @IsString()
   message: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: false, default: 'info' })
   @IsString()
-  type: string;
+  @IsOptional()
+  type?: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: false, default: 'normal' })
   @IsString()
-  priority: string;
+  @IsOptional()
+  priority?: string;
 
   @ApiProperty({ required: false, default: 1 })
   @IsNumber()

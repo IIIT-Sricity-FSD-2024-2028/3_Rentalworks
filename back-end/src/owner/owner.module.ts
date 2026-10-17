@@ -1,3 +1,4 @@
+import { OwnerGuard } from './owner.guard';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { OwnerController } from './owner.controller';
@@ -26,7 +27,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     NotificationsModule,
   ],
   controllers: [OwnerController, ApiController],
-  providers: [OwnerService],
+  providers: [OwnerService, OwnerGuard],
   exports: [OwnerService],
 })
 export class OwnerModule {}

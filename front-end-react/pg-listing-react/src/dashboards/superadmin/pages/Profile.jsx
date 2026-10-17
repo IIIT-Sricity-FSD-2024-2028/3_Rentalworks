@@ -63,6 +63,17 @@ export default function Profile({ user, setUser, showToast }) {
         {[['name', 'Full Name', 'text'], ['email', 'Email Address', 'email'], ['phone', 'Phone Number', 'text']].map(([key, label, type]) => <div key={key}><label style={labelStyle}>{label}</label><input style={fieldStyle} type={type} value={details[key]} onChange={event => setDetails(Object.assign({}, details, { [key]: event.target.value }))} /></div>)}
         <button className="btn-confirm-blue" style={{ padding: '10px 16px', marginTop: 8 }} disabled={saving} onClick={updateDetails}>{saving ? 'Saving...' : 'Update Details'}</button>
       </div>
+      <h4 style={{ fontSize: 16, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><span className="material-icons-outlined">notifications</span> Notifications &amp; Platform Alerts</h4>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0', marginBottom: 24, maxWidth: 600 }}>
+        <div>
+          <strong style={{ display: 'block', fontSize: 14 }}>Broadcast &amp; Notifications Center</strong>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b' }}>Manage platform-wide announcements, incoming alerts from owners and wardens, and priority notices.</p>
+        </div>
+        <a href="/dashboard/superadmin/notifications" className="btn-confirm-blue" style={{ textDecoration: 'none', padding: '8px 14px', fontSize: 13, whiteSpace: 'nowrap', display: 'inline-block' }}>
+          Open Notifications
+        </a>
+      </div>
+
       <h4 style={{ fontSize: 16, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><span className="material-icons-outlined">lock</span> Security Settings</h4>
       <div style={{ display: 'grid', gap: 16, maxWidth: 400, marginBottom: 32, paddingBottom: 24, borderBottom: '1px solid #e2e8f0' }}>
         {[['current', 'Current Password'], ['next', 'New Password'], ['confirm', 'Confirm New Password']].map(([key, label]) => <div key={key}><label style={labelStyle}>{label}</label><input style={fieldStyle} type="password" value={password[key]} onChange={event => setPassword(Object.assign({}, password, { [key]: event.target.value }))} placeholder={key === 'next' ? 'Min 6 characters' : `Enter ${label.toLowerCase()}`} /></div>)}

@@ -1,28 +1,18 @@
-// ===================================================================
 // services/api.js - Owner API Service connecting to NestJS Backend
-// Strictly NO spread syntax (...) used in this file
-// ===================================================================
+
+import { getStoredUser } from '../../../utils/auth';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 function getAuthHeaders() {
-  let userId = '16';
-  try {
-    const session = sessionStorage.getItem('pg_user') || localStorage.getItem('pg_user');
-    if (session) {
-      const parsed = JSON.parse(session);
-      if (parsed.id) {
-        userId = String(parsed.id);
-      }
-    }
-  } catch (err) {
-    // ignore JSON parse error, use default 16
-  }
-
+  const user = getStoredUser();
+  if (!user || user.role !== 'owner' || !user.id) throw new Error('Please sign in as an owner');
+  const userId = String(user.id);
   const headers = {
     'Content-Type': 'application/json',
     'x-role': 'owner',
     'x-user-id': userId,
+    Authorization: 'Bearer ' + (user.token || ''),
   };
   return headers;
 }
@@ -52,7 +42,7 @@ export async function apiRequest(endpoint, method, body) {
           ? errorJson.message.join(', ')
           : errorJson.message;
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
     throw new Error(errorMsg);
@@ -65,113 +55,55 @@ export async function apiRequest(endpoint, method, body) {
   return await response.json();
 }
 
-// ==========================================
 // 1. DASHBOARD STATS
-// ==========================================
-export async function getDashboardStats() {
-  return await apiRequest('/api/dashboard/stats', 'GET');
-}
+export function getDashboardStats() { return apiRequest('/api/dashboard/stats', 'GET'); }
 
-// ==========================================
 // 2. PROPERTIES ENDPOINTS
-// ==========================================
-export async function getProperties(ownerId) {
-  const query = ownerId ? '?ownerId=' + ownerId : '?ownerId=16';
-  return await apiRequest('/api/properties' + query, 'GET');
-}
+export function getProperties() { return apiRequest('/api/properties'); }
 
-export async function getPropertyById(id) {
-  return await apiRequest('/api/properties/' + id, 'GET');
-}
+export function getPropertyById(id) { return apiRequest('/api/properties/' + id, 'GET'); }
 
-export async function createProperty(propertyData) {
-  return await apiRequest('/api/properties', 'POST', propertyData);
-}
+export function createProperty(propertyData) { return apiRequest('/api/properties', 'POST', propertyData); }
 
-export async function updateProperty(id, propertyData) {
-  return await apiRequest('/api/properties/' + id, 'PUT', propertyData);
-}
+export function updateProperty(id, propertyData) { return apiRequest('/api/properties/' + id, 'PUT', propertyData); }
 
-export async function deleteProperty(id) {
-  return await apiRequest('/api/properties/' + id, 'DELETE');
-}
+export function deleteProperty(id) { return apiRequest('/api/properties/' + id, 'DELETE'); }
 
-// ==========================================
 // 3. ISSUES / COMPLAINTS ENDPOINTS
-// ==========================================
-export async function getIssues(ownerId) {
-  const query = ownerId ? '?ownerId=' + ownerId : '?ownerId=16';
-  return await apiRequest('/api/issues' + query, 'GET');
-}
+export function getIssues() { return apiRequest('/api/issues'); }
 
-export async function getIssueById(id) {
-  return await apiRequest('/api/issues/' + id, 'GET');
-}
+export function getIssueById(id) { return apiRequest('/api/issues/' + id, 'GET'); }
 
-export async function updateIssueStatus(id, newStatus) {
-  return await apiRequest('/api/issues/' + id, 'PUT', { status: newStatus });
-}
+export function updateIssueStatus(id, newStatus) { return apiRequest('/api/issues/' + id, 'PUT', { status: newStatus }); }
 
-export async function createIssue(issueData) {
-  return await apiRequest('/api/issues', 'POST', issueData);
-}
+export function createIssue(issueData) { return apiRequest('/api/issues', 'POST', issueData); }
 
-export async function deleteIssue(id) {
-  return await apiRequest('/api/issues/' + id, 'DELETE');
-}
+export function deleteIssue(id) { return apiRequest('/api/issues/' + id, 'DELETE'); }
 
-// ==========================================
 // 4. NOTIFICATIONS ENDPOINTS
-// ==========================================
-export async function getNotifications() {
-  return await apiRequest('/api/notifications', 'GET');
-}
+export function getNotifications() { return apiRequest('/api/notifications', 'GET'); }
 
-export async function markNotificationRead(id) {
-  return await apiRequest('/api/notifications/' + id + '/read', 'PUT');
-}
+export function markNotificationRead(id) { return apiRequest('/api/notifications/' + id + '/read', 'PUT'); }
 
-export async function markAllNotificationsRead() {
-  return await apiRequest('/api/notifications/mark-all-read', 'PUT');
-}
+export function markAllNotificationsRead() { return apiRequest('/api/notifications/mark-all-read', 'PUT'); }
 
-export async function createNotification(notifData) {
-  return await apiRequest('/api/notifications', 'POST', notifData);
-}
+export function createNotification(notifData) { return apiRequest('/api/notifications', 'POST', notifData); }
 
-export async function deleteNotification(id) {
-  return await apiRequest('/api/notifications/' + id, 'DELETE');
-}
+export function deleteNotification(id) { return apiRequest('/api/notifications/' + id, 'DELETE'); }
 
-// ==========================================
+export function clearAllNotifications() { return apiRequest('/api/notifications', 'DELETE'); }
+
 // 5. POLICY ENDPOINTS
-// ==========================================
-export async function getPolicy() {
-  return await apiRequest('/api/policies', 'GET');
-}
+export function getPolicy() { return apiRequest('/api/policies', 'GET'); }
 
-export async function updatePolicy(policyData) {
-  return await apiRequest('/api/policies', 'PUT', policyData);
-}
+export function updatePolicy(policyData) { return apiRequest('/api/policies', 'PUT', policyData); }
 
-// ==========================================
 // 6. PROFILE ENDPOINTS
-// ==========================================
-export async function getProfile() {
-  return await apiRequest('/api/profile', 'GET');
-}
+export function getProfile() { return apiRequest('/api/profile', 'GET'); }
 
-export async function updateProfile(profileData) {
-  return await apiRequest('/api/profile', 'PUT', profileData);
-}
+export function updateProfile(profileData) { return apiRequest('/api/profile', 'PUT', profileData); }
 
-// ==========================================
 // 7. SUBSCRIPTION ENDPOINTS
-// ==========================================
-export async function getSubscription() {
-  return await apiRequest('/api/subscription', 'GET');
-}
+export function getSubscription() { return apiRequest('/api/subscription', 'GET'); }
 
-export async function updateSubscription(subscriptionData) {
-  return await apiRequest('/api/subscription', 'PUT', subscriptionData);
-}
+export function updateSubscription(subscriptionData) { return apiRequest('/api/subscription', 'PUT', subscriptionData); }

@@ -18,12 +18,12 @@ import { OwnerService } from './owner.service';
 import { CreatePropertyDto, UpdatePropertyDto } from '../properties/properties.dto';
 import { CreateComplaintDto, UpdateComplaintDto } from '../complaints/complaints.dto';
 import { CreateNotificationDto, UpdateNotificationDto } from '../notifications/notifications.dto';
-import { RolesGuard } from '../common/guards/roles.guard';
+import { OwnerGuard } from './owner.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 
 @ApiTags('api')
 @Controller('api')
-@UseGuards(RolesGuard)
+@UseGuards(OwnerGuard)
 export class ApiController {
   constructor(
     private readonly propertiesService: PropertiesService,
@@ -32,13 +32,7 @@ export class ApiController {
     private readonly ownerService: OwnerService,
   ) {}
 
-  private getEffectiveOwnerId(userIdHeader?: string): number {
-    if (userIdHeader && !isNaN(Number(userIdHeader))) {
-      const parsed = Number(userIdHeader);
-      return parsed === 6 ? 16 : parsed;
-    }
-    return 16;
-  }
+  private getEffectiveOwnerId(userIdHeader?: string): number { return Number(userIdHeader); }
 
   // ==========================================
   // 1. DASHBOARD
@@ -61,14 +55,7 @@ export class ApiController {
     @Headers('x-role') role?: string,
     @Headers('x-user-id') userId?: string,
   ) {
-    let effectiveOwnerId: number | undefined = undefined;
-    if (ownerId && !isNaN(Number(ownerId))) {
-      const parsed = Number(ownerId);
-      effectiveOwnerId = parsed === 6 ? 16 : parsed;
-    } else if (role === 'owner' || !role) {
-      effectiveOwnerId = this.getEffectiveOwnerId(userId);
-    }
-    return this.propertiesService.findAll(effectiveOwnerId);
+    return this.propertiesService.findAll(this.getEffectiveOwnerId(userId));
   }
 
   @Get('properties/:id')
@@ -84,10 +71,8 @@ export class ApiController {
     @Headers('x-user-id') userId: string,
     @Body() createPropertyDto: CreatePropertyDto,
   ) {
-    if (!createPropertyDto.ownerId || Number(createPropertyDto.ownerId) === 6) {
-      createPropertyDto.ownerId = this.getEffectiveOwnerId(userId);
-    }
-    return this.propertiesService.create(createPropertyDto);
+    createPropertyDto.ownerId = this.getEffectiveOwnerId(userId);
+    return this.propertiesService.create(Object.assign({}, createPropertyDto, { status: 'pending', docsVerified: false, inspectionPassed: false, compliance: 'Pending', fireSafety: 'Unverified', safetyScore: 0 }));
   }
 
   @Put('properties/:id')
@@ -97,6 +82,10 @@ export class ApiController {
     @Param('id') id: string,
     @Body() updatePropertyDto: UpdatePropertyDto,
   ) {
+    delete updatePropertyDto.ownerId;
+    delete updatePropertyDto.status;
+    delete updatePropertyDto.docsVerified;
+    delete updatePropertyDto.inspectionPassed;
     return this.propertiesService.update(Number(id), updatePropertyDto);
   }
 
@@ -118,27 +107,22 @@ export class ApiController {
     @Headers('x-role') role?: string,
     @Headers('x-user-id') userId?: string,
   ) {
-    let effectiveOwnerId: number | undefined = undefined;
-    if (ownerId && !isNaN(Number(ownerId))) {
-      const parsed = Number(ownerId);
-      effectiveOwnerId = parsed === 6 ? 16 : parsed;
-    } else if (role === 'owner' || !role) {
-      effectiveOwnerId = this.getEffectiveOwnerId(userId);
-    }
-    return this.complaintsService.findAll(effectiveOwnerId);
+    return this.ownerService.getIssues(this.getEffectiveOwnerId(userId));
   }
 
   @Get('issues/:id')
   @Roles('admin', 'warden', 'tenant', 'owner')
   @ApiOperation({ summary: 'Get issue by ID' })
-  findOneIssue(@Param('id') id: string) {
-    return this.complaintsService.findOne(Number(id));
+  async findOneIssue(@Headers('x-user-id') userId: string, @Param('id') id: string) {
+    const issues = await this.ownerService.getIssues(Number(userId));
+    return issues.find(issue => String(issue.id) === id);
   }
 
   @Post('issues')
   @Roles('admin', 'tenant', 'owner')
   @ApiOperation({ summary: 'Create new issue' })
-  createIssue(@Body() createComplaintDto: CreateComplaintDto) {
+  createIssue(@Headers('x-user-id') userId: string, @Body() createComplaintDto: CreateComplaintDto) {
+    createComplaintDto.tenantId = Number(userId);
     return this.complaintsService.create(createComplaintDto);
   }
 
@@ -149,6 +133,7 @@ export class ApiController {
     @Param('id') id: string,
     @Body() updateComplaintDto: UpdateComplaintDto,
   ) {
+    if (id.startsWith('issue-')) return this.ownerService.updateTenantIssue(Number(id.slice(6)), updateComplaintDto.status || '');
     return this.complaintsService.update(Number(id), updateComplaintDto);
   }
 
@@ -156,6 +141,7 @@ export class ApiController {
   @Roles('admin', 'tenant', 'owner')
   @ApiOperation({ summary: 'Delete issue' })
   removeIssue(@Param('id') id: string) {
+    if (id.startsWith('issue-')) return this.ownerService.removeTenantIssue(Number(id.slice(6)));
     return this.complaintsService.remove(Number(id));
   }
 
@@ -165,8 +151,8 @@ export class ApiController {
   @Get('notifications')
   @Roles('admin', 'warden', 'tenant', 'owner')
   @ApiOperation({ summary: 'Get all notifications' })
-  findAllNotifications() {
-    return this.notificationsService.findAll();
+  findAllNotifications(@Headers('x-user-id') userId: string) {
+    return this.ownerService.getNotifications(Number(userId));
   }
 
   @Get('notifications/:id')
@@ -183,41 +169,35 @@ export class ApiController {
     @Headers('x-user-id') userId: string,
     @Body() createNotificationDto: CreateNotificationDto,
   ) {
-    if (!createNotificationDto.byUserId) {
-      createNotificationDto.byUserId = this.getEffectiveOwnerId(userId);
-    }
-    return this.notificationsService.create(createNotificationDto);
+    return this.ownerService.sendNotification(Number(userId), createNotificationDto);
   }
 
   @Put('notifications/mark-all-read')
   @Roles('admin', 'warden', 'tenant', 'owner')
   @ApiOperation({ summary: 'Mark all notifications as read' })
-  markAllNotificationsRead() {
-    return this.notificationsService.markAllRead();
+  markAllNotificationsRead(@Headers('x-user-id') userId: string) {
+    return this.ownerService.markAllNotificationsRead(Number(userId));
   }
 
   @Put('notifications/:id/read')
   @Roles('admin', 'warden', 'tenant', 'owner')
   @ApiOperation({ summary: 'Mark single notification as read' })
-  markNotificationRead(@Param('id') id: string) {
-    return this.notificationsService.markRead(Number(id));
+  markNotificationRead(@Headers('x-user-id') userId: string, @Param('id') id: string) {
+    return this.ownerService.updateNotificationReceipt(Number(userId), Number(id));
   }
 
-  @Put('notifications/:id')
-  @Roles('admin', 'warden', 'owner')
-  @ApiOperation({ summary: 'Update notification' })
-  updateNotification(
-    @Param('id') id: string,
-    @Body() updateNotificationDto: UpdateNotificationDto,
-  ) {
-    return this.notificationsService.update(Number(id), updateNotificationDto);
+  @Delete('notifications')
+  @Roles('admin', 'warden', 'tenant', 'owner')
+  @ApiOperation({ summary: 'Clear all notifications' })
+  clearAllNotifications(@Headers('x-user-id') userId: string) {
+    return this.ownerService.clearAllNotifications(Number(userId));
   }
 
   @Delete('notifications/:id')
   @Roles('admin', 'warden', 'owner')
   @ApiOperation({ summary: 'Delete notification' })
-  removeNotification(@Param('id') id: string) {
-    return this.notificationsService.remove(Number(id));
+  removeNotification(@Headers('x-user-id') userId: string, @Param('id') id: string) {
+    return this.ownerService.updateNotificationReceipt(Number(userId), Number(id), true);
   }
 
   // ==========================================
@@ -275,6 +255,11 @@ export class ApiController {
   // ==========================================
   // 6. PROFILE
   // ==========================================
+  @Put('profile/password')
+  changePassword(@Headers('x-user-id') userId: string, @Body() body: { currentPassword: string; newPassword: string }) {
+    return this.ownerService.changePassword(Number(userId), body);
+  }
+
   @Get('profile')
   @Roles('owner', 'admin')
   @ApiOperation({ summary: 'Get owner profile' })
