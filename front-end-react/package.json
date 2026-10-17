@@ -6,8 +6,6 @@
   "scripts": {
     "dev": "npm --prefix pg-listing-react run dev",
     "start": "npm --prefix pg-listing-react run dev",
-    "dev:unified": "npm --prefix pg-listing-react run dev",
-    "dev:tenant": "npm --prefix tenant-dashboard-react run dev",
     "build": "npm --prefix pg-listing-react run build"
   }
 }
