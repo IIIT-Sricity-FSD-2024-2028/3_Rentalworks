@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RuleViolation } from './rule-violation.entity';
 import { User } from '../users/user.entity';
+import { Notification } from '../notifications/notification.entity';
+import { Booking } from '../bookings/booking.entity';
 import {
   CreateRuleViolationDto,
   UpdateRuleViolationDto,
@@ -15,6 +17,10 @@ export class RuleViolationsService {
     private readonly repo: Repository<RuleViolation>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(Notification)
+    private readonly notifRepo: Repository<Notification>,
+    @InjectRepository(Booking)
+    private readonly bookingRepo: Repository<Booking>,
   ) {}
 
   findAll() {
@@ -75,14 +81,67 @@ export class RuleViolationsService {
     const violation = await this.findOne(id);
     violation.warningCount = (violation.warningCount || 0) + 1;
     violation.status = 'warned';
-    return this.repo.save(violation);
+    const saved = await this.repo.save(violation);
+
+    // Notify tenant ALONE (not owner)
+    if (violation.tenantId) {
+      await this.notifRepo.save({
+        title: 'Warning Issued: Rule Violation',
+        message: `A warning (#${violation.warningCount}) has been issued to you for: ${violation.type}. Please adhere to PG guidelines.`,
+        type: 'warning',
+        priority: violation.severity === 'high' ? 'high' : 'medium',
+        userId: violation.tenantId,
+        targetRole: 'tenant',
+        sentAt: new Date().toISOString(),
+      });
+    }
+
+    return saved;
   }
 
   async escalateToOwner(id: number) {
     const violation = await this.findOne(id);
     violation.escalatedToOwner = true;
     violation.status = 'escalated';
-    return this.repo.save(violation);
+    const saved = await this.repo.save(violation);
+
+    // Find owner of the property where the tenant resides
+    let ownerId = 4;
+    if (violation.tenantId) {
+      const booking = await this.bookingRepo.findOne({
+        where: { tenantId: violation.tenantId },
+        relations: { property: true },
+      });
+      if (booking?.property?.ownerId) {
+        ownerId = booking.property.ownerId;
+      }
+    }
+
+    // 1. Send notification to Owner
+    await this.notifRepo.save({
+      title: 'Rule Violation Escalated',
+      message: `Tenant ${violation.tenantName || 'Resident'} (Room ${violation.roomNumber || 'N/A'}) has been escalated to you for repeated rule violations: ${violation.type}.`,
+      type: 'warning',
+      priority: 'high',
+      userId: ownerId,
+      targetRole: 'owner',
+      sentAt: new Date().toISOString(),
+    });
+
+    // 2. Send notification to Tenant
+    if (violation.tenantId) {
+      await this.notifRepo.save({
+        title: 'Rule Violation Escalated to Owner',
+        message: `Your rule violation regarding "${violation.type}" has been escalated to the Property Owner for review.`,
+        type: 'warning',
+        priority: 'high',
+        userId: violation.tenantId,
+        targetRole: 'tenant',
+        sentAt: new Date().toISOString(),
+      });
+    }
+
+    return saved;
   }
 
   async remove(id: number) {

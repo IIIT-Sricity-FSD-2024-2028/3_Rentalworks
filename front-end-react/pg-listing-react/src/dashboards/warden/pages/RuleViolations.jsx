@@ -91,7 +91,24 @@ export default function RuleViolations() {
 
   const issueWarning = async (id) => {
     try {
+      const v = violations.find((item) => item.id === id);
       await issueRuleViolationWarningApi(id);
+
+      // Notification goes to the TENANT ALONE (NOT owner)
+      let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
+      crossNotifs.push({
+        id: Date.now(),
+        title: 'Warning Issued: Rule Violation',
+        message: `You have received a warning for rule violation: ${v?.type || 'Rule Violation'}. Please adhere to PG guidelines.`,
+        type: 'warning',
+        priority: v?.severity || 'medium',
+        targetRole: 'tenant',
+        by: 'Warden',
+        sentAt: new Date().toLocaleString(),
+      });
+      localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
+      window.dispatchEvent(new Event('storage'));
+
       await refreshData();
       showToast('success', 'Changes saved', 'Warning issued to tenant');
     } catch (err) {
@@ -102,7 +119,35 @@ export default function RuleViolations() {
 
   const escalateViolation = async (id) => {
     try {
+      const v = violations.find((item) => item.id === id);
       await escalateRuleViolationApi(id);
+
+      // Notification goes to BOTH OWNER AND TENANT
+      let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
+      const now = Date.now();
+      crossNotifs.push({
+        id: now,
+        title: 'Rule Violation Escalated',
+        message: `Tenant ${v?.tenantName || v?.tenant || 'Resident'} (Room ${v?.roomNumber || v?.room || 'N/A'}) escalated for ${v?.type || 'rule violation'}.`,
+        type: 'warning',
+        priority: 'high',
+        targetRole: 'owner',
+        by: 'Warden',
+        sentAt: new Date().toLocaleString(),
+      });
+      crossNotifs.push({
+        id: now + 1,
+        title: 'Rule Violation Escalated to Owner',
+        message: `Your rule violation regarding "${v?.type || 'Rule Violation'}" has been escalated to the Property Owner.`,
+        type: 'warning',
+        priority: 'high',
+        targetRole: 'tenant',
+        by: 'Warden',
+        sentAt: new Date().toLocaleString(),
+      });
+      localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
+      window.dispatchEvent(new Event('storage'));
+
       await refreshData();
       showToast('success', 'Changes saved', 'Violation escalated to property owner');
     } catch (err) {

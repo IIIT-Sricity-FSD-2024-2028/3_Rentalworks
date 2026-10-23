@@ -111,6 +111,7 @@ const Complaints = () => {
     } finally {
       setLoading(false);
     }
+
   };
 
   useEffect(() => {
@@ -268,9 +269,9 @@ const Complaints = () => {
               complaints.length === 0
                 ? () => setIsModalOpen(true)
                 : () => {
-                    setStatusFilter('all');
-                    setSearchQuery('');
-                  }
+                  setStatusFilter('all');
+                  setSearchQuery('');
+                }
             }
             actionType={complaints.length === 0 ? 'primary' : 'ghost'}
           />
@@ -312,10 +313,10 @@ const Complaints = () => {
                     </span>
                     {c.reportedAt || c.createdAt
                       ? new Date(c.reportedAt || c.createdAt).toLocaleDateString(undefined, {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })
                       : 'N/A'}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -382,10 +383,10 @@ const Complaints = () => {
                     <td style={{ color: 'var(--text-muted)', fontSize: '12.5px', whiteSpace: 'nowrap' }}>
                       {c.reportedAt || c.createdAt
                         ? new Date(c.reportedAt || c.createdAt).toLocaleDateString(undefined, {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })
                         : 'N/A'}
                     </td>
                     <td style={{ textAlign: 'right' }}>

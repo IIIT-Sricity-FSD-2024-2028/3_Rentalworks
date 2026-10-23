@@ -41,18 +41,28 @@ export class WardenNotificationsService {
   }
 
   async markAsRead(id: number) {
-    const notif = await this.findOne(id);
+    const notif = await this.repo.findOne({ where: { id } });
+    if (!notif) {
+      return { success: true, id, message: `Notification ${id} not found` };
+    }
     notif.read = true;
     return this.repo.save(notif);
   }
 
   async markAllAsRead() {
-    await this.repo.update({}, { read: true });
+    await this.repo
+      .createQueryBuilder()
+      .update(WardenNotification)
+      .set({ read: true })
+      .execute();
     return { success: true, message: 'All notifications marked as read' };
   }
 
   async remove(id: number) {
-    const notif = await this.findOne(id);
+    const notif = await this.repo.findOne({ where: { id } });
+    if (!notif) {
+      return { success: true, id, message: `Notification ${id} not found` };
+    }
     await this.repo.remove(notif);
     return { success: true, id };
   }

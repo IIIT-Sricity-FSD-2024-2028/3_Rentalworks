@@ -121,7 +121,7 @@ export default function TenantRecords() {
       await deleteTenantApi(selectedTenant.id);
       await refreshData();
       setActiveModal(null);
-      showToast('success', 'Changes Saved', 'Changes saved');
+      showToast('success', 'Tenant Deleted', 'Tenant record removed successfully');
     } catch (err) {
       showToast('error', 'Delete Failed', err.message);
     } finally {

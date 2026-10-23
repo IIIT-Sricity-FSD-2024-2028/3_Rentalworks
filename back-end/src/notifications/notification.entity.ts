@@ -44,7 +44,7 @@ export class Notification {
   @Column({ type: 'varchar', default: 'sent' })
   deliveryStatus: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'byUserId' })
   byUser: User;
 

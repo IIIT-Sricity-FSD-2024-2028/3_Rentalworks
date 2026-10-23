@@ -88,6 +88,9 @@ export class UsersService {
   async remove(id: number) {
     const user = await this.findOne(id);
     if (user.role === 'super_admin') throw new ForbiddenException('Super admin accounts cannot be deleted here');
+    if (user.role === 'tenant') {
+      return this.removeTenant(id);
+    }
     const removed = Object.assign({}, user);
     await this.usersRepository.remove(user);
     return removed;
@@ -497,33 +500,56 @@ export class UsersService {
 
       // Decrement room occupancy
       const roomRepo = manager.getRepository(Room);
-      const activeBooking = user.bookings?.find((b) => b.status === 'active');
-      if (activeBooking?.room) {
-        const room = await roomRepo.findOne({
+      const activeBooking =
+        user.bookings?.find((b) => b.status === 'active') || user.bookings?.[0];
+      const activeStay =
+        user.tenantStays?.find((s) => s.status === 'active') ||
+        user.tenantStays?.[0];
+
+      let room: Room | null = null;
+      if (activeBooking?.roomId) {
+        room = await roomRepo.findOne({ where: { id: activeBooking.roomId } });
+      }
+      if (!room && activeStay?.roomId) {
+        room = await roomRepo.findOne({ where: { id: activeStay.roomId } });
+      }
+      if (!room && activeBooking?.room) {
+        room = await roomRepo.findOne({
           where: { roomNumber: activeBooking.room },
         });
-        if (room && room.currentOccupancy > 0) {
-          room.currentOccupancy -= 1;
-          if (room.currentOccupancy < room.capacity) {
-            room.status = 'available';
-          }
-          await roomRepo.save(room);
-        }
       }
 
-      // Remove payments, bookings, stays, then user
-      if (user.payments && user.payments.length > 0) {
-        await manager.getRepository(Payment).remove(user.payments);
+      if (room && room.currentOccupancy > 0) {
+        room.currentOccupancy -= 1;
+        if (room.currentOccupancy < room.capacity) {
+          room.status = 'available';
+        }
+        await roomRepo.save(room);
       }
-      if (user.tenantStays && user.tenantStays.length > 0) {
-        await manager.getRepository(TenantStay).remove(user.tenantStays);
-      }
-      if (user.bookings && user.bookings.length > 0) {
-        await manager.getRepository(Booking).remove(user.bookings);
-      }
+
+      // Clean up all referencing child records across the database
+      await manager.query('DELETE FROM remarks WHERE "authorId" = $1', [id]);
+      await manager.query(
+        'DELETE FROM remarks WHERE "complaintId" IN (SELECT id FROM complaints WHERE "tenantId" = $1)',
+        [id],
+      );
+      await manager.query('DELETE FROM complaints WHERE "tenantId" = $1', [id]);
+      await manager.query('DELETE FROM payments WHERE "tenantId" = $1', [id]);
+      await manager.query('DELETE FROM tenant_stays WHERE "tenantId" = $1', [id]);
+      await manager.query('DELETE FROM bookings WHERE "tenantId" = $1', [id]);
+      await manager.query('DELETE FROM booking_requests WHERE "tenantId" = $1', [id]);
+      await manager.query('DELETE FROM service_requests WHERE "tenantId" = $1', [id]);
+      await manager.query('DELETE FROM rule_violations WHERE "tenantId" = $1', [id]);
+      await manager.query('DELETE FROM issues WHERE "tenantId" = $1', [id]);
+      await manager.query('UPDATE notifications SET "byUserId" = NULL WHERE "byUserId" = $1', [id]);
+      await manager.query('DELETE FROM notifications WHERE "userId" = $1', [id]);
+      await manager.query('DELETE FROM notification_receipts WHERE "userId" = $1', [id]);
+      await manager.query('DELETE FROM user_activities WHERE "userId" = $1', [id]);
+      await manager.query('DELETE FROM warden_notifications WHERE "tenantId" = $1', [id]);
+      await manager.query('DELETE FROM roommate_profiles WHERE "userId" = $1', [id]);
 
       const removed = { ...user };
-      await userRepo.remove(user);
+      await manager.query('DELETE FROM users WHERE id = $1', [id]);
       return removed;
     });
   }

@@ -94,8 +94,13 @@ export function mapComplaintFromDb(c, tenantsList = []) {
   const dateStr = c.reportedAt || 
     (c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-US') : new Date().toLocaleDateString('en-US'));
 
+  const ownerId = c.property?.ownerId || (c.property && c.property.owner && c.property.owner.id) || 4;
+
   return {
     id: c.id,
+    tenantId: tenantId,
+    propertyId: c.propertyId,
+    ownerId: ownerId,
     tenant: tenantName,
     room: tenantRoom,
     type: compType,
@@ -135,8 +140,11 @@ export function mapWardenNotificationFromDb(n) {
     read: Boolean(n.read),
     senderName: n.senderName || 'Anonymous',
     senderRole: n.senderRole || 'tenant',
+    propertyId: n.propertyId,
     propertyName: n.propertyName || 'Sunrise PG Residency',
     roomNumber: n.roomNumber || '',
+    tenantId: n.tenantId,
+    sourceReferenceId: n.sourceReferenceId,
     time: time,
     icon: iconType,
   };
@@ -237,12 +245,39 @@ export async function fetchLiveWardenData() {
       propertyId: i.propertyId || 1,
     }));
 
-    const complaints = [...mappedComplaints, ...mappedIssues];
+    const allComplaints = [...mappedComplaints, ...mappedIssues];
+
+    // Determine the Warden's assigned PG property (defaults to Sunrise PG Residency / propertyId 1)
+    let wardenPropId = 1;
+    let wardenPropName = 'sunrise pg residency';
+    try {
+      const sessionUser = JSON.parse(sessionStorage.getItem('warden_user')) || 
+                          JSON.parse(sessionStorage.getItem('pg_user')) || {};
+      if (sessionUser.propertyId) wardenPropId = Number(sessionUser.propertyId);
+      if (sessionUser.assignedProperty || sessionUser.region || sessionUser.property) {
+        wardenPropName = (sessionUser.assignedProperty || sessionUser.region || sessionUser.property).toLowerCase();
+      }
+    } catch (_) {}
+
+    // Match complaints: Only show issues/complaints matching the warden's PG property
+    const complaints = allComplaints.filter(c => {
+      if (c.propertyId && Number(c.propertyId) === wardenPropId) return true;
+      if (c.property && c.property.toLowerCase().includes(wardenPropName)) return true;
+      // Default fallback for tenant 1 (Arun Kumar at Sunrise PG)
+      return c.tenantId === 1 || !c.propertyId;
+    });
 
     const rawNotifs = notifsRes.status === 'fulfilled' && Array.isArray(notifsRes.value) 
       ? notifsRes.value 
       : [];
-    const notifications = rawNotifs.map(mapWardenNotificationFromDb);
+    const allNotifications = rawNotifs.map(mapWardenNotificationFromDb);
+
+    // Match notifications: Only route notifications for this warden's PG property
+    const notifications = allNotifications.filter(n => {
+      if (n.propertyId && Number(n.propertyId) === wardenPropId) return true;
+      if (n.propertyName && n.propertyName.toLowerCase().includes(wardenPropName)) return true;
+      return n.tenantId === 1 || !n.propertyId;
+    });
 
     const rawViols = violsRes.status === 'fulfilled' && Array.isArray(violsRes.value) 
       ? violsRes.value 

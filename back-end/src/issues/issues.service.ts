@@ -56,23 +56,7 @@ export class IssuesService {
         sentAt: new Date().toISOString(),
       });
       await this.notificationsRepository.save(notif);
-      if (savedIssue.propertyId) {
-        const property = await this.issuesRepository.manager
-          .getRepository(Property)
-          .findOneBy({ id: savedIssue.propertyId });
-        if (property)
-          await this.notificationsRepository.save(
-            this.notificationsRepository.create({
-              title: 'New property issue',
-              message: savedIssue.title,
-              type: 'issue',
-              priority: savedIssue.priority,
-              userId: property.ownerId,
-              byUserId: finalTenantId,
-              sentAt: new Date().toISOString(),
-            }),
-          );
-      }
+      // Issue created: notify warden and confirm to tenant only. Owner is only notified if escalated.
     } catch (err) {
       // Non-critical background notification log
     }

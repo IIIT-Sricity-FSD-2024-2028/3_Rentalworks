@@ -8,7 +8,7 @@ export class TenantStay {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => User, user => user.tenantStays)
+  @ManyToOne(() => User, (user) => user.tenantStays, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'tenantId' })
   tenant: User;
 

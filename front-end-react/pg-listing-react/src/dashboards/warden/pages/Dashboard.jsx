@@ -77,7 +77,7 @@ function RoomStatusChart({ rooms }) {
           {total > 1 || rooms.length > 0 ? data.map((d, i) => {
             const angle = (d.value / 100) * 2 * Math.PI;
             if (angle === 0) return null;
-            
+
             if (angle >= 2 * Math.PI - 0.001) {
               return <circle key={i} cx={cx} cy={cy} r={r} fill={d.color} stroke="white" strokeWidth="2" />;
             }
@@ -121,8 +121,8 @@ function RecentComplaints({ complaints }) {
   return (
     <div id="recent-complaints">
       {recent.map((c, i) => {
-        const tenantDisplayName = typeof c.tenant === 'object' && c.tenant !== null 
-          ? (c.tenant.name || 'Tenant') 
+        const tenantDisplayName = typeof c.tenant === 'object' && c.tenant !== null
+          ? (c.tenant.name || 'Tenant')
           : (c.tenant || 'Tenant');
         const roomDisplay = typeof c.room === 'object' && c.room !== null
           ? (c.room.roomNumber || '101')
@@ -146,22 +146,49 @@ function RecentComplaints({ complaints }) {
   );
 }
 
-function RecentActivity() {
+function RecentActivity({ tenants = [], complaints = [], violations = [] }) {
   const items = [
-    { id: 1, text: 'New tenant check-in', sub: 'Sneha Patil - Room 208', time: '1 day ago' },
-    { id: 2, text: 'Room change request', sub: 'Anita Desai - Room 305', time: '3 days ago' }
+    ...tenants.map(t => ({
+      id: `tenant-${t.id}`,
+      text: 'Tenant record',
+      sub: `${t.name} - Room ${t.room}`,
+      date: t.checkIn,
+    })),
+    ...complaints.map(c => ({
+      id: `complaint-${c.id}`,
+      text: 'Complaint reported',
+      sub: `${c.tenant || 'Tenant'} - Room ${c.room || 'N/A'}`,
+      date: c.date,
+    })),
+    ...violations.map(v => ({
+      id: `violation-${v.id}`,
+      text: 'Rule violation reported',
+      sub: `${v.tenant || v.tenantName || 'Tenant'} - Room ${v.room || v.roomNumber || 'N/A'}`,
+      date: v.date || v.reportedAt,
+    })),
   ];
+
+  const sortedItems = items
+    .filter(item => item.date && !Number.isNaN(new Date(item.date).getTime()))
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 4);
+
+  if (sortedItems.length === 0) {
+    return <p>No recent activity</p>;
+  }
 
   return (
     <div id="recent-activity">
-      {items.map(item => (
+      {sortedItems.map(item => (
         <div key={item.id} className="activity-item">
           <div className="activity-dot"></div>
           <div className="activity-info">
             <strong>{item.text}</strong>
             <span>{item.sub}</span>
           </div>
-          <div className="activity-time">{item.time}</div>
+          <div className="activity-time">
+            {new Date(item.date).toLocaleDateString()}
+          </div>
         </div>
       ))}
     </div>
@@ -187,11 +214,11 @@ export default function Dashboard() {
       </div>
 
       <div className="stats-grid">
-        <StatCard icon="blue" color="blue" materialIcon="group" label="Total Tenants" value={tenants.length} sub="+0 this month" />
+        <StatCard icon="blue" color="blue" materialIcon="group" label="Total Tenants" value={tenants.length} sub="this month" />
         <StatCard icon="green" color="green" materialIcon="home" label="Occupied Rooms" value={occupiedRooms} sub="of total rooms" />
         <StatCard icon="yellow" color="yellow" materialIcon="home" label="Vacant Rooms" value={vacantRooms} sub="Available" />
-        <StatCard icon="red" color="red" materialIcon="schedule" label="Active Complaints" value={activeComplaints} sub="2 urgent" />
-        <StatCard icon="orange" color="orange" materialIcon="warning" label="Rule Violations" value={ruleViolations} sub="2 this week" />
+        <StatCard icon="red" color="red" materialIcon="schedule" label="Active Complaints" value={activeComplaints} sub="urgent" />
+        <StatCard icon="orange" color="orange" materialIcon="warning" label="Rule Violations" value={ruleViolations} sub=" this week" />
       </div>
 
       <div className="charts-row">
@@ -202,21 +229,21 @@ export default function Dashboard() {
       <div className="quick-actions">
         <h3>Quick Actions</h3>
         <div className="actions-grid">
-          <button className="action-btn" onClick={() => navigate('/tenants')}>
+          <button className="action-btn" onClick={() => navigate('/dashboard/warden/tenants')}>
             <span className="action-icon"><span className="material-icons-outlined" style={{ fontSize: '24px' }}>group</span></span>
             <div className="action-text">
               <strong>View Tenants</strong>
               <span>Manage tenant records</span>
             </div>
           </button>
-          <button className="action-btn" onClick={() => navigate('/violations')}>
+          <button className="action-btn" onClick={() => navigate('/dashboard/warden/violations')}>
             <span className="action-icon"><span className="material-icons-outlined" style={{ fontSize: '24px' }}>warning</span></span>
             <div className="action-text">
               <strong>Report Violation</strong>
               <span>Log rule violations</span>
             </div>
           </button>
-          <button className="action-btn" onClick={() => navigate('/rooms')}>
+          <button className="action-btn" onClick={() => navigate('/dashboard/warden/rooms')}>
             <span className="action-icon"><span className="material-icons-outlined" style={{ fontSize: '24px' }}>check_circle</span></span>
             <div className="action-text">
               <strong>Update Room Status</strong>
@@ -233,7 +260,11 @@ export default function Dashboard() {
         </div>
         <div className="bottom-card">
           <h3>Recent Tenant Activity</h3>
-          <RecentActivity />
+          <RecentActivity
+            tenants={tenants}
+            complaints={complaints}
+            violations={violations}
+          />
         </div>
       </div>
     </section>

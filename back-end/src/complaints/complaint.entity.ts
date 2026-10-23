@@ -16,7 +16,7 @@ export class Complaint {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => User, (user) => user.complaints)
+  @ManyToOne(() => User, (user) => user.complaints, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'tenantId' })
   tenant: User;
 

@@ -5,6 +5,7 @@ import { Complaint } from './complaint.entity';
 import { User } from '../users/user.entity';
 import { Property } from '../properties/property.entity';
 
+import { Booking } from '../bookings/booking.entity';
 import { Room } from '../rooms/room.entity';
 import { CreateComplaintDto, UpdateComplaintDto } from './complaints.dto';
 import { Notification } from '../notifications/notification.entity';
@@ -56,6 +57,17 @@ export class ComplaintsService {
       reportedAt: new Date().toISOString().split('T')[0],
     };
     const payload = Object.assign({}, defaults, createComplaintDto);
+    if (payload.tenantId && (!payload.propertyId || !payload.roomId)) {
+      const activeBooking = await this.complaintsRepository.manager
+        .getRepository(Booking)
+        .findOne({
+          where: { tenantId: payload.tenantId, status: 'active' },
+        });
+      if (activeBooking) {
+        if (!payload.propertyId) payload.propertyId = activeBooking.propertyId;
+        if (!payload.roomId) payload.roomId = activeBooking.roomId;
+      }
+    }
     const newComplaint = this.complaintsRepository.create(payload);
     const saved = await this.complaintsRepository.save(newComplaint);
 
@@ -82,18 +94,6 @@ export class ComplaintsService {
         });
         if (p) {
           propertyName = p.name;
-          if (p.ownerId !== saved.tenantId)
-            await this.complaintsRepository.manager
-              .getRepository(Notification)
-              .save({
-                title: 'New issue: ' + (saved.title || 'Complaint'),
-                message: createComplaintDto.description,
-                type: 'issue',
-                priority: saved.priority,
-                byUserId: saved.tenantId,
-                userId: p.ownerId,
-                sentAt: new Date().toISOString(),
-              });
         }
 
         const r = saved.roomId

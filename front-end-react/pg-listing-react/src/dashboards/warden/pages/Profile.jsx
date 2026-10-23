@@ -29,12 +29,12 @@ export default function Profile() {
 
   useEffect(() => {
     const loadProfile = async () => {
-      setLoading(true);
+      setLoading(true); // profile is being fetched
       // Identify authenticated user from session or default warden ID 9 in Neon
-      const sessionUser = JSON.parse(sessionStorage.getItem('warden_user')) || 
-                          JSON.parse(sessionStorage.getItem('pg_user')) || 
-                          { id: 9, role: 'warden', username: 'warden' };
-      const userId = sessionUser.id || 9;
+      const sessionUser = JSON.parse(sessionStorage.getItem('warden_user')) ||
+        JSON.parse(sessionStorage.getItem('pg_user')) ||
+        { id: 9, role: 'warden', username: 'warden' };
+      const userId = sessionUser.id || 9; // default warden id in neon
 
       try {
         const liveUser = await getUserProfileApi(userId);
@@ -43,7 +43,7 @@ export default function Profile() {
         setEmail(liveUser.email || '');
         setPhone(liveUser.phone || '');
         setAddress(liveUser.address || '');
-        setProperty(liveUser.assignedProperty || liveUser.region || sessionUser.property || 'Sunrise PG Residency');
+        setProperty(liveUser.assignedProperty || liveUser.region || sessionUser.property || 'unknown');
 
         // Sync session storage with live Neon DB record
         const updatedSession = { ...sessionUser, ...liveUser };
@@ -67,16 +67,21 @@ export default function Profile() {
   }, []);
 
   const handleSaveProfile = async () => {
-    if (!name.trim() || !email.trim() || !phone.trim()) {
+    if (!name.trim() || !email.trim() || !phone.trim()) { //removes whitespace from the beginning and end of a string.
       showToast('error', 'Validation Error', 'Please fill all required fields');
       return;
     }
+    //This uses a regular expression (regex) to check the email's basic structure.
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       showToast('error', 'Invalid Email', 'Please enter a valid email address');
       return;
     }
-    if (!/^\+?[\d\s\-]{9,}$/.test(phone.trim())) {
-      showToast('error', 'Invalid Phone', 'Please enter a valid phone number');
+    if (!/^\+91\s*\d(?:\s*\d){9}$/.test(phone.trim())) {
+      showToast(
+        'error',
+        'Invalid Phone',
+        'Enter +91 followed by exactly 10 digits'
+      );
       return;
     }
 
@@ -174,7 +179,7 @@ export default function Profile() {
           <div className="profile-role-badge">Warden</div>
           <div className="profile-meta">
             <div className="profile-meta-row"><span>Property</span><span>{property}</span></div>
-            <div className="profile-meta-row"><span>Joined</span><span>{user.joinDate || '1/15/2024'}</span></div>
+            <div className="profile-meta-row"><span>Joined</span><span>{user.joinDate || 'unknown'}</span></div>
             <div className="profile-meta-row"><span>Status</span><span style={{ color: '#16a34a' }}>Active</span></div>
           </div>
         </div>
@@ -204,18 +209,18 @@ export default function Profile() {
               </div>
               <div className="form-field full">
                 <label>Address</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   id="profile-address"
-                  value={address} 
-                  onChange={(e) => setAddress(e.target.value)} 
-                  placeholder="123 Main Street, Mumbai" 
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="123 Main Street, Mumbai"
                 />
               </div>
             </div>
           )}
           <button className="btn-save" onClick={handleSaveProfile} disabled={saving}>
-            <span className="material-icons-outlined" style={{ fontSize: '24px' }}>save</span> 
+            <span className="material-icons-outlined" style={{ fontSize: '24px' }}>save</span>
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
@@ -234,8 +239,8 @@ export default function Profile() {
       </div>
 
       {/* Password Modal */}
-      <Modal 
-        isOpen={isPwdModalOpen} 
+      <Modal
+        isOpen={isPwdModalOpen}
         title="Change Password"
         onCancel={() => setIsPwdModalOpen(false)}
         onConfirm={handleChangePassword}
@@ -244,9 +249,9 @@ export default function Profile() {
         <div className="form-group">
           <label>Current Password *</label>
           <div className="input-wrapper">
-            <input 
-              type="password" 
-              placeholder="Enter current password" 
+            <input
+              type="password"
+              placeholder="Enter current password"
               value={currentPwd}
               onChange={(e) => { setCurrentPwd(e.target.value); setPwdErrors(prev => ({ ...prev, current: null })); }}
             />
@@ -256,9 +261,9 @@ export default function Profile() {
         <div className="form-group">
           <label>New Password *</label>
           <div className="input-wrapper">
-            <input 
-              type="password" 
-              placeholder="Minimum 8 characters" 
+            <input
+              type="password"
+              placeholder="Minimum 8 characters"
               value={newPwd}
               onChange={(e) => { setNewPwd(e.target.value); setPwdErrors(prev => ({ ...prev, new: null })); }}
             />
@@ -268,9 +273,9 @@ export default function Profile() {
         <div className="form-group">
           <label>Confirm New Password *</label>
           <div className="input-wrapper">
-            <input 
-              type="password" 
-              placeholder="Re-enter new password" 
+            <input
+              type="password"
+              placeholder="Re-enter new password"
               value={confirmPwd}
               onChange={(e) => { setConfirmPwd(e.target.value); setPwdErrors(prev => ({ ...prev, confirm: null })); }}
             />
