@@ -1,45 +1,33 @@
-import { useState, useEffect, useCallback } from 'react';
-import { api } from '../services/api';
-import { useToast } from '../components/Toast';
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { runThunk } from '../../../app/hooks';
+import { adminUsers } from '../../../features/admin/adminSlices';
+import { useToast } from '../components/useToast';
 import Modal from '../components/Modal';
 
 const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 
 export default function Users() {
-  const [users, setUsers] = useState([]);
-  const [properties, setProperties] = useState([]);
+  const dispatch = useDispatch();
+  const users = useSelector(adminUsers.selectors.selectItems);
+  const loading = useSelector(adminUsers.selectors.selectIsLoading) && users.length === 0;
+  const saving = useSelector(adminUsers.selectors.selectMutating);
   const [search, setSearch] = useState('');
   const [roleF, setRoleF] = useState('all');
   const [statusF, setStatusF] = useState('all');
-  const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
   const toast = useToast();
 
-  const load = useCallback(async () => {
-    try {
-      const [uList, pList] = await Promise.all([
-        api.getUsers(),
-        api.getProperties()
-      ]);
-      setUsers(Array.isArray(uList) ? uList : []);
-      setProperties(Array.isArray(pList) ? pList : []);
-    } catch {
-      toast('error', 'Error', 'Failed to load users');
-    }
-    setLoading(false);
-  }, []);
-
   useEffect(() => {
-    load();
-  }, [load]);
+    dispatch(adminUsers.thunks.fetchAll());
+  }, [dispatch]);
 
   const filtered = users.filter(u => {
     const q = search.toLowerCase();
     const ms = !search ||
       u.name?.toLowerCase().includes(q) ||
       u.email?.toLowerCase().includes(q) ||
-      u.phone?.includes(search) ||
-      u.property?.toLowerCase().includes(q);
+      u.phone?.includes(search);
     const mr = roleF === 'all' || u.role === roleF;
     const mst = statusF === 'all' || u.status === statusF;
     return ms && mr && mst;
@@ -50,13 +38,10 @@ export default function Users() {
     tenants: users.filter(u => u.role === 'tenant').length,
     owners: users.filter(u => u.role === 'owner').length,
     wardens: users.filter(u => u.role === 'warden').length,
-    admins: users.filter(u => u.role === 'admin' || u.role === 'super_admin').length || 1
+    admins: users.filter(u => u.role === 'admin' || u.role === 'super_admin').length
   };
 
-  const propOptions = properties.map(p => ({ value: p.name, label: p.name }));
-
   const handleAdd = () => {
-    const defaultProp = propOptions[0]?.value || '';
     setModal({
       type: 'add',
       title: 'Add New User',
@@ -66,7 +51,7 @@ export default function Users() {
         email: '',
         phone: '',
         role: 'tenant',
-        property: defaultProp
+        password: ''
       }
     });
   };
@@ -81,8 +66,7 @@ export default function Users() {
         name: u.name || '',
         email: u.email || '',
         phone: u.phone || '',
-        role: u.role || 'tenant',
-        property: u.property || ''
+        role: u.role || 'tenant'
       }
     });
   };
@@ -100,65 +84,38 @@ export default function Users() {
     setModal({
       type: 'confirm',
       title: 'Delete User',
-      message: `Are you sure you want to permanently delete <strong>${u.name}</strong>? This action cannot be undone.`,
+      message: `Are you sure you want to permanently delete "${u.name}"? This action cannot be undone.`,
       userId: u.id,
       userName: u.name
     });
   };
 
-  const handleToggleSuspend = async (u) => {
-    const newStatus = u.status === 'suspended' ? 'active' : 'suspended';
-    try {
-      await api.updateUser(u.id, { status: newStatus });
-      setUsers(prev => prev.map(x => x.id === u.id ? { ...x, status: newStatus } : x));
-      toast('success', newStatus === 'active' ? 'User Activated' : 'User Suspended', `${u.name} status updated`);
-    } catch {
-      toast('error', 'Error', 'Failed to update user');
-    }
+  const handleToggleSuspend = (u) => {
+    const status = u.status === 'suspended' ? 'active' : 'suspended';
+    runThunk(dispatch, adminUsers.thunks.updateItem({ id: u.id, changes: { status } }), {
+      success: status === 'active' ? `${u.name} activated` : `${u.name} suspended`,
+    });
   };
 
   const handleSave = async () => {
-    if (!modal) return;
+    if (!modal || saving) return;
     const f = modal.fields;
-    if (!f.name?.trim()) { toast('error', 'Validation', 'Name is required'); return; }
-    if (!f.email?.trim() || !f.email.includes('@')) { toast('error', 'Validation', 'Enter a valid email'); return; }
-    if (!f.phone?.trim()) { toast('error', 'Validation', 'Phone number is required'); return; }
+    const details = { name: f.name.trim(), email: f.email.trim().toLowerCase(), phone: f.phone.trim(), role: f.role };
+    if (!details.name) { toast('error', 'Validation', 'Name is required'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email)) { toast('error', 'Validation', 'Enter a valid email'); return; }
+    if (!details.phone) { toast('error', 'Validation', 'Phone number is required'); return; }
+    if (modal.type === 'add' && f.password.length < 8) { toast('error', 'Validation', 'Temporary password must be at least 8 characters'); return; }
 
-    try {
-      if (modal.type === 'add') {
-        const payload = {
-          name: f.name.trim(),
-          email: f.email.trim(),
-          phone: f.phone.trim(),
-          role: f.role,
-          property: f.property || '',
-          username: f.email.trim().split('@')[0],
-          password: 'password123'
-        };
-        const created = await api.createUser(payload);
-        setUsers(prev => [...prev, created]);
-        toast('success', 'User Added', `${f.name} added successfully`);
-      } else if (modal.type === 'edit') {
-        await api.updateUser(modal.userId, f);
-        setUsers(prev => prev.map(u => u.id === modal.userId ? { ...u, ...f } : u));
-        toast('success', 'User Updated', 'Changes saved successfully');
-      }
-    } catch {
-      toast('error', 'Error', 'Failed to save user');
-    }
-    setModal(null);
+    const { ok } = modal.type === 'add'
+      ? await runThunk(dispatch, adminUsers.thunks.createItem({ ...details, username: details.email, password: f.password }), { success: `${details.name} added. They sign in with their email and the password you set.` })
+      : await runThunk(dispatch, adminUsers.thunks.updateItem({ id: modal.userId, changes: details }), { success: 'Changes saved' });
+    if (ok) setModal(null);
   };
 
   const handleConfirmDelete = async () => {
-    if (!modal) return;
-    try {
-      await api.deleteUser(modal.userId);
-      setUsers(prev => prev.filter(u => u.id !== modal.userId));
-      toast('success', 'User Deleted', `${modal.userName} removed from system`);
-    } catch {
-      toast('error', 'Error', 'Failed to delete user');
-    }
-    setModal(null);
+    if (!modal || saving) return;
+    const { ok } = await runThunk(dispatch, adminUsers.thunks.removeItem(modal.userId), { success: `${modal.userName} removed` });
+    if (ok) setModal(null);
   };
 
   return (
@@ -302,14 +259,14 @@ export default function Users() {
             <div><strong>Email:</strong> {modal.user.email}</div>
             <div><strong>Phone:</strong> {modal.user.phone}</div>
             <div><strong>Role:</strong> <span className={`badge badge-${modal.user.role}`}>{cap(modal.user.role)}</span></div>
-            <div><strong>Property:</strong> {modal.user.property || 'Not assigned'}</div>
+            <div><strong>Username:</strong> {modal.user.username || '-'}</div>
             <div><strong>Status:</strong> <span className={`badge badge-${modal.user.status}`}>{cap(modal.user.status)}</span></div>
             <div><strong>Joined:</strong> {modal.user.joinDate || '-'}</div>
           </div>
         )}
 
         {modal?.type === 'confirm' && (
-          <p style={{ fontSize: 13, lineHeight: 1.6, color: '#475569' }} dangerouslySetInnerHTML={{ __html: modal.message }} />
+          <p style={{ fontSize: 13, lineHeight: 1.6, color: '#475569' }}>{modal.message}</p>
         )}
 
         {(modal?.type === 'add' || modal?.type === 'edit') && (
@@ -348,20 +305,22 @@ export default function Users() {
                 <option value="tenant">Tenant</option>
                 <option value="owner">Owner</option>
                 <option value="warden">Warden</option>
+                {modal.type === 'edit' && <option value="guest">Guest</option>}
+                {modal.fields.role === 'admin' && <option value="admin">Admin</option>}
               </select>
             </div>
-            <div className="f-field full">
-              <label>PG Property</label>
-              <select
-                value={modal.fields.property}
-                onChange={e => setModal({ ...modal, fields: { ...modal.fields, property: e.target.value } })}
-              >
-                <option value="">Select Property...</option>
-                {propOptions.map(p => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
-                ))}
-              </select>
-            </div>
+            {modal.type === 'add' && (
+              <div className="f-field full">
+                <label>Temporary Password *</label>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={modal.fields.password}
+                  onChange={e => setModal({ ...modal, fields: { ...modal.fields, password: e.target.value } })}
+                  placeholder="Min 8 characters"
+                />
+              </div>
+            )}
           </div>
         )}
       </Modal>

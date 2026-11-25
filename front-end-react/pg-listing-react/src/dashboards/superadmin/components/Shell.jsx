@@ -22,19 +22,7 @@ export default function Shell({ user, section, setSection, onLogout, toast, chil
   })();
 
   function logout() {
-    sessionStorage.removeItem('pg_user');
-    sessionStorage.removeItem('super_admin_token');
-    sessionStorage.removeItem('guest_user');
-    sessionStorage.removeItem('tenant_user');
-    sessionStorage.removeItem('warden_user');
-    sessionStorage.removeItem('owner_user');
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('pg_user');
-    try {
-      window.dispatchEvent(new Event('rentbro-logout'));
-    } catch (_) {}
     if (onLogout) onLogout();
-    window.location.replace('/login');
   }
 
   const handleNavClick = (key, path) => {
@@ -63,20 +51,16 @@ export default function Shell({ user, section, setSection, onLogout, toast, chil
       </aside>
       <div className="main-wrap">
         <header className="navbar">
-          <div className="nb-left"><h4>Welcome back, {user?.name || 'Super Admin'}</h4><p>{user?.email || 'admin@pgrentals.com'}</p></div>
+          <div className="nb-left"><h4>Welcome back, {user?.name || 'Super Admin'}</h4><p>{user?.email || ''}</p></div>
           <div className="nb-right">
             <div className="nb-icon" title="Browse PG Discovery Listings" onClick={() => navigate('/listings')}><span className="material-icons-outlined" style={{ fontSize: 24 }}>storefront</span></div>
-            <div className="nb-icon" title="Notifications & Alerts" onClick={() => handleNavClick('notifications', '/dashboard/superadmin/notifications')}><span className="material-icons-outlined" style={{ fontSize: 24 }}>notifications</span><span className="nb-dot" /></div>
+            <div className="nb-icon" title="Notifications & Alerts" onClick={() => handleNavClick('notifications', '/dashboard/superadmin/notifications')}><span className="material-icons-outlined" style={{ fontSize: 24 }}>notifications</span></div>
             <div className="nb-icon" title="Settings & Profile" onClick={() => handleNavClick('profile', '/dashboard/superadmin/profile')}><span className="material-icons-outlined" style={{ fontSize: 24 }}>settings</span></div>
             <button className="btn-logout" onClick={logout}>↪ Logout</button>
           </div>
         </header>
         <main className="content">{children || <Outlet />}</main>
       </div>
-    </div>
-    <div className={`toast ${toast?.type || ''} ${toast ? 'show' : ''}`} role="status">
-      <span className="t-ico">{{ success: '✅', error: '❌', info: 'ℹ️' }[toast?.type] || 'ℹ️'}</span>
-      <div className="t-text"><strong>{toast?.title}</strong><span>{toast?.message}</span></div>
     </div>
   </>;
 }

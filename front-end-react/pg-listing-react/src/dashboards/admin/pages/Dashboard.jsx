@@ -1,86 +1,81 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../services/api';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  adminBookings,
+  adminComplaints,
+  adminPayments,
+  adminProperties,
+  adminUsers,
+  selectAdminSubscriptionStats,
+} from '../../../features/admin/adminSlices';
+import { lastMonths, monthKey } from '../utils/months';
+
+const LIVE = ['active', 'confirmed', 'paid'];
+const PAID = ['verified', 'completed', 'success'];
+const nameOf = (v) => (typeof v === 'object' ? v?.name : v) || 'Unknown';
+const sum = (list) => list.reduce((t, p) => t + (Number(p.amount) || 0), 0);
+
+function timeAgo(value) {
+  const mins = Math.max(0, Math.round((Date.now() - new Date(value).getTime()) / 60000));
+  if (mins < 60) return `${mins} min ago`;
+  if (mins < 1440) return `${Math.round(mins / 60)} h ago`;
+  return new Date(value).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({
-    users: 0,
-    properties: 0,
-    activeBookings: 0,
-    pendingBookings: 0,
-    gtv: 0,
-    platformRev: 0
-  });
-  const [health, setHealth] = useState({
-    pendingProps: 0,
-    pendingPayments: 0,
-    overdueBookings: 0
-  });
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const users = useSelector(adminUsers.selectors.selectItems);
+  const properties = useSelector(adminProperties.selectors.selectItems);
+  const bookings = useSelector(adminBookings.selectors.selectItems);
+  const payments = useSelector(adminPayments.selectors.selectItems);
+  const complaints = useSelector(adminComplaints.selectors.selectItems);
+  const subs = useSelector(selectAdminSubscriptionStats);
+  const lastSync = useSelector((s) => s.adminPayments.lastFetched);
+  const loadError = useSelector((s) => [s.adminUsers, s.adminProperties, s.adminBookings, s.adminPayments].find((x) => x.error)?.error);
 
   useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        const [users, properties, bookings, payments, subStats] = await Promise.all([
-          api.getUsers(),
-          api.getProperties(),
-          api.getBookings(),
-          api.getPayments(),
-          api.getSubscriptionStats()
-        ]);
-        if (cancelled) return;
+    [adminUsers, adminProperties, adminBookings, adminPayments, adminComplaints].forEach((r) => dispatch(r.thunks.fetchAll()));
+  }, [dispatch]);
 
-        const activeBookings = bookings.filter(b => b.status === 'active' || b.status === 'paid').length;
-        const pendingBookings = bookings.filter(b => b.status === 'pending').length;
-        const verifiedPayments = payments.filter(p => p.status === 'verified');
-        const gtv = verifiedPayments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+  const paidPayments = payments.filter((p) => PAID.includes(p.status));
+  const gtv = sum(paidPayments);
+  const stats = {
+    users: users.length,
+    properties: properties.length,
+    activeBookings: bookings.filter((b) => LIVE.includes(b.status)).length,
+    pendingBookings: bookings.filter((b) => b.status === 'pending').length,
+    gtv,
+    platformRev: Math.round(gtv * 0.1) + subs.payments.totalRevenue,
+  };
+  const health = {
+    pendingProps: properties.filter((p) => p.status === 'pending').length,
+    pendingPayments: payments.filter((p) => p.status === 'pending').length,
+    overdueBookings: bookings.filter((b) => b.status === 'overdue').length,
+  };
 
-        // Subscription revenue added to platform revenue matching traditional logic
-        const subsRev = subStats?.payments?.totalRevenue || (properties.length * 5000);
-        const platformRev = Math.round(gtv * 0.10) + (Number(subsRev) || 0);
+  const fmtK = (n) => (n >= 1000 ? '₹' + (n / 1000).toFixed(1) + 'K' : '₹' + n.toLocaleString('en-IN'));
 
-        setStats({
-          users: users.length,
-          properties: properties.length,
-          activeBookings,
-          pendingBookings,
-          gtv,
-          platformRev
-        });
-
-        setHealth({
-          pendingProps: properties.filter(p => p.status === 'pending').length,
-          pendingPayments: payments.filter(p => p.status === 'pending').length,
-          overdueBookings: bookings.filter(b => b.status === 'overdue').length
-        });
-      } catch (e) {
-        console.error('Dashboard load error:', e);
-      }
-    }
-    load();
-    return () => { cancelled = true; };
-  }, []);
-
-  const fmtK = (n) => n >= 1000 ? '₹' + (n / 1000).toFixed(1) + 'K' : '₹' + n.toLocaleString('en-IN');
-
-  const revenueData = [0.4, 0.5, 0.65, 0.75, 0.9, 1].map(f => Math.round((stats.platformRev || 50000) * f) || 10000);
-  const bookingData = [0.2, 0.4, 0.5, 0.7, 0.9, 1].map(f => Math.round((stats.properties || 10) * f) || 2);
-  const revenueMax = Math.max(...revenueData, 1000);
-  const bookingMax = Math.max(...bookingData, 5);
+  // Last six months, from real payments and bookings.
+  const months = lastMonths(6);
+  const revenueData = months.map((m) => Math.round(0.1 * sum(paidPayments.filter((p) => monthKey(p.paidDate || p.createdAt) === m.key))));
+  const bookingData = months.map((m) => bookings.filter((b) => monthKey(b.createdAt || b.checkIn) === m.key).length);
+  const revenueMax = Math.max(...revenueData, 1);
+  const bookingMax = Math.max(...bookingData, 1);
 
   const w = 300, h = 120, pad = 10;
   const revPts = revenueData.map((v, i) => `${pad + (i / (revenueData.length - 1)) * (w - pad * 2)},${h - pad - ((v / revenueMax) * (h - pad * 2))}`).join(' ');
   const revArea = `${pad + (w - pad * 2)},${h - pad} ${pad},${h - pad}`;
 
   const feed = [
-    { icon: '📅', action: 'Booked Room 305', person: 'Amit Sharma', property: 'Green Valley PG', time: '5 min ago' },
-    { icon: '💰', action: 'Paid ₹9,000 rent', person: 'Priya Patel', property: 'Sunrise Heights', time: '12 min ago' },
-    { icon: '⚠️', action: 'Raised complaint', person: 'Rohan Singh', property: 'Urban Nest', time: '23 min ago' },
-    { icon: '⭐', action: 'Left 5-star review', person: 'Sneha Gupta', property: 'Sunrise Heights', time: '1 hour ago' },
-    { icon: '🏢', action: 'Added new property', person: 'Rajesh Kumar', property: 'Urban Nest', time: '2 hours ago' },
-    { icon: '❌', action: 'Cancelled booking', person: 'Anita Verma', property: 'Sunrise Heights', time: '3 hours ago' }
-  ];
+    ...bookings.map((b) => ({ at: b.createdAt, icon: b.status === 'cancelled' ? '❌' : '📅', action: b.status === 'cancelled' ? 'cancelled a booking' : `booked Room ${b.room || '—'}`, person: nameOf(b.tenant), property: nameOf(b.property) })),
+    ...payments.map((p) => ({ at: p.createdAt || p.paidDate, icon: '💰', action: `paid ₹${Number(p.amount || 0).toLocaleString('en-IN')}`, person: nameOf(p.tenant), property: nameOf(p.property) })),
+    ...complaints.map((c) => ({ at: c.createdAt || c.reportedAt, icon: '⚠️', action: 'raised a complaint', person: nameOf(c.tenant), property: nameOf(c.property) })),
+  ]
+    .filter((a) => a.at && !Number.isNaN(new Date(a.at).getTime()))
+    .sort((a, b) => new Date(b.at) - new Date(a.at))
+    .slice(0, 6);
 
   return (
     <>
@@ -136,7 +131,6 @@ export default function Dashboard() {
             <div className="stat-icon bg-green">
               <span className="material-icons-outlined" style={{ fontSize: 32, color: '#16a34a' }}>payments</span>
             </div>
-            <span className="stat-trend up">↑ 8.5%</span>
           </div>
           <div className="stat-val">{fmtK(stats.gtv)}</div>
           <div className="stat-lbl">Gross Transaction Value</div>
@@ -181,7 +175,7 @@ export default function Dashboard() {
             </svg>
           </div>
           <div className="chart-labels">
-            <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
+            {months.map((m) => <span key={m.key}>{m.label}</span>)}
           </div>
         </div>
 
@@ -194,14 +188,14 @@ export default function Dashboard() {
                 key={i}
                 className="chart-bar"
                 style={{ height: `${(v / bookingMax) * 100}%`, background: '#2563eb', margin: '0 3px' }}
-                title={`${v} PGs`}
+                title={`${v} bookings`}
               >
                 <span className="bar-tip">{v}</span>
               </div>
             ))}
           </div>
           <div className="chart-labels">
-            <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
+            {months.map((m) => <span key={m.key}>{m.label}</span>)}
           </div>
         </div>
       </div>
@@ -217,13 +211,14 @@ export default function Dashboard() {
             </div>
           </div>
           <div id="activity-feed">
+            {feed.length === 0 && <p style={{ padding: 16, color: '#94a3b8', fontSize: 13 }}>No recent activity</p>}
             {feed.map((a, i) => (
               <div key={i} className="feed-item">
                 <div className="feed-ico-wrap">{a.icon}</div>
                 <div className="feed-text">
                   <strong>{a.person}</strong> {a.action} at <strong>{a.property}</strong>
                 </div>
-                <div className="feed-time">{a.time}</div>
+                <div className="feed-time">{timeAgo(a.at)}</div>
               </div>
             ))}
           </div>
@@ -249,14 +244,14 @@ export default function Dashboard() {
               <strong>{health.overdueBookings}</strong>
             </div>
             <div className="health-item">
-              <span className="health-dot ok" />
+              <span className={`health-dot ${loadError ? 'danger' : 'ok'}`} />
               <span className="health-label">System Status</span>
-              <strong style={{ color: '#16a34a' }}>Operational</strong>
+              <strong style={{ color: loadError ? '#dc2626' : '#16a34a' }}>{loadError || 'Operational'}</strong>
             </div>
             <div className="health-item">
               <span className="health-dot ok" />
               <span className="health-label">Last Data Sync</span>
-              <strong>{new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</strong>
+              <strong>{lastSync ? new Date(lastSync).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}</strong>
             </div>
           </div>
         </div>
@@ -266,7 +261,7 @@ export default function Dashboard() {
       <div className="quick-actions-card">
         <h3>Quick Actions</h3>
         <div className="qa-grid">
-          <button className="qa-btn" onClick={() => navigate('/properties')}>
+          <button className="qa-btn" onClick={() => navigate('/dashboard/admin/properties')}>
             <span className="qa-icon">
               <span className="material-icons-outlined" style={{ fontSize: 24, color: '#2563eb' }}>apartment</span>
             </span>
@@ -276,7 +271,7 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button className="qa-btn" onClick={() => navigate('/payments')}>
+          <button className="qa-btn" onClick={() => navigate('/dashboard/admin/payments')}>
             <span className="qa-icon">
               <span className="material-icons-outlined" style={{ fontSize: 24, color: '#7c3aed' }}>credit_card</span>
             </span>
@@ -286,7 +281,7 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button className="qa-btn" onClick={() => navigate('/bookings')}>
+          <button className="qa-btn" onClick={() => navigate('/dashboard/admin/bookings')}>
             <span className="qa-icon">
               <span className="material-icons-outlined" style={{ fontSize: 24, color: '#16a34a' }}>calendar_today</span>
             </span>
@@ -296,7 +291,7 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button className="qa-btn" onClick={() => navigate('/users')}>
+          <button className="qa-btn" onClick={() => navigate('/dashboard/admin/users')}>
             <span className="qa-icon">
               <span className="material-icons-outlined" style={{ fontSize: 24, color: '#ea580c' }}>group</span>
             </span>

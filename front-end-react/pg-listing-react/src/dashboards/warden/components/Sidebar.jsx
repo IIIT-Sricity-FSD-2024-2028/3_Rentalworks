@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 
 const navItems = [
-  { path: '/dashboard/warden', icon: 'folder', label: 'Dashboard' },
+  { path: '/dashboard/warden/dashboard', icon: 'folder', label: 'Dashboard' },
   { path: '/dashboard/warden/tenants', icon: 'group', label: 'Tenant Records' },
   { path: '/dashboard/warden/rooms', icon: 'home', label: 'Room Services' },
   { path: '/dashboard/warden/violations', icon: 'warning', label: 'Rule Violations' },

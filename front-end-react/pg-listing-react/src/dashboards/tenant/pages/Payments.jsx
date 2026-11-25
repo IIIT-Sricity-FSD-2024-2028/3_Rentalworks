@@ -1,6 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { apiFetch } from '../services/api';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  fetchMyRentDues,
+  payRentDue,
+  selectRentState,
+  tenantPayments,
+  tenantServiceRequests,
+} from '../../../features/tenant/tenantSlices';
+import { toastError, toastInfo } from '../../../features/ui/uiSlice';
+import { useTenant } from '../hooks/useTenant';
 import RentLedger from '../components/RentLedger';
 import './Payments.css';
 
@@ -31,12 +39,16 @@ const getCardBrand = (num) => {
 };
 
 const Payments = () => {
-  const { tenant, activeBooking } = useAuth();
-  const [payments, setPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const { tenant, activeBooking } = useTenant();
+  const allPayments = useSelector(tenantPayments.selectors.selectItems);
+  const paymentsLoading = useSelector(tenantPayments.selectors.selectIsLoading);
+  const services = useSelector(tenantServiceRequests.selectors.selectItems);
+  const { dues, paying: processing } = useSelector(selectRentState);
+  const payments = useMemo(() => allPayments.filter((p) => Number(p.tenantId) === Number(tenant?.id)), [allPayments, tenant?.id]);
+  const loading = paymentsLoading && payments.length === 0;
   const [isPaying, setIsPaying] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('upi');
-  const [processing, setProcessing] = useState(false);
 
   // Form states for each payment channel
   const [upiForm, setUpiForm] = useState({ upiId: '' });
@@ -58,39 +70,14 @@ const Payments = () => {
   // Receipt Modal State
   const [receiptData, setReceiptData] = useState(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
-  const [services, setServices] = useState([]);
-  const [dues, setDues] = useState([]);
   const [selectedDueId, setSelectedDueId] = useState(null);
 
-  const fetchPayments = async () => {
-    if (!tenant) return;
-    try {
-      setLoading(true);
-      const [payData, servData, duesData] = await Promise.allSettled([
-        apiFetch('/payments'),
-        apiFetch(`/service-requests/my?tenantId=${tenant.id}`),
-        apiFetch('/rent-dues/my'),
-      ]);
-      const userPayments = payData.status === 'fulfilled' && Array.isArray(payData.value)
-        ? payData.value.filter((p) => p.tenantId === tenant.id)
-        : [];
-      setPayments(userPayments);
-      if (duesData.status === 'fulfilled' && Array.isArray(duesData.value)) {
-        setDues(duesData.value);
-      }
-      if (servData.status === 'fulfilled' && Array.isArray(servData.value)) {
-        setServices(servData.value);
-      }
-    } catch (error) {
-      console.error('Failed to fetch payments:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchPayments();
-  }, [tenant]);
+    if (!tenant?.id) return;
+    dispatch(tenantPayments.thunks.fetchAll(tenant.id));
+    dispatch(tenantServiceRequests.thunks.fetchAll());
+    dispatch(fetchMyRentDues());
+  }, [dispatch, tenant?.id]);
 
   // Determine current cycle and whether current month's rent has been paid
   const currentMonth = new Date().getMonth();
@@ -145,7 +132,7 @@ const Payments = () => {
     if (pay) {
       handleViewReceipt(pay, due);
     } else {
-      alert('Receipt is not available for this cycle yet.');
+      dispatch(toastInfo('Receipt is not available for this cycle yet.'));
     }
   };
 
@@ -289,7 +276,7 @@ const Payments = () => {
     if (e) e.preventDefault();
 
     if (!activeBooking) {
-      alert('No active stay or booking found to pay for.');
+      dispatch(toastError('No active stay or booking found to pay for.'));
       return;
     }
 
@@ -308,58 +295,46 @@ const Payments = () => {
       return;
     }
 
-    try {
-      setProcessing(true);
-
-      const txnId = `TXN-${Date.now()}`;
-      if (!pendingDue) {
-        alert('There is no rent due to pay right now.');
-        setProcessing(false);
-        return;
-      }
-      // The amount comes from the ledger on the server, never from the browser.
-      const payableAmount = Number(pendingDue.amount);
-
-      await apiFetch(`/rent-dues/${pendingDue.id}/pay`, {
-        method: 'POST',
-        body: JSON.stringify({ method: paymentMethod, transactionId: txnId }),
-      });
-
-      // Prepare receipt data
-      const now = new Date();
-      setReceiptData({
-        transactionId: txnId,
-        amount: payableAmount,
-        method: paymentMethod.toUpperCase(),
-        date: now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-        propertyName: activeBooking?.property?.name || '—',
-        room: roomLabel,
-        tenantName: tenant.name || 'Tenant',
-        status: 'Completed',
-        period: `${fmtDue(pendingDue.periodStart)} – ${fmtDue(pendingDue.periodEnd)}`,
-      });
-      setSelectedDueId(null);
-
-      // Reset forms
-      setUpiForm({ upiId: '' });
-      setCardForm({ cardNumber: '', cardHolder: '', cardExpiry: '', cardCvv: '' });
-      setNetBankingForm({ bank: '', customerId: '' });
-      setErrors({});
-      setTouched({});
-
-      // Refresh payments list from backend
-      await fetchPayments();
-
-      // Exit payment modal and show receipt
-      setIsPaying(false);
-      setShowReceiptModal(true);
-    } catch (error) {
-      console.error('Payment processing failed:', error);
-      alert(error.message || 'Payment failed. Please check your details and try again.');
-    } finally {
-      setProcessing(false);
+    if (!pendingDue) {
+      dispatch(toastInfo('There is no rent due to pay right now.'));
+      return;
     }
+    const txnId = `TXN-${Date.now()}`;
+    // The amount comes from the ledger on the server, never from the browser.
+    const payableAmount = Number(pendingDue.amount);
+    const result = await dispatch(payRentDue({ dueId: pendingDue.id, method: paymentMethod, transactionId: txnId }));
+    if (payRentDue.rejected.match(result)) {
+      dispatch(toastError(result.payload || 'Payment failed. Please check your details and try again.'));
+      return;
+    }
+
+    const now = new Date();
+    setReceiptData({
+      transactionId: txnId,
+      amount: payableAmount,
+      method: paymentMethod.toUpperCase(),
+      date: now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      propertyName: activeBooking?.property?.name || '—',
+      room: roomLabel,
+      tenantName: tenant.name || 'Tenant',
+      status: 'Completed',
+      period: `${fmtDue(pendingDue.periodStart)} – ${fmtDue(pendingDue.periodEnd)}`,
+    });
+    setSelectedDueId(null);
+
+    // Reset forms
+    setUpiForm({ upiId: '' });
+    setCardForm({ cardNumber: '', cardHolder: '', cardExpiry: '', cardCvv: '' });
+    setNetBankingForm({ bank: '', customerId: '' });
+    setErrors({});
+    setTouched({});
+
+    // The server adds the payment row and opens the next cycle.
+    dispatch(tenantPayments.thunks.fetchAll(tenant.id));
+    dispatch(fetchMyRentDues());
+    setIsPaying(false);
+    setShowReceiptModal(true);
   };
 
   // Open receipt modal for past transaction

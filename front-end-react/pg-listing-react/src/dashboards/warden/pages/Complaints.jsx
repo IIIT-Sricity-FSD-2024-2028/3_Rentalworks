@@ -1,27 +1,33 @@
 import React, { useState } from 'react';
-import { useWardenData } from '../utils/dataStore';
-import { updateComplaintApi, updateIssueApi, sendTenantNotificationApi } from '../utils/api';
+import { useDispatch } from 'react-redux';
+import { useWardenData, useWardenRun, useWardenToast } from '../utils/dataStore';
+import {
+  addComplaintEvent,
+  escalateTenant,
+  notifyTenant,
+  updateComplaintStatus,
+} from '../../../features/warden/wardenSlices';
 import Modal from '../components/Modal';
 
 export default function Complaints() {
-  const { data, updateData } = useWardenData();
+  const { data } = useWardenData();
+  const dispatch = useDispatch();
+  const run = useWardenRun();
   
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
-  const [selectedComplaintId, setSelectedComplaintId] = useState(null);
+  // Complaints and issues share this list, so a row is identified by type + id.
+  const [selectedKey, setSelectedKey] = useState(null);
+  const keyOf = (c) => `${c.entityType}-${c.id}`;
+  const [busy, setBusy] = useState(false);
   
   const [remarkText, setRemarkText] = useState('');
   const [isSeverityModalOpen, setIsSeverityModalOpen] = useState(false);
   
-  const [toast, setToast] = useState(null);
 
   const complaints = data.complaints || [];
-  const notifications = data.notifications || [];
 
-  const showToast = (type, title, message) => {
-    setToast({ type, title, message });
-    setTimeout(() => setToast(null), 3500);
-  };
+  const showToast = useWardenToast();
 
   const getStatusLabel = (status) => {
     if (status === 'open') return '⊙ Open';
@@ -55,194 +61,84 @@ export default function Complaints() {
   const inProgress = complaints.filter(c => c.status === 'in_progress').length;
   const resolved = complaints.filter(c => c.status === 'resolved').length;
 
-  const selectedComplaint = selectedComplaintId 
-    ? complaints.find(c => String(c.id) === String(selectedComplaintId)) 
-    : null;
+  const selectedComplaint = selectedKey ? complaints.find(c => keyOf(c) === selectedKey) || null : null;
+  const kind = selectedComplaint?.entityType === 'issue' ? 'Issue' : 'Complaint';
 
-  // Actions
-  const updateComplaint = (id, updates) => {
-    const updated = complaints.map(c => String(c.id) === String(id) ? { ...c, ...updates } : c);
-    updateData('complaints', updated);
-  };
+  // Actions — each one is saved on the server before the UI reports success.
+  const addEvent = (event, by = 'Warden') =>
+    dispatch(addComplaintEvent({ id: selectedComplaint.id, entityType: selectedComplaint.entityType, event, by }));
 
-  const addTimelineEvent = (id, event, by) => {
-    const complaint = complaints.find(c => String(c.id) === String(id));
-    if (!complaint) return;
-    const newTimeline = [...(complaint.timeline || []), {
-      time: new Date().toLocaleString(),
-      event,
-      by
-    }];
-    updateComplaint(id, { timeline: newTimeline });
-  };
-
-  const handleUpdateStatus = async (newStatus) => {
-    if (!selectedComplaint) return;
-    
-    addTimelineEvent(selectedComplaint.id, `Status changed to ${getStatusLabel(newStatus)}`, 'Warden');
-    updateComplaint(selectedComplaint.id, { status: newStatus });
-
+  const perform = async (fn) => {
+    if (!selectedComplaint || busy) return;
+    setBusy(true);
     try {
-      if (selectedComplaint.entityType === 'issue') {
-        await updateIssueApi(selectedComplaint.id, {
-          status: newStatus,
-        });
-      } else {
-        await updateComplaintApi(selectedComplaint.id, {
-          status: newStatus,
-          resolution: newStatus === 'resolved' ? 'Resolved by Warden' : undefined,
-        });
-      }
-
-      // Send persistent notification to tenant Arun Kumar
-      await sendTenantNotificationApi({
-        userId: selectedComplaint.tenantId || 1,
-        title: `${selectedComplaint.entityType === 'issue' ? 'Issue' : 'Complaint'} Status Updated`,
-        message: `Your ${selectedComplaint.entityType === 'issue' ? 'issue' : 'complaint'} "${selectedComplaint.title || selectedComplaint.description}" is now ${getStatusLabel(newStatus)}.`,
-        type: newStatus === 'resolved' ? 'success' : 'update',
-        priority: 'high',
-        sentAt: new Date().toISOString(),
-      });
-    } catch (apiErr) {
-      console.warn('Backend status update failed, falling back:', apiErr);
+      await fn();
+    } catch (err) {
+      showToast('error', 'Action failed', err.message);
+    } finally {
+      setBusy(false);
     }
+  };
 
-    showToast('success', 'Status Updated', `${selectedComplaint.entityType === 'issue' ? 'Issue' : 'Complaint'} marked as ${newStatus.replace('_', ' ')}`);
-
-    // Notify Tenant and optionally Owner
-    let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
-    crossNotifs.push({
-      id: Date.now(),
-      title: `${selectedComplaint.entityType === 'issue' ? 'Issue' : 'Complaint'} Status Updated`,
-      message: `Your ${selectedComplaint.entityType === 'issue' ? 'issue' : 'complaint'} "${selectedComplaint.description || selectedComplaint.type}" is now ${getStatusLabel(newStatus)}.`,
-      type: newStatus === 'resolved' ? 'success' : 'update',
-      priority: 'important',
-      targetRole: 'tenant',
-      by: 'Warden',
-      sentAt: new Date().toLocaleString()
+  const handleUpdateStatus = (newStatus) =>
+    perform(async () => {
+      const { id, entityType } = selectedComplaint;
+      const changes = { status: newStatus };
+      if (entityType !== 'issue' && newStatus === 'resolved') changes.resolution = 'Resolved by Warden';
+      // The API notifies the tenant about the status change.
+      await run(updateComplaintStatus({ id, entityType, changes }));
+      addEvent(`Status changed to ${getStatusLabel(newStatus)}`);
+      showToast('success', `${kind} marked as ${newStatus.replace('_', ' ')}`);
     });
 
-    if (newStatus === 'resolved') {
-      crossNotifs.push({
-        id: Date.now() + 1,
-        title: 'Issue Resolved by Warden',
-        message: `The warden has resolved the complaint "${selectedComplaint.description || selectedComplaint.type}" for ${selectedComplaint.tenant} (Room ${selectedComplaint.room}).`,
-        type: 'success',
-        priority: 'important',
-        targetRole: 'owner',
-        by: 'Warden',
-        sentAt: new Date().toLocaleString()
-      });
-    }
-
-    localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
-    
-    // Trigger storage event manually to notify Header
-    const event = new Event('storage');
-    event.key = 'warden_notifications';
-    window.dispatchEvent(event);
-  };
-
-  const handleAddRemark = () => {
-    if (!remarkText.trim()) {
-      showToast('error', 'Empty Remark', 'Please enter a remark before submitting');
-      return;
-    }
-    if (!selectedComplaint) return;
-
-    addTimelineEvent(selectedComplaint.id, remarkText.trim(), 'Warden (Remark)');
-    setRemarkText('');
-    showToast('success', 'Remark Added', 'Your remark has been saved');
-  };
-
-  const handleEscalate = () => {
-    if (!selectedComplaint) return;
-
-    addTimelineEvent(selectedComplaint.id, 'Complaint escalated to Property Owner', 'Warden');
-
-    const newNotif = {
-      id: Date.now(),
-      title: 'Complaint Escalated',
-      message: `Complaint (${selectedComplaint.tenant}) escalated to owner.`,
-      time: 'Just now',
-      read: false,
-      icon: 'warning'
-    };
-    updateData('notifications', [newNotif, ...notifications]);
-
-    let crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
-    const escalateId = Date.now();
-
-    crossNotifs.push({
-      id: escalateId,
-      title: 'Complaint Escalated by Warden',
-      message: `Complaint from ${selectedComplaint.tenant} (Room ${selectedComplaint.room}) requires your attention.`,
-      type: 'warning',
-      priority: 'high',
-      targetRole: 'owner',
-      by: 'Warden',
-      sentAt: new Date().toLocaleString()
+  const handleAddRemark = () =>
+    perform(async () => {
+      const text = remarkText.trim();
+      if (!text) throw new Error('Please enter a remark before submitting');
+      if (!selectedComplaint.tenantId) throw new Error('This record has no tenant to notify');
+      await run(
+        notifyTenant({
+          tenantId: selectedComplaint.tenantId,
+          payload: { title: `Warden remark on your ${kind.toLowerCase()}`, message: `${selectedComplaint.title}: ${text}`, kind: 'custom' },
+        }),
+      );
+      addEvent(text, 'Warden (Remark)');
+      setRemarkText('');
+      showToast('success', 'Remark sent to the tenant');
     });
 
-    crossNotifs.push({
-      id: escalateId + 1,
-      title: 'Complaint Escalated by Warden',
-      message: `Your complaint "${selectedComplaint.description || selectedComplaint.type}" has been escalated to the Property Owner for faster resolution.`,
-      type: 'warning',
-      priority: 'high',
-      targetRole: 'tenant',
-      by: 'Warden',
-      sentAt: new Date().toLocaleString()
+  const handleEscalate = () =>
+    perform(async () => {
+      if (!selectedComplaint.tenantId) throw new Error('This record has no tenant to escalate');
+      await run(
+        escalateTenant({
+          tenantId: selectedComplaint.tenantId,
+          payload: {
+            message: `${kind} from ${selectedComplaint.tenant} (Room ${selectedComplaint.room}): ${selectedComplaint.description || selectedComplaint.title}`,
+            category: 'violation',
+          },
+        }),
+      );
+      addEvent(`${kind} escalated to Property Owner`);
+      showToast('success', 'The property owner has been notified');
     });
 
-    // Escalate to global_issues for the owner dashboard
-    let globalIss = JSON.parse(localStorage.getItem('global_issues') || '[]');
-    const escId = 'esc_' + selectedComplaint.id;
-    const alreadyEscalated = globalIss.some(i => String(i.id) === escId);
-    
-    if (!alreadyEscalated) {
-      globalIss.unshift({
-        id: escId,
-        title: selectedComplaint.description || selectedComplaint.type || 'Escalated Complaint',
-        desc: selectedComplaint.description || 'Escalated from Warden dashboard.',
-        category: selectedComplaint.type || 'Maintenance',
-        priority: selectedComplaint.priority || 'high',
-        status: selectedComplaint.status === 'in_progress' ? 'in-progress' : selectedComplaint.status || 'open',
-        tenantName: selectedComplaint.tenant || 'Tenant',
-        room: selectedComplaint.room || 'A-204',
-        propertyName: 'Sunrise PG',
-        reportedDate: new Date().toISOString().split('T')[0],
-        _escalatedByWarden: true
-      });
-      localStorage.setItem('global_issues', JSON.stringify(globalIss));
-    }
-
-    localStorage.setItem('cross_notifications', JSON.stringify(crossNotifs));
-    const event = new Event('storage');
-    event.key = 'warden_notifications';
-    window.dispatchEvent(event);
-
-    showToast('warning', 'Escalated to Owner', 'Complaint has been sent to the Property Owner and will appear in their Issues page.');
-  };
-
-  const handleSetSeverity = (level) => {
-    if (!selectedComplaint) return;
-    
-    addTimelineEvent(selectedComplaint.id, `Severity set to ${level}`, 'Warden');
-    updateComplaint(selectedComplaint.id, { severity: level });
-    
-    setIsSeverityModalOpen(false);
-    showToast('success', 'Severity Set', `Complaint severity updated to ${level}`);
-  };
+  const handleSetSeverity = (level) =>
+    perform(async () => {
+      const { id, entityType } = selectedComplaint;
+      await run(updateComplaintStatus({ id, entityType, changes: { priority: level.toLowerCase() } }));
+      addEvent(`Severity set to ${level}`);
+      setIsSeverityModalOpen(false);
+      showToast('success', `Severity set to ${level}`);
+    });
 
   const renderSeverityOptions = () => {
     const severities = [
       { label: 'Low',      color: '#16a34a', bg: '#f0fdf4', desc: 'Minor inconvenience, can wait' },
       { label: 'Medium',   color: '#b45309', bg: '#fef9c3', desc: 'Needs attention within a week' },
-      { label: 'High',     color: '#dc2626', bg: '#fee2e2', desc: 'Urgent — resolve within 24 hrs' },
-      { label: 'Critical', color: '#7c2d12', bg: '#fef2f2', desc: 'Emergency — immediate action needed' }
+      { label: 'High',     color: '#dc2626', bg: '#fee2e2', desc: 'Urgent — resolve within 24 hrs' }
     ];
-    const current = selectedComplaint?.severity || 'Not Set';
+    const current = capitalize(selectedComplaint?.priority) || 'Not Set';
 
     return (
       <div style={{ display: 'grid', gap: '10px' }}>
@@ -274,7 +170,7 @@ export default function Complaints() {
   return (
     <section id="complaints-section" className="section active">
       
-      {!selectedComplaintId ? (
+      {!selectedComplaint ? (
         /* LIST VIEW */
         <div id="complaints-list-view">
           <div className="section-header">
@@ -339,10 +235,10 @@ export default function Complaints() {
                 ) : (
                   filteredComplaints.map(c => {
                     const tenantName = typeof c.tenant === 'object' && c.tenant !== null ? (c.tenant.name || 'Tenant') : (c.tenant || 'Tenant');
-                    const roomNum = typeof c.room === 'object' && c.room !== null ? (c.room.roomNumber || '101') : (c.room || '101');
+                    const roomNum = typeof c.room === 'object' && c.room !== null ? (c.room.roomNumber || '—') : (c.room || '—');
                     return (
-                      <tr key={c.id}>
-                        <td><strong>{c.id}</strong></td>
+                      <tr key={keyOf(c)}>
+                        <td><strong>{c.entityType === 'issue' ? 'ISS' : 'CMP'}-{c.id}</strong></td>
                         <td>{tenantName}</td>
                         <td><span className="room-badge">{roomNum}</span></td>
                         <td>{c.type || c.title || 'Issue'}</td>
@@ -350,7 +246,7 @@ export default function Complaints() {
                         <td><span className={`badge badge-${(c.status || 'open').replace('_', '-')}`}>{getStatusLabel(c.status)}</span></td>
                         <td>{c.date || 'Recently'}</td>
                         <td>
-                          <button className="btn-view" onClick={() => setSelectedComplaintId(c.id)}>👁️ View</button>
+                          <button className="btn-view" onClick={() => setSelectedKey(keyOf(c))}>👁️ View</button>
                         </td>
                       </tr>
                     );
@@ -363,7 +259,7 @@ export default function Complaints() {
       ) : (
         /* DETAIL VIEW */
         <div id="complaint-detail-view">
-          <div className="back-btn" onClick={() => setSelectedComplaintId(null)}>← Back to Complaints</div>
+          <div className="back-btn" onClick={() => setSelectedKey(null)}>← Back to Complaints</div>
           <div className="section-header">
             <h2>Complaint Details</h2>
             <p>Complaint ID: <span>{selectedComplaint.id}</span></p>
@@ -390,8 +286,8 @@ export default function Complaints() {
                   <div>
                     <label style={{ fontSize: '12px', color: '#6b7280' }}>Severity</label>
                     <div style={{ fontSize: '14px' }}>
-                      <span style={{ fontWeight: 700, color: getSeverityColor(selectedComplaint.severity || 'Not Set') }}>
-                        {selectedComplaint.severity || 'Not Set'}
+                      <span style={{ fontWeight: 700, color: getSeverityColor(capitalize(selectedComplaint.priority)) }}>
+                        {capitalize(selectedComplaint.priority) || 'Not Set'}
                       </span>
                     </div>
                   </div>
@@ -419,14 +315,14 @@ export default function Complaints() {
               </div>
 
               <div className="detail-card remarks-section">
-                <h3>Add Remarks</h3>
+                <h3>Remarks</h3>
                 <textarea 
-                  placeholder="Add your remarks or observations..."
+                  placeholder="Write a remark for the tenant..."
                   value={remarkText}
                   onChange={(e) => setRemarkText(e.target.value)}
                 ></textarea>
                 <button className="btn-save" style={{ marginTop: '12px' }} onClick={handleAddRemark}>
-                  <span className="material-icons-outlined" style={{ fontSize: '24px' }}>save</span> Add Remark
+                  <span className="material-icons-outlined" style={{ fontSize: '24px' }}>send</span> Send Remark to Tenant
                 </button>
               </div>
             </div>
@@ -446,7 +342,7 @@ export default function Complaints() {
                   <span className="td-icon"><span className="material-icons-outlined" style={{ fontSize: '24px' }}>home</span></span>
                   <div className="td-info">
                     <label>Room Number</label>
-                    <strong>{typeof selectedComplaint.room === 'object' && selectedComplaint.room !== null ? (selectedComplaint.room.roomNumber || '101') : (selectedComplaint.room || '101')}</strong>
+                    <strong>{typeof selectedComplaint.room === 'object' && selectedComplaint.room !== null ? (selectedComplaint.room.roomNumber || '—') : (selectedComplaint.room || '—')}</strong>
                   </div>
                 </div>
                 <div className="tenant-detail-row">
@@ -457,9 +353,9 @@ export default function Complaints() {
 
               <div className="action-buttons-card">
                 <h4>Actions</h4>
-                <button className="action-btn-full btn-mark-progress" onClick={() => handleUpdateStatus('in_progress')}>Mark In Progress</button>
-                <button className="action-btn-full btn-resolve" onClick={() => handleUpdateStatus('resolved')}>Resolve Complaint</button>
-                <button className="action-btn-full btn-escalate-owner" onClick={handleEscalate}>Escalate to Owner</button>
+                <button className="action-btn-full btn-mark-progress" disabled={busy || selectedComplaint.status === 'in_progress'} onClick={() => handleUpdateStatus('in_progress')}>Mark In Progress</button>
+                <button className="action-btn-full btn-resolve" disabled={busy || selectedComplaint.status === 'resolved'} onClick={() => handleUpdateStatus('resolved')}>Resolve Complaint</button>
+                <button className="action-btn-full btn-escalate-owner" disabled={busy} onClick={handleEscalate}>Escalate to Owner</button>
                 <button 
                   className="action-btn-full" 
                   onClick={() => setIsSeverityModalOpen(true)}
@@ -488,20 +384,6 @@ export default function Complaints() {
         {renderSeverityOptions()}
       </Modal>
 
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`toast ${toast.type} show`}>
-          <span className="toast-icon">
-            <span className="material-icons-outlined" style={{ fontSize: '24px' }}>
-              {toast.type === 'success' ? 'check_circle' : toast.type === 'error' ? 'cancel' : 'info'}
-            </span>
-          </span>
-          <div className="toast-text">
-            <strong>{toast.title}</strong>
-            <span>{toast.message}</span>
-          </div>
-        </div>
-      )}
     </section>
   );
 }

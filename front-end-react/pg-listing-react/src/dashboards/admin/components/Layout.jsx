@@ -1,6 +1,9 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { useToast } from './Toast';
+import { useDispatch, useSelector } from 'react-redux';
+import { runThunk } from '../../../app/hooks';
+import { changeMyPassword, logout, selectCurrentUser } from '../../../features/auth/authSlice';
+import { useToast } from './useToast';
 
 const NAV_ITEMS = [
   { to: '/dashboard/admin', icon: 'folder', label: 'Dashboard', end: true },
@@ -9,6 +12,7 @@ const NAV_ITEMS = [
   { to: '/dashboard/admin/bookings', icon: 'calendar_today', label: 'Bookings' },
   { to: '/dashboard/admin/payments', icon: 'credit_card', label: 'Payments' },
   { to: '/dashboard/admin/subscriptions', icon: 'workspace_premium', label: 'Subscriptions' },
+  { to: '/dashboard/admin/complaints', icon: 'report_problem', label: 'Complaints' },
   { to: '/dashboard/admin/notifications', icon: 'notifications', label: 'Announcements' },
 ];
 
@@ -19,50 +23,9 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
-  // User state from sessionStorage / localStorage
-  const [user, setUser] = useState(() => {
-    try {
-      const s = sessionStorage.getItem('pg_user') || localStorage.getItem('currentUser') || localStorage.getItem('pg_user');
-      if (s) {
-        const parsed = JSON.parse(s);
-        if (parsed && (parsed.role === 'admin' || parsed.role === 'super_admin')) return parsed;
-      }
-    } catch {
-      // ignore
-    }
-    return null;
-  });
-
-  // Guard: Verify authentication on mount, bfcache restore, and browser history navigation
-  useEffect(() => {
-    const checkAuth = () => {
-      try {
-        const s = sessionStorage.getItem('pg_user') || localStorage.getItem('currentUser') || localStorage.getItem('pg_user');
-        if (!s) {
-          window.location.replace('/login');
-          return;
-        }
-        const parsed = JSON.parse(s);
-        if (!parsed || (parsed.role !== 'admin' && parsed.role !== 'super_admin')) {
-          window.location.replace('/login');
-          return;
-        }
-        setUser(parsed);
-      } catch {
-        window.location.replace('/login');
-      }
-    };
-
-    checkAuth();
-    window.addEventListener('pageshow', checkAuth);
-    window.addEventListener('popstate', checkAuth);
-    window.addEventListener('storage', checkAuth);
-    return () => {
-      window.removeEventListener('pageshow', checkAuth);
-      window.removeEventListener('popstate', checkAuth);
-      window.removeEventListener('storage', checkAuth);
-    };
-  }, []);
+  const dispatch = useDispatch();
+  const user = useSelector(selectCurrentUser);
+  const [saving, setSaving] = useState(false);
 
   // Password fields
   const [currPass, setCurrPass] = useState('');
@@ -74,43 +37,38 @@ export default function Layout() {
   }, [location.pathname]);
 
   const handleLogout = () => {
-    sessionStorage.removeItem('pg_user');
-    sessionStorage.removeItem('guest_user');
-    sessionStorage.removeItem('tenant_user');
-    sessionStorage.removeItem('warden_user');
-    sessionStorage.removeItem('owner_user');
-    sessionStorage.removeItem('super_admin_token');
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('pg_user');
-    try {
-      window.dispatchEvent(new Event('rentbro-logout'));
-    } catch (_) {}
-    window.location.replace('/login');
+    dispatch(logout());
+    navigate('/login', { replace: true });
   };
 
   if (!user) {
     return null;
   }
 
-  const handleUpdatePassword = () => {
+  const handleUpdatePassword = async () => {
     if (!currPass) {
       toast('error', 'Security', 'Current password is required');
       return;
     }
-    if (newPass.length < 6) {
-      toast('error', 'Security', 'New password must be at least 6 characters');
+    if (newPass.length < 8) {
+      toast('error', 'Security', 'New password must be at least 8 characters');
       return;
     }
     if (newPass !== confPass) {
       toast('error', 'Security', 'Passwords do not match');
       return;
     }
-    toast('success', 'Password Updated', 'Your security credentials have been updated.');
+    setSaving(true);
+    const { ok } = await runThunk(dispatch, changeMyPassword({ currentPassword: currPass, newPassword: newPass }), { success: 'Password updated' });
+    setSaving(false);
+    if (!ok) return;
     setCurrPass('');
     setNewPass('');
     setConfPass('');
     setProfileOpen(false);
   };
+
+  const roleLabel = user.role === 'super_admin' ? 'Super Administrator' : 'Administrator';
 
   return (
     <div className="layout" id="dashboard-page" style={{ display: 'flex', minHeight: '100vh' }}>
@@ -184,7 +142,7 @@ export default function Layout() {
                   </span>
                 )}
               </div>
-              <p id="nb-email">{user?.email || 'admin@pgrentals.com'}</p>
+              <p id="nb-email">{user?.email || ''}</p>
             </div>
           </div>
 
@@ -194,7 +152,6 @@ export default function Layout() {
             </NavLink>
             <NavLink to="/dashboard/admin/notifications" className="nb-icon" title="Announcements">
               <span className="material-icons-outlined" style={{ fontSize: 22 }}>notifications</span>
-              <span className="nb-dot" />
             </NavLink>
             <div
               className="nb-icon"
@@ -243,16 +200,16 @@ export default function Layout() {
                 </div>
                 <div>
                   <strong style={{ fontSize: 15 }}>{user?.name || 'Admin'}</strong>
-                  <div style={{ fontSize: 12, color: '#94a3b8' }}>{user?.email || 'admin@pgrentals.com'}</div>
+                  <div style={{ fontSize: 12, color: '#94a3b8' }}>{user?.email || ''}</div>
                   <span className="badge badge-admin" style={{ marginTop: 4, display: 'inline-flex' }}>
-                    Super Administrator
+                    {roleLabel}
                   </span>
                 </div>
               </div>
               <div className="profile-meta-grid">
-                <div className="profile-meta-item"><span>Role</span><strong>Super Admin</strong></div>
-                <div className="profile-meta-item"><span>Last Login</span><strong>Today at 10:45 AM</strong></div>
-                <div className="profile-meta-item"><span>Browser</span><strong>Chrome, Windows</strong></div>
+                <div className="profile-meta-item"><span>Role</span><strong>{roleLabel}</strong></div>
+                <div className="profile-meta-item"><span>Username</span><strong>{user.username || '—'}</strong></div>
+                <div className="profile-meta-item"><span>Joined</span><strong>{user.joinDate || '—'}</strong></div>
                 <div className="profile-meta-item"><span>Status</span><strong style={{ color: '#16a34a' }}>Active</strong></div>
               </div>
             </div>
@@ -274,7 +231,7 @@ export default function Layout() {
                 <input
                   type="password"
                   id="pm-new-pass"
-                  placeholder="Min 6 characters"
+                  placeholder="Min 8 characters"
                   value={newPass}
                   onChange={e => setNewPass(e.target.value)}
                 />
@@ -293,35 +250,12 @@ export default function Layout() {
                 className="btn-confirm-blue"
                 style={{ width: '100%', padding: 10, marginTop: 4 }}
                 onClick={handleUpdatePassword}
+                disabled={saving}
               >
-                Update Password
+                {saving ? 'Updating…' : 'Update Password'}
               </button>
             </div>
 
-            <div className="profile-section" style={{ borderBottom: 'none' }}>
-              <h4 className="profile-section-title">
-                <span className="material-icons-outlined" style={{ fontSize: 20, verticalAlign: 'middle', marginRight: 4 }}>
-                  assignment
-                </span>
-                Session History
-              </h4>
-              <div className="session-item">
-                <div className="session-dot active-dot" />
-                <div style={{ flex: 1 }}>
-                  <strong style={{ fontSize: 12 }}>Current Session</strong>
-                  <div style={{ fontSize: 11, color: '#94a3b8' }}>Today at 10:45 AM · Chrome · Windows · 192.168.1.1</div>
-                </div>
-                <span className="badge badge-active" style={{ fontSize: 10 }}>Active</span>
-              </div>
-              <div className="session-item">
-                <div className="session-dot" />
-                <div style={{ flex: 1 }}>
-                  <strong style={{ fontSize: 12 }}>Previous Session</strong>
-                  <div style={{ fontSize: 11, color: '#94a3b8' }}>Yesterday at 6:30 PM · Chrome · Windows</div>
-                </div>
-                <span style={{ fontSize: 11, color: '#94a3b8' }}>Ended</span>
-              </div>
-            </div>
           </div>
         </div>
       )}

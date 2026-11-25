@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { api } from '../services/api';
+import { useDispatch } from 'react-redux';
+import { sendAnnouncement } from '../../../features/superadmin/superAdminSlice';
 
 const priorityColors = {
   routine: { background: '#f1f5f9', color: '#64748b' },
@@ -27,7 +28,8 @@ function getActorInfo(item) {
   return { role: 'System', name: 'System', badgeBg: '#f1f5f9', badgeColor: '#475569', icon: 'dns' };
 }
 
-export default function Notifications({ data, refresh, showToast }) {
+export default function Notifications({ data, showToast }) {
+  const dispatch = useDispatch();
   const { users, properties, notifications } = data;
   const [activeTab, setActiveTab] = useState('inbox');
   const [actorFilter, setActorFilter] = useState('all');
@@ -77,12 +79,11 @@ export default function Notifications({ data, refresh, showToast }) {
     if (isScheduled) notification.scheduledFor = new Date(scheduleAt).toISOString();
     setSending(true);
     try {
-      await api.sendNotification(notification);
-      await refresh();
+      await dispatch(sendAnnouncement(notification)).unwrap();
       showToast('success', isScheduled ? 'Announcement Scheduled' : 'Announcement Sent', `${recipients.length} recipients`);
       setTitle(''); setMessage(''); setScheduleAt('');
       setActiveTab('inbox');
-    } catch (error) { showToast('error', 'Error', error.message); }
+    } catch (error) { showToast('error', 'Error', error?.message || error); }
     finally { setSending(false); }
   }
 

@@ -1,31 +1,27 @@
-import { useState, useEffect, useCallback } from 'react';
-import { api } from '../services/api';
-import { useToast } from '../components/Toast';
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { runThunk } from '../../../app/hooks';
+import { adminProperties, adminUsers } from '../../../features/admin/adminSlices';
+import { useToast } from '../components/useToast';
 import Modal from '../components/Modal';
 
 const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 const getName = (val) => typeof val === 'object' ? (val?.name || 'Unknown') : (val || 'Unknown');
 
 export default function Properties() {
-  const [properties, setProperties] = useState([]);
+  const dispatch = useDispatch();
+  const properties = useSelector(adminProperties.selectors.selectItems);
+  const loading = useSelector(adminProperties.selectors.selectIsLoading) && properties.length === 0;
+  const saving = useSelector(adminProperties.selectors.selectMutating);
+  const owners = useSelector(adminUsers.selectors.selectItems).filter(u => u.role === 'owner');
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
   const toast = useToast();
 
-  const load = useCallback(async () => {
-    try {
-      const pList = await api.getProperties();
-      setProperties(Array.isArray(pList) ? pList : []);
-    } catch {
-      toast('error', 'Error', 'Failed to load properties');
-    }
-    setLoading(false);
-  }, []);
-
   useEffect(() => {
-    load();
-  }, [load]);
+    dispatch(adminProperties.thunks.fetchAll());
+    dispatch(adminUsers.thunks.fetchAll());
+  }, [dispatch]);
 
   const filtered = properties.filter(p => {
     const q = search.toLowerCase();
@@ -44,15 +40,10 @@ export default function Properties() {
   };
 
   const updatePropState = async (id, data, successTitle, successMsg) => {
-    try {
-      await api.updateProperty(id, data);
-      setProperties(prev => prev.map(p => String(p.id) === String(id) ? { ...p, ...data } : p));
-      if (successTitle) toast('success', successTitle, successMsg);
-      return true;
-    } catch {
-      toast('error', 'Error', 'Failed to update property');
-      return false;
-    }
+    const { ok } = await runThunk(dispatch, adminProperties.thunks.updateItem({ id, changes: data }), {
+      success: successTitle ? `${successTitle}: ${successMsg}` : undefined,
+    });
+    return ok;
   };
 
   // --- ACTIONS ---
@@ -66,13 +57,11 @@ export default function Properties() {
     setModal({
       type: 'confirm',
       title: 'Reject Property',
-      message: `Are you sure you want to reject <strong>${p.name}</strong>? The owner will be notified.`,
+      message: `Are you sure you want to reject "${p.name}"? The owner will be notified.`,
       btnClass: 'btn-confirm-red',
       btnText: 'Reject',
       action: async () => {
-        await updatePropState(p.id, { status: 'rejected' });
-        toast('error', 'Property Rejected', `${p.name} has been rejected`);
-        setModal(null);
+        if (await updatePropState(p.id, { status: 'rejected' }, 'Property Rejected', `${p.name} has been rejected`)) setModal(null);
       }
     });
   };
@@ -81,13 +70,11 @@ export default function Properties() {
     setModal({
       type: 'confirm',
       title: 'Initiate Notice Period',
-      message: `This will begin the offboarding process for <strong>${p.name}</strong>. The property will enter a notice period before removal. Tenants will be notified.`,
+      message: `This will begin the offboarding process for "${p.name}". The property will enter a notice period before removal. Tenants will be notified.`,
       btnClass: 'btn-confirm-red',
       btnText: 'Initiate Notice Period',
       action: async () => {
-        await updatePropState(p.id, { status: 'offboarding' });
-        toast('warning', 'Notice Period Initiated', `${p.name} has entered the offboarding notice period`);
-        setModal(null);
+        if (await updatePropState(p.id, { status: 'offboarding' }, 'Notice Period Initiated', `${p.name} has entered the offboarding notice period`)) setModal(null);
       }
     });
   };
@@ -96,14 +83,12 @@ export default function Properties() {
     setModal({
       type: 'confirm',
       title: 'Finalize Removal',
-      message: `This will permanently remove <strong>${p.name}</strong> from the platform. This cannot be undone.`,
+      message: `This will permanently remove "${p.name}" from the platform. This cannot be undone.`,
       btnClass: 'btn-confirm-red',
       btnText: 'Remove Property',
       action: async () => {
-        await api.deleteProperty(p.id);
-        setProperties(prev => prev.filter(x => String(x.id) !== String(p.id)));
-        toast('success', 'Property Removed', `${p.name} has been removed from the platform`);
-        setModal(null);
+        const { ok } = await runThunk(dispatch, adminProperties.thunks.removeItem(p.id), { success: `${p.name} has been removed` });
+        if (ok) setModal(null);
       }
     });
   };
@@ -122,8 +107,7 @@ export default function Properties() {
       type: 'inspection',
       prop: p,
       title: `Live Inspection: ${p.name}`,
-      subtitle: `Field audit verification for ${p.name}`,
-      remarks: 'Site visit completed. All safety standards are met. Property is ready for live listing.'
+      subtitle: `Field audit verification for ${p.name}`
     });
   };
 
@@ -135,7 +119,7 @@ export default function Properties() {
       fields: {
         name: '',
         location: '',
-        owner: '',
+        ownerId: '',
         rentMin: '',
         rentMax: '',
         rooms: '0/20'
@@ -148,59 +132,40 @@ export default function Properties() {
       type: 'edit',
       prop: p,
       title: 'Edit Property',
-      subtitle: 'Note: Rent and Location changes require owner approval',
+      subtitle: p.name,
       fields: {
         name: p.name || '',
-        owner: getName(p.owner) || '',
-        safetyScore: p.safetyScore || 8.0,
-        occupancy: p.occupancy || 0
+        location: p.location || '',
+        ownerId: String(p.ownerId ?? p.owner?.id ?? ''),
+        rentMin: p.rentMin ?? '',
+        rentMax: p.rentMax ?? ''
       }
     });
   };
 
-  const handleAddSave = async () => {
-    if (!modal) return;
-    const f = modal.fields;
-    if (!f.name?.trim()) { toast('error', 'Validation', 'Property name required'); return; }
-    if (!f.location?.trim()) { toast('error', 'Validation', 'Location required'); return; }
-    if (!f.owner?.trim()) { toast('error', 'Validation', 'Owner name required'); return; }
-    const rMin = parseInt(f.rentMin);
-    const rMax = parseInt(f.rentMax);
-    if (isNaN(rMin) || rMin <= 0) { toast('error', 'Validation', 'Enter valid min rent'); return; }
-    if (isNaN(rMax) || rMax <= rMin) { toast('error', 'Validation', 'Max rent must be greater than min'); return; }
-
-    try {
-      const newProp = await api.createProperty({
-        name: f.name.trim(),
-        location: f.location.trim(),
-        owner: f.owner.trim(),
-        ownerId: 1,
-        rentMin: rMin,
-        rentMax: rMax,
-        rooms: f.rooms || '0/20',
-        amenities: ['WiFi']
-      });
-      setProperties(prev => [...prev, newProp]);
-      toast('success', 'Property Added', `${f.name} added and pending review`);
-    } catch {
-      toast('error', 'Error', 'Failed to add property');
-    }
-    setModal(null);
+  const validateFields = (f) => {
+    const rentMin = Number(f.rentMin);
+    const rentMax = Number(f.rentMax);
+    if (!f.name.trim()) return 'Property name required';
+    if (!f.location.trim()) return 'Location required';
+    if (!f.ownerId) return 'Select an owner';
+    if (!(rentMin > 0)) return 'Enter valid min rent';
+    if (!(rentMax >= rentMin)) return 'Max rent cannot be below min rent';
+    return '';
   };
 
-  const handleEditSave = async () => {
-    if (!modal) return;
+  const handleSave = async () => {
+    if (!modal || saving) return;
     const f = modal.fields;
-    const p = modal.prop;
-    const updated = {
-      name: f.name.trim() || p.name,
-      owner: f.owner.trim() || p.owner,
-      safetyScore: parseFloat(f.safetyScore) || p.safetyScore,
-      occupancy: parseInt(f.occupancy) || p.occupancy
-    };
-
-    await updatePropState(p.id, updated, 'Property Updated', 'Changes saved successfully');
+    const problem = validateFields(f);
+    if (problem) { toast('error', 'Validation', problem); return; }
+    const data = { name: f.name.trim(), location: f.location.trim(), ownerId: Number(f.ownerId), rentMin: Number(f.rentMin), rentMax: Number(f.rentMax) };
+    const { ok } = modal.type === 'add'
+      ? await runThunk(dispatch, adminProperties.thunks.createItem({ ...data, rooms: f.rooms || '0/20', amenities: ['WiFi'] }), { success: `${data.name} added and pending review` })
+      : await runThunk(dispatch, adminProperties.thunks.updateItem({ id: modal.prop.id, changes: data }), { success: 'Changes saved' });
+    if (!ok) return;
     setModal(null);
+    dispatch(adminProperties.thunks.fetchAll()); // reload the owner relation
   };
 
   return (
@@ -403,8 +368,7 @@ export default function Properties() {
               <button
                 className="btn-confirm-blue"
                 onClick={async () => {
-                  await updatePropState(modal.prop.id, { docsVerified: true }, 'Docs Verified', `Documentation for ${modal.prop.name} marked as verified`);
-                  setModal(null);
+                  if (await updatePropState(modal.prop.id, { docsVerified: true }, 'Docs Verified', `Documentation for ${modal.prop.name} marked as verified`)) setModal(null);
                 }}
               >
                 Approve All Documents
@@ -415,9 +379,9 @@ export default function Properties() {
               <button className="btn-cancel" onClick={() => setModal(null)}>Cancel</button>
               <button
                 className="btn-confirm-blue"
+                disabled={saving || ![0, 1, 2].every(i => modal.checks?.[i])}
                 onClick={async () => {
-                  await updatePropState(modal.prop.id, { inspectionPassed: true }, 'Inspection Passed', `${modal.prop.name} passed live inspection audit`);
-                  setModal(null);
+                  if (await updatePropState(modal.prop.id, { inspectionPassed: true }, 'Inspection Passed', `${modal.prop.name} passed live inspection audit`)) setModal(null);
                 }}
               >
                 Submit Inspection Report
@@ -426,12 +390,12 @@ export default function Properties() {
           ) : modal?.type === 'add' ? (
             <>
               <button className="btn-cancel" onClick={() => setModal(null)}>Cancel</button>
-              <button className="btn-confirm-blue" onClick={handleAddSave}>Add Property</button>
+              <button className="btn-confirm-blue" disabled={saving} onClick={handleSave}>Add Property</button>
             </>
           ) : modal?.type === 'edit' ? (
             <>
               <button className="btn-cancel" onClick={() => setModal(null)}>Cancel</button>
-              <button className="btn-confirm-blue" onClick={handleEditSave}>Save Changes</button>
+              <button className="btn-confirm-blue" disabled={saving} onClick={handleSave}>Save Changes</button>
             </>
           ) : (
             <button className="btn-cancel" onClick={() => setModal(null)}>Close</button>
@@ -442,18 +406,18 @@ export default function Properties() {
         {modal?.type === 'verify-docs' && (
           <div style={{ marginTop: 10, borderTop: '1px solid #eee', paddingTop: 10 }}>
             <p style={{ fontSize: 13, color: '#666', marginBottom: 10 }}>
-              Please review and verify the following submitted compliance files:
+              Documents are checked offline with the owner. Confirm only after you have seen each of these:
             </p>
-            <div style={{ display: 'grid', gap: 8 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: 12, border: '1px solid #e2e8f0', borderRadius: 6 }}>
-                <span style={{ fontSize: 14 }}>📄 Ownership_Deed.pdf</span>
-                <strong style={{ color: '#2563eb', cursor: 'pointer', fontSize: 12 }} onClick={() => toast('info', 'Document Viewer', 'Opening Ownership Deed preview...')}>VIEW</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: 12, border: '1px solid #e2e8f0', borderRadius: 6 }}>
-                <span style={{ fontSize: 14 }}>📄 Fire_Safety_NOC.pdf</span>
-                <strong style={{ color: '#2563eb', cursor: 'pointer', fontSize: 12 }} onClick={() => toast('info', 'Document Viewer', 'Opening Fire Safety NOC preview...')}>VIEW</strong>
-              </div>
-            </div>
+            <ul style={{ fontSize: 14, display: 'grid', gap: 8, paddingLeft: 18 }}>
+              <li>Ownership deed or lease agreement</li>
+              <li>Fire safety NOC</li>
+              <li>Owner ID proof</li>
+            </ul>
+            <p style={{ fontSize: 13, marginTop: 12 }}>
+              Owner: <strong>{getName(modal.prop.owner)}</strong>
+              {modal.prop.owner?.phone ? ` • ${modal.prop.owner.phone}` : ''}
+              {modal.prop.owner?.email ? ` • ${modal.prop.owner.email}` : ''}
+            </p>
           </div>
         )}
 
@@ -466,28 +430,21 @@ export default function Properties() {
             </div>
             <div style={{ display: 'grid', gap: 12 }}>
               <label style={{ display: 'flex', gap: 10, fontSize: 13, cursor: 'pointer', alignItems: 'center' }}>
-                <input type="checkbox" defaultChecked /> Structural Integrity Check Passed
+                <input type="checkbox" checked={Boolean(modal.checks?.[0])} onChange={() => setModal({ ...modal, checks: { ...modal.checks, 0: !modal.checks?.[0] } })} /> Structural Integrity Check Passed
               </label>
               <label style={{ display: 'flex', gap: 10, fontSize: 13, cursor: 'pointer', alignItems: 'center' }}>
-                <input type="checkbox" defaultChecked /> CCTV & Security Operational
+                <input type="checkbox" checked={Boolean(modal.checks?.[1])} onChange={() => setModal({ ...modal, checks: { ...modal.checks, 1: !modal.checks?.[1] } })} /> CCTV & Security Operational
               </label>
               <label style={{ display: 'flex', gap: 10, fontSize: 13, cursor: 'pointer', alignItems: 'center' }}>
-                <input type="checkbox" defaultChecked /> Fire Safety & Emergency Exits
+                <input type="checkbox" checked={Boolean(modal.checks?.[2])} onChange={() => setModal({ ...modal, checks: { ...modal.checks, 2: !modal.checks?.[2] } })} /> Fire Safety & Emergency Exits
               </label>
-              <div style={{ marginTop: 5 }}>
-                <label style={{ display: 'block', fontSize: 11, color: '#64748b', marginBottom: 4 }}>Inspector Remarks</label>
-                <textarea
-                  style={{ width: '100%', padding: 8, fontSize: 12, borderRadius: 6, border: '1px solid #cbd5e1', height: 60, resize: 'none' }}
-                  defaultValue={modal.remarks}
-                />
-              </div>
             </div>
           </div>
         )}
 
         {/* Confirm Modal Content */}
         {modal?.type === 'confirm' && (
-          <p style={{ fontSize: 13, lineHeight: 1.6, color: '#475569' }} dangerouslySetInnerHTML={{ __html: modal.message }} />
+          <p style={{ fontSize: 13, lineHeight: 1.6, color: '#475569' }}>{modal.message}</p>
         )}
 
         {/* Add Modal Content */}
@@ -510,12 +467,16 @@ export default function Properties() {
               />
             </div>
             <div className="f-field">
-              <label>Owner Name *</label>
-              <input
-                value={modal.fields.owner}
-                onChange={e => setModal({ ...modal, fields: { ...modal.fields, owner: e.target.value } })}
-                placeholder="Owner Full Name"
-              />
+              <label>Owner *</label>
+              <select
+                value={modal.fields.ownerId}
+                onChange={e => setModal({ ...modal, fields: { ...modal.fields, ownerId: e.target.value } })}
+              >
+                <option value="">Select owner…</option>
+                {owners.map(o => (
+                  <option key={o.id} value={o.id}>{o.name} ({o.email})</option>
+                ))}
+              </select>
             </div>
             <div className="f-field">
               <label>Total Rooms *</label>
@@ -557,27 +518,38 @@ export default function Properties() {
               />
             </div>
             <div className="f-field">
-              <label>Owner Name *</label>
+              <label>Owner *</label>
+              <select
+                value={modal.fields.ownerId}
+                onChange={e => setModal({ ...modal, fields: { ...modal.fields, ownerId: e.target.value } })}
+              >
+                <option value="">Select owner…</option>
+                {owners.map(o => (
+                  <option key={o.id} value={o.id}>{o.name} ({o.email})</option>
+                ))}
+              </select>
+            </div>
+            <div className="f-field">
+              <label>Location *</label>
               <input
-                value={modal.fields.owner}
-                onChange={e => setModal({ ...modal, fields: { ...modal.fields, owner: e.target.value } })}
+                value={modal.fields.location}
+                onChange={e => setModal({ ...modal, fields: { ...modal.fields, location: e.target.value } })}
               />
             </div>
             <div className="f-field">
-              <label>Safety Score</label>
+              <label>Min Rent (₹) *</label>
               <input
                 type="number"
-                step="0.1"
-                value={modal.fields.safetyScore}
-                onChange={e => setModal({ ...modal, fields: { ...modal.fields, safetyScore: e.target.value } })}
+                value={modal.fields.rentMin}
+                onChange={e => setModal({ ...modal, fields: { ...modal.fields, rentMin: e.target.value } })}
               />
             </div>
             <div className="f-field">
-              <label>Occupancy %</label>
+              <label>Max Rent (₹) *</label>
               <input
                 type="number"
-                value={modal.fields.occupancy}
-                onChange={e => setModal({ ...modal, fields: { ...modal.fields, occupancy: e.target.value } })}
+                value={modal.fields.rentMax}
+                onChange={e => setModal({ ...modal, fields: { ...modal.fields, rentMax: e.target.value } })}
               />
             </div>
           </div>

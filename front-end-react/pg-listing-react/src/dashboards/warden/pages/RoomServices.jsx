@@ -1,24 +1,23 @@
 import React, { useState } from 'react';
-import { useWardenData } from '../utils/dataStore';
-import { createRoomApi, updateRoomApi } from '../utils/api';
+import { useWardenData, useWardenRun, useWardenToast } from '../utils/dataStore';
+import { createRoom, deleteRoom, updateRoom } from '../../../features/warden/wardenSlices';
 import Modal from '../components/Modal';
 
 export default function RoomServices() {
-  const { data, refreshData, loading } = useWardenData();
+  const { data, loading } = useWardenData();
+  const run = useWardenRun();
   const [filter, setFilter] = useState('all');
 
   const [activeModal, setActiveModal] = useState(null); // 'add', 'updateStatus'
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [formData, setFormData] = useState({});
-  const [toast, setToast] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   const rooms = data.rooms || [];
+  // Properties this warden's rooms belong to (id → name).
+  const properties = [...new Map(rooms.filter((r) => r.propertyId).map((r) => [r.propertyId, r.property || `Property ${r.propertyId}`]))];
 
-  const showToast = (type, title, message) => {
-    setToast({ type, title, message });
-    setTimeout(() => setToast(null), 3500);
-  };
+  const showToast = useWardenToast();
 
   const filteredRooms = filter === 'all'
     ? rooms
@@ -38,7 +37,7 @@ export default function RoomServices() {
   };
 
   const openAddRoomModal = () => {
-    setFormData({ type: 'Single', rent: '8000' });
+    setFormData({ type: 'Single', rent: '8000', propertyId: String(properties[0]?.[0] || '') });
     setActiveModal('add');
   };
 
@@ -49,29 +48,36 @@ export default function RoomServices() {
       return;
     }
     
-    if (rooms.find(r => r.number === number || r.roomNumber === number)) {
-      showToast('error', 'Error', 'Room already exists');
+    const propertyId = Number(formData.propertyId);
+    if (!propertyId) {
+      showToast('error', 'Error', 'Select a property');
+      return;
+    }
+    if (rooms.some(r => Number(r.propertyId) === propertyId && r.roomNumber === number)) {
+      showToast('error', 'Error', 'This room already exists in the selected property');
       return;
     }
 
     const capacity = formData.type === 'Single' ? 1 : (formData.type === 'Double' ? 2 : 3);
-    const rent = Number(formData.rent) || (capacity === 1 ? 10000 : (capacity === 2 ? 8000 : 7000));
+    const rent = Number(formData.rent);
+    if (!(rent > 0)) {
+      showToast('error', 'Error', 'Enter a valid monthly rent');
+      return;
+    }
 
     setSubmitting(true);
     try {
-      await createRoomApi({
+      await run(createRoom({
         roomNumber: number,
-        propertyId: 1,
+        propertyId,
         capacity,
         currentOccupancy: 0,
         rent,
         status: 'available',
         maintenanceStatus: 'Ready',
-      });
-
-      await refreshData();
+      }));
       setActiveModal(null);
-      showToast('success', 'Changes Saved', 'Changes saved');
+      showToast('success', `Room ${number} added`);
     } catch (err) {
       showToast('error', 'Error', err.message);
     } finally {
@@ -81,34 +87,52 @@ export default function RoomServices() {
 
   const openUpdateStatusModal = (room) => {
     setSelectedRoom(room);
-    setFormData({
-      occupancy: room.occupancy && room.occupancy.includes('Occupied') ? 'Occupied' : 'Vacant',
-      maintenance: room.maintenanceStatus || room.maintenance || 'Ready',
-    });
+    setFormData({ maintenance: room.maintenance || 'Ready', rent: String(room.rent || '') });
     setActiveModal('updateStatus');
   };
 
+  // Occupancy follows tenant stays (check-in / eviction), so only the
+  // maintenance state and rent are edited here.
   const handleUpdateStatus = async () => {
     if (!selectedRoom) return;
-
+    const rent = Number(formData.rent);
+    if (!(rent > 0)) {
+      showToast('error', 'Error', 'Enter a valid monthly rent');
+      return;
+    }
+    const full = selectedRoom.currentOccupancy >= selectedRoom.capacity;
     setSubmitting(true);
     try {
-      const isOccupied = formData.occupancy === 'Occupied';
-      await updateRoomApi(selectedRoom.id, {
-        status: isOccupied ? 'full' : 'available',
-        maintenanceStatus: formData.maintenance,
-        currentOccupancy: isOccupied
-          ? (selectedRoom.currentOccupancy > 0 ? selectedRoom.currentOccupancy : selectedRoom.capacity)
-          : 0,
-      });
-
-      await refreshData();
+      await run(
+        updateRoom({
+          id: selectedRoom.id,
+          changes: {
+            rent,
+            maintenanceStatus: formData.maintenance,
+            status: formData.maintenance === 'Under Maintenance' ? 'maintenance' : full ? 'full' : 'available',
+          },
+        }),
+      );
       setActiveModal(null);
-      showToast('success', 'Changes Saved', 'Changes saved');
+      showToast('success', `Room ${selectedRoom.number} updated`);
     } catch (err) {
       showToast('error', 'Update Failed', err.message);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteRoom = async (room) => {
+    if (room.currentOccupancy > 0) {
+      showToast('error', 'Cannot delete', 'This room still has residents');
+      return;
+    }
+    if (!window.confirm(`Delete room ${room.number}?`)) return;
+    try {
+      await run(deleteRoom(room.id));
+      showToast('success', `Room ${room.number} deleted`);
+    } catch (err) {
+      showToast('error', 'Delete failed', err.message);
     }
   };
 
@@ -209,6 +233,9 @@ export default function RoomServices() {
                     <button className="btn-update-status" onClick={() => openUpdateStatusModal(r)}>
                       Update Status
                     </button>
+                    {r.currentOccupancy === 0 && (
+                      <button className="icon-btn" onClick={() => handleDeleteRoom(r)} title="Delete room">🗑️</button>
+                    )}
                   </td>
                 </tr>
               ))
@@ -225,6 +252,20 @@ export default function RoomServices() {
         onConfirm={handleAddRoom}
         confirmText={submitting ? 'Saving...' : 'Add Room'}
       >
+        <div className="form-group">
+          <label>Property</label>
+          <select
+            className="filter-select"
+            style={{ width: '100%', boxSizing: 'border-box' }}
+            value={formData.propertyId || ''}
+            onChange={(e) => handleInputChange('propertyId', e.target.value)}
+          >
+            <option value="">Select property</option>
+            {properties.map(([pid, name]) => (
+              <option key={pid} value={pid}>{name}</option>
+            ))}
+          </select>
+        </div>
         <div className="form-group">
           <label>Room Number</label>
           <input 
@@ -271,16 +312,24 @@ export default function RoomServices() {
         confirmText={submitting ? 'Saving...' : 'Update Status'}
       >
         <div className="form-group">
-          <label>Occupancy Status</label>
-          <select 
-            className="filter-select" 
+          <label>Occupancy</label>
+          <input
+            type="text"
+            className="filter-select"
             style={{ width: '100%', boxSizing: 'border-box' }}
-            value={formData.occupancy || 'Vacant'}
-            onChange={(e) => handleInputChange('occupancy', e.target.value)}
-          >
-            <option value="Vacant">Vacant</option>
-            <option value="Occupied">Occupied</option>
-          </select>
+            value={`${selectedRoom?.currentOccupancy ?? 0} of ${selectedRoom?.capacity ?? 0} beds taken`}
+            readOnly
+          />
+        </div>
+        <div className="form-group">
+          <label>Monthly Rent (₹)</label>
+          <input
+            type="number"
+            className="filter-select"
+            style={{ width: '100%', boxSizing: 'border-box' }}
+            value={formData.rent || ''}
+            onChange={(e) => handleInputChange('rent', e.target.value)}
+          />
         </div>
         <div className="form-group">
           <label>Maintenance Status</label>
@@ -297,20 +346,6 @@ export default function RoomServices() {
         </div>
       </Modal>
 
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`toast ${toast.type} show`}>
-          <span className="toast-icon">
-            <span className="material-icons-outlined" style={{ fontSize: '24px' }}>
-              {toast.type === 'success' ? 'check_circle' : toast.type === 'error' ? 'cancel' : 'info'}
-            </span>
-          </span>
-          <div className="toast-text">
-            <strong>{toast.title}</strong>
-            <span>{toast.message}</span>
-          </div>
-        </div>
-      )}
     </section>
   );
 }

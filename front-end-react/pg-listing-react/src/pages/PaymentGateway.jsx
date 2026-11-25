@@ -1,39 +1,61 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { RAW_LISTINGS } from '../data/listingsData';
-import { useBooking } from '../context/BookingContext';
-import { useAuth } from '../context/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectCurrentUser } from '../features/auth/authSlice';
+import {
+  clearCheckoutError,
+  isSingleRoom as isSingle,
+  selectBooking,
+  selectCheckout,
+  selectTotals,
+  setPaymentMethod,
+  submitCheckout,
+} from '../features/booking/bookingSlice';
+import { toastSuccess } from '../features/ui/uiSlice';
 
-const API_BASE = 'http://localhost:3000';
+const cardExpired = (exp) => {
+  const [m, y] = exp.split('/').map(Number);
+  if (!(m >= 1 && m <= 12)) return true;
+  return new Date(2000 + y, m, 1) <= new Date(); // valid until the end of the month
+};
 
 export default function PaymentGateway() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const {
-    selectedPG,
-    selectedRoom,
-    selectedRoommate,
-    guestLifestyleProfile,
-    moveInDate,
-    duration,
-    bookingFor,
-    friendDetails,
-    paymentMethod,
-    setPaymentMethod,
-    calculateTotal,
-    addConfirmedBooking,
-  } = useBooking();
-  const { currentUser, setSession } = useAuth();
+  const dispatch = useDispatch();
+  const currentUser = useSelector(selectCurrentUser);
+  const { selectedPG: pg, selectedRoom, paymentMethod } = useSelector(selectBooking);
+  const { rent, deposit, fee, total } = useSelector(selectTotals);
+  const checkout = useSelector(selectCheckout);
+  const isProcessing = checkout.status === 'loading';
+  const isSingleRoom = isSingle(selectedRoom);
 
   const [upiId, setUpiId] = useState('');
   const [cardData, setCardData] = useState({ number: '', exp: '', cvv: '', name: '' });
   const [selectedBank, setSelectedBank] = useState('HDFC Bank');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState('');
+  const [formError, setFormError] = useState('');
+  const error = formError || checkout.error;
 
-  const pg = selectedPG || RAW_LISTINGS.find(p => String(p.id) === String(id)) || RAW_LISTINGS[0];
-  const { rent, deposit, fee, total } = calculateTotal();
-  const isSingleRoom = selectedRoom?.sharing === 'single' || selectedRoom?.capacity === 1 || selectedRoom?.type?.toLowerCase().includes('single') || selectedRoom?.type?.toLowerCase().includes('private');
+  // Guard: needs a PG + room and a signed-in user. `/payment` links without a
+  // booking in progress go to My Bookings, which can resume an unpaid one.
+  const invalid = !pg || !selectedRoom || String(pg.id) !== String(id);
+  useEffect(() => {
+    if (invalid) navigate(id ? `/pg/${id}` : '/my-bookings', { replace: true });
+    else if (!currentUser) navigate('/login', { replace: true, state: { from: `/book/${id}/payment` } });
+  }, [invalid, currentUser, id, navigate]);
+
+  useEffect(() => {
+    dispatch(clearCheckoutError());
+  }, [dispatch]);
+
+  if (invalid || !currentUser) return null;
+
+  const pickMethod = (method) => {
+    dispatch(setPaymentMethod(method));
+    dispatch(clearCheckoutError());
+    setFormError('');
+  };
+  const upiHandle = String(currentUser.name || '').toLowerCase().replace(/[^a-z0-9]/g, '') || 'resident';
 
   const formatCardNumber = (val) => {
     const cleaned = val.replace(/\D/g, '').slice(0, 16);
@@ -48,111 +70,30 @@ export default function PaymentGateway() {
     return cleaned;
   };
 
-  const handleProcessPayment = async () => {
-    setError('');
-
-    // Validation per payment method
+  const validate = () => {
     if (paymentMethod === 'upi') {
-      if (!upiId.trim() || !upiId.includes('@')) {
-        setError('Please enter a valid UPI ID (e.g., yourname@okhdfcbank)');
-        return;
-      }
+      if (!/^[a-zA-Z0-9._-]{2,}@[a-zA-Z]{2,}$/.test(upiId.trim())) return 'Please enter a valid UPI ID (e.g., yourname@okhdfcbank)';
     } else if (paymentMethod === 'card') {
-      const plainCard = cardData.number.replace(/\s/g, '');
-      if (plainCard.length < 16) {
-        setError('Please enter a valid 16-digit card number');
-        return;
-      }
-      if (!cardData.exp.includes('/') || cardData.exp.length < 5) {
-        setError('Please enter expiry in MM/YY format');
-        return;
-      }
-      if (cardData.cvv.length < 3) {
-        setError('Please enter a valid 3-digit CVV');
-        return;
-      }
-      if (!cardData.name.trim()) {
-        setError('Please enter the cardholder name');
-        return;
-      }
-    } else if (paymentMethod === 'net') {
-      if (!selectedBank) {
-        setError('Please select your banking institution');
-        return;
-      }
+      if (cardData.number.replace(/\s/g, '').length < 16) return 'Please enter a valid 16-digit card number';
+      if (!/^\d{2}\/\d{2}$/.test(cardData.exp)) return 'Please enter expiry in MM/YY format';
+      if (cardExpired(cardData.exp)) return 'This card has expired or the expiry month is invalid';
+      if (cardData.cvv.length < 3) return 'Please enter a valid 3-digit CVV';
+      if (!cardData.name.trim()) return 'Please enter the cardholder name';
+    } else if (!selectedBank) {
+      return 'Please select your banking institution';
     }
+    return '';
+  };
 
-    setIsProcessing(true);
-
-    try {
-      const generatedTxnId = `TXN-${Date.now().toString().slice(-6)}`;
-      const residentName = bookingFor === 'friend' && friendDetails.name ? friendDetails.name : (currentUser?.name || 'Guest Resident');
-      const residentEmail = bookingFor === 'friend' && friendDetails.email ? friendDetails.email : (currentUser?.email || 'guest@example.com');
-      const residentPhone = bookingFor === 'friend' && friendDetails.phone ? friendDetails.phone : (currentUser?.phone || '+91 98765 00000');
-
-      const payload = {
-        guestId: currentUser?.id,
-        name: residentName,
-        email: residentEmail,
-        phone: residentPhone,
-        gender: currentUser?.gender || (bookingFor === 'friend' ? friendDetails?.gender : undefined),
-        propertyId: pg.id || 1,
-        propertyName: pg.title || 'Sunrise PG Residency',
-        roomType: selectedRoom?.type || (isSingleRoom ? 'Single Room' : 'Double Sharing'),
-        roomNumber: isSingleRoom ? (selectedRoom?.roomNumber || '102') : (selectedRoommate?.roomNum || selectedRoom?.roomNumber || '101'),
-        checkIn: moveInDate,
-        duration: duration || '6 Months',
-        rent: rent,
-        deposit: deposit,
-        totalAmount: total,
-        paymentMethod: paymentMethod.toUpperCase(),
-        transactionId: generatedTxnId,
-        roommate: isSingleRoom ? null : selectedRoommate,
-        lifestyleProfile: isSingleRoom ? null : guestLifestyleProfile,
-        upiId: paymentMethod === 'upi' ? upiId : undefined,
-      };
-
-      // Call live backend checkout API connected to Neon PostgreSQL
-      const res = await fetch(`${API_BASE}/bookings/checkout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.message || 'Payment processing failed on server');
-      }
-
-      const checkoutData = await res.json();
-
-      // Update global context with confirmed booking record and generated tenant credentials
-      addConfirmedBooking(
-        checkoutData.booking,
-        checkoutData.payment,
-        checkoutData.credentials,
-        checkoutData.tenant
-      );
-
-      // Upgrade active session to Tenant. The generated password is deliberately NOT stored in the session.
-      if (checkoutData.tenant) {
-        setSession({
-          ...checkoutData.tenant,
-          role: 'tenant',
-          status: 'active',
-        });
-      }
-
-      // Small delay for smooth UI transition
-      setTimeout(() => {
-        setIsProcessing(false);
-        navigate(`/book/${pg.id}/confirmed`);
-      }, 1200);
-
-    } catch (err) {
-      console.error('Checkout error:', err);
-      setIsProcessing(false);
-      setError(err.message || 'An error occurred while confirming payment. Please retry.');
+  const handleProcessPayment = async () => {
+    if (isProcessing) return;
+    const problem = validate();
+    setFormError(problem);
+    if (problem) return;
+    const result = await dispatch(submitCheckout({ paymentMethod, upiId: upiId.trim() }));
+    if (submitCheckout.fulfilled.match(result)) {
+      dispatch(toastSuccess('Payment verified. Your room is booked!'));
+      navigate(`/book/${pg.id}/confirmed`, { replace: true });
     }
   };
 
@@ -202,7 +143,7 @@ export default function PaymentGateway() {
           <div className="payment-method-selector">
             <button
               className={`pm-tab-btn ${paymentMethod === 'upi' ? 'active' : ''}`}
-              onClick={() => { setPaymentMethod('upi'); setError(''); }}
+              onClick={() => pickMethod('upi')}
               type="button"
             >
               <span className="material-icons-outlined">qr_code_2</span>
@@ -210,7 +151,7 @@ export default function PaymentGateway() {
             </button>
             <button
               className={`pm-tab-btn ${paymentMethod === 'card' ? 'active' : ''}`}
-              onClick={() => { setPaymentMethod('card'); setError(''); }}
+              onClick={() => pickMethod('card')}
               type="button"
             >
               <span className="material-icons-outlined">credit_card</span>
@@ -218,7 +159,7 @@ export default function PaymentGateway() {
             </button>
             <button
               className={`pm-tab-btn ${paymentMethod === 'net' ? 'active' : ''}`}
-              onClick={() => { setPaymentMethod('net'); setError(''); }}
+              onClick={() => pickMethod('net')}
               type="button"
             >
               <span className="material-icons-outlined">account_balance</span>
@@ -231,13 +172,13 @@ export default function PaymentGateway() {
             {paymentMethod === 'upi' && (
               <div className="upi-form">
                 <div className="quick-upi-apps">
-                  <span className="quick-upi-chip" onClick={() => setUpiId(`${currentUser?.name?.toLowerCase().replace(/\s/g, '') || 'resident'}@okaxis`)}>
+                  <span className="quick-upi-chip" onClick={() => setUpiId(`${upiHandle}@okaxis`)}>
                     GPay (Auto-fill)
                   </span>
-                  <span className="quick-upi-chip" onClick={() => setUpiId(`${currentUser?.name?.toLowerCase().replace(/\s/g, '') || 'resident'}@ybl`)}>
+                  <span className="quick-upi-chip" onClick={() => setUpiId(`${upiHandle}@ybl`)}>
                     PhonePe
                   </span>
-                  <span className="quick-upi-chip" onClick={() => setUpiId(`${currentUser?.name?.toLowerCase().replace(/\s/g, '') || 'resident'}@paytm`)}>
+                  <span className="quick-upi-chip" onClick={() => setUpiId(`${upiHandle}@paytm`)}>
                     Paytm
                   </span>
                 </div>
@@ -341,7 +282,7 @@ export default function PaymentGateway() {
           </div>
 
           <div className="step-bottom-actions">
-            <button className="btn-back-step" onClick={() => navigate(-1)} disabled={isProcessing}>
+            <button className="btn-back-step" onClick={() => navigate(`/book/${pg.id}/review`)} disabled={isProcessing}>
               ← Back to Review
             </button>
             <button
@@ -352,7 +293,7 @@ export default function PaymentGateway() {
               {isProcessing ? (
                 <>
                   <span className="btn-spinner" />
-                  Verifying with Neon Database...
+                  Processing payment...
                 </>
               ) : (
                 <>
@@ -403,8 +344,8 @@ export default function PaymentGateway() {
               <h4>🚀 What Happens Next:</h4>
               <ul>
                 <li>Your guest profile is automatically upgraded to <strong>Tenant</strong></li>
-                <li>Your permanent Tenant Login password is saved in PostgreSQL</li>
-                <li>Your room seat is locked in the Neon database</li>
+                <li>Your tenant sign-in details appear on the confirmation page</li>
+                <li>Your bed is locked for you</li>
                 <li>Warden receives immediate move-in notification</li>
               </ul>
             </div>

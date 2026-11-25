@@ -1,20 +1,37 @@
 import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  selectFilters,
+  selectFilterPanelOpen,
+  setFilter,
+  resetFilters,
+  setFilterPanelOpen,
+} from '../features/listings/listingsSlice';
 
-export default function FilterPanel({ filters, isOpen, onFilterChange, onClear, onClose }) {
+/** Slide-in filter panel. All filter state lives in the `listings` slice. */
+export default function FilterPanel() {
+  const dispatch = useDispatch();
+  const filters = useSelector(selectFilters);
+  const isOpen = useSelector(selectFilterPanelOpen);
+  const onClose = React.useCallback(() => dispatch(setFilterPanelOpen(false)), [dispatch]);
+  const onClear = () => dispatch(resetFilters());
+  const onFilterChange = (key, value) => dispatch(setFilter({ key, value }));
   // Close on Escape key
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && isOpen) onClose();
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [onClose, isOpen]);
 
-  if (isOpen) {
-    document.body.style.overflow = 'hidden';
-  } else {
-    document.body.style.overflow = '';
-  }
+  // Lock page scroll while the panel is open.
+  useEffect(() => {
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
 
   const handleRadioChange = (e) => {
     const { name, value } = e.target;
@@ -67,7 +84,6 @@ export default function FilterPanel({ filters, isOpen, onFilterChange, onClear, 
             <label><input type="checkbox" name="room" value="single" checked={filters.room.includes('single')} onChange={handleCheckboxChange} /> Single Sharing</label>
             <label><input type="checkbox" name="room" value="double" checked={filters.room.includes('double')} onChange={handleCheckboxChange} /> Double Sharing</label>
             <label><input type="checkbox" name="room" value="triple" checked={filters.room.includes('triple')} onChange={handleCheckboxChange} /> Triple Sharing</label>
-            <label><input type="checkbox" name="room" value="private" checked={filters.room.includes('private')} onChange={handleCheckboxChange} /> Private Room</label>
           </div>
 
           {/* GENDER PREFERENCE */}
@@ -83,8 +99,6 @@ export default function FilterPanel({ filters, isOpen, onFilterChange, onClear, 
             <h4>Food Availability</h4>
             <label><input type="checkbox" name="food" value="food" checked={filters.food.includes('food')} onChange={handleCheckboxChange} /> With Food</label>
             <label><input type="checkbox" name="food" value="nofood" checked={filters.food.includes('nofood')} onChange={handleCheckboxChange} /> Without Food</label>
-            <label><input type="checkbox" name="food" value="vegonly" checked={filters.food.includes('vegonly')} onChange={handleCheckboxChange} /> Veg Only</label>
-            <label><input type="checkbox" name="food" value="vegnonveg" checked={filters.food.includes('vegnonveg')} onChange={handleCheckboxChange} /> Veg + Non-Veg</label>
           </div>
 
           {/* AMENITIES */}
@@ -99,21 +113,6 @@ export default function FilterPanel({ filters, isOpen, onFilterChange, onClear, 
             <label><input type="checkbox" name="amenity" value="gym" checked={filters.amenity.includes('gym')} onChange={handleCheckboxChange} /> Gym</label>
             <label><input type="checkbox" name="amenity" value="cctv" checked={filters.amenity.includes('cctv')} onChange={handleCheckboxChange} /> CCTV Security</label>
             <label><input type="checkbox" name="amenity" value="geyser" checked={filters.amenity.includes('geyser')} onChange={handleCheckboxChange} /> Geyser</label>
-          </div>
-
-          {/* DISTANCE */}
-          <div className="filter-section">
-            <h4>Distance</h4>
-            <label><input type="radio" name="distance" value="0.5" checked={filters.distance === '0.5'} onChange={handleRadioChange} /> Within 500m</label>
-            <label><input type="radio" name="distance" value="1" checked={filters.distance === '1'} onChange={handleRadioChange} /> Within 1 km</label>
-            <label><input type="radio" name="distance" value="3" checked={filters.distance === '3'} onChange={handleRadioChange} /> Within 3 km</label>
-          </div>
-
-          {/* DEPOSIT / ADVANCE */}
-          <div className="filter-section">
-            <h4>Deposit / Advance</h4>
-            <label><input type="radio" name="deposit" value="none" checked={filters.deposit === 'none'} onChange={handleRadioChange} /> No Deposit</label>
-            <label><input type="radio" name="deposit" value="low" checked={filters.deposit === 'low'} onChange={handleRadioChange} /> Low</label>
           </div>
 
           {/* RATINGS */}

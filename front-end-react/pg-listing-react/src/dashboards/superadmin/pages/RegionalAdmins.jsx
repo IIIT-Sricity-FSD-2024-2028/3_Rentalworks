@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { api } from '../services/api';
+import { useDispatch } from 'react-redux';
+import { createRegionalAdmin, updateRegionalAdmin } from '../../../features/superadmin/superAdminSlice';
 import StatCard from '../components/StatCard';
 
-export default function RegionalAdmins({ users, refresh, showToast }) {
+export default function RegionalAdmins({ users, showToast }) {
+  const dispatch = useDispatch();
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ name: '', email: '', region: '', phone: '', password: '' });
@@ -36,14 +38,13 @@ export default function RegionalAdmins({ users, refresh, showToast }) {
     setSaving(true);
     try {
       if (editing === 'new') {
-        await api.createAdmin({ name: form.name.trim(), email: form.email.trim(), region: form.region.trim(), phone: form.phone.trim(), password: form.password });
+        await dispatch(createRegionalAdmin({ name: form.name.trim(), email: form.email.trim(), region: form.region.trim(), phone: form.phone.trim(), password: form.password })).unwrap();
       } else {
-        await api.updateAdmin(editing.id, { region: form.region.trim() });
+        await dispatch(updateRegionalAdmin({ id: editing.id, changes: { region: form.region.trim() } })).unwrap();
       }
-      await refresh();
       setEditing(null);
       showToast('success', editing === 'new' ? 'Admin Added' : 'Admin Updated', editing === 'new' ? 'Admin signs in with their email and chosen password.' : 'Regional admin saved successfully.');
-    } catch (error) { showToast('error', 'Error', error.message); }
+    } catch (error) { showToast('error', 'Error', error?.message || error); }
     finally { setSaving(false); }
   }
 

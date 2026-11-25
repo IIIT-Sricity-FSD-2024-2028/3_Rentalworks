@@ -1,24 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { apiFetch } from '../services/api';
+import { useSelector } from 'react-redux';
+import { selectUnreadTenantNotifications } from '../../../features/tenant/tenantSlices';
 
 const Sidebar = () => {
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-    const fetchUnread = async () => {
-      try {
-        const notifs = await apiFetch('/notifications').catch(() => []);
-        if (Array.isArray(notifs)) {
-          const count = notifs.filter((n) => !n.isRead && !n.read).length;
-          setUnreadCount(count);
-        }
-      } catch (err) {
-        // silent
-      }
-    };
-    fetchUnread();
-  }, []);
+  const unreadCount = useSelector(selectUnreadTenantNotifications);
 
   return (
     <aside className="sidebar" id="sidebar">

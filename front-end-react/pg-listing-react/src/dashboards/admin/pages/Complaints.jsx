@@ -1,32 +1,25 @@
-import { useState, useEffect, useCallback } from 'react';
-import { api } from '../services/api';
-import { useToast } from '../components/Toast';
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { runThunk } from '../../../app/hooks';
+import { adminComplaints } from '../../../features/admin/adminSlices';
 import Modal from '../components/Modal';
 
 const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 const getName = (val) => typeof val === 'object' ? (val?.name || 'Unknown') : (val || 'Unknown');
 
 export default function Complaints() {
-  const [complaints, setComplaints] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [properties, setProperties] = useState([]);
+  const dispatch = useDispatch();
+  const items = useSelector(adminComplaints.selectors.selectItems);
+  const loading = useSelector(adminComplaints.selectors.selectIsLoading) && items.length === 0;
+  // Rows may be stored as "in_progress" or "in-progress" depending on who updated them.
+  const complaints = items.map((c) => ({ ...c, status: String(c.status || 'open').replace('_', '-') }));
   const [search, setSearch] = useState('');
   const [statusF, setStatusF] = useState('all');
-  const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
-  const toast = useToast();
 
-  const load = useCallback(async () => {
-    try {
-      const [c, u, p] = await Promise.all([api.getComplaints(), api.getUsers(), api.getProperties()]);
-      setComplaints(c); setUsers(u); setProperties(p);
-    } catch { toast('error', 'Error', 'Failed to load complaints'); }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  const tenants = users.filter(u => u.role === 'tenant');
+  useEffect(() => {
+    dispatch(adminComplaints.thunks.fetchAll());
+  }, [dispatch]);
 
   const filtered = complaints.filter(c => {
     const tenantName = getName(c.tenant);
@@ -38,27 +31,21 @@ export default function Complaints() {
 
   const counts = { total: complaints.length, open: complaints.filter(c => c.status === 'open').length, inProgress: complaints.filter(c => c.status === 'in-progress').length, resolved: complaints.filter(c => c.status === 'resolved').length };
 
-  const handleResolve = async (c) => {
-    try {
-      await api.updateComplaint(c.id, { status: 'resolved' });
-      setComplaints(prev => prev.map(x => x.id === c.id ? { ...x, status: 'resolved' } : x));
-      toast('success', 'Complaint Resolved', `Issue #${c.id} marked as resolved`);
-    } catch { toast('error', 'Error', 'Failed to update complaint'); }
-  };
-
-  const handleInProgress = async (c) => {
-    try {
-      await api.updateComplaint(c.id, { status: 'in-progress' });
-      setComplaints(prev => prev.map(x => x.id === c.id ? { ...x, status: 'in-progress' } : x));
-      toast('info', 'In Progress', `Issue #${c.id} marked as in-progress`);
-    } catch { toast('error', 'Error', 'Failed to update complaint'); }
-  };
+  const setStatus = (c, status, label) =>
+    runThunk(dispatch, adminComplaints.thunks.updateItem({ id: c.id, changes: { status } }), { success: `Complaint #${c.id} marked as ${label}` });
+  const handleResolve = (c) => setStatus(c, 'resolved', 'resolved');
+  const handleInProgress = (c) => setStatus(c, 'in_progress', 'in progress');
 
   const handleDelete = (c) => {
-    setModal({ type: 'confirm', title: 'Delete Complaint', message: `Permanently delete complaint #${c.id}?`, action: async () => {
-      try { await api.deleteComplaint(c.id); setComplaints(prev => prev.filter(x => x.id !== c.id)); toast('success', 'Deleted', 'Complaint removed'); } catch { toast('error', 'Error', 'Failed'); }
-      setModal(null);
-    }});
+    setModal({
+      type: 'confirm',
+      title: 'Delete Complaint',
+      message: `Permanently delete complaint #${c.id}?`,
+      action: async () => {
+        const { ok } = await runThunk(dispatch, adminComplaints.thunks.removeItem(c.id), { success: 'Complaint removed' });
+        if (ok) setModal(null);
+      },
+    });
   };
 
   const handleView = (c) => { setModal({ type: 'view', complaint: c }); };
@@ -111,7 +98,7 @@ export default function Complaints() {
         footer={modal?.type === 'confirm' ? (
           <><button className="btn-cancel" onClick={() => setModal(null)}>Cancel</button><button className="btn-confirm-red" onClick={modal.action}>Confirm</button></>
         ) : <button className="btn-cancel" onClick={() => setModal(null)}>Close</button>}>
-        {modal?.type === 'confirm' && <p style={{fontSize:13,lineHeight:1.6,color:'#475569'}} dangerouslySetInnerHTML={{__html: modal.message}} />}
+        {modal?.type === 'confirm' && <p style={{fontSize:13,lineHeight:1.6,color:'#475569'}}>{modal.message}</p>}
         {modal?.type === 'view' && modal.complaint && (
           <div style={{display:'grid',gap:10,fontSize:13}}>
             <div><strong>Tenant:</strong> {getName(modal.complaint.tenant)}</div>

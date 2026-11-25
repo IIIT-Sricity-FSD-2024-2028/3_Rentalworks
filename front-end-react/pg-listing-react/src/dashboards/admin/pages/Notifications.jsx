@@ -1,44 +1,30 @@
-import { useState, useEffect, useCallback } from 'react';
-import { api } from '../services/api';
-import { useToast } from '../components/Toast';
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { runThunk } from '../../../app/hooks';
+import { adminNotifications, adminUsers } from '../../../features/admin/adminSlices';
+import { useToast } from '../components/useToast';
+import { selectCurrentUser } from '../../../features/auth/authSlice';
 
 export default function Notifications() {
-  const [users, setUsers] = useState([]);
-  const [properties, setProperties] = useState([]);
-  const [notifHistory, setNotifHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
   const toast = useToast();
+  const me = useSelector(selectCurrentUser);
+  const users = useSelector(adminUsers.selectors.selectItems);
+  const notifHistory = useSelector(adminNotifications.selectors.selectItems);
+  const loading = useSelector(adminNotifications.selectors.selectIsLoading) && notifHistory.length === 0;
+  const sending = useSelector(adminNotifications.selectors.selectMutating);
 
   const [notifType, setNotifType] = useState('announcement');
   const [priority, setPriority] = useState('routine');
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [targetRole, setTargetRole] = useState('all');
-  const [targetPG, setTargetPG] = useState('all');
   const [targetUser, setTargetUser] = useState('all');
-  const [showPG, setShowPG] = useState(false);
-  const [showUser, setShowUser] = useState(false);
-  const [scheduleDt, setScheduleDt] = useState('');
-
-  const load = useCallback(async () => {
-    try {
-      const [uList, pList, nList] = await Promise.all([
-        api.getUsers(),
-        api.getProperties(),
-        api.getNotifications()
-      ]);
-      setUsers(Array.isArray(uList) ? uList : []);
-      setProperties(Array.isArray(pList) ? pList : []);
-      setNotifHistory(Array.isArray(nList) ? nList : []);
-    } catch {
-      toast('error', 'Error', 'Failed to load announcements data');
-    }
-    setLoading(false);
-  }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    dispatch(adminUsers.thunks.fetchAll());
+    dispatch(adminNotifications.thunks.fetchAll());
+  }, [dispatch]);
 
   const counts = {
     all: users.length,
@@ -47,32 +33,12 @@ export default function Notifications() {
     wardens: users.filter(u => u.role === 'warden').length
   };
 
-  const getFilteredRecipients = () => {
-    let filtered = users;
-    if (targetRole !== 'all') filtered = filtered.filter(u => u.role === targetRole);
-    if (targetRole !== 'all' && targetPG !== 'all') {
-      filtered = filtered.filter(u => u.property === targetPG || String(u.propertyId) === String(targetPG));
-    }
-    if (targetPG !== 'all' && targetUser !== 'all') {
-      filtered = filtered.filter(u => String(u.id) === String(targetUser));
-    }
-    return filtered.length;
-  };
-
-  const recipientCount = getFilteredRecipients();
+  const roleUsers = targetRole === 'all' ? [] : users.filter(u => u.role === targetRole);
+  const recipientCount = targetRole === 'all' ? users.length : targetUser === 'all' ? roleUsers.length : 1;
 
   const handleRoleChange = (val) => {
     setTargetRole(val);
-    setTargetPG('all');
     setTargetUser('all');
-    setShowPG(val === 'tenant' || val === 'warden');
-    setShowUser(false);
-  };
-
-  const handlePGChange = (val) => {
-    setTargetPG(val);
-    setTargetUser('all');
-    setShowUser(val !== 'all');
   };
 
   const handleSend = async () => {
@@ -80,65 +46,18 @@ export default function Notifications() {
     if (!message.trim()) { toast('error', 'Missing Message', 'Enter an announcement message'); return; }
     if (recipientCount === 0) { toast('error', 'No Recipients', 'Select valid recipients'); return; }
 
-    const payload = {
-      title: title.trim(),
-      message: message.trim(),
-      type: notifType,
-      priority,
-      recipients: recipientCount,
-      targetRole,
-      targetPG,
-      targetUser
-    };
-
-    try {
-      const created = await api.createNotification(payload);
-      setNotifHistory(prev => [created, ...prev]);
-      setTitle('');
-      setMessage('');
-      toast('success', 'Announcement Sent', `Broadcast sent to ${recipientCount} users`);
-    } catch {
-      toast('error', 'Error', 'Failed to send announcement');
-    }
+    const data = { title: title.trim(), message: message.trim(), type: notifType, priority, recipients: recipientCount, targetRole };
+    if (targetUser !== 'all') data.userId = Number(targetUser);
+    const { ok } = await runThunk(dispatch, adminNotifications.thunks.createItem({ data, byUserId: me?.id }), {
+      success: `Announcement sent to ${recipientCount} user${recipientCount === 1 ? '' : 's'}`,
+    });
+    if (!ok) return;
+    setTitle('');
+    setMessage('');
   };
 
-  const handleSchedule = async () => {
-    if (!title.trim()) { toast('error', 'Missing Title', 'Enter an announcement title'); return; }
-    if (!message.trim()) { toast('error', 'Missing Message', 'Enter an announcement message'); return; }
-    if (!scheduleDt) { toast('error', 'No Schedule Time', 'Pick a date and time'); return; }
-    if (recipientCount === 0) { toast('error', 'No Recipients', 'Select valid recipients'); return; }
-
-    const payload = {
-      title: title.trim(),
-      message: message.trim(),
-      type: notifType,
-      priority,
-      recipients: recipientCount,
-      sentAt: new Date(scheduleDt).toISOString(),
-      targetRole
-    };
-
-    try {
-      const created = await api.createNotification(payload);
-      setNotifHistory(prev => [created, ...prev]);
-      setTitle('');
-      setMessage('');
-      setScheduleDt('');
-      toast('info', 'Announcement Scheduled', `Scheduled for ${new Date(scheduleDt).toLocaleString()}`);
-    } catch {
-      toast('error', 'Error', 'Failed to schedule announcement');
-    }
-  };
-
-  const handleDeleteNotif = async (id) => {
-    try {
-      await api.deleteNotification(id);
-      setNotifHistory(prev => prev.filter(x => String(x.id) !== String(id)));
-      toast('success', 'Deleted', 'Announcement removed from history');
-    } catch {
-      toast('error', 'Error', 'Failed to remove announcement');
-    }
-  };
+  const handleDeleteNotif = (id) =>
+    runThunk(dispatch, adminNotifications.thunks.removeItem(id), { success: 'Announcement removed from history' });
 
   const totalSent = notifHistory.length;
   const totalReach = notifHistory.reduce((s, n) => s + (Number(n.recipients) || 0), 0);
@@ -224,27 +143,14 @@ export default function Notifications() {
                 <option value="owner">Owners Only</option>
               </select>
 
-              {showPG && (
-                <select
-                  style={{ padding: 8, borderRadius: 6, border: '1px solid #cbd5e1', flex: 1, background: 'white', color: '#1e293b' }}
-                  value={targetPG}
-                  onChange={e => handlePGChange(e.target.value)}
-                >
-                  <option value="all">All Properties</option>
-                  {properties.map(p => (
-                    <option key={p.id} value={p.name}>{p.name}</option>
-                  ))}
-                </select>
-              )}
-
-              {showUser && (
+              {targetRole !== 'all' && (
                 <select
                   style={{ padding: 8, borderRadius: 6, border: '1px solid #cbd5e1', flex: 1, background: 'white', color: '#1e293b' }}
                   value={targetUser}
                   onChange={e => setTargetUser(e.target.value)}
                 >
-                  <option value="all">All Members in this PG</option>
-                  {users.filter(u => u.property === targetPG).map(u => (
+                  <option value="all">Everyone in this role ({roleUsers.length})</option>
+                  {roleUsers.map(u => (
                     <option key={u.id} value={u.id}>{u.name}</option>
                   ))}
                 </select>
@@ -271,24 +177,9 @@ export default function Notifications() {
             />
           </div>
 
-          {/* Send + Schedule */}
-          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-            <button className="btn-send" style={{ flex: 1 }} onClick={handleSend}>
-              <span className="material-icons-outlined" style={{ fontSize: 20 }}>outbox</span> Send Now
-            </button>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
-              <input
-                type="datetime-local"
-                style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #e2e8f0', borderRadius: 6, fontSize: 12 }}
-                value={scheduleDt}
-                onChange={e => setScheduleDt(e.target.value)}
-              />
-              <button className="btn-schedule" onClick={handleSchedule}>
-                <span className="material-icons-outlined" style={{ fontSize: 18, verticalAlign: 'middle', marginRight: 4 }}>calendar_today</span>
-                Schedule Send
-              </button>
-            </div>
-          </div>
+          <button className="btn-send" style={{ width: '100%' }} onClick={handleSend} disabled={sending}>
+            <span className="material-icons-outlined" style={{ fontSize: 20 }}>outbox</span> {sending ? 'Sending…' : 'Send Now'}
+          </button>
         </div>
 
         {/* Right Panel: Recipients + Stats */}

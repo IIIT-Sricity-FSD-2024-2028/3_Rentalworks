@@ -1,109 +1,43 @@
-// services/api.js - Owner API Service connecting to NestJS Backend
+// Owner portal endpoints (NestJS /api/* guarded by the owner's signed token).
+// Built on the shared client, which adds Authorization / x-role / x-user-id.
+import { http, asArray } from '../../../services/apiClient';
 
-import { getStoredUser } from '../../../utils/auth';
+const list = async (p) => asArray(await http.get(p));
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// 1. DASHBOARD
+export const getDashboardStats = () => http.get('/api/dashboard/stats');
 
-function getAuthHeaders() {
-  const user = getStoredUser();
-  if (!user || user.role !== 'owner' || !user.id) throw new Error('Please sign in as an owner');
-  const userId = String(user.id);
-  const headers = {
-    'Content-Type': 'application/json',
-    'x-role': 'owner',
-    'x-user-id': userId,
-    Authorization: 'Bearer ' + (user.token || ''),
-  };
-  return headers;
-}
+// 2. PROPERTIES
+export const getProperties = () => list('/api/properties');
+export const getPropertyById = (id) => http.get(`/api/properties/${id}`);
+export const createProperty = (data) => http.post('/api/properties', data);
+export const updateProperty = (id, data) => http.put(`/api/properties/${id}`, data);
+export const deleteProperty = (id) => http.delete(`/api/properties/${id}`);
 
-// Low-level fetch wrapper
-export async function apiRequest(endpoint, method, body) {
-  const url = BASE_URL + endpoint;
-  const headers = getAuthHeaders();
+// 3. ISSUES / COMPLAINTS
+export const getIssues = () => list('/api/issues');
+export const getIssueById = (id) => http.get(`/api/issues/${id}`);
+export const updateIssueStatus = (id, status) => http.put(`/api/issues/${id}`, { status });
+export const createIssue = (data) => http.post('/api/issues', data);
+export const deleteIssue = (id) => http.delete(`/api/issues/${id}`);
 
-  const options = {
-    method: method || 'GET',
-    headers: headers,
-  };
+// 4. NOTIFICATIONS
+export const getNotifications = () => list('/api/notifications');
+export const markNotificationRead = (id) => http.put(`/api/notifications/${id}/read`);
+export const markAllNotificationsRead = () => http.put('/api/notifications/mark-all-read');
+export const createNotification = (data) => http.post('/api/notifications', data);
+export const deleteNotification = (id) => http.delete(`/api/notifications/${id}`);
+export const clearAllNotifications = () => http.delete('/api/notifications');
 
-  if (body !== undefined && body !== null) {
-    options.body = JSON.stringify(body);
-  }
+// 5. POLICY
+export const getPolicy = () => http.get('/api/policies');
+export const updatePolicy = (data) => http.put('/api/policies', data);
 
-  const response = await fetch(url, options);
+// 6. PROFILE
+export const getProfile = () => http.get('/api/profile');
+export const updateProfile = (data) => http.put('/api/profile', data);
+export const changePassword = (currentPassword, newPassword) => http.put('/api/profile/password', { currentPassword, newPassword });
 
-  if (!response.ok) {
-    let errorMsg = 'HTTP ' + response.status + ' Error';
-    try {
-      const errorJson = await response.json();
-      if (errorJson.message) {
-        errorMsg = Array.isArray(errorJson.message)
-          ? errorJson.message.join(', ')
-          : errorJson.message;
-      }
-    } catch {
-      // ignore
-    }
-    throw new Error(errorMsg);
-  }
-
-  if (response.status === 204) {
-    return null;
-  }
-
-  return await response.json();
-}
-
-// 1. DASHBOARD STATS
-export function getDashboardStats() { return apiRequest('/api/dashboard/stats', 'GET'); }
-
-// 2. PROPERTIES ENDPOINTS
-export function getProperties() { return apiRequest('/api/properties'); }
-
-export function getPropertyById(id) { return apiRequest('/api/properties/' + id, 'GET'); }
-
-export function createProperty(propertyData) { return apiRequest('/api/properties', 'POST', propertyData); }
-
-export function updateProperty(id, propertyData) { return apiRequest('/api/properties/' + id, 'PUT', propertyData); }
-
-export function deleteProperty(id) { return apiRequest('/api/properties/' + id, 'DELETE'); }
-
-// 3. ISSUES / COMPLAINTS ENDPOINTS
-export function getIssues() { return apiRequest('/api/issues'); }
-
-export function getIssueById(id) { return apiRequest('/api/issues/' + id, 'GET'); }
-
-export function updateIssueStatus(id, newStatus) { return apiRequest('/api/issues/' + id, 'PUT', { status: newStatus }); }
-
-export function createIssue(issueData) { return apiRequest('/api/issues', 'POST', issueData); }
-
-export function deleteIssue(id) { return apiRequest('/api/issues/' + id, 'DELETE'); }
-
-// 4. NOTIFICATIONS ENDPOINTS
-export function getNotifications() { return apiRequest('/api/notifications', 'GET'); }
-
-export function markNotificationRead(id) { return apiRequest('/api/notifications/' + id + '/read', 'PUT'); }
-
-export function markAllNotificationsRead() { return apiRequest('/api/notifications/mark-all-read', 'PUT'); }
-
-export function createNotification(notifData) { return apiRequest('/api/notifications', 'POST', notifData); }
-
-export function deleteNotification(id) { return apiRequest('/api/notifications/' + id, 'DELETE'); }
-
-export function clearAllNotifications() { return apiRequest('/api/notifications', 'DELETE'); }
-
-// 5. POLICY ENDPOINTS
-export function getPolicy() { return apiRequest('/api/policies', 'GET'); }
-
-export function updatePolicy(policyData) { return apiRequest('/api/policies', 'PUT', policyData); }
-
-// 6. PROFILE ENDPOINTS
-export function getProfile() { return apiRequest('/api/profile', 'GET'); }
-
-export function updateProfile(profileData) { return apiRequest('/api/profile', 'PUT', profileData); }
-
-// 7. SUBSCRIPTION ENDPOINTS
-export function getSubscription() { return apiRequest('/api/subscription', 'GET'); }
-
-export function updateSubscription(subscriptionData) { return apiRequest('/api/subscription', 'PUT', subscriptionData); }
+// 7. SUBSCRIPTION
+export const getSubscription = () => http.get('/api/subscription');
+export const updateSubscription = (data) => http.put('/api/subscription', data);

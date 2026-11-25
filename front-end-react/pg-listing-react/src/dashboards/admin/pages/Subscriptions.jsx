@@ -1,45 +1,28 @@
-import { useState, useEffect, useCallback } from 'react';
-import { api } from '../services/api';
-import { useToast } from '../components/Toast';
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { runThunk } from '../../../app/hooks';
+import { adminUsers, selectAdminSubscriptions, selectAdminSubscriptionStats } from '../../../features/admin/adminSlices';
 import Modal from '../components/Modal';
 
+const BILLING = { MONTHLY: 'Monthly', YEARLY: 'Yearly', LIFETIME: 'One-time' };
+
 export default function Subscriptions() {
-  const [stats, setStats] = useState({ totalActive: 0, monthly: 0, yearly: 0, lifetime: 0, totalRevenue: 0 });
-  const [subscriptions, setSubscriptions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const subscriptions = useSelector(selectAdminSubscriptions);
+  const { subscriptions: counts, payments } = useSelector(selectAdminSubscriptionStats);
+  const stats = { ...counts, totalRevenue: payments.totalRevenue };
+  const isLoading = useSelector(adminUsers.selectors.selectIsLoading);
+  const loading = isLoading && subscriptions.length === 0;
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [planFilter, setPlanFilter] = useState('ALL');
   const [receiptModal, setReceiptModal] = useState(null);
-  const toast = useToast();
-
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [statsData, subsList] = await Promise.all([
-        api.getSubscriptionStats(),
-        api.getAllSubscriptions()
-      ]);
-
-      const s = statsData?.subscriptions || {};
-      const p = statsData?.payments || {};
-      setStats({
-        totalActive: s.totalActive || 0,
-        monthly: s.monthly || 0,
-        yearly: s.yearly || 0,
-        lifetime: s.lifetime || 0,
-        totalRevenue: p.totalRevenue || 0
-      });
-      setSubscriptions(Array.isArray(subsList) ? subsList : []);
-    } catch (err) {
-      toast('error', 'Error', 'Failed to load subscription data');
-    }
-    setLoading(false);
-  }, []);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    dispatch(adminUsers.thunks.fetchAll());
+  }, [dispatch]);
+
+  const loadData = () => runThunk(dispatch, adminUsers.thunks.fetchAll(), { success: 'Subscriptions refreshed' });
 
   const filtered = subscriptions.filter(sub => {
     const ownerName = (sub.owner?.name || '').toLowerCase();
@@ -60,13 +43,9 @@ export default function Subscriptions() {
   const mPct = Math.round(((stats.monthly || 0) / totalActive) * 100);
   const lPct = Math.round(((stats.lifetime || 0) / totalActive) * 100);
 
-  const handleViewReceipt = async (paymentId) => {
-    try {
-      const receipt = await api.getSubscriptionReceipt(paymentId);
-      setReceiptModal(receipt);
-    } catch {
-      toast('error', 'Error', 'Receipt not found');
-    }
+  const handleViewReceipt = (ownerId) => {
+    const sub = subscriptions.find(x => x.ownerId === ownerId);
+    if (sub) setReceiptModal({ ...sub, planName: sub.plan.displayName });
   };
 
   return (
@@ -270,7 +249,8 @@ export default function Subscriptions() {
                     <td style={{ padding: '14px 16px', textAlign: 'right' }}>
                       <button
                         className="btn-action-small"
-                        onClick={() => handleViewReceipt(s.paymentId || s.id)}
+                        disabled={!s.receiptNumber}
+                        onClick={() => handleViewReceipt(s.ownerId)}
                         style={{
                           padding: '4px 10px',
                           background: '#eff6ff',
@@ -297,7 +277,7 @@ export default function Subscriptions() {
       <Modal
         show={!!receiptModal}
         onClose={() => setReceiptModal(null)}
-        title="🧾 Official Subscription Receipt"
+        title="🧾 Subscription Receipt"
         subtitle={`Receipt: ${receiptModal?.receiptNumber || 'N/A'}`}
         footer={<button className="btn-cancel" onClick={() => setReceiptModal(null)}>Close</button>}
       >
@@ -314,23 +294,19 @@ export default function Subscriptions() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                 <span style={{ color: '#64748b' }}>Billing Cycle:</span>
-                <span>{receiptModal.billingCycle || 'Annual'}</span>
+                <span>{BILLING[receiptModal.planType] || '—'}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ color: '#64748b' }}>Payment Date:</span>
-                <span>{receiptModal.date || new Date().toLocaleDateString('en-IN')}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ color: '#64748b' }}>Payment Mode:</span>
-                <span>{receiptModal.paymentMethod || 'UPI Verified'}</span>
+                <span style={{ color: '#64748b' }}>Start Date:</span>
+                <span>{receiptModal.startDate || '—'}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#64748b' }}>Payment Status:</span>
-                <span style={{ color: '#16a34a', fontWeight: 700 }}>✓ {receiptModal.status || 'SUCCESS'}</span>
+                <span style={{ color: '#64748b' }}>Plan Status:</span>
+                <span style={{ color: '#16a34a', fontWeight: 700 }}>{receiptModal.status}</span>
               </div>
             </div>
             <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center' }}>
-              This is a computer-generated tax invoice for RentBro Platform subscription services.
+              This is a computer-generated receipt for RentBro Platform subscription services.
             </p>
           </div>
         )}
