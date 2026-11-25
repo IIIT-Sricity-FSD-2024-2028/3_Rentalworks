@@ -1,0 +1,144 @@
+import { createSlice, createAsyncThunk, isFulfilled, isPending, isRejected } from '@reduxjs/toolkit';
+import { asArray } from '../../services/apiClient';
+
+/**
+ * Factory for the common "list + create + update + delete" REST resource.
+ *
+ *   const issues = createResourceSlice({
+ *     name: 'tenantIssues',
+ *     api: { list, create, update, remove },   // functions returning promises
+ *     mapItem: (raw) => ({ ...raw }),          // optional normaliser
+ *   });
+ *
+ * The reducer must be mounted in the store under the same key as `name`.
+ * Exposes `thunks` (fetchAll, createItem, updateItem, removeItem),
+ * `actions` (setItems, upsertItem, removeLocal, clear) and `selectors`.
+ */
+export function createResourceSlice({ name, api, mapItem = (x) => x, idKey = 'id', reducers = {}, extraReducers }) {
+  const idOf = (item) => item?.[idKey];
+  const sameId = (a, b) => String(a) === String(b);
+  const fail = (err) => err?.message || 'Request failed';
+
+  const fetchAll = createAsyncThunk(`${name}/fetchAll`, async (arg, { rejectWithValue }) => {
+    try {
+      return asArray(await api.list(arg)).map(mapItem);
+    } catch (err) {
+      return rejectWithValue(fail(err));
+    }
+  });
+
+  const createItem = createAsyncThunk(`${name}/create`, async (data, { rejectWithValue }) => {
+    if (!api.create) return rejectWithValue('Create is not supported');
+    try {
+      const created = await api.create(data);
+      return created && typeof created === 'object' ? mapItem(created) : null;
+    } catch (err) {
+      return rejectWithValue(fail(err));
+    }
+  });
+
+  const updateItem = createAsyncThunk(`${name}/update`, async ({ id, changes }, { rejectWithValue }) => {
+    if (!api.update) return rejectWithValue('Update is not supported');
+    try {
+      const updated = await api.update(id, changes);
+      return { id, changes, item: updated && typeof updated === 'object' && idOf(updated) != null ? mapItem(updated) : null };
+    } catch (err) {
+      return rejectWithValue(fail(err));
+    }
+  });
+
+  const removeItem = createAsyncThunk(`${name}/remove`, async (id, { rejectWithValue }) => {
+    if (!api.remove) return rejectWithValue('Delete is not supported');
+    try {
+      await api.remove(id);
+      return id;
+    } catch (err) {
+      return rejectWithValue(fail(err));
+    }
+  });
+
+  const slice = createSlice({
+    name,
+    initialState: { items: [], status: 'idle', error: null, mutating: false, mutationError: null, lastFetched: null },
+    reducers: {
+      setItems(state, { payload }) {
+        state.items = payload;
+      },
+      upsertItem(state, { payload }) {
+        const idx = state.items.findIndex((x) => sameId(idOf(x), idOf(payload)));
+        if (idx >= 0) state.items[idx] = { ...state.items[idx], ...payload };
+        else state.items.unshift(payload);
+      },
+      removeLocal(state, { payload: id }) {
+        state.items = state.items.filter((x) => !sameId(idOf(x), id));
+      },
+      clear(state) {
+        state.items = [];
+        state.status = 'idle';
+        state.error = null;
+      },
+      ...reducers,
+    },
+    extraReducers: (builder) => {
+      builder
+        .addCase(fetchAll.pending, (state) => {
+          state.status = 'loading';
+          state.error = null;
+        })
+        .addCase(fetchAll.fulfilled, (state, { payload }) => {
+          state.status = 'succeeded';
+          state.items = payload;
+          state.lastFetched = Date.now();
+        })
+        .addCase(fetchAll.rejected, (state, { payload }) => {
+          state.status = 'failed';
+          state.error = payload;
+        })
+        .addCase(createItem.fulfilled, (state, { payload }) => {
+          if (payload) state.items.unshift(payload);
+        })
+        .addCase(updateItem.fulfilled, (state, { payload }) => {
+          const idx = state.items.findIndex((x) => sameId(idOf(x), payload.id));
+          if (idx >= 0) state.items[idx] = { ...state.items[idx], ...payload.changes, ...(payload.item || {}) };
+        })
+        .addCase(removeItem.fulfilled, (state, { payload: id }) => {
+          state.items = state.items.filter((x) => !sameId(idOf(x), id));
+        });
+
+      if (extraReducers) extraReducers(builder);
+
+      // Flags shared by every mutation. Matchers, because a builder allows only
+      // one addCase per action type.
+      const mutations = [createItem, updateItem, removeItem];
+      builder
+        .addMatcher(isPending(...mutations), (state) => {
+          state.mutating = true;
+          state.mutationError = null;
+        })
+        .addMatcher(isFulfilled(...mutations), (state) => {
+          state.mutating = false;
+        })
+        .addMatcher(isRejected(...mutations), (state, { payload }) => {
+          state.mutating = false;
+          state.mutationError = payload;
+        });
+    },
+  });
+
+  const selectSlice = (state) => state[name];
+  return {
+    slice,
+    reducer: slice.reducer,
+    actions: slice.actions,
+    thunks: { fetchAll, createItem, updateItem, removeItem },
+    selectors: {
+      selectSlice,
+      selectItems: (state) => state[name].items,
+      selectStatus: (state) => state[name].status,
+      selectError: (state) => state[name].error,
+      selectIsLoading: (state) => state[name].status === 'loading',
+      selectMutating: (state) => state[name].mutating,
+      selectById: (state, id) => state[name].items.find((x) => sameId(idOf(x), id)),
+    },
+  };
+}

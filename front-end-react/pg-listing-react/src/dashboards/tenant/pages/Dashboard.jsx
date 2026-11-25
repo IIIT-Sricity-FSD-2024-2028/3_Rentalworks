@@ -1,7 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { apiFetch } from '../services/api';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  fetchMyRentDues,
+  selectAmountDue,
+  selectNextDue,
+  tenantComplaints,
+  tenantIssues,
+  tenantPayments,
+  tenantServiceRequests,
+} from '../../../features/tenant/tenantSlices';
+import { useTenant } from '../hooks/useTenant';
 import { StatusBadge } from '../components';
 
 const getCategoryIcon = (category) => {
@@ -23,86 +32,39 @@ const getCategoryIcon = (category) => {
   }
 };
 
+const PAID = ['completed', 'success', 'verified'];
+const isOpen = (x) => ['open', 'in_progress', 'in-progress'].includes(x.status);
+
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { tenant, activeBooking, loading } = useAuth();
-  
-  const [complaintsCount, setComplaintsCount] = useState(0);
-  const [paymentsDue, setPaymentsDue] = useState(0);
-  const [pendingServicesCount, setPendingServicesCount] = useState(0);
-  const [recentIssues, setRecentIssues] = useState([]);
-  const [recentComplaints, setRecentComplaints] = useState([]);
-  const [tenantCompletedPayments, setTenantCompletedPayments] = useState([]);
-  const [tenantServicesList, setTenantServicesList] = useState([]);
-  const [loadingItems, setLoadingItems] = useState(true);
-  const [dues, setDues] = useState([]);
+  const dispatch = useDispatch();
+  const { tenant, activeBooking, loading } = useTenant();
+
+  const complaints = useSelector(tenantComplaints.selectors.selectItems);
+  const issues = useSelector(tenantIssues.selectors.selectItems);
+  const payments = useSelector(tenantPayments.selectors.selectItems);
+  const tenantServicesList = useSelector(tenantServiceRequests.selectors.selectItems);
+  const issuesLoading = useSelector(tenantIssues.selectors.selectIsLoading);
+  const complaintsLoading = useSelector(tenantComplaints.selectors.selectIsLoading);
+  const paymentsDue = useSelector(selectAmountDue);
+  // Next unpaid cycle from the rent ledger (earliest first)
+  const nextDue = useSelector(selectNextDue);
 
   useEffect(() => {
-    // Fetch stats and lists
-    const fetchStats = async () => {
-      try {
-        if (!tenant) return;
-        setLoadingItems(true);
-        
-        // Fetch complaints & issues
-        const [allComplaints, myIssues, allPayments, myServiceRequests, myDues] = await Promise.all([
-          apiFetch(`/complaints/my?tenantId=${tenant.id}`).catch(() => 
-            apiFetch(`/complaints?tenantId=${tenant.id}`).catch(() => [])
-          ),
-          apiFetch(`/issues/my?tenantId=${tenant.id}`).catch(() => []),
-          apiFetch('/payments').catch(() => []),
-          apiFetch('/service-requests/my').catch(() => []),
-          apiFetch('/rent-dues/my').catch(() => []),
-        ]);
-        setDues(Array.isArray(myDues) ? myDues : []);
+    if (!tenant?.id) return;
+    dispatch(tenantComplaints.thunks.fetchAll());
+    dispatch(tenantIssues.thunks.fetchAll());
+    dispatch(tenantServiceRequests.thunks.fetchAll());
+    dispatch(tenantPayments.thunks.fetchAll(tenant.id));
+    dispatch(fetchMyRentDues());
+  }, [dispatch, tenant?.id]);
 
-        const userComplaints = (Array.isArray(allComplaints) ? allComplaints : []).filter(
-          c => Number(c.tenantId) === Number(tenant.id)
-        );
-        const userIssues = Array.isArray(myIssues) ? myIssues : [];
-
-        // Save recent items for dashboard display (latest 3 of each)
-        setRecentIssues(userIssues.slice(0, 3));
-        setRecentComplaints(userComplaints.slice(0, 3));
-
-        const activeComplaints = userComplaints.filter(
-          c => c.status === 'open' || c.status === 'in_progress' || c.status === 'in-progress'
-        );
-        const openIssues = userIssues.filter(
-          i => i.status === 'open' || i.status === 'in_progress' || i.status === 'in-progress'
-        );
-        setComplaintsCount(activeComplaints.length + openIssues.length);
-        
-        // Fetch payments
-        const curM = new Date().getMonth();
-        const curY = new Date().getFullYear();
-        const allCompletedUserPayments = (Array.isArray(allPayments) ? allPayments : []).filter(
-          p => Number(p.tenantId) === Number(tenant.id) && 
-          (p.status === 'completed' || p.status === 'success' || p.status === 'verified')
-        );
-        setTenantCompletedPayments(allCompletedUserPayments);
-
-        const unpaid = (Array.isArray(myDues) ? myDues : []).filter(
-          d => ['due_soon', 'overdue'].includes(d.effectiveStatus || d.status)
-        );
-        setPaymentsDue(unpaid.reduce((sum, d) => sum + Number(d.amount || 0), 0));
-
-        // Service requests
-        const sList = Array.isArray(myServiceRequests) ? myServiceRequests : [];
-        setTenantServicesList(sList);
-        const activeServices = sList.filter(
-          s => s.status === 'pending' || s.status === 'in_progress' || s.status === 'scheduled'
-        );
-        setPendingServicesCount(activeServices.length);
-      } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
-      } finally {
-        setLoadingItems(false);
-      }
-    };
-    
-    fetchStats();
-  }, [tenant]);
+  const recentIssues = issues.slice(0, 3);
+  const recentComplaints = complaints.slice(0, 3);
+  const loadingItems = (issuesLoading && !issues.length) || (complaintsLoading && !complaints.length);
+  const complaintsCount = complaints.filter(isOpen).length + issues.filter(isOpen).length;
+  const pendingServicesCount = tenantServicesList.filter((s) => ['pending', 'in_progress', 'scheduled'].includes(s.status)).length;
+  const tenantCompletedPayments = payments.filter((p) => Number(p.tenantId) === Number(tenant?.id) && PAID.includes(p.status));
 
   if (loading) {
     return <div style={{ padding: '20px' }}>Loading your dashboard...</div>;
@@ -129,10 +91,6 @@ const Dashboard = () => {
     daysRemaining = Math.max(0, Math.ceil((out.getTime() - Date.now()) / 86400000));
   }
 
-  // Next unpaid cycle from the rent ledger (earliest first)
-  const nextDue = [...dues]
-    .filter(d => ['upcoming', 'due_soon', 'overdue'].includes(d.effectiveStatus || d.status))
-    .sort((x, y) => String(x.dueDate).localeCompare(String(y.dueDate)))[0] || null;
   const rentDueDate = nextDue ? fmt(nextDue.dueDate) : '—';
   const nextStatus = nextDue ? (nextDue.effectiveStatus || nextDue.status) : null;
   const countdown = nextDue && typeof nextDue.daysUntilDue === 'number'
@@ -182,7 +140,7 @@ const Dashboard = () => {
             {countdown ? <> — <strong>{countdown}</strong></> : null}
           </div>
           <div className="reminder-actions">
-            <button className="btn btn-primary btn-sm" onClick={() => navigate('/tenant/payments')}>
+            <button className="btn btn-primary btn-sm" onClick={() => navigate('/dashboard/tenant/payments')}>
               {nextStatus === 'upcoming' ? 'View Ledger' : 'Pay Now'}
             </button>
           </div>
@@ -205,7 +163,7 @@ const Dashboard = () => {
       <div className="stats-grid">
         <div 
           className="stat-card" 
-          onClick={() => navigate('/tenant/issues')} 
+          onClick={() => navigate('/dashboard/tenant/issues')} 
           style={{ cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }}
           title="Click to view all Issues"
         >
@@ -215,7 +173,7 @@ const Dashboard = () => {
         </div>
         <div 
           className="stat-card" 
-          onClick={() => navigate('/tenant/services')} 
+          onClick={() => navigate('/dashboard/tenant/services')} 
           style={{ cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }}
           title="Click to view Services"
         >
@@ -225,7 +183,7 @@ const Dashboard = () => {
         </div>
         <div 
           className="stat-card" 
-          onClick={() => navigate('/tenant/payments')} 
+          onClick={() => navigate('/dashboard/tenant/payments')} 
           style={{ cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }}
           title="Click to view Payments"
         >
@@ -253,7 +211,7 @@ const Dashboard = () => {
               <div className="card-title" style={{ margin: 0 }}>Recent Issues</div>
               <button 
                 className="btn btn-ghost btn-sm" 
-                onClick={() => navigate('/tenant/issues')}
+                onClick={() => navigate('/dashboard/tenant/issues')}
                 style={{ fontSize: '12px', padding: '4px 8px' }}
               >
                 View All →
@@ -271,7 +229,7 @@ const Dashboard = () => {
                 <p style={{ marginTop: '8px', fontSize: '13px' }}>No issues reported.</p>
                 <button 
                   className="btn btn-outline btn-sm mt-10" 
-                  onClick={() => navigate('/tenant/issues')}
+                  onClick={() => navigate('/dashboard/tenant/issues')}
                   style={{ marginTop: '10px', fontSize: '12px' }}
                 >
                   + Report Issue
@@ -282,7 +240,7 @@ const Dashboard = () => {
                 {recentIssues.map((iss) => (
                   <div 
                     key={iss.id} 
-                    onClick={() => navigate('/tenant/issues')}
+                    onClick={() => navigate('/dashboard/tenant/issues')}
                     style={{ 
                       padding: '12px', 
                       background: 'var(--bg-secondary, #f8fafc)', 
@@ -322,7 +280,7 @@ const Dashboard = () => {
               <div className="card-title" style={{ margin: 0 }}>Recent Complaints</div>
               <button 
                 className="btn btn-ghost btn-sm" 
-                onClick={() => navigate('/tenant/complaints')}
+                onClick={() => navigate('/dashboard/tenant/complaints')}
                 style={{ fontSize: '12px', padding: '4px 8px' }}
               >
                 View All →
@@ -340,7 +298,7 @@ const Dashboard = () => {
                 <p style={{ marginTop: '8px', fontSize: '13px' }}>No complaints filed.</p>
                 <button 
                   className="btn btn-outline btn-sm mt-10" 
-                  onClick={() => navigate('/tenant/complaints')}
+                  onClick={() => navigate('/dashboard/tenant/complaints')}
                   style={{ marginTop: '10px', fontSize: '12px' }}
                 >
                   + File Complaint
@@ -354,7 +312,7 @@ const Dashboard = () => {
                   return (
                     <div 
                       key={c.id} 
-                      onClick={() => navigate('/tenant/complaints')}
+                      onClick={() => navigate('/dashboard/tenant/complaints')}
                       style={{ 
                         padding: '12px', 
                         background: 'var(--bg-secondary, #f8fafc)', 

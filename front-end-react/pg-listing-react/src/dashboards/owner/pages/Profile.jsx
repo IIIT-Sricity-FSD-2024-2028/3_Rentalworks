@@ -1,4 +1,3 @@
-import { apiRequest } from '../services/api';
 import Icon from '../components/Icon';
 import React, { useState } from 'react';
 
@@ -7,6 +6,7 @@ export default function Profile({
   profile = {},
   properties = [],
   onSaveProfile,
+  onChangePassword,
   onLogout,
   allData,
 }) {
@@ -97,9 +97,9 @@ export default function Profile({
 
     setPassError('');
     try {
-      await apiRequest('/api/profile/password', 'PUT', { currentPassword: passForm.currPass, newPassword: passForm.newPass });
+      await onChangePassword({ currentPassword: passForm.currPass, newPassword: passForm.newPass });
       setPassSuccess('Password updated successfully!');
-    } catch (err) { setPassError(err.message); return; }
+    } catch (err) { setPassError(typeof err === 'string' ? err : err.message); return; }
     setTimeout(() => {
       setPassForm({ currPass: '', newPass: '', confPass: '' });
       setPassSuccess('');

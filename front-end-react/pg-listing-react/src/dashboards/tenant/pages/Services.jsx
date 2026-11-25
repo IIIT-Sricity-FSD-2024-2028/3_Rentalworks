@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { apiFetch } from '../services/api';
+import { useDispatch, useSelector } from 'react-redux';
+import { runThunk } from '../../../app/hooks';
+import { tenantServiceRequests, tenantServicesCatalog } from '../../../features/tenant/tenantSlices';
+import { toastError } from '../../../features/ui/uiSlice';
+import { useTenant } from '../hooks/useTenant';
 
 const defaultCatalog = [
   {
@@ -37,39 +40,63 @@ const defaultCatalog = [
   },
 ];
 
-const Services = () => {
-  const { tenant, activeBooking } = useAuth();
+const PRICING = { per_kg: ' per kg', per_session: ' per session', per_month: '/month', monthly: '/month', per_use: ' per use' };
+const ICONS = [
+  [/laundry|wash/i, 'local_laundry_service', 'Laundry'],
+  [/park/i, 'directions_car', 'Parking'],
+  [/clean/i, 'cleaning_services', 'Cleaning'],
+  [/pantry|kitchen|food|meal/i, 'coffee', 'Maintenance'],
+];
 
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+/** Service row configured by the owner/admin → catalogue card. */
+const mapService = (s) => {
+  const price = Number(s.price) || 0;
+  const [, icon, type] = ICONS.find(([re]) => re.test(s.name)) || [null, 'build', s.name];
+  return {
+    id: s.id,
+    name: s.name,
+    type,
+    price,
+    priceLabel: price ? `₹${price}${PRICING[s.pricingModel] || ''}` : 'Included in rent',
+    icon,
+    description: s.description || [s.timing, s.location].filter(Boolean).join(' • ') || 'Available at your property',
+  };
+};
+
+const Services = () => {
+  const dispatch = useDispatch();
+  const { activeBooking } = useTenant();
+  const propertyId = activeBooking?.propertyId ?? activeBooking?.property?.id;
+
+  const requests = useSelector(tenantServiceRequests.selectors.selectItems);
+  const requestsLoading = useSelector(tenantServiceRequests.selectors.selectIsLoading);
+  const error = useSelector(tenantServiceRequests.selectors.selectError);
+  const submitting = useSelector(tenantServiceRequests.selectors.selectMutating);
+  const services = useSelector(tenantServicesCatalog.selectors.selectItems);
+  const loading = requestsLoading && requests.length === 0;
+
+  // Services configured for this property, else the standard catalogue.
+  const available = services.filter((s) => s.isAvailable !== false);
+  const catalog = available.length ? available.map(mapService) : defaultCatalog;
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState(defaultCatalog[0]);
   const [notes, setNotes] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  const fetchServiceRequests = async () => {
-    if (!tenant) return;
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await apiFetch('/service-requests/my');
-      setRequests(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Failed to fetch service requests:', err);
-      setError('Unable to load service requests.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    fetchServiceRequests();
-  }, [tenant]);
+    dispatch(tenantServiceRequests.thunks.fetchAll());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (propertyId) dispatch(tenantServicesCatalog.thunks.fetchAll(propertyId));
+  }, [dispatch, propertyId]);
 
   const handleOpenModal = (service) => {
+    if (!propertyId) {
+      dispatch(toastError('You need an active stay to request services.'));
+      return;
+    }
     setSelectedService(service);
     setNotes('');
     setIsModalOpen(true);
@@ -77,43 +104,26 @@ const Services = () => {
 
   const handleCreateRequest = async (e) => {
     if (e) e.preventDefault();
-    try {
-      setSubmitting(true);
-      await apiFetch('/service-requests', {
-        method: 'POST',
-        body: JSON.stringify({
-          serviceType: selectedService.type,
-          serviceName: selectedService.name,
-          amount: selectedService.price,
-          description: notes.trim() || undefined,
-          notes: notes.trim() || undefined,
-          propertyId: activeBooking?.propertyId || activeBooking?.property?.id || 1,
-          roomId: activeBooking?.roomId || 1,
-        }),
-      });
-
-      setIsModalOpen(false);
-      setNotes('');
-      await fetchServiceRequests();
-    } catch (err) {
-      console.error('Failed to submit service request:', err);
-      alert(err.message || 'Failed to submit service request.');
-    } finally {
-      setSubmitting(false);
-    }
+    const { ok } = await runThunk(
+      dispatch,
+      tenantServiceRequests.thunks.createItem({
+        serviceType: selectedService.type,
+        serviceName: selectedService.name,
+        serviceId: selectedService.id,
+        amount: selectedService.price,
+        description: notes.trim() || undefined,
+        notes: notes.trim() || undefined,
+        propertyId: Number(propertyId),
+        roomId: activeBooking?.roomId ? Number(activeBooking.roomId) : undefined,
+      }),
+      { success: `${selectedService.name} requested` },
+    );
+    if (ok) setIsModalOpen(false);
   };
 
-  const handleCancelRequest = async (requestId) => {
-    if (!window.confirm('Are you sure you want to cancel this service request?')) {
-      return;
-    }
-    try {
-      await apiFetch(`/service-requests/${requestId}`, { method: 'DELETE' });
-      await fetchServiceRequests();
-    } catch (err) {
-      console.error('Failed to cancel service request:', err);
-      alert('Failed to cancel service request.');
-    }
+  const handleCancelRequest = (requestId) => {
+    if (!window.confirm('Are you sure you want to cancel this service request?')) return;
+    runThunk(dispatch, tenantServiceRequests.thunks.removeItem(requestId), { success: 'Service request cancelled' });
   };
 
   const activeCount = requests.filter(
@@ -138,7 +148,7 @@ const Services = () => {
               </span>
             </span>
           </div>
-          <div className="stat-value">{defaultCatalog.length}</div>
+          <div className="stat-value">{catalog.length}</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">
@@ -256,7 +266,7 @@ const Services = () => {
 
       <h3 style={{ marginBottom: '14px' }}>Available Property Services</h3>
       <div className="grid-2">
-        {defaultCatalog.map((service) => (
+        {catalog.map((service) => (
           <div className="service-card" key={service.name}>
             <div className="service-header">
               <span className="service-header-icon">

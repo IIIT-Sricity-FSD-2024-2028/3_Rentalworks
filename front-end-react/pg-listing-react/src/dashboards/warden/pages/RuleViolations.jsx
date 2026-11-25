@@ -1,29 +1,26 @@
 import React, { useState } from 'react';
-import { useWardenData } from '../utils/dataStore';
+import { useWardenData, useWardenRun, useWardenToast } from '../utils/dataStore';
 import Modal from '../components/Modal';
 import {
-  createRuleViolationApi,
-  issueRuleViolationWarningApi,
-  escalateRuleViolationApi,
-  deleteRuleViolationApi,
-} from '../utils/api';
+  createViolation,
+  deleteViolation,
+  escalateViolation as escalateViolationThunk,
+  issueViolationWarning,
+} from '../../../features/warden/wardenSlices';
 
 export default function RuleViolations() {
-  const { data, refreshData } = useWardenData();
+  const { data } = useWardenData();
+  const run = useWardenRun();
   const [filter, setFilter] = useState('all');
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
-  const [toast, setToast] = useState(null);
 
   const violations = data.violations || [];
   const tenants = data.tenants || [];
 
-  const showToast = (type, title, message) => {
-    setToast({ type, title, message });
-    setTimeout(() => setToast(null), 3500);
-  };
+  const showToast = useWardenToast();
 
   const filteredViolations = filter === 'all' 
     ? violations 
@@ -71,54 +68,47 @@ export default function RuleViolations() {
     }
 
     try {
-      await createRuleViolationApi({
+      await run(createViolation({
         tenantId: Number(selectedTenant.id),
         tenantName: selectedTenant.name,
-        roomNumber: selectedTenant.room || '101',
+        roomNumber: selectedTenant.room && selectedTenant.room !== '—' ? selectedTenant.room : '',
         type: type,
         severity: formData.severity || 'low',
         description: formData.description || type,
-      });
+      }));
 
-      await refreshData();
       setIsAddModalOpen(false);
-      showToast('success', 'Changes saved', `Added ${type} for ${selectedTenant.name}`);
+      showToast('success', 'Done', `Added ${type} for ${selectedTenant.name}`);
     } catch (err) {
-      console.error('Failed to create rule violation:', err);
-      showToast('error', 'Error', 'Failed to save rule violation');
+      showToast('error', 'Error', err.message);
     }
   };
 
   const issueWarning = async (id) => {
     try {
-      await issueRuleViolationWarningApi(id);
-      await refreshData();
-      showToast('success', 'Changes saved', 'Warning issued to tenant');
+      await run(issueViolationWarning(id));
+      showToast('success', 'Done', 'Warning issued to tenant');
     } catch (err) {
-      console.error('Failed to issue warning:', err);
-      showToast('error', 'Error', 'Failed to issue warning');
+      showToast('error', 'Error', err.message);
     }
   };
 
   const escalateViolation = async (id) => {
     try {
-      await escalateRuleViolationApi(id);
-      await refreshData();
-      showToast('success', 'Changes saved', 'Violation escalated to property owner');
+      await run(escalateViolationThunk(id));
+      showToast('success', 'Done', 'Violation escalated to property owner');
     } catch (err) {
-      console.error('Failed to escalate violation:', err);
-      showToast('error', 'Error', 'Failed to escalate violation');
+      showToast('error', 'Error', err.message);
     }
   };
 
   const handleDeleteViolation = async (id) => {
+    if (!window.confirm('Delete this violation record?')) return;
     try {
-      await deleteRuleViolationApi(id);
-      await refreshData();
-      showToast('success', 'Changes saved', 'Violation record deleted');
+      await run(deleteViolation(id));
+      showToast('success', 'Done', 'Violation record deleted');
     } catch (err) {
-      console.error('Failed to delete rule violation:', err);
-      showToast('error', 'Error', 'Failed to delete record');
+      showToast('error', 'Error', err.message);
     }
   };
 
@@ -296,20 +286,6 @@ export default function RuleViolations() {
         </div>
       </Modal>
 
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`toast ${toast.type} show`}>
-          <span className="toast-icon">
-            <span className="material-icons-outlined" style={{ fontSize: '24px' }}>
-              {toast.type === 'success' ? 'check_circle' : toast.type === 'error' ? 'cancel' : 'info'}
-            </span>
-          </span>
-          <div className="toast-text">
-            <strong>{toast.title}</strong>
-            <span>{toast.message}</span>
-          </div>
-        </div>
-      )}
     </section>
   );
 }

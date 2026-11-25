@@ -1,21 +1,18 @@
-import React, { useState } from 'react';
-import { useWardenData } from '../utils/dataStore';
+import React from 'react';
+import { useWardenData, useWardenRun, useWardenToast } from '../utils/dataStore';
 import {
-  markWardenNotificationReadApi,
-  markAllWardenNotificationsReadApi,
-  deleteWardenNotificationApi,
-} from '../utils/api';
+  deleteWardenNotification,
+  markAllWardenNotificationsRead,
+  markWardenNotificationRead,
+} from '../../../features/warden/wardenSlices';
 
 export default function Notifications() {
-  const { data, refreshData } = useWardenData();
-  const [toast, setToast] = useState(null);
+  const { data } = useWardenData();
+  const run = useWardenRun();
 
   const notifications = data.notifications || [];
 
-  const showToast = (type, title, message) => {
-    setToast({ type, title, message });
-    setTimeout(() => setToast(null), 3500);
-  };
+  const showToast = useWardenToast();
 
   const total = notifications.length;
   const unread = notifications.filter(n => !n.read).length;
@@ -23,29 +20,26 @@ export default function Notifications() {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await markAllWardenNotificationsReadApi();
-      await refreshData();
-      showToast('success', 'Changes Saved', 'All notifications marked as read');
-    } catch (_) {
+      await run(markAllWardenNotificationsRead());
+      showToast('success', 'Done', 'All notifications marked as read');
+    } catch {
       showToast('error', 'Error', 'Could not mark notifications as read');
     }
   };
 
   const handleMarkAsRead = async (id) => {
     try {
-      await markWardenNotificationReadApi(id);
-      await refreshData();
-    } catch (_) {
+      await run(markWardenNotificationRead(id));
+    } catch {
       showToast('error', 'Error', 'Could not mark notification as read');
     }
   };
 
   const handleDelete = async (id) => {
     try {
-      await deleteWardenNotificationApi(id);
-      await refreshData();
-      showToast('success', 'Changes Saved', 'Notification deleted');
-    } catch (_) {
+      await run(deleteWardenNotification(id));
+      showToast('success', 'Done', 'Notification deleted');
+    } catch {
       showToast('error', 'Error', 'Could not delete notification');
     }
   };
@@ -144,20 +138,6 @@ export default function Notifications() {
         </div>
       </div>
 
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`toast ${toast.type} show`}>
-          <span className="toast-icon">
-            <span className="material-icons-outlined" style={{ fontSize: '24px' }}>
-              {toast.type === 'success' ? 'check_circle' : toast.type === 'error' ? 'cancel' : 'info'}
-            </span>
-          </span>
-          <div className="toast-text">
-            <strong>{toast.title}</strong>
-            <span>{toast.message}</span>
-          </div>
-        </div>
-      )}
     </section>
   );
 }

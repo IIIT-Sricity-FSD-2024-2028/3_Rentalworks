@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWardenData } from '../utils/dataStore';
 
-function StatCard({ icon, color, label, value, sub, materialIcon }) {
+function StatCard({ color, label, value, sub, materialIcon }) {
   return (
     <div className="stat-card">
       <div className={`stat-icon ${color}`}>
@@ -53,7 +53,6 @@ function RoomStatusChart({ rooms }) {
   const total = rooms.length || 1;
   const occupied = rooms.filter(r => r.occupancy && r.occupancy.includes('Occupied')).length;
   const vacant = rooms.filter(r => r.occupancy === 'Vacant').length;
-  const maintenance = rooms.filter(r => (r.maintenanceStatus || r.maintenance) === 'Under Maintenance').length;
 
   const occPct = Math.round((occupied / total) * 100) || 0;
   const vacPct = Math.round((vacant / total) * 100) || 0;
@@ -125,12 +124,12 @@ function RecentComplaints({ complaints }) {
           ? (c.tenant.name || 'Tenant') 
           : (c.tenant || 'Tenant');
         const roomDisplay = typeof c.room === 'object' && c.room !== null
-          ? (c.room.roomNumber || '101')
-          : (c.room || '101');
+          ? (c.room.roomNumber || '—')
+          : (c.room || '—');
         const compType = c.type || c.title || 'General';
 
         return (
-          <div key={c.id || i} className="complaint-item">
+          <div key={`${c.entityType}-${c.id}`} className="complaint-item">
             <div className="complaint-info">
               <strong>{compType} issue</strong>
               <span>{tenantDisplayName} - Room {roomDisplay}</span>
@@ -146,11 +145,16 @@ function RecentComplaints({ complaints }) {
   );
 }
 
-function RecentActivity() {
-  const items = [
-    { id: 1, text: 'New tenant check-in', sub: 'Sneha Patil - Room 208', time: '1 day ago' },
-    { id: 2, text: 'Room change request', sub: 'Anita Desai - Room 305', time: '3 days ago' }
-  ];
+function RecentActivity({ notifications }) {
+  const items = notifications.slice(0, 3).map(n => ({
+    id: n.id,
+    text: n.title,
+    sub: [n.senderName, n.roomNumber && `Room ${n.roomNumber}`].filter(Boolean).join(' - '),
+    time: n.time,
+  }));
+  if (items.length === 0) {
+    return <p style={{ color: '#6b7280', fontSize: '13px', textAlign: 'center', padding: '16px' }}>No recent activity</p>;
+  }
 
   return (
     <div id="recent-activity">
@@ -187,11 +191,11 @@ export default function Dashboard() {
       </div>
 
       <div className="stats-grid">
-        <StatCard icon="blue" color="blue" materialIcon="group" label="Total Tenants" value={tenants.length} sub="+0 this month" />
-        <StatCard icon="green" color="green" materialIcon="home" label="Occupied Rooms" value={occupiedRooms} sub="of total rooms" />
-        <StatCard icon="yellow" color="yellow" materialIcon="home" label="Vacant Rooms" value={vacantRooms} sub="Available" />
-        <StatCard icon="red" color="red" materialIcon="schedule" label="Active Complaints" value={activeComplaints} sub="2 urgent" />
-        <StatCard icon="orange" color="orange" materialIcon="warning" label="Rule Violations" value={ruleViolations} sub="2 this week" />
+        <StatCard color="blue" materialIcon="group" label="Total Tenants" value={tenants.length} sub="At your properties" />
+        <StatCard color="green" materialIcon="home" label="Occupied Rooms" value={occupiedRooms} sub={`of ${totalRooms} rooms`} />
+        <StatCard color="yellow" materialIcon="home" label="Vacant Rooms" value={vacantRooms} sub="Available" />
+        <StatCard color="red" materialIcon="schedule" label="Active Complaints" value={activeComplaints} sub={`${complaints.filter(c => c.priority === 'high' && c.status !== 'resolved').length} urgent`} />
+        <StatCard color="orange" materialIcon="warning" label="Rule Violations" value={ruleViolations} sub={`${violations.filter(v => v.severity === 'high').length} high severity`} />
       </div>
 
       <div className="charts-row">
@@ -202,21 +206,21 @@ export default function Dashboard() {
       <div className="quick-actions">
         <h3>Quick Actions</h3>
         <div className="actions-grid">
-          <button className="action-btn" onClick={() => navigate('/tenants')}>
+          <button className="action-btn" onClick={() => navigate('/dashboard/warden/tenants')}>
             <span className="action-icon"><span className="material-icons-outlined" style={{ fontSize: '24px' }}>group</span></span>
             <div className="action-text">
               <strong>View Tenants</strong>
               <span>Manage tenant records</span>
             </div>
           </button>
-          <button className="action-btn" onClick={() => navigate('/violations')}>
+          <button className="action-btn" onClick={() => navigate('/dashboard/warden/violations')}>
             <span className="action-icon"><span className="material-icons-outlined" style={{ fontSize: '24px' }}>warning</span></span>
             <div className="action-text">
               <strong>Report Violation</strong>
               <span>Log rule violations</span>
             </div>
           </button>
-          <button className="action-btn" onClick={() => navigate('/rooms')}>
+          <button className="action-btn" onClick={() => navigate('/dashboard/warden/rooms')}>
             <span className="action-icon"><span className="material-icons-outlined" style={{ fontSize: '24px' }}>check_circle</span></span>
             <div className="action-text">
               <strong>Update Room Status</strong>
@@ -233,7 +237,7 @@ export default function Dashboard() {
         </div>
         <div className="bottom-card">
           <h3>Recent Tenant Activity</h3>
-          <RecentActivity />
+          <RecentActivity notifications={data.notifications} />
         </div>
       </div>
     </section>

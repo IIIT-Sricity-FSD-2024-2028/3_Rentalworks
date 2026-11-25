@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { apiFetch } from '../services/api';
+import { useDispatch, useSelector } from 'react-redux';
+import { runThunk } from '../../../app/hooks';
+import { tenantComplaints } from '../../../features/tenant/tenantSlices';
+import { toastError } from '../../../features/ui/uiSlice';
+import { useTenant } from '../hooks/useTenant';
 import { StatCard, StatusBadge, FilterBar, EmptyState } from '../components';
 
 const parseComplaint = (c) => {
@@ -75,10 +78,12 @@ const parseComplaint = (c) => {
 
 const Complaints = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { tenant, activeBooking } = useAuth();
-
-  const [complaints, setComplaints] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const { tenant, activeBooking } = useTenant();
+  const complaints = useSelector(tenantComplaints.selectors.selectItems);
+  const isLoading = useSelector(tenantComplaints.selectors.selectIsLoading);
+  const submitting = useSelector(tenantComplaints.selectors.selectMutating);
+  const loading = isLoading && complaints.length === 0;
 
   // Filters & View Mode
   const [statusFilter, setStatusFilter] = useState('all');
@@ -90,80 +95,45 @@ const Complaints = () => {
   const [priority, setPriority] = useState('medium');
   const [category, setCategory] = useState('General');
   const [description, setDescription] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  const fetchComplaints = async () => {
-    if (!tenant) return;
-    try {
-      setLoading(true);
-      let data = [];
-      try {
-        data = await apiFetch(`/complaints/my?tenantId=${tenant.id}`);
-      } catch (err) {
-        data = await apiFetch(`/complaints?tenantId=${tenant.id}`);
-      }
-      const userComplaints = (Array.isArray(data) ? data : []).filter(
-        (c) => Number(c.tenantId) === Number(tenant.id)
-      );
-      setComplaints(userComplaints);
-    } catch (error) {
-      console.error('Failed to fetch complaints:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    fetchComplaints();
-  }, [tenant]);
+    dispatch(tenantComplaints.thunks.fetchAll());
+  }, [dispatch]);
 
   const handleSubmit = async () => {
     if (!title.trim() || !description.trim()) {
-      alert('Please fill out all required fields (Title, Description).');
+      dispatch(toastError('Please fill out all required fields (Title, Description).'));
       return;
     }
-
-    try {
-      setSubmitting(true);
-
-      await apiFetch('/complaints', {
-        method: 'POST',
-        body: JSON.stringify({
-          tenantId: Number(tenant?.id || 1),
-          propertyId: Number(activeBooking?.propertyId || activeBooking?.property?.id || 1),
-          roomId: activeBooking?.roomId ? Number(activeBooking.roomId) : undefined,
-          title: title.trim(),
-          description: description.trim(),
-          priority,
-          category,
-        }),
-      });
-
-      setIsModalOpen(false);
-      setTitle('');
-      setDescription('');
-      setPriority('medium');
-      setCategory('General');
-      await fetchComplaints();
-    } catch (error) {
-      alert('Failed to submit complaint.');
-      console.error(error);
-    } finally {
-      setSubmitting(false);
+    const propertyId = activeBooking?.propertyId ?? activeBooking?.property?.id;
+    if (!propertyId) {
+      dispatch(toastError('You need an active stay to raise a complaint.'));
+      return;
     }
+    const { ok } = await runThunk(
+      dispatch,
+      tenantComplaints.thunks.createItem({
+        tenantId: Number(tenant.id),
+        propertyId: Number(propertyId),
+        roomId: activeBooking.roomId ? Number(activeBooking.roomId) : undefined,
+        title: title.trim(),
+        description: description.trim(),
+        priority,
+        category,
+      }),
+      { success: 'Complaint submitted. Your warden has been notified.' },
+    );
+    if (!ok) return;
+    setIsModalOpen(false);
+    setTitle('');
+    setDescription('');
+    setPriority('medium');
+    setCategory('General');
   };
 
-  const handleDelete = async (complaintId) => {
-    if (!window.confirm('Are you sure you want to withdraw or delete this complaint?')) {
-      return;
-    }
-    try {
-      await apiFetch(`/complaints/${complaintId}`, { method: 'DELETE' });
-      await fetchComplaints();
-    } catch (err) {
-      console.error('Failed to delete complaint:', err);
-      alert('Failed to delete complaint.');
-    }
+  const handleDelete = (complaintId) => {
+    if (!window.confirm('Are you sure you want to withdraw or delete this complaint?')) return;
+    runThunk(dispatch, tenantComplaints.thunks.removeItem(complaintId), { success: 'Complaint withdrawn' });
   };
 
   const parsedComplaints = complaints.map(parseComplaint);

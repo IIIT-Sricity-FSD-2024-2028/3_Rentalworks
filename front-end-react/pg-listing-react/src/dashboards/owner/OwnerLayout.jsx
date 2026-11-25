@@ -1,11 +1,8 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
-import { performLogout, getStoredUser } from '../../utils/auth';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
-// Layout & Components
 import Layout from './components/Layout';
-import Toast from './components/Toast';
-
-// Pages
 import Dashboard from './pages/Dashboard';
 import Properties from './pages/Properties';
 import AddProperty from './pages/AddProperty';
@@ -15,226 +12,147 @@ import Policy from './pages/Policy';
 import Profile from './pages/Profile';
 import Subscription from './pages/Subscription';
 
-// API Service
 import {
-  getProperties,
-  createProperty,
-  updateProperty,
-  deleteProperty,
-  getIssues,
-  updateIssueStatus,
-  createIssue,
-  deleteIssue,
-  getNotifications,
-  markNotificationRead,
-  markAllNotificationsRead,
-  createNotification,
-  deleteNotification,
-  clearAllNotifications,
-  getPolicy,
-  updatePolicy,
-  getProfile,
-  updateProfile,
-  getSubscription,
-} from './services/api';
+  loadOwnerData,
+  selectOwner,
+  selectOwnerUser,
+  selectOwnerUnreadCount,
+  selectOwnerOpenIssues,
+  addOwnerProperty,
+  updateOwnerProperty,
+  deleteOwnerProperty,
+  addOwnerIssue,
+  updateOwnerIssueStatus,
+  deleteOwnerIssue,
+  markOwnerNotificationRead,
+  markAllOwnerNotificationsRead,
+  deleteOwnerNotification,
+  clearOwnerNotifications,
+  sendOwnerNotification,
+  saveOwnerPolicy,
+  resetOwnerPolicy,
+  saveOwnerProfile,
+  changeOwnerPassword,
+} from '../../features/owner/ownerSlices';
+import { logout } from '../../features/auth/authSlice';
 
 import './style.css';
 
-// Map raw API property object to client schema
-const mapProperty = (p) => ({
-  id: p.id,
-  images: p.images || [],
-  description: p.description || '',
-  name: p.name,
-  address: p.address || p.location || '',
-  city: p.city || '',
-  state: p.state || '',
-  pincode: p.pincode || '',
-  type: p.type || 'Mixed',
-  totalCapacity: p.totalCapacity ?? 0,
-  totalRooms: p.totalRooms ?? 0,
-  occupiedRooms: p.occupiedRooms ?? 0,
-  monthlyRent: Number(p.monthlyRent ?? p.rentMin ?? 0),
-  amenities: p.amenities || [],
-  gender: p.gender || (p.type === 'Female' ? 'girls' : p.type === 'Male' ? 'boys' : 'unisex'),
-  status: p.status === 'approved' ? 'Active' : p.status || 'Pending',
-  addedDate: p.createdAt ? p.createdAt.split('T')[0] : '',
-  owner: p.owner ? p.owner.name : '',
-  ownerEmail: p.owner ? p.owner.email : '',
-});
+const REFRESH_MS = 30000;
 
-// Map raw API issue object to client schema
-const mapIssue = (i) => ({
-  id: i.id,
-  propertyId: i.propertyId,
-  propertyName: i.property ? i.property.name : '',
-  title: i.title || i.description || 'Issue reported',
-  description: i.description || '',
-  category: i.category || 'Maintenance',
-  priority: i.priority
-    ? i.priority.charAt(0).toUpperCase() + i.priority.slice(1)
-    : 'Medium',
-  status:
-    i.status === 'open'
-      ? 'Open'
-      : ['in-progress', 'in progress', 'in_progress'].includes(i.status)
-      ? 'In Progress'
-      : i.status === 'resolved' ? 'Resolved' : i.status || 'Unknown',
-  reportedBy: i.reportedBy || (i.tenant ? i.tenant.name : 'Tenant'),
-  reportedDate: i.reportedAt || '',
-});
+/** Dispatch a mutation thunk and resolve to true/false like the old context API. */
+const useAction = (thunk) => {
+  const dispatch = useDispatch();
+  return (arg) => dispatch(thunk(arg)).then((a) => !a.error);
+};
 
-// Map raw API notification object to client schema
-const mapNotification = (n) => ({
-  id: n.id,
-  title: n.title,
-  message: n.message,
-  type: n.type || 'reminder',
-  read: Boolean(n.read || n.isRead),
-  date: n.sentAt ? n.sentAt.split('T')[0] : '',
-});
-
-
-export const OwnerContext = createContext(null);
-export function useOwner() { return useContext(OwnerContext); }
+const useOwnerLogout = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  return () => {
+    dispatch(logout());
+    navigate('/login', { replace: true });
+  };
+};
 
 export default function OwnerLayout() {
-  const [data, setData] = useState({ properties: [], issues: [], notifications: [], policy: {}, profile: {} });
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [toasts, setToasts] = useState([]);
-  const [busy, setBusy] = useState(false);
+  const dispatch = useDispatch();
+  const { status, error } = useSelector(selectOwner);
+  const user = useSelector(selectOwnerUser);
+  const unreadNotifsCount = useSelector(selectOwnerUnreadCount);
+  const openIssuesCount = useSelector(selectOwnerOpenIssues);
+  const handleLogout = useOwnerLogout();
 
-  function showToast(message, type = 'success') {
-    setToasts([{ id: Date.now(), message, type }]);
-  }
-
-  async function loadData() {
-    const [properties, issues, notifications, policy, profile, subscription] = await Promise.all([
-      getProperties(), getIssues(), getNotifications(), getPolicy(), getProfile(), getSubscription(),
-    ]);
-    setData({ properties: properties.map(mapProperty), issues: issues.map(mapIssue), notifications: notifications.map(mapNotification), policy, profile });
-    setUser(Object.assign({}, profile, { subscriptionPlan: subscription.currentPlan, subscriptionFee: subscription.monthlyFee }));
-    setError('');
-  }
-
+  // Initial load + background refresh (every 30s and when the tab regains focus).
   useEffect(() => {
-    const session = getStoredUser();
-    if (!session || session.role !== 'owner' || !session.token) {
-      window.location.replace('/login');
-      return;
-    }
-    let active = true;
-    async function refresh() {
-      try { if (active) await loadData(); }
-      catch (err) { if (active) setError(err.message); }
-      finally { if (active) setLoading(false); }
-    }
+    const refresh = () => dispatch(loadOwnerData());
     refresh();
-    const timer = setInterval(refresh, 30000);
+    const timer = setInterval(refresh, REFRESH_MS);
     window.addEventListener('focus', refresh);
-    return () => { active = false; clearInterval(timer); window.removeEventListener('focus', refresh); };
-  }, []);
-
-  // One write path: show success only after persistence; never save business data in storage.
-  async function save(action, message) {
-    setBusy(true);
-    try {
-      const res = await action();
-      await loadData();
-      showToast(message);
-      return res !== false;
-    } catch (err) {
-      showToast(err.message || 'Operation failed', 'error');
-      return false;
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function propertyPayload(p) {
-    return {
-      name: p.name, address: p.address, city: p.city, state: p.state, pincode: p.pincode,
-      location: p.city + ', ' + p.state, type: p.type, gender: p.gender,
-      totalCapacity: Number(p.totalCapacity), totalRooms: Number(p.totalRooms), occupiedRooms: Number(p.occupiedRooms),
-      monthlyRent: Number(p.monthlyRent), rentMin: Number(p.monthlyRent), rentMax: Number(p.monthlyRent),
-      rooms: p.occupiedRooms + '/' + p.totalRooms, amenities: p.amenities, description: p.description,
-      images: p.images || [],
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('focus', refresh);
     };
+  }, [dispatch]);
+
+  if (status === 'idle' || status === 'loading') return <p role="status" style={{ padding: 24 }}>Loading owner portal…</p>;
+  if (status === 'failed') {
+    return (
+      <div role="alert" style={{ padding: 24 }}>
+        <p>{error || 'Could not load the owner portal.'}</p>
+        <button onClick={() => dispatch(loadOwnerData())}>Retry</button>{' '}
+        <button onClick={handleLogout}>Sign in again</button>
+      </div>
+    );
   }
 
-  const unreadNotifsCount = data.notifications.filter(n => !n.read).length;
-  const openIssuesCount = data.issues.filter(i => i.status === 'Open').length;
-  const handleLogout = performLogout;
-  const contextValue = {
-    data, user, unreadNotifsCount, openIssuesCount, handleLogout,
-    handleAddProperty: p => save(() => createProperty(propertyPayload(p)), 'Property submitted for review'),
-    handleUpdateProperty: p => save(() => updateProperty(p.id, propertyPayload(p)), 'Property updated'),
-    handleDeleteProperty: id => save(() => deleteProperty(id), 'Property deleted'),
-    handleAddIssue: i => save(() => createIssue({ propertyId: Number(i.propertyId), title: i.title, description: i.description, category: i.category, priority: i.priority.toLowerCase() }), 'Issue reported'),
-    handleUpdateIssueStatus: (id, status) => save(() => updateIssueStatus(id, status.toLowerCase().replace(' ', '-')), 'Issue updated'),
-    handleDeleteIssue: id => save(() => deleteIssue(id), 'Issue deleted'),
-    handleMarkNotifRead: id => save(() => markNotificationRead(id), 'Notification marked as read'),
-    handleMarkAllNotifsRead: () => save(markAllNotificationsRead, 'Notifications marked as read'),
-    handleDeleteNotif: id => save(() => deleteNotification(id), 'Notification deleted'),
-    handleClearAllNotifs: () => save(() => clearAllNotifications(), 'Notifications cleared'),
-    handleSendNotif: n => save(() => createNotification({ title: n.title, message: n.message, type: 'info', priority: 'normal', targetRole: n.recipient.toLowerCase() }), 'Notification sent'),
-    handleSavePolicy: policy => save(() => updatePolicy(policy), 'Policy saved'),
-    handleResetPolicy: policy => save(() => updatePolicy(policy), 'Policy reset'),
-    handleSaveProfile: profile => save(() => updateProfile(profile), 'Profile updated'),
-  };
-
-  if (loading) return <p role="status">Loading owner portal…</p>;
-  if (!user) return <div role="alert">{error || 'Please sign in'} <button onClick={() => window.location.reload()}>Retry</button><a href="/login">Sign in</a></div>;
-  return <OwnerContext.Provider value={contextValue}>
+  return (
     <div className="portal-owner-scope">
       {error && <p role="alert">Data refresh failed: {error}</p>}
-      <Toast toasts={toasts} onRemove={() => setToasts([])} />
-      <div style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
-        <Layout unreadNotifsCount={unreadNotifsCount} openIssuesCount={openIssuesCount} user={user} onLogout={handleLogout} />
-      </div>
+      <Layout unreadNotifsCount={unreadNotifsCount} openIssuesCount={openIssuesCount} user={user} onLogout={handleLogout} />
     </div>
-  </OwnerContext.Provider>;
+  );
 }
 
-// Connected page route components that consume the OwnerContext
+// ---------------------------------------------------------------------------
+// Route components: read from the Redux store and pass props to the pages.
+// ---------------------------------------------------------------------------
+
 export function OwnerDashboardRoute() {
-  const { data } = useOwner();
-  return <Dashboard properties={data.properties} issues={data.issues} notifications={data.notifications} />;
+  const { properties, issues, notifications } = useSelector(selectOwner);
+  return <Dashboard properties={properties} issues={issues} notifications={notifications} />;
 }
 
 export function OwnerPropertiesRoute() {
-  const { data, handleUpdateProperty, handleDeleteProperty } = useOwner();
-  return <Properties properties={data.properties} onUpdateProperty={handleUpdateProperty} onDeleteProperty={handleDeleteProperty} />;
+  const { properties } = useSelector(selectOwner);
+  return <Properties properties={properties} onUpdateProperty={useAction(updateOwnerProperty)} onDeleteProperty={useAction(deleteOwnerProperty)} />;
 }
 
 export function OwnerAddPropertyRoute() {
-  const { handleAddProperty } = useOwner();
-  return <AddProperty onAddProperty={handleAddProperty} />;
+  return <AddProperty onAddProperty={useAction(addOwnerProperty)} />;
 }
 
 export function OwnerIssuesRoute() {
-  const { data, handleUpdateIssueStatus, handleDeleteIssue, handleAddIssue } = useOwner();
-  return <Issues issues={data.issues} properties={data.properties} onUpdateIssueStatus={handleUpdateIssueStatus} onDeleteIssue={handleDeleteIssue} onAddIssue={handleAddIssue} />;
+  const { issues, properties } = useSelector(selectOwner);
+  const updateStatus = useAction(updateOwnerIssueStatus);
+  return (
+    <Issues
+      issues={issues}
+      properties={properties}
+      onUpdateIssueStatus={(id, status) => updateStatus({ id, status })}
+      onDeleteIssue={useAction(deleteOwnerIssue)}
+      onAddIssue={useAction(addOwnerIssue)}
+    />
+  );
 }
 
 export function OwnerNotificationsRoute() {
-  const { data, handleMarkNotifRead, handleMarkAllNotifsRead, handleDeleteNotif, handleClearAllNotifs, handleSendNotif } = useOwner();
-  return <Notifications notifications={data.notifications} onMarkRead={handleMarkNotifRead} onMarkAllRead={handleMarkAllNotifsRead} onDeleteNotification={handleDeleteNotif} onClearAllNotifications={handleClearAllNotifs} onSendNotification={handleSendNotif} />;
+  const { notifications } = useSelector(selectOwner);
+  return (
+    <Notifications
+      notifications={notifications}
+      onMarkRead={useAction(markOwnerNotificationRead)}
+      onMarkAllRead={useAction(markAllOwnerNotificationsRead)}
+      onDeleteNotification={useAction(deleteOwnerNotification)}
+      onClearAllNotifications={useAction(clearOwnerNotifications)}
+      onSendNotification={useAction(sendOwnerNotification)}
+    />
+  );
 }
 
 export function OwnerPolicyRoute() {
-  const { data, handleSavePolicy, handleResetPolicy } = useOwner();
-  return <Policy policy={data.policy} onSavePolicy={handleSavePolicy} onResetPolicy={handleResetPolicy} />;
+  const { policy } = useSelector(selectOwner);
+  return <Policy policy={policy} onSavePolicy={useAction(saveOwnerPolicy)} onResetPolicy={useAction(resetOwnerPolicy)} />;
 }
 
 export function OwnerProfileRoute() {
-  const { data, handleSaveProfile, handleLogout } = useOwner();
-  return <Profile profile={data.profile} properties={data.properties} onSaveProfile={handleSaveProfile} onLogout={handleLogout} allData={data} />;
+  const dispatch = useDispatch();
+  const owner = useSelector(selectOwner);
+  const handleLogout = useOwnerLogout();
+  return <Profile profile={owner.profile} properties={owner.properties} onSaveProfile={useAction(saveOwnerProfile)} onChangePassword={(arg) => dispatch(changeOwnerPassword(arg)).unwrap()} onLogout={handleLogout} allData={owner} />;
 }
 
 export function OwnerSubscriptionRoute() {
-  const { user } = useOwner();
+  const user = useSelector(selectOwnerUser);
   return <Subscription user={user} />;
 }

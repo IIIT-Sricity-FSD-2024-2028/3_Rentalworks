@@ -1,36 +1,27 @@
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { BookingProvider } from './context/BookingContext';
+import { Provider } from 'react-redux';
+import { store } from './app/store';
 import AppRoutes from './routes/AppRoutes';
+import ToastHost from './components/ToastHost';
+import ScrollToTop from './components/ScrollToTop';
 import './index.css';
 
 /**
- * Root Application Component
- * 
- * Hierarchy:
- * main.jsx
- *    ↓
- * <App />
- *    ↓
- * <BrowserRouter>
- *    ↓
- * <AuthProvider>
- *    ↓
- * <BookingProvider>
- *    ↓
- * <AppRoutes />
- *    ↓
- * Public Discovery / Authenticated Dashboards
+ * main.jsx → <App>
+ *   <Provider store>            Redux Toolkit store (auth, booking, listings, dashboards…)
+ *     <BrowserRouter>
+ *       <AppRoutes />           public discovery + role-protected dashboards
+ *       <ToastHost />           global notifications from the `ui` slice
  */
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <BookingProvider>
-          <AppRoutes />
-        </BookingProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <Provider store={store}>
+      <BrowserRouter>
+        <ScrollToTop />
+        <AppRoutes />
+        <ToastHost />
+      </BrowserRouter>
+    </Provider>
   );
 }

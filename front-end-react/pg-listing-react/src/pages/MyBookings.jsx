@@ -1,50 +1,66 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { runThunk } from '../app/hooks';
+import { selectCurrentUser } from '../features/auth/authSlice';
+import {
+  cancelMyBooking,
+  fetchMyBookings,
+  selectMyBookings,
+  setDuration,
+  setMoveInDate,
+  startBooking,
+} from '../features/booking/bookingSlice';
+import { mapRoom, normaliseGender, DEFAULT_IMAGES } from '../features/listings/listingMappers';
+
+const codeOf = (b) => `BK-${String(b.id).padStart(5, '0')}`;
+const roomOf = (b) => b.room || b.roomEntity?.roomNumber || 'To be assigned';
 
 export default function MyBookings() {
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const currentUser = useSelector(selectCurrentUser);
+  const { items: bookings, status, error } = useSelector(selectMyBookings);
+  const loading = (status === 'idle' || status === 'loading') && bookings.length === 0;
+  const [pass, setPass] = useState(null);
 
   useEffect(() => {
-    if (!currentUser || !currentUser.id) {
-      setBookings([]);
-      setLoading(false);
+    if (currentUser?.id) dispatch(fetchMyBookings());
+  }, [dispatch, currentUser?.id]);
+
+  // Resume an unpaid booking: load it into the booking flow and go to review.
+  const handleCompletePayment = (b) => {
+    const propertyId = b.propertyId ?? b.property?.id;
+    if (!b.roomEntity) {
+      navigate(`/pg/${propertyId}`);
       return;
     }
+    const room = mapRoom(b.roomEntity);
+    dispatch(
+      startBooking({
+        pg: {
+          id: propertyId,
+          title: b.property?.name || 'PG',
+          location: b.property?.location || '',
+          image: b.property?.images?.[0] || DEFAULT_IMAGES[0],
+          gender: normaliseGender(b.property?.gender),
+          price: room.rent,
+        },
+        room,
+        pendingBookingId: b.id,
+      }),
+    );
+    const today = new Date().toISOString().split('T')[0];
+    const checkIn = String(b.checkIn || '').slice(0, 10);
+    dispatch(setMoveInDate(checkIn >= today ? checkIn : today));
+    if (b.duration) dispatch(setDuration(b.duration));
+    navigate(`/book/${propertyId}/review`);
+  };
 
-    const fetchMyBookings = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch(`http://localhost:3000/bookings?tenantId=${currentUser.id}`, {
-          headers: {
-            'Content-Type': 'application/json',
-            'x-role': currentUser.role || 'tenant',
-            'x-user-id': String(currentUser.id),
-          },
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            // Strictly filter by currentUser id to never expose another user's bookings
-            const filtered = data.filter(
-              b => Number(b.tenantId) === Number(currentUser.id) || Number(b.tenant?.id) === Number(currentUser.id)
-            );
-            setBookings(filtered);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load user bookings:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMyBookings();
-  }, [currentUser]);
+  const handleCancel = (b) => {
+    if (!window.confirm(`Cancel booking request ${codeOf(b)}?`)) return;
+    runThunk(dispatch, cancelMyBooking(b.id), { success: 'Booking request cancelled' });
+  };
 
   if (!currentUser) {
     return (
@@ -56,7 +72,7 @@ export default function MyBookings() {
             Please log in with your tenant or guest account credentials to view your reserved rooms and stay history.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-            <button className="btn-nav-primary" onClick={() => navigate('/login')}>
+            <button className="btn-nav-primary" onClick={() => navigate('/login', { state: { from: '/my-bookings' } })}>
               Sign In to Account →
             </button>
             <button className="btn-nav-outline" onClick={() => navigate('/listings')}>
@@ -87,6 +103,12 @@ export default function MyBookings() {
           <span className="material-icons-outlined" style={{ animation: 'spin 1.5s linear infinite', fontSize: '32px' }}>sync</span>
           <p style={{ marginTop: '10px' }}>Loading your bookings...</p>
         </div>
+      ) : error && bookings.length === 0 ? (
+        <div className="empty-state" style={{ background: '#fff', borderRadius: '16px', padding: '48px', border: '1px solid #e5e7eb' }}>
+          <h3>Could not load your bookings</h3>
+          <p>{error}</p>
+          <button className="btn-nav-primary" style={{ marginTop: '16px' }} onClick={() => dispatch(fetchMyBookings())}>Retry</button>
+        </div>
       ) : bookings.length === 0 ? (
         <div className="empty-state" style={{ background: '#fff', borderRadius: '16px', padding: '48px', border: '1px solid #e5e7eb' }}>
           <span className="material-icons-outlined" style={{ fontSize: '48px', color: '#9ca3af' }}>event_busy</span>
@@ -112,11 +134,11 @@ export default function MyBookings() {
                     <span className="badge-confirmed-pill" style={{ background: badgeBg, color: badgeColor, fontWeight: 700, padding: '4px 10px', borderRadius: '20px', fontSize: '12px' }}>
                       {badgeLabel}
                     </span>
-                    <span style={{ color: '#64748b', fontSize: '13px' }}>ID: BK-{b.id}</span>
+                    <span style={{ color: '#64748b', fontSize: '13px' }}>ID: {codeOf(b)}</span>
                   </div>
-                  <h3 style={{ fontSize: '20px', fontWeight: 800, margin: '4px 0' }}>{b.property?.name || 'Sunrise PG Residency'}</h3>
+                  <h3 style={{ fontSize: '20px', fontWeight: 800, margin: '4px 0' }}>{b.property?.name || 'PG accommodation'}</h3>
                   <p style={{ color: '#475569', fontSize: '14px' }}>
-                    Room: <strong>{b.roomEntity?.roomType || b.room || 'Double Sharing'}</strong> (Room #{b.room || b.roomEntity?.roomNumber || '101'}) • Move-in: <strong>{b.checkIn ? new Date(b.checkIn).toLocaleDateString() : 'Immediate'}</strong> • Duration: {b.duration || '6 Months'}
+                    Room: <strong>{b.roomEntity ? mapRoom(b.roomEntity).type : 'Room'}</strong> (#{roomOf(b)}{b.bedNumber ? `, Bed ${b.bedNumber}` : ''}) • Move-in: <strong>{b.checkIn ? new Date(b.checkIn).toLocaleDateString() : 'Immediate'}</strong> • Duration: {b.duration || '—'}
                   </p>
                   {currentUser?.username && (
                     <p style={{ color: '#ca8a04', fontSize: '13px', marginTop: '6px' }}>
@@ -127,29 +149,62 @@ export default function MyBookings() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px' }}>
                   <div style={{ fontSize: '20px', fontWeight: 800, color: '#ca8a04' }}>
-                    ₹{Number(b.rent || 8500).toLocaleString()}
+                    ₹{Number(b.rent || 0).toLocaleString('en-IN')}/mo
                   </div>
                   {isConfirmed ? (
                     <button
                       className="btn-nav-primary"
                       style={{ padding: '8px 16px', fontSize: '13px' }}
-                      onClick={() => alert(`Move-in Pass for BK-${b.id}. Room #${b.room || '101'} is verified in database.`)}
+                      onClick={() => setPass(b)}
                     >
                       View Move-in Pass
                     </button>
-                  ) : (
-                    <button
-                      className="btn-nav-primary"
-                      style={{ padding: '8px 16px', fontSize: '13px', background: '#b45309' }}
-                      onClick={() => navigate(`/payment/${b.id}`)}
-                    >
-                      Complete Payment →
-                    </button>
-                  )}
+                  ) : isPending ? (
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {currentUser.role === 'tenant' && (
+                        <button className="btn-nav-outline" style={{ padding: '8px 16px', fontSize: '13px' }} onClick={() => handleCancel(b)}>
+                          Cancel
+                        </button>
+                      )}
+                      <button
+                        className="btn-nav-primary"
+                        style={{ padding: '8px 16px', fontSize: '13px', background: '#b45309' }}
+                        onClick={() => handleCompletePayment(b)}
+                      >
+                        Complete Payment →
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {pass && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Move-in pass" onClick={() => setPass(null)}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: 28, width: 'min(420px, 92vw)' }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>Move-in Pass</h3>
+            <p style={{ color: '#64748b', fontSize: 13, marginBottom: 16 }}>Show this to your warden at check-in.</p>
+            {[
+              ['Booking', codeOf(pass)],
+              ['Resident', currentUser.name],
+              ['Property', pass.property?.name || '—'],
+              ['Room / Bed', `#${roomOf(pass)}${pass.bedNumber ? ` / ${pass.bedNumber}` : ''}`],
+              ['Move-in date', pass.checkIn ? new Date(pass.checkIn).toLocaleDateString('en-IN') : '—'],
+              ['Duration', pass.duration || '—'],
+            ].map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '8px 0', borderBottom: '1px solid #f1f5f9', fontSize: 14 }}>
+                <span style={{ color: '#64748b' }}>{k}</span>
+                <strong>{v}</strong>
+              </div>
+            ))}
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 18 }}>
+              <button className="btn-nav-outline" onClick={() => setPass(null)}>Close</button>
+              <button className="btn-nav-primary" onClick={() => window.print()}>Print</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -1,5 +1,7 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { selectCurrentUser, ROLE_HOME } from '../features/auth/authSlice';
 
 // Layouts & Public Pages
 import GuestLayout from '../components/GuestLayout';
@@ -213,27 +215,33 @@ export default function AppRoutes() {
       </Route>
 
       {/* ========================================================
-          BACKWARDS-COMPATIBLE ROUTE ALIASES & REDIRECTS
+          BACKWARDS-COMPATIBLE ALIASES (keep the sub-path: /tenant/payments → /dashboard/tenant/payments)
           ======================================================== */}
-      <Route path="/admin/*" element={<Navigate to="/dashboard/admin" replace />} />
-      <Route path="/admin" element={<Navigate to="/dashboard/admin" replace />} />
-      <Route path="/tenant/*" element={<Navigate to="/dashboard/tenant" replace />} />
-      <Route path="/tenant" element={<Navigate to="/dashboard/tenant" replace />} />
-      <Route path="/owner/*" element={<Navigate to="/dashboard/owner" replace />} />
-      <Route path="/owner" element={<Navigate to="/dashboard/owner" replace />} />
-      <Route path="/warden/*" element={<Navigate to="/dashboard/warden" replace />} />
-      <Route path="/warden" element={<Navigate to="/dashboard/warden" replace />} />
-      <Route path="/super-admin/*" element={<Navigate to="/dashboard/superadmin" replace />} />
-      <Route path="/super-admin" element={<Navigate to="/dashboard/superadmin" replace />} />
-      <Route path="/superadmin/*" element={<Navigate to="/dashboard/superadmin" replace />} />
-      <Route path="/superadmin" element={<Navigate to="/dashboard/superadmin" replace />} />
-      <Route path="/dashboard/super-admin/*" element={<Navigate to="/dashboard/superadmin" replace />} />
-      <Route path="/dashboard" element={<Navigate to="/dashboard/tenant" replace />} />
+      <Route path="/admin/*" element={<LegacyRedirect from="/admin" to="/dashboard/admin" />} />
+      <Route path="/tenant/*" element={<LegacyRedirect from="/tenant" to="/dashboard/tenant" />} />
+      <Route path="/owner/*" element={<LegacyRedirect from="/owner" to="/dashboard/owner" />} />
+      <Route path="/warden/*" element={<LegacyRedirect from="/warden" to="/dashboard/warden" />} />
+      <Route path="/super-admin/*" element={<LegacyRedirect from="/super-admin" to="/dashboard/superadmin" />} />
+      <Route path="/superadmin/*" element={<LegacyRedirect from="/superadmin" to="/dashboard/superadmin" />} />
+      <Route path="/dashboard/super-admin/*" element={<LegacyRedirect from="/dashboard/super-admin" to="/dashboard/superadmin" />} />
+      <Route path="/dashboard" element={<RoleHomeRedirect />} />
 
-      {/* ========================================================
-          GLOBAL 404 FALLBACK
-          ======================================================== */}
+      {/* GLOBAL 404 FALLBACK */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
+}
+
+/** Map an old URL prefix onto the new one, keeping the rest of the path. */
+function LegacyRedirect({ from, to }) {
+  const { pathname, search } = useLocation();
+  let rest = pathname.slice(from.length).replace(/^\/+/, '');
+  if (rest === 'dashboard' && (to.endsWith('/admin') || to.endsWith('/owner') || to.endsWith('/superadmin'))) rest = '';
+  return <Navigate to={`${to}${rest ? `/${rest}` : ''}${search}`} replace />;
+}
+
+/** /dashboard → the signed-in user's own portal. */
+function RoleHomeRedirect() {
+  const user = useSelector(selectCurrentUser);
+  return <Navigate to={user ? ROLE_HOME[user.role] || '/' : '/login'} replace />;
 }
