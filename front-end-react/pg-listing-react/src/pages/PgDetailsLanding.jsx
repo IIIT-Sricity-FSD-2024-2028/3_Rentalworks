@@ -1,18 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { RAW_LISTINGS, RAW_FAQS } from '../data/listingsData';
-import { useBooking } from '../context/BookingContext';
-import { useAuth } from '../context/AuthContext';
-
-const API_BASE = 'http://localhost:3000';
-
-const DEFAULT_IMAGES = [
-  '/room_images/1h.jpg',
-  '/room_images/2h.webp',
-  '/room_images/3h.jpg',
-  '/room_images/4h.webp',
-  '/room_images/5h.webp',
-];
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { RAW_FAQS } from '../data/faqs';
+import { fetchListingById, selectListingDetail } from '../features/listings/listingsSlice';
+import { startBooking, checkGenderEligibility, isSingleRoom } from '../features/booking/bookingSlice';
+import { selectCurrentUser, updateMyProfile, MANAGEMENT_ROLES } from '../features/auth/authSlice';
+import { toastError } from '../features/ui/uiSlice';
 
 const AMENITY_META = {
   wifi: { label: 'High-Speed WiFi', desc: '100 Mbps fiber broadband', icon: 'wifi' },
@@ -33,15 +26,12 @@ const AMENITY_META = {
 export default function PgDetailsLanding() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { setSelectedPG, setSelectedRoom, setSelectedRoommate } = useBooking();
-  const { currentUser, requireAuth, updateUserGender } = useAuth();
+  const location = useLocation();
+  const dispatch = useDispatch();
+  const currentUser = useSelector(selectCurrentUser);
+  const { listing, status, error } = useSelector(selectListingDetail);
 
   const [expandedFaq, setExpandedFaq] = useState(null);
-  const [propertyData, setPropertyData] = useState(null);
-  const [dbRooms, setDbRooms] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // Gender policy and booking workflow states
   const [eligibilityError, setEligibilityError] = useState('');
   const [roleError, setRoleError] = useState('');
   const [promptGenderModalOpen, setPromptGenderModalOpen] = useState(false);
@@ -49,149 +39,57 @@ export default function PgDetailsLanding() {
   const [genderSaving, setGenderSaving] = useState(false);
   const [pendingRoom, setPendingRoom] = useState(null);
 
-  // Fetch real property details and rooms from Neon PostgreSQL backend
   useEffect(() => {
-    let isMounted = true;
-    setLoading(true);
+    dispatch(fetchListingById(id));
+  }, [dispatch, id]);
 
-    Promise.all([
-      fetch(`${API_BASE}/properties/${id}`)
-        .then(res => res.ok ? res.json() : null)
-        .catch(() => null),
-      fetch(`${API_BASE}/rooms`, { headers: { 'x-role': 'super_admin' } })
-        .then(res => res.ok ? res.json() : [])
-        .catch(() => [])
-    ]).then(([prop, rooms]) => {
-      if (!isMounted) return;
-      if (prop) {
-        setPropertyData(prop);
+  const loading = status === 'idle' || status === 'loading' || String(listing?.id ?? '') !== String(id) && status !== 'failed';
+  const pg = listing
+    ? {
+        ...listing,
+        safetyLabel: listing.gender === 'girls' ? 'Female Safety Score' : 'Safety Score',
+        stats: {
+          residents: listing.totalRooms ? `${listing.rooms.reduce((n, r) => n + r.currentOccupancy, 0)}` : '0',
+          security: listing.gender === 'girls' ? '24/7 CCTV & Biometric' : '24/7 CCTV & Security',
+          backup: listing.amenities.includes('backup') ? '100%' : '—',
+        },
       }
-      if (Array.isArray(rooms)) {
-        setDbRooms(rooms.filter(r => String(r.propertyId) === String(id) || String(r.property?.id) === String(id)));
-      }
-      setLoading(false);
-    }).catch(() => {
-      if (isMounted) setLoading(false);
-    });
+    : null;
+  const displayRooms = pg?.rooms || [];
 
-    return () => { isMounted = false; };
-  }, [id]);
-
-  // Merge property data with fallback info
-  const fallback = RAW_LISTINGS.find(p => String(p.id) === String(id)) || RAW_LISTINGS[0];
-  const propertyGender = (propertyData?.gender || fallback?.gender || 'unisex').toLowerCase();
-  const pgSafetyScore = propertyData?.safetyScore || fallback?.safetyScore || (propertyGender === 'girls' ? '9.6' : '9.5');
-  const pgAbout = propertyData?.description || fallback?.about || 'Welcome to this premier accommodation offering premium living spaces designed for comfort, convenience, and community.';
-  const rawAmenities = propertyData?.amenities && propertyData.amenities.length > 0
-    ? propertyData.amenities
-    : (fallback?.amenities || ['wifi', 'ac', 'cctv', 'parking', 'water', 'backup']);
-
-  const pg = propertyData ? {
-    id: propertyData.id,
-    title: propertyData.name || fallback.title,
-    location: propertyData.location || (propertyData.city ? `${propertyData.address ? propertyData.address + ', ' : ''}${propertyData.city}` : fallback.location),
-    price: propertyData.rentMin || propertyData.monthlyRent || fallback.price,
-    rating: propertyData.safetyScore ? parseFloat(propertyData.safetyScore) : fallback.rating,
-    safetyScore: pgSafetyScore,
-    reviewsCount: fallback.reviewsCount || 1350,
-    image: (propertyData.images && propertyData.images[0]) || fallback.image || DEFAULT_IMAGES[0],
-    amenities: rawAmenities,
-    about: pgAbout,
-    gender: propertyGender,
-    safetyLabel: propertyGender === 'girls'
-      ? 'Female Safety Score'
-      : 'Safety Score',
-    owner: propertyData.owner || null,
-    compliance: propertyData.compliance || 'Verified',
-    stats: {
-      residents: propertyData.totalRooms ? `${propertyData.totalRooms * 2}+` : (fallback.stats?.residents || '50+'),
-      security: propertyGender === 'girls' ? '24/7 CCTV & Biometric' : '24/7 CCTV & Security',
-      backup: '100%',
-      established: fallback.stats?.established || '5+ Years'
-    }
-  } : {
-    ...fallback,
-    gender: propertyGender,
-    safetyScore: pgSafetyScore,
-    safetyLabel: propertyGender === 'girls'
-      ? 'Female Safety Score'
-      : 'Safety Score',
-    about: pgAbout,
-    amenities: rawAmenities,
-  };
-
-  // Derive rooms from database room entities
-  const displayRooms = (dbRooms.length > 0 ? dbRooms : (propertyData?.roomEntities && propertyData.roomEntities.length > 0 ? propertyData.roomEntities : (fallback.rooms || []))).map(r => {
-    const isSingle = r.capacity === 1 || r.roomType?.toLowerCase().includes('single') || r.type?.toLowerCase().includes('single');
-    const isAvailable = (r.currentOccupancy || 0) < (r.capacity || 1) && r.status !== 'full';
-    const rent = Number(r.rent) || (isSingle ? 16000 : 8500);
-    const deposit = Math.round(rent * 0.4);
-
-    return {
-      id: r.id,
-      roomNumber: r.roomNumber || (isSingle ? '102' : '101'),
-      type: r.type || (isSingle ? 'Single Room' : r.capacity === 3 ? 'Triple Sharing' : 'Double Sharing'),
-      sharing: isSingle ? 'single' : (r.capacity === 3 ? 'triple' : 'double'),
-      rent,
-      deposit,
-      capacity: r.capacity || (isSingle ? 1 : 2),
-      currentOccupancy: r.currentOccupancy || 0,
-      status: r.status || (isAvailable ? 'available' : 'full'),
-      available: isAvailable,
-      feature: isSingle ? 'Attached Bathroom & AC' : 'Spacious Balcony & Attached Washroom',
-      image: isSingle ? '/room_images/1h.jpg' : '/room_images/2h.webp'
-    };
-  });
-
-  const isManagementRole = (role) =>
-    ['admin', 'owner', 'warden', 'super_admin'].includes((role || '').toLowerCase());
+  // After signing in, the login page sends the user back here with the room they picked.
+  useEffect(() => {
+    const resumeRoomId = location.state?.resumeRoomId;
+    if (!pg || !currentUser || resumeRoomId == null) return;
+    const room = displayRooms.find((r) => String(r.id) === String(resumeRoomId));
+    navigate(location.pathname, { replace: true, state: null });
+    if (room) checkAndProceedBooking(currentUser, room);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pg?.id, currentUser?.id]);
 
   const checkAndProceedBooking = (user, room) => {
     if (!room || !room.available) return;
 
-    if (user && isManagementRole(user.role)) {
-      const msg = `Unauthorized Access: Management accounts (${user.role.toUpperCase()}) cannot make tenant bookings. Please log in with a guest or tenant account.`;
-      setRoleError(msg);
-      window.alert(msg);
+    if (user && MANAGEMENT_ROLES.includes(String(user.role).toLowerCase())) {
+      setRoleError(`Management accounts (${user.role.toUpperCase()}) cannot make tenant bookings. Please sign in with a guest or tenant account.`);
       return;
     }
 
-    // Gender Policy Verification: Only girls can book a Girls PG
-    const pGender = (pg.gender || '').toLowerCase();
-    const uGender = (user?.gender || '').toLowerCase();
-    const isGirlsPG = pGender === 'girls' || pg.title?.toLowerCase().includes('girls');
-
-    if (isGirlsPG) {
-      if (uGender === 'male' || uGender === 'boy' || uGender === 'm') {
-        const msg = `You cannot book this PG! "${pg.title}" is strictly a Girls Only accommodation. Male residents cannot book this property.`;
-        setEligibilityError(msg);
-        window.alert(msg);
-        return;
-      }
-      if (!uGender) {
-        setPendingRoom(room);
-        setPromptGenderModalOpen(true);
-        return;
-      }
-      if (uGender !== 'female' && uGender !== 'f' && uGender !== 'girl') {
-        const msg = `You cannot book this PG! "${pg.title}" is strictly a Girls Only accommodation.`;
-        setEligibilityError(msg);
-        window.alert(msg);
-        return;
-      }
+    const eligibility = checkGenderEligibility(pg, user);
+    if (eligibility.needsGender) {
+      setPendingRoom(room);
+      setSelectedGenderChoice(pg.gender === 'boys' ? 'male' : 'female');
+      setPromptGenderModalOpen(true);
+      return;
+    }
+    if (!eligibility.ok) {
+      setEligibilityError(eligibility.message);
+      document.getElementById('Rooms')?.scrollIntoView({ behavior: 'smooth' });
+      return;
     }
 
-    // Eligible! Proceed to roommate selection or direct review
-    const isSingle = room.sharing === 'single' || room.capacity === 1;
-    setSelectedPG(pg);
-    setSelectedRoom(room);
-
-    if (isSingle) {
-      setSelectedRoommate(null);
-      navigate(`/book/${pg.id}/review`);
-    } else {
-      navigate(`/book/${pg.id}/roommate`);
-    }
+    dispatch(startBooking({ pg: { id: pg.id, title: pg.title, location: pg.location, image: pg.image, gender: pg.gender, price: pg.price }, room }));
+    navigate(isSingleRoom(room) ? `/book/${pg.id}/review` : `/book/${pg.id}/roommate`);
   };
 
   const handleBookRoom = (room) => {
@@ -199,50 +97,45 @@ export default function PgDetailsLanding() {
     setEligibilityError('');
     setRoleError('');
 
-    setSelectedPG(pg);
-    setSelectedRoom(room);
-
-    // If not authenticated, navigate to the initial sign-in page (/login)
     if (!currentUser) {
-      navigate('/login', { state: { from: `/pg/${pg.id}` } });
+      navigate('/login', { state: { from: `/pg/${pg.id}`, resumeRoomId: room.id } });
       return;
     }
-
     checkAndProceedBooking(currentUser, room);
   };
 
   const handleSaveMissingGender = async () => {
     setGenderSaving(true);
     try {
-      const isGirlsPG = (pg.gender || '').toLowerCase() === 'girls' || pg.title?.toLowerCase().includes('girls');
-      if (isGirlsPG && selectedGenderChoice === 'male') {
-        setPromptGenderModalOpen(false);
-        const msg = `You cannot book this PG! "${pg.title}" is strictly a Girls Only accommodation. Male residents cannot book this property.`;
-        setEligibilityError(msg);
-        window.alert(msg);
-        return;
-      }
-
-      const updatedUser = await updateUserGender(selectedGenderChoice);
+      const updated = await dispatch(updateMyProfile({ gender: selectedGenderChoice })).unwrap();
       setPromptGenderModalOpen(false);
       const roomToContinue = pendingRoom;
       setPendingRoom(null);
-      if (roomToContinue) {
-        checkAndProceedBooking(updatedUser || { ...currentUser, gender: selectedGenderChoice }, roomToContinue);
-      }
+      if (roomToContinue) checkAndProceedBooking({ ...currentUser, ...updated, gender: selectedGenderChoice }, roomToContinue);
     } catch (err) {
-      console.error('Failed to update gender:', err);
-      setPromptGenderModalOpen(false);
+      dispatch(toastError(typeof err === 'string' ? err : 'Could not save your gender. Please try again.'));
     } finally {
       setGenderSaving(false);
     }
   };
 
+  if (!loading && (status === 'failed' || !pg)) {
+    return (
+      <div style={{ textAlign: 'center', padding: '100px 20px', minHeight: '60vh' }}>
+        <span className="material-icons-outlined" style={{ fontSize: 48, color: '#94a3b8' }}>home_work</span>
+        <h2 style={{ margin: '12px 0 6px' }}>Property unavailable</h2>
+        <p style={{ color: '#64748b', marginBottom: 20 }}>{error || 'This PG could not be loaded.'}</p>
+        <button className="btn-save" onClick={() => dispatch(fetchListingById(id))} style={{ marginRight: 8 }}>Retry</button>
+        <button className="btn-save" onClick={() => navigate('/listings')}>Browse all PGs</button>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '100px 20px', minHeight: '60vh' }}>
         <div className="spinner" style={{ margin: '0 auto 16px', width: '40px', height: '40px', border: '3px solid #e5e7eb', borderTopColor: '#f59e0b', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-        <p style={{ color: '#4b5563', fontSize: '16px' }}>Loading accommodation details from Neon PostgreSQL...</p>
+        <p style={{ color: '#4b5563', fontSize: '16px' }}>Loading accommodation details...</p>
       </div>
     );
   }
@@ -264,7 +157,7 @@ export default function PgDetailsLanding() {
         <div className="container" style={{ width: '100%', maxWidth: '1140px', margin: '0 auto', padding: '0 24px', color: '#fff' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(202,138,4,0.9)', padding: '5px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>
-              ✓ {pg.compliance || 'Verified'} Accommodation
+              ✓ {pg.compliance === 'Verified' ? 'Verified' : 'Listed'} Accommodation
             </div>
             {pg.gender === 'girls' && (
               <div style={{
@@ -295,7 +188,7 @@ export default function PgDetailsLanding() {
             <span>•</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
               <span className="material-icons-outlined" style={{ fontSize: '18px', color: '#facc15' }}>star</span>
-              {pg.rating} ({pg.reviewsCount || 1200}+ resident reviews)
+              {pg.safetyScore ? `Safety ${pg.safetyScore}/10` : 'Newly listed'}
             </span>
             <span>•</span>
             <span style={{ color: '#86efac', fontWeight: 600 }}>₹{Number(pg.price).toLocaleString('en-IN')}/mo onwards</span>
@@ -309,7 +202,6 @@ export default function PgDetailsLanding() {
           <a href="#About" className="subnav-link">About</a>
           <a href="#Amenities" className="subnav-link">Amenities</a>
           <a href="#Rooms" className="subnav-link highlight">Available Rooms</a>
-          <a href="#Reviews" className="subnav-link">Reviews</a>
           <a href="#FAQs" className="subnav-link">FAQs</a>
           <a href="#Contact" className="subnav-link">Contact</a>
         </div>
@@ -320,23 +212,23 @@ export default function PgDetailsLanding() {
         <section className="detail-section" id="About">
           <h2 className="section-title">About This Property</h2>
           <p className="section-text" style={{ lineHeight: 1.8, color: '#475569', fontSize: '16px', marginBottom: '24px' }}>
-            {pg.about}
+            {pg.about || `${pg.title} is a paying-guest accommodation in ${pg.location}. Browse the available rooms below and reserve your bed online.`}
           </p>
           <div className="stats-grid">
             <div className="stat-box">
-              <span className="stat-number">{pg.stats?.residents || '50+'}</span>
+              <span className="stat-number">{pg.stats.residents}</span>
               <span className="stat-desc">Current Residents</span>
             </div>
             <div className="stat-box">
-              <span className="stat-number">{pg.stats?.security || '24/7'}</span>
+              <span className="stat-number">{pg.stats.security}</span>
               <span className="stat-desc">Security &amp; Monitoring</span>
             </div>
             <div className="stat-box">
-              <span className="stat-number">{pg.stats?.backup || '100%'}</span>
+              <span className="stat-number">{pg.stats.backup}</span>
               <span className="stat-desc">Power Backup</span>
             </div>
             <div className="stat-box">
-              <span className="stat-number">{pg.safetyScore}/10</span>
+              <span className="stat-number">{pg.safetyScore ? `${pg.safetyScore}/10` : '—'}</span>
               <span className="stat-desc">{pg.safetyLabel}</span>
             </div>
           </div>
@@ -346,7 +238,8 @@ export default function PgDetailsLanding() {
         <section className="detail-section" id="Amenities" style={{ marginTop: '50px' }}>
           <h2 className="section-title">Included Amenities</h2>
           <div className="amenities-grid">
-            {(pg.amenities || ['wifi', 'ac', 'cctv', 'parking', 'water', 'backup']).map((key, idx) => {
+            {pg.amenities.length === 0 && <p style={{ color: '#64748b' }}>Amenity details have not been added yet.</p>}
+            {pg.amenities.map((key, idx) => {
               const meta = AMENITY_META[key.toLowerCase()] || {
                 label: key.charAt(0).toUpperCase() + key.slice(1),
                 desc: 'Verified facility for all residents',
@@ -464,6 +357,9 @@ export default function PgDetailsLanding() {
             </div>
           </div>
 
+          {displayRooms.length === 0 && (
+            <p style={{ color: '#64748b', padding: '16px 0' }}>No rooms have been listed for this property yet. Please check back soon.</p>
+          )}
           <div className="rooms-grid">
             {displayRooms.map((room, idx) => {
               const vacancyLeft = Math.max(0, room.capacity - room.currentOccupancy);
@@ -541,31 +437,6 @@ export default function PgDetailsLanding() {
           </div>
         </section>
 
-        {/* REVIEWS SECTION */}
-        <section className="detail-section" id="Reviews" style={{ marginTop: '60px' }}>
-          <h2 className="section-title">Verified Resident Reviews</h2>
-          <div className="reviews-grid">
-            <div className="review-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <strong>Rahul Menon (Software Engineer)</strong>
-                <span style={{ color: '#eab308' }}>★★★★★</span>
-              </div>
-              <p style={{ color: '#475569', fontSize: '14px', lineHeight: 1.6 }}>
-                "Stayed here for 10 months. Food quality is consistently great, WiFi never dropped during my WFH meetings, and the security staff is very attentive."
-              </p>
-            </div>
-            <div className="review-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <strong>Ananya Sengupta (Postgrad Student)</strong>
-                <span style={{ color: '#eab308' }}>★★★★★</span>
-              </div>
-              <p style={{ color: '#475569', fontSize: '14px', lineHeight: 1.6 }}>
-                "High safety score is well deserved. Biometric entry, polite warden, and very quiet study atmosphere. Absolutely recommend."
-              </p>
-            </div>
-          </div>
-        </section>
-
         {/* FAQS SECTION */}
         <section className="detail-section" id="FAQs" style={{ marginTop: '60px' }}>
           <h2 className="section-title">Frequently Asked Questions</h2>
@@ -606,10 +477,15 @@ export default function PgDetailsLanding() {
           <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
             <div>
               <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '6px' }}>
-                Managed by: {pg.owner?.name || 'Verified Property Partner'}
+                Managed by: {pg.owner?.name || 'RentBro Property Partner'}
               </h3>
               <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '4px' }}>
-                Email: {pg.owner?.email || 'contact@sunrise-pg.com'} • Phone: {pg.owner?.phone || '+91 98765 00004'}
+                {pg.owner ? (
+                  <>
+                    Email: <a href={`mailto:${pg.owner.email}`}>{pg.owner.email}</a>
+                    {pg.owner.phone ? <> • Phone: <a href={`tel:${pg.owner.phone}`}>{pg.owner.phone}</a></> : null}
+                  </>
+                ) : 'Contact details are shared after booking.'}
               </p>
               <p style={{ color: '#16a34a', fontSize: '13px', fontWeight: 600 }}>
                 ✓ Official Registered Property on RentBro
@@ -617,8 +493,9 @@ export default function PgDetailsLanding() {
             </div>
             <button
               onClick={() => {
-                const availableRoom = displayRooms.find(r => r.available) || displayRooms[0];
-                handleBookRoom(availableRoom);
+                const availableRoom = displayRooms.find(r => r.available);
+                if (availableRoom) handleBookRoom(availableRoom);
+                else document.getElementById('Rooms')?.scrollIntoView({ behavior: 'smooth' });
               }}
               style={{
                 background: '#ca8a04',
@@ -630,7 +507,7 @@ export default function PgDetailsLanding() {
                 cursor: 'pointer',
               }}
             >
-              Reserve A Bed Now
+              {displayRooms.some(r => r.available) ? 'Reserve A Bed Now' : 'View Rooms'}
             </button>
           </div>
         </section>

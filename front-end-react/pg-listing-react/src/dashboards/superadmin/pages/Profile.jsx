@@ -1,34 +1,34 @@
 import { useEffect, useState } from 'react';
-import { api } from '../services/api';
+import { useDispatch } from 'react-redux';
+import { fetchSuperAdminProfile, updateSuperAdminProfile, changeSuperAdminPassword } from '../../../features/superadmin/superAdminSlice';
 
 const fieldStyle = { width: '100%', padding: 10, borderRadius: 6, border: '1px solid #cbd5e1' };
 const labelStyle = { display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 };
 
-export default function Profile({ user, setUser, showToast }) {
-  const [admin, setAdmin] = useState(user);
-  const [details, setDetails] = useState({ name: user.name || '', email: user.email || '', phone: user.phone || '' });
+export default function Profile({ user, showToast }) {
+  const dispatch = useDispatch();
+  const [admin, setAdmin] = useState(user || {});
+  const [details, setDetails] = useState({ name: user?.name || '', email: user?.email || '', phone: user?.phone || '' });
   const [password, setPassword] = useState({ current: '', next: '', confirm: '' });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    api.profile().then(profile => {
+    dispatch(fetchSuperAdminProfile()).unwrap().then(profile => {
       setAdmin(profile);
-      setDetails({ name: profile.name, email: profile.email, phone: profile.phone });
-    }).catch(error => showToast('error', 'Profile', error.message));
-  }, []);
+      setDetails({ name: profile.name || '', email: profile.email || '', phone: profile.phone || '' });
+    }).catch(error => showToast('error', 'Profile', error?.message || error));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch]);
 
   async function updateDetails() {
     if (!details.name.trim() || !details.email.trim()) { showToast('error', 'Required', 'Name and email cannot be empty.'); return; }
     if (details.phone.trim() && !/^\+?[\d\s-]{9,}$/.test(details.phone.trim())) { showToast('error', 'Invalid Phone', 'Please enter a valid phone number.'); return; }
     setSaving(true);
     try {
-      const profile = await api.updateProfile({ name: details.name.trim(), email: details.email.trim(), phone: details.phone.trim() });
-      const updated = Object.assign({}, user, profile);
-      sessionStorage.setItem('pg_user', JSON.stringify(updated));
-      setUser(updated);
+      const profile = await dispatch(updateSuperAdminProfile({ name: details.name.trim(), email: details.email.trim(), phone: details.phone.trim() })).unwrap();
       setAdmin(profile);
       showToast('success', 'Profile Updated', 'Your personal details have been saved.');
-    } catch (error) { showToast('error', 'Error', error.message); }
+    } catch (error) { showToast('error', 'Error', error?.message || error); }
     finally { setSaving(false); }
   }
 
@@ -39,10 +39,10 @@ export default function Profile({ user, setUser, showToast }) {
     }
     setSaving(true);
     try {
-      await api.changePassword({ currentPassword: password.current, newPassword: password.next });
+      await dispatch(changeSuperAdminPassword({ currentPassword: password.current, newPassword: password.next })).unwrap();
       setPassword({ current: '', next: '', confirm: '' });
       showToast('success', 'Password Updated', 'Your password has been changed.');
-    } catch (error) { showToast('error', 'Password', error.message); }
+    } catch (error) { showToast('error', 'Password', error?.message || error); }
     finally { setSaving(false); }
   }
 

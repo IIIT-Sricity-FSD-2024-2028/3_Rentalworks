@@ -1,19 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import Modal from '../components/Modal';
-import { getUserProfileApi, updateUserProfileApi } from '../utils/api';
+import { changeMyPassword, refreshProfile, selectCurrentUser, updateMyProfile } from '../../../features/auth/authSlice';
+import { selectWarden } from '../../../features/warden/wardenSlices';
+import { useWardenRun, useWardenToast } from '../utils/dataStore';
 
 export default function Profile() {
-  const [user, setUser] = useState({});
-  const [toast, setToast] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
+  const run = useWardenRun();
+  const user = useSelector(selectCurrentUser) || {};
+  const loading = useSelector((s) => s.auth.profileStatus === 'loading') && !user.name;
+  const { rooms } = useSelector(selectWarden);
+  const property = [...new Set(rooms.map((r) => r.property).filter(Boolean))].join(', ') || user.region || 'Not assigned';
   const [saving, setSaving] = useState(false);
 
-  // Form State
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [property, setProperty] = useState('Sunrise PG Residency');
-  const [address, setAddress] = useState('');
+  // Only the fields the user has edited; everything else shows the stored value.
+  const [edits, setEdits] = useState({});
+  const { name, email, phone, address } = {
+    name: user.name || '',
+    email: user.email || '',
+    phone: user.phone || '',
+    address: user.address || '',
+    ...edits,
+  };
+  const edit = (key) => (e) => setEdits((prev) => ({ ...prev, [key]: e.target.value }));
+
+  useEffect(() => {
+    dispatch(refreshProfile());
+  }, [dispatch]);
 
   // Password Modal State
   const [isPwdModalOpen, setIsPwdModalOpen] = useState(false);
@@ -22,49 +36,7 @@ export default function Profile() {
   const [confirmPwd, setConfirmPwd] = useState('');
   const [pwdErrors, setPwdErrors] = useState({});
 
-  const showToast = (type, title, message) => {
-    setToast({ type, title, message });
-    setTimeout(() => setToast(null), 3500);
-  };
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      setLoading(true);
-      // Identify authenticated user from session or default warden ID 9 in Neon
-      const sessionUser = JSON.parse(sessionStorage.getItem('warden_user')) || 
-                          JSON.parse(sessionStorage.getItem('pg_user')) || 
-                          { id: 9, role: 'warden', username: 'warden' };
-      const userId = sessionUser.id || 9;
-
-      try {
-        const liveUser = await getUserProfileApi(userId);
-        setUser(liveUser);
-        setName(liveUser.name || '');
-        setEmail(liveUser.email || '');
-        setPhone(liveUser.phone || '');
-        setAddress(liveUser.address || '');
-        setProperty(liveUser.assignedProperty || liveUser.region || sessionUser.property || 'Sunrise PG Residency');
-
-        // Sync session storage with live Neon DB record
-        const updatedSession = { ...sessionUser, ...liveUser };
-        sessionStorage.setItem('warden_user', JSON.stringify(updatedSession));
-        if (sessionStorage.getItem('pg_user')) {
-          sessionStorage.setItem('pg_user', JSON.stringify(updatedSession));
-        }
-      } catch (err) {
-        console.warn('Could not load profile from backend, using session cache:', err);
-        setUser(sessionUser);
-        setName(sessionUser.name || 'Warden Officer');
-        setEmail(sessionUser.email || 'warden@pgrentals.com');
-        setPhone(sessionUser.phone || '+91 98765 00007');
-        setAddress(sessionUser.address || '123 Main Street, Mumbai');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadProfile();
-  }, []);
+  const showToast = useWardenToast();
 
   const handleSaveProfile = async () => {
     if (!name.trim() || !email.trim() || !phone.trim()) {
@@ -75,36 +47,16 @@ export default function Profile() {
       showToast('error', 'Invalid Email', 'Please enter a valid email address');
       return;
     }
-    if (!/^\+?[\d\s\-]{9,}$/.test(phone.trim())) {
+    if (!/^\+?[\d\s-]{9,}$/.test(phone.trim())) {
       showToast('error', 'Invalid Phone', 'Please enter a valid phone number');
       return;
     }
 
-    const userId = user.id || 9;
     setSaving(true);
     try {
-      const updatedUser = await updateUserProfileApi(userId, {
-        name: name.trim(),
-        email: email.trim(),
-        phone: phone.trim(),
-        address: address.trim(),
-      });
-
-      setUser(updatedUser);
-      setName(updatedUser.name);
-      setEmail(updatedUser.email);
-      setPhone(updatedUser.phone);
-      setAddress(updatedUser.address || '');
-
-      // Update session storage
-      const sessionUser = JSON.parse(sessionStorage.getItem('warden_user')) || {};
-      const fullUser = { ...sessionUser, ...updatedUser };
-      sessionStorage.setItem('warden_user', JSON.stringify(fullUser));
-      if (sessionStorage.getItem('pg_user')) {
-        sessionStorage.setItem('pg_user', JSON.stringify(fullUser));
-      }
-
-      showToast('success', 'Changes Saved', 'Changes saved');
+      await run(updateMyProfile({ name: name.trim(), email: email.trim(), phone: phone.trim(), address: address.trim() }));
+      setEdits({});
+      showToast('success', 'Profile saved');
     } catch (err) {
       showToast('error', 'Save Failed', err.message);
     } finally {
@@ -136,15 +88,14 @@ export default function Profile() {
       return;
     }
 
-    const userId = user.id || 9;
     try {
-      await updateUserProfileApi(userId, { password: newPwd });
+      await run(changeMyPassword({ currentPassword: currentPwd, newPassword: newPwd }));
       setIsPwdModalOpen(false);
       setCurrentPwd('');
       setNewPwd('');
       setConfirmPwd('');
       setPwdErrors({});
-      showToast('success', 'Changes Saved', 'Changes saved');
+      showToast('success', 'Password updated');
     } catch (err) {
       showToast('error', 'Password Update Failed', err.message);
     }
@@ -174,7 +125,7 @@ export default function Profile() {
           <div className="profile-role-badge">Warden</div>
           <div className="profile-meta">
             <div className="profile-meta-row"><span>Property</span><span>{property}</span></div>
-            <div className="profile-meta-row"><span>Joined</span><span>{user.joinDate || '1/15/2024'}</span></div>
+            <div className="profile-meta-row"><span>Joined</span><span>{user.joinDate || '—'}</span></div>
             <div className="profile-meta-row"><span>Status</span><span style={{ color: '#16a34a' }}>Active</span></div>
           </div>
         </div>
@@ -188,15 +139,15 @@ export default function Profile() {
             <div className="form-grid">
               <div className="form-field">
                 <label>Full Name *</label>
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Full Name" />
+                <input type="text" value={name} onChange={edit('name')} placeholder="Full Name" />
               </div>
               <div className="form-field">
                 <label>Email Address *</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
+                <input type="email" value={email} onChange={edit('email')} placeholder="Email" />
               </div>
               <div className="form-field">
                 <label>Phone Number *</label>
-                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" />
+                <input type="tel" value={phone} onChange={edit('phone')} placeholder="Phone" />
               </div>
               <div className="form-field">
                 <label>Property Assigned</label>
@@ -208,7 +159,7 @@ export default function Profile() {
                   type="text" 
                   id="profile-address"
                   value={address} 
-                  onChange={(e) => setAddress(e.target.value)} 
+                  onChange={edit('address')} 
                   placeholder="123 Main Street, Mumbai" 
                 />
               </div>
@@ -279,20 +230,6 @@ export default function Profile() {
         </div>
       </Modal>
 
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`toast ${toast.type} show`}>
-          <span className="toast-icon">
-            <span className="material-icons-outlined" style={{ fontSize: '24px' }}>
-              {toast.type === 'success' ? 'check_circle' : toast.type === 'error' ? 'cancel' : 'info'}
-            </span>
-          </span>
-          <div className="toast-text">
-            <strong>{toast.title}</strong>
-            <span>{toast.message}</span>
-          </div>
-        </div>
-      )}
     </section>
   );
 }

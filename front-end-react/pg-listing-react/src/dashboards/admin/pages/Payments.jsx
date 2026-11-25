@@ -1,33 +1,29 @@
-import { useState, useEffect, useCallback } from 'react';
-import { api } from '../services/api';
-import { useToast } from '../components/Toast';
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { runThunk } from '../../../app/hooks';
+import { adminPayments } from '../../../features/admin/adminSlices';
 import Modal from '../components/Modal';
+import { lastMonths, monthKey } from '../utils/months';
 
 const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+const isPaid = (p) => ['verified', 'completed', 'success'].includes(p.status);
+const isCleared = (p) => ['Approved', 'Cleared'].includes(p.clearance);
 const getName = (val) => typeof val === 'object' ? (val?.name || 'Unknown') : (val || 'Unknown');
 
 export default function Payments() {
-  const [payments, setPayments] = useState([]);
+  const dispatch = useDispatch();
+  const payments = useSelector(adminPayments.selectors.selectItems);
+  const loading = useSelector(adminPayments.selectors.selectIsLoading) && payments.length === 0;
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
-  const toast = useToast();
-
-  const load = useCallback(async () => {
-    try {
-      const pList = await api.getPayments();
-      setPayments(Array.isArray(pList) ? pList : []);
-    } catch {
-      toast('error', 'Error', 'Failed to load payments');
-    }
-    setLoading(false);
-  }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    dispatch(adminPayments.thunks.fetchAll());
+  }, [dispatch]);
 
-  const verified = payments.filter(p => p.status === 'verified');
+  const update = (p, changes, success) => runThunk(dispatch, adminPayments.thunks.updateItem({ id: p.id, changes }), { success });
+
+  const verified = payments.filter(p => isPaid(p));
   const pending = payments.filter(p => p.status === 'pending');
   const gtv = verified.reduce((s, p) => s + (Number(p.amount) || 0), 0);
   const platformRev = Math.round(gtv * 0.10);
@@ -53,39 +49,20 @@ export default function Payments() {
   const topMax = topProps.length ? Math.max(...topProps.map(x => x[1]), 1000) : 10000;
 
   // Revenue SVG Chart Data points
-  const revPoints = [0.4, 0.55, 0.65, 0.8, 0.9, 1].map(f => Math.round((platformRev || 45000) * f) || 5000);
+  const months = lastMonths(6);
+  const revPoints = months.map(m => Math.round(0.1 * verified.filter(p => monthKey(p.paidDate || p.createdAt) === m.key).reduce((t, p) => t + Number(p.amount || 0), 0)));
   const revMax = Math.max(...revPoints, 1000);
   const w = 300, h = 120, pad = 10;
   const pts = revPoints.map((v, i) => `${pad + (i / (revPoints.length - 1)) * (w - pad * 2)},${h - pad - ((v / revMax) * (h - pad * 2))}`).join(' ');
   const areaBot = `${pad + (w - pad * 2)},${h - pad} ${pad},${h - pad}`;
 
   // Actions
-  const handleVerifyCreds = async (p) => {
-    try {
-      await api.verifyPaymentAndGenerateCreds(p.id);
-      setPayments(prev => prev.map(x => x.id === p.id ? { ...x, status: 'verified', clearance: 'Approved' } : x));
-      toast('success', 'Payment Verified', `Credentials generated for ${getName(p.tenant)} and notification sent.`);
-    } catch {
-      toast('error', 'Error', 'Failed to verify payment');
-    }
-  };
-
-  const handleApproveClearance = async (p) => {
-    try {
-      await api.updatePayment(p.id, { clearance: 'Approved' });
-      setPayments(prev => prev.map(x => x.id === p.id ? { ...x, clearance: 'Approved' } : x));
-      toast('success', 'Clearance Approved', `Refund clearance unlocked for ${getName(p.tenant)}`);
-    } catch {
-      toast('error', 'Error', 'Failed to update clearance');
-    }
-  };
-
+  const handleVerify = (p) => update(p, { status: 'verified', clearance: 'Cleared' }, `Payment from ${getName(p.tenant)} verified`);
+  const handleApproveClearance = (p) => update(p, { clearance: 'Approved' }, `Clearance approved for ${getName(p.tenant)}`);
   const handleIssueRefund = (p) => {
-    if (p.clearance !== 'Approved') {
-      toast('error', 'Clearance Required', 'Approval needed before refund can be issued');
-      return;
-    }
-    toast('info', 'Refund Initiated', `Refund of ₹${(p.amount || 0).toLocaleString()} to ${getName(p.tenant)} initiated`);
+    const amount = `₹${Number(p.amount || 0).toLocaleString('en-IN')}`;
+    if (!window.confirm(`Mark ${amount} from ${getName(p.tenant)} as refunded?`)) return;
+    update(p, { status: 'refunded', clearance: 'Refunded' }, `${amount} marked as refunded`);
   };
 
   const handleView = (p) => {
@@ -106,7 +83,6 @@ export default function Payments() {
             <div className="stat-icon bg-green">
               <span className="material-icons-outlined" style={{ fontSize: 32, color: '#16a34a' }}>payments</span>
             </div>
-            <span className="stat-trend up">↑ 8.5%</span>
           </div>
           <div className="stat-val">₹{gtv.toLocaleString('en-IN')}</div>
           <div className="stat-lbl">Gross Volume (GTV)</div>
@@ -167,7 +143,7 @@ export default function Payments() {
             </svg>
           </div>
           <div className="chart-labels">
-            <span>Oct</span><span>Nov</span><span>Dec</span><span>Jan</span><span>Feb</span><span>Mar</span>
+            {months.map(m => <span key={m.key}>{m.label}</span>)}
           </div>
         </div>
 
@@ -211,7 +187,7 @@ export default function Payments() {
           </div>
           <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, padding: '6px 10px', background: '#dcfce7', borderRadius: 6 }}>
             <span className="material-icons-outlined" style={{ fontSize: 16, verticalAlign: 'middle', marginRight: 4 }}>check</span>
-            Showing verified transactions only
+            Showing all transactions
           </span>
         </div>
 
@@ -238,7 +214,7 @@ export default function Payments() {
             ) : (
               filtered.map(p => {
                 const clearance = p.clearance || 'Pending';
-                const refundDisabled = clearance !== 'Approved';
+                const refundDisabled = !isCleared(p) || !isPaid(p);
                 return (
                   <tr key={p.id}>
                     <td><strong>{getName(p.tenant) || 'Guest'}</strong></td>
@@ -248,9 +224,9 @@ export default function Payments() {
                     <td style={{ fontSize: 12 }}>{p.method || 'UPI'}</td>
                     <td style={{ fontSize: 11, color: '#475569' }}>{p.transactionId || '-'}</td>
                     <td style={{ fontSize: 12 }}>{p.paidDate || '-'}</td>
-                    <td><span className={`badge badge-${p.status || 'pending'}`}>{cap(p.status || 'pending')}</span></td>
+                    <td><span className={`badge badge-${p.status === 'refunded' ? 'cancelled' : p.status || 'pending'}`}>{cap(p.status || 'pending')}</span></td>
                     <td>
-                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: clearance === 'Approved' ? '#dcfce7' : '#fef9c3', color: clearance === 'Approved' ? '#15803d' : '#b45309' }}>
+                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: isCleared(p) ? '#dcfce7' : '#fef9c3', color: isCleared(p) ? '#15803d' : '#b45309' }}>
                         {clearance}
                       </span>
                     </td>
@@ -260,10 +236,10 @@ export default function Payments() {
                           <button
                             className="btn-verify-cred"
                             style={{ background: '#2563eb', color: '#ffffff', padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer' }}
-                            onClick={() => handleVerifyCreds(p)}
-                            title="Verify Payment & Generate Credentials"
+                            onClick={() => handleVerify(p)}
+                            title="Verify Payment"
                           >
-                            🔑 Verify & Gen Creds
+                            Verify
                           </button>
                         )}
                         <button
@@ -273,13 +249,14 @@ export default function Payments() {
                             cursor: refundDisabled ? 'not-allowed' : 'pointer',
                             pointerEvents: refundDisabled ? 'none' : 'auto'
                           }}
+                          disabled={refundDisabled}
                           onClick={() => handleIssueRefund(p)}
-                          title={refundDisabled ? 'Clearance required' : 'Issue Refund'}
+                          title={refundDisabled ? 'Needs a verified, cleared payment' : 'Issue Refund'}
                         >
                           {refundDisabled ? '🔒 Refund' : '↩️ Refund'}
                         </button>
                         <button className="ico-btn" onClick={() => handleView(p)} title="View">👁️</button>
-                        {clearance !== 'Approved' && (
+                        {!['Approved', 'Cleared', 'Refunded'].includes(clearance) && (
                           <button className="ico-btn" onClick={() => handleApproveClearance(p)} title="Approve Clearance">✅</button>
                         )}
                       </div>

@@ -1,64 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { apiFetch } from '../services/api';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { runThunk } from '../../../app/hooks';
+import {
+  markAllTenantNotificationsRead,
+  markTenantNotificationRead,
+  selectUnreadTenantNotifications,
+  tenantNotifications,
+} from '../../../features/tenant/tenantSlices';
 
 const Notifications = () => {
-  const { tenant } = useAuth();
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const fetchNotifications = async () => {
-    if (!tenant) return;
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await apiFetch('/notifications');
-      setNotifications(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Failed to fetch notifications:', err);
-      setError('Unable to load notifications.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchNotifications();
-  }, [tenant]);
-
-  const isItemRead = (n) => Boolean(n.isRead ?? n.read);
-
-  const unreadCount = notifications.filter((n) => !isItemRead(n)).length;
+  const dispatch = useDispatch();
+  const notifications = useSelector(tenantNotifications.selectors.selectItems);
+  const error = useSelector(tenantNotifications.selectors.selectError);
+  const isLoading = useSelector(tenantNotifications.selectors.selectIsLoading);
+  const unreadCount = useSelector(selectUnreadTenantNotifications);
+  const loading = isLoading && notifications.length === 0;
   const total = notifications.length;
 
-  const markAllRead = async () => {
-    try {
-      await apiFetch('/notifications/read-all', { method: 'PATCH' });
-      await fetchNotifications();
-    } catch (err) {
-      console.error('Failed to mark all as read:', err);
-      // Fallback to item-by-item patch
-      try {
-        const unreadItems = notifications.filter((n) => !isItemRead(n));
-        for (const item of unreadItems) {
-          await apiFetch(`/notifications/${item.id}/read`, { method: 'PATCH' }).catch(() => {});
-        }
-        await fetchNotifications();
-      } catch (inner) {
-        console.error(inner);
-      }
-    }
-  };
+  useEffect(() => {
+    dispatch(tenantNotifications.thunks.fetchAll());
+  }, [dispatch]);
 
-  const markSingleRead = async (id) => {
-    try {
-      await apiFetch(`/notifications/${id}/read`, { method: 'PATCH' });
-      await fetchNotifications();
-    } catch (err) {
-      console.error(`Failed to mark notification ${id} as read:`, err);
-    }
-  };
+  const isItemRead = (n) => n.read;
+  const markAllRead = () => runThunk(dispatch, markAllTenantNotificationsRead(), { success: 'All notifications marked as read' });
+  const markSingleRead = (id) => runThunk(dispatch, markTenantNotificationRead(id));
 
   return (
     <div>

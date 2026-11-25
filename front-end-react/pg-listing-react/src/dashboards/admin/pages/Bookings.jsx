@@ -1,40 +1,35 @@
-import { useState, useEffect, useCallback } from 'react';
-import { api } from '../services/api';
-import { useToast } from '../components/Toast';
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { runThunk } from '../../../app/hooks';
+import { adminBookings } from '../../../features/admin/adminSlices';
 import Modal from '../components/Modal';
 
 const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
-const statusLabel = (s) => ({ active: 'Active', paid: 'Paid', pending: 'Pending', cancelled: 'Cancelled', overdue: 'Overdue', completed: 'Completed' })[s] || cap(s);
+const statusLabel = (s) => ({ active: 'Active', confirmed: 'Confirmed', paid: 'Paid', pending: 'Pending', cancelled: 'Cancelled', overdue: 'Overdue', completed: 'Completed' })[s] || cap(s);
+const LIVE = ['active', 'confirmed', 'paid'];
 const getName = (val) => typeof val === 'object' ? (val?.name || 'Unknown') : (val || 'Unknown');
 const getPhone = (val) => typeof val === 'object' ? (val?.phone || '') : '';
 
 export default function Bookings() {
-  const [bookings, setBookings] = useState([]);
+  const dispatch = useDispatch();
+  const bookings = useSelector(adminBookings.selectors.selectItems);
+  const loading = useSelector(adminBookings.selectors.selectIsLoading) && bookings.length === 0;
   const [search, setSearch] = useState('');
   const [statusF, setStatusF] = useState('all');
-  const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
-  const toast = useToast();
-
-  const load = useCallback(async () => {
-    try {
-      const bList = await api.getBookings();
-      setBookings(Array.isArray(bList) ? bList : []);
-    } catch {
-      toast('error', 'Error', 'Failed to load bookings');
-    }
-    setLoading(false);
-  }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    dispatch(adminBookings.thunks.fetchAll());
+  }, [dispatch]);
+
+  const setStatus = (b, status, success) =>
+    runThunk(dispatch, adminBookings.thunks.updateItem({ id: b.id, changes: { status } }), { success });
 
   const filtered = bookings.filter(b => {
     const q = search.toLowerCase();
     const tName = getName(b.tenant).toLowerCase();
     const pName = getName(b.property).toLowerCase();
-    const room = (b.room || '').toLowerCase();
+    const room = String(b.room || '').toLowerCase();
     const ms = !search || tName.includes(q) || pName.includes(q) || room.includes(q);
     const mst = statusF === 'all' || b.status === statusF;
     return ms && mst;
@@ -42,36 +37,24 @@ export default function Bookings() {
 
   const stats = {
     total: bookings.length,
-    active: bookings.filter(b => b.status === 'active' || b.status === 'paid').length,
+    active: bookings.filter(b => LIVE.includes(b.status)).length,
     pending: bookings.filter(b => b.status === 'pending').length,
     overdue: bookings.filter(b => b.status === 'overdue').length,
     cancelled: bookings.filter(b => b.status === 'cancelled').length
   };
 
-  const handleApprove = async (b) => {
-    try {
-      await api.updateBooking(b.id, { status: 'active' });
-      setBookings(prev => prev.map(x => String(x.id) === String(b.id) ? { ...x, status: 'active' } : x));
-      toast('success', 'Booking Approved', `${getName(b.tenant)} booking conditionally unlocked`);
-    } catch {
-      toast('error', 'Error', 'Failed to approve booking');
-    }
-  };
+  const handleApprove = (b) => setStatus(b, 'confirmed', `${getName(b.tenant)}'s booking is confirmed`);
 
   const handleReject = (b) => {
     setModal({
       type: 'confirm',
       title: 'Reject Booking',
-      message: `Are you sure you want to reject the booking for <strong>${getName(b.tenant)}</strong> at ${getName(b.property)}?`,
+      message: `Are you sure you want to reject the booking for "${getName(b.tenant)}" at ${getName(b.property)}?`,
       btnClass: 'btn-confirm-red',
       btnText: 'Reject',
       action: async () => {
-        try {
-          await api.updateBooking(b.id, { status: 'cancelled' });
-          setBookings(prev => prev.map(x => String(x.id) === String(b.id) ? { ...x, status: 'cancelled' } : x));
-          toast('error', 'Booking Rejected', `${getName(b.tenant)} booking has been cancelled`);
-        } catch {}
-        setModal(null);
+        const { ok } = await setStatus(b, 'cancelled', `${getName(b.tenant)}'s booking was rejected`);
+        if (ok) setModal(null);
       }
     });
   };
@@ -80,16 +63,12 @@ export default function Bookings() {
     setModal({
       type: 'confirm',
       title: 'Force Terminate',
-      message: `Are you sure you want to terminate <strong>${getName(b.tenant)}</strong>'s booking? This action cannot be undone.`,
+      message: `Are you sure you want to terminate "${getName(b.tenant)}"'s booking? This action cannot be undone.`,
       btnClass: 'btn-confirm-red',
       btnText: 'Terminate',
       action: async () => {
-        try {
-          await api.updateBooking(b.id, { status: 'cancelled' });
-          setBookings(prev => prev.map(x => String(x.id) === String(b.id) ? { ...x, status: 'cancelled' } : x));
-          toast('warning', 'Booking Terminated', `${getName(b.tenant)} booking terminated and refund queued if applicable`);
-        } catch {}
-        setModal(null);
+        const { ok } = await setStatus(b, 'cancelled', `${getName(b.tenant)}'s booking was terminated`);
+        if (ok) setModal(null);
       }
     });
   };
@@ -143,6 +122,7 @@ export default function Bookings() {
           <select className="sel" value={statusF} onChange={e => setStatusF(e.target.value)}>
             <option value="all">All Status</option>
             <option value="active">Active</option>
+            <option value="confirmed">Confirmed</option>
             <option value="pending">Pending</option>
             <option value="paid">Paid</option>
             <option value="overdue">Overdue</option>
@@ -189,13 +169,13 @@ export default function Bookings() {
                           <button className="ico-btn danger" onClick={() => handleReject(b)} title="Reject">❌</button>
                         </>
                       )}
-                      {(b.status === 'active' || b.status === 'paid' || b.status === 'overdue') && (
+                      {(LIVE.includes(b.status) || b.status === 'overdue') && (
                         <>
                           <button className="ico-btn" onClick={() => handleView(b)} title="View Details">👁️</button>
                           <button className="ico-btn danger" onClick={() => handleTerminate(b)} title="Force Terminate">🔴</button>
                         </>
                       )}
-                      {b.status === 'cancelled' && (
+                      {!LIVE.includes(b.status) && b.status !== 'overdue' && (
                         <button className="ico-btn" onClick={() => handleView(b)} title="View Details">👁️</button>
                       )}
                     </div>
@@ -228,7 +208,7 @@ export default function Bookings() {
         }
       >
         {modal?.type === 'confirm' && (
-          <p style={{ fontSize: 13, lineHeight: 1.6, color: '#475569' }} dangerouslySetInnerHTML={{ __html: modal.message }} />
+          <p style={{ fontSize: 13, lineHeight: 1.6, color: '#475569' }}>{modal.message}</p>
         )}
         {modal?.type === 'view' && modal.booking && (
           <div style={{ display: 'grid', gap: 10, fontSize: 13 }}>

@@ -1,66 +1,58 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { logout, selectCurrentUser, ROLE_HOME } from '../features/auth/authSlice';
+import { fetchListings, selectAllListings, selectListingsError, selectListingsStatus } from '../features/listings/listingsSlice';
+import { toastSuccess } from '../features/ui/uiSlice';
 import '../styles/landing.css';
 
-const API_BASE = 'http://localhost:3000';
+const SUPPORT_EMAIL = 'support@rentbro.com';
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { currentUser, logout } = useAuth();
+  const dispatch = useDispatch();
+  const currentUser = useSelector(selectCurrentUser);
+  const listings = useSelector(selectAllListings);
+  const listingsStatus = useSelector(selectListingsStatus);
+  const listingsError = useSelector(selectListingsError);
   const [helpMsg, setHelpMsg] = useState('');
-  const [helpSubmitted, setHelpSubmitted] = useState(false);
-  const [featuredProperties, setFeaturedProperties] = useState([]);
-  const [loadingProps, setLoadingProps] = useState(true);
 
-  // Fetch real properties from Neon DB via backend
   useEffect(() => {
-    let isMounted = true;
-    fetch(`${API_BASE}/properties`)
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        if (isMounted && Array.isArray(data)) {
-          setFeaturedProperties(data.slice(0, 4));
-        }
-      })
-      .catch((err) => {
-        console.warn('Could not load properties from API:', err);
-      })
-      .finally(() => {
-        if (isMounted) setLoadingProps(false);
-      });
+    dispatch(fetchListings());
+  }, [dispatch]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const explore = listings.slice(0, 5);
+  const newest = [...listings].sort((a, b) => b.id - a.id).slice(0, 4);
+  const listingsMessage =
+    listingsStatus === 'failed'
+      ? listingsError || 'Could not load properties right now.'
+      : listingsStatus === 'succeeded'
+        ? 'No properties are listed yet. Please check back soon.'
+        : 'Loading properties…';
 
+  const handleLogout = () => {
+    dispatch(logout());
+    dispatch(toastSuccess('You have been signed out'));
+  };
+
+  // There is no public support-ticket endpoint, so open the visitor's mail app.
   const handleHelpSubmit = (e) => {
     e.preventDefault();
-    if (!helpMsg.trim()) return;
-    setHelpSubmitted(true);
-    setTimeout(() => {
-      setHelpMsg('');
-      setHelpSubmitted(false);
-    }, 3000);
+    const message = helpMsg.trim();
+    if (!message) return;
+    window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('RentBro support request')}&body=${encodeURIComponent(message)}`;
   };
 
-  const getRoleDestination = (role) => {
-    switch (role) {
-      case 'tenant':
-        return '/tenant/dashboard';
-      case 'owner':
-        return '/owner';
-      case 'warden':
-        return '/warden/dashboard';
-      case 'admin':
-        return '/admin';
-      case 'super_admin':
-        return '/super-admin';
-      default:
-        return '/listings';
-    }
-  };
+  const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+
+  const emptyState = (
+    <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 32, color: '#64748b' }}>
+      <p>{listingsMessage}</p>
+      {listingsStatus === 'failed' && (
+        <button className="neumorphic-btn" style={{ marginTop: 12 }} onClick={() => dispatch(fetchListings())}>Retry</button>
+      )}
+    </div>
+  );
 
   return (
     <div className="landing-page-root">
@@ -102,7 +94,7 @@ export default function LandingPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <button
                 className="login-btn"
-                onClick={() => navigate(getRoleDestination(currentUser.role))}
+                onClick={() => navigate(ROLE_HOME[currentUser.role] || '/listings')}
                 title="Go to your dashboard"
               >
                 <span className="material-icons-outlined" style={{ fontSize: '20px' }}>
@@ -112,7 +104,7 @@ export default function LandingPage() {
                 {currentUser.role?.toUpperCase() || 'GUEST'})
               </button>
               <button
-                onClick={logout}
+                onClick={handleLogout}
                 style={{
                   background: 'transparent',
                   border: 'none',
@@ -147,7 +139,7 @@ export default function LandingPage() {
           <p>Browse safe, affordable, and comfortable PG accommodation</p>
           <ul>
             <li>Secure and trusted platform</li>
-            <li>300+ listed properties</li>
+            <li>{listings.length > 0 ? `${listings.length} verified properties listed` : 'Verified properties'}</li>
             <li>Fully secured</li>
           </ul>
           <button
@@ -168,40 +160,16 @@ export default function LandingPage() {
       <section id="about" className="explore">
         <h2 className="section-heading">Explore:</h2>
         <div className="explore-cards-grid">
-          <div className="explore-card" onClick={() => navigate('/pg/1')}>
-            <img src="/room_images/1h.jpg" alt="Sunrise PG Residency" />
-            <h3 className="card-h3">Sunrise PG Residency</h3>
-            <p className="card-p">Single/Double Sharing</p>
-            <strong>Rs. 15,000</strong>
-          </div>
-
-          <div className="explore-card" onClick={() => navigate('/pg/2')}>
-            <img src="/room_images/2h.webp" alt="Boys PG" />
-            <h3 className="card-h3">Sri Sai Boys PG</h3>
-            <p className="card-p">Single Room</p>
-            <strong>Rs. 14,000</strong>
-          </div>
-
-          <div className="explore-card" onClick={() => navigate('/pg/4')}>
-            <img src="/room_images/3h.jpg" alt="Urban Apartments" />
-            <h3 className="card-h3">Green Nest Co-Living</h3>
-            <p className="card-p">Private Room</p>
-            <strong>Rs. 14,000</strong>
-          </div>
-
-          <div className="explore-card" onClick={() => navigate('/pg/3')}>
-            <img src="/room_images/4h.webp" alt="Girls PG" />
-            <h3 className="card-h3">Lakshmi Girls PG</h3>
-            <p className="card-p">Triple Sharing</p>
-            <strong>Rs. 19,000</strong>
-          </div>
-
-          <div className="explore-card" onClick={() => navigate('/pg/5')}>
-            <img src="/room_images/5h.webp" alt="Budget PG" />
-            <h3 className="card-h3">Royal Stay Premium PG</h3>
-            <p className="card-p">Double Sharing</p>
-            <strong>Rs. 13,000</strong>
-          </div>
+          {explore.length === 0
+            ? emptyState
+            : explore.map((pg) => (
+                <div key={pg.id} className="explore-card" onClick={() => navigate(`/pg/${pg.id}`)}>
+                  <img src={pg.image} alt={pg.title} />
+                  <h3 className="card-h3">{pg.title}</h3>
+                  <p className="card-p">{pg.features[0].text}</p>
+                  <strong>Rs. {pg.price.toLocaleString('en-IN')}</strong>
+                </div>
+              ))}
         </div>
       </section>
 
@@ -209,124 +177,28 @@ export default function LandingPage() {
       <section className="listings">
         <h2 className="section-heading">New Listings:</h2>
         <div className="new-listings-grid">
-          {featuredProperties.length > 0 ? (
-            featuredProperties.map((prop, idx) => {
-              const imageMap = [
-                '/room_images/6h.webp',
-                '/room_images/7h.webp',
-                '/room_images/8h.jpg',
-                '/room_images/9h.webp',
-              ];
-              const displayImage =
-                (prop.images && prop.images[0]) || imageMap[idx % imageMap.length];
-              const rent = prop.rentMin || prop.monthlyRent || 12000;
-
-              return (
-                <div
-                  key={prop.id}
-                  className="listing-item"
-                  onClick={() => navigate(`/pg/${prop.id}`)}
-                >
-                  <img src={displayImage} alt={prop.name} />
-                  <h3 className="title">{prop.name}</h3>
-
+          {newest.length === 0
+            ? emptyState
+            : newest.map((pg) => (
+                <div key={pg.id} className="listing-item" onClick={() => navigate(`/pg/${pg.id}`)}>
+                  <img src={pg.image} alt={pg.title} />
+                  <h3 className="title">{pg.title}</h3>
                   <div className="details-badges">
-                    {(prop.amenities || ['WiFi', 'AC', 'Mess']).slice(0, 4).map((amenity, i) => (
-                      <span key={i}>{typeof amenity === 'string' ? amenity.toUpperCase() : 'AMENITY'}</span>
+                    {pg.amenities.slice(0, 4).map((a) => (
+                      <span key={a}>{a.toUpperCase()}</span>
                     ))}
-                    <span>Safety: {prop.safetyScore || '9.2'}/10</span>
+                    {pg.safetyScore && <span>Safety: {pg.safetyScore}/10</span>}
                   </div>
-
                   <p className="location">
                     <span className="material-icons-outlined">location_on</span>
-                    {prop.location || 'Bangalore'}
+                    {pg.location}
                   </p>
-
                   <div className="price-row">
-                    <span className="price">₹{Number(rent).toLocaleString('en-IN')}/mo</span>
+                    <span className="price">₹{pg.price.toLocaleString('en-IN')}/mo</span>
                     <button className="btn-view-pg">View Details</button>
                   </div>
                 </div>
-              );
-            })
-          ) : (
-            <>
-              {/* Default fallback cards matching original HTML */}
-              <div className="listing-item" onClick={() => navigate('/pg/4')}>
-                <img src="/room_images/6h.webp" alt="Luxury PG" />
-                <h3 className="title">Luxury PG : Koramangala</h3>
-                <div className="details-badges">
-                  <span>Attached Kitchen</span>
-                  <span>2 Bathrooms</span>
-                  <span>Fully-furnished</span>
-                  <span>WiFi</span>
-                </div>
-                <p className="location">
-                  <span className="material-icons-outlined">location_on</span> Near Hospital,
-                  Restaurants, Metro Station
-                </p>
-                <div className="price-row">
-                  <span className="price">Rs. 22,000/month</span>
-                  <button className="btn-view-pg">View Details</button>
-                </div>
-              </div>
-
-              <div className="listing-item" onClick={() => navigate('/pg/2')}>
-                <img src="/room_images/7h.webp" alt="Student Flat" />
-                <h3 className="title">Student Flat : Near University</h3>
-                <div className="details-badges">
-                  <span>Shared Kitchen</span>
-                  <span>2 Bathrooms</span>
-                  <span>Semi-furnished</span>
-                  <span>WiFi</span>
-                </div>
-                <p className="location">
-                  <span className="material-icons-outlined">location_on</span> Near University,
-                  Shopping Mall
-                </p>
-                <div className="price-row">
-                  <span className="price">Rs. 12,000/month</span>
-                  <button className="btn-view-pg">View Details</button>
-                </div>
-              </div>
-
-              <div className="listing-item" onClick={() => navigate('/pg/1')}>
-                <img src="/room_images/8h.jpg" alt="Working Professionals PG" />
-                <h3 className="title">Working Professionals PG : BTM Layout</h3>
-                <div className="details-badges">
-                  <span>Shared Kitchen</span>
-                  <span>3 Bathrooms</span>
-                  <span>Fully-furnished</span>
-                  <span>WiFi</span>
-                </div>
-                <p className="location">
-                  <span className="material-icons-outlined">location_on</span> Near IT Park, Restaurants
-                </p>
-                <div className="price-row">
-                  <span className="price">Rs. 28,000/month</span>
-                  <button className="btn-view-pg">View Details</button>
-                </div>
-              </div>
-
-              <div className="listing-item" onClick={() => navigate('/pg/5')}>
-                <img src="/room_images/9h.webp" alt="Premium Flat" />
-                <h3 className="title">Premium Flat : Indiranagar</h3>
-                <div className="details-badges">
-                  <span>Common Kitchen</span>
-                  <span>2 Bathrooms</span>
-                  <span>Fully-furnished</span>
-                  <span>WiFi</span>
-                </div>
-                <p className="location">
-                  <span className="material-icons-outlined">location_on</span> Near Metro Station, Restaurants
-                </p>
-                <div className="price-row">
-                  <span className="price">Rs. 22,000/month</span>
-                  <button className="btn-view-pg">View Details</button>
-                </div>
-              </div>
-            </>
-          )}
+              ))}
         </div>
       </section>
 
@@ -409,15 +281,17 @@ export default function LandingPage() {
           {/* LEFT */}
           <div className="footer-left">
             <h4>Support</h4>
-            <p>Blogs</p>
-            <p>Plans</p>
-            <p>About</p>
-            <p>Pricing</p>
-            <p>Contact</p>
-            <div className="footer-small">
-              <p>Privacy Policy</p>
-              <p>Terms &amp; Conditions</p>
-            </div>
+            {[
+              ['Browse PGs', () => navigate('/listings')],
+              ['About', () => scrollTo('about')],
+              ['Features', () => scrollTo('feature')],
+              ['List Your PG', () => navigate('/register', { state: { mode: 'owner' } })],
+              ['Contact', () => { window.location.href = `mailto:${SUPPORT_EMAIL}`; }],
+            ].map(([label, go]) => (
+              <p key={label} role="link" tabIndex={0} style={{ cursor: 'pointer' }} onClick={go} onKeyDown={(e) => e.key === 'Enter' && go()}>
+                {label}
+              </p>
+            ))}
           </div>
 
           {/* CENTER */}
@@ -426,21 +300,15 @@ export default function LandingPage() {
             <p>support@rentbro.com</p>
             <p>+91 92345 67810</p>
             <div className="social-icons">
-              <div className="social-btn" title="Facebook">
-                <span className="material-icons-outlined" style={{ fontSize: '20px' }}>
-                  thumb_up
-                </span>
-              </div>
-              <div className="social-btn" title="Instagram">
-                <span className="material-icons-outlined" style={{ fontSize: '20px' }}>
-                  photo_camera
-                </span>
-              </div>
-              <div className="social-btn" title="YouTube">
-                <span className="material-icons-outlined" style={{ fontSize: '20px' }}>
-                  play_circle
-                </span>
-              </div>
+              {[
+                ['Facebook', 'thumb_up', 'https://www.facebook.com'],
+                ['Instagram', 'photo_camera', 'https://www.instagram.com'],
+                ['YouTube', 'play_circle', 'https://www.youtube.com'],
+              ].map(([title, icon, href]) => (
+                <a key={title} className="social-btn" title={title} href={href} target="_blank" rel="noreferrer">
+                  <span className="material-icons-outlined" style={{ fontSize: '20px' }}>{icon}</span>
+                </a>
+              ))}
             </div>
           </div>
 
@@ -456,14 +324,9 @@ export default function LandingPage() {
               />
               <br />
               <button id="helpSubmitBtn" type="submit" className="neumorphic-btn">
-                {helpSubmitted ? 'Message Sent!' : 'Submit'}
+                Email Support
               </button>
             </form>
-            {helpSubmitted && (
-              <p style={{ color: '#16a34a', fontSize: '13px', marginTop: '8px' }}>
-                ✓ Thank you! Our support team will get back to you shortly.
-              </p>
-            )}
           </div>
         </div>
 

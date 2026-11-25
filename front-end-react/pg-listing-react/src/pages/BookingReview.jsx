@@ -1,76 +1,79 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { RAW_LISTINGS } from '../data/listingsData';
-import { useBooking } from '../context/BookingContext';
-import { useAuth } from '../context/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectCurrentUser, updateMyProfile } from '../features/auth/authSlice';
+import { runThunk } from '../app/hooks';
+import {
+  checkGenderEligibility,
+  DURATIONS,
+  isSingleRoom as isSingle,
+  selectBooking,
+  selectTotals,
+  setBookingFor,
+  setDuration,
+  setFriendDetails,
+  setMoveInDate,
+} from '../features/booking/bookingSlice';
+import { toastError } from '../features/ui/uiSlice';
+
+const today = () => new Date().toISOString().split('T')[0];
 
 export default function BookingReview() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const {
-    selectedPG,
-    selectedRoom,
-    selectedRoommate,
-    setSelectedRoommate,
-    moveInDate,
-    setMoveInDate,
-    duration,
-    setDuration,
-    bookingFor,
-    setBookingFor,
-    friendDetails,
-    setFriendDetails,
-    calculateTotal,
-  } = useBooking();
-  const { currentUser } = useAuth();
+  const dispatch = useDispatch();
+  const { selectedPG: pg, selectedRoom, selectedRoommate, moveInDate, duration, bookingFor, friendDetails } = useSelector(selectBooking);
+  const { rent, deposit, fee, total } = useSelector(selectTotals);
+  const currentUser = useSelector(selectCurrentUser);
 
-  const [agreeTerms, setAgreeTerms] = useState(true);
+  const [agreeTerms, setAgreeTerms] = useState(false);
   const [error, setError] = useState('');
 
-  const pg = selectedPG || RAW_LISTINGS.find(p => String(p.id) === String(id)) || RAW_LISTINGS[0];
-  const { rent, deposit, fee, total } = calculateTotal();
-
-  const isSingleRoom = selectedRoom?.sharing === 'single' || selectedRoom?.capacity === 1;
-
-  // CRITICAL: Ensure no incompatible roommate is retained
+  // Guard: the flow needs a PG + room (deep links / new tabs) and a signed-in user.
+  const invalid = !pg || !selectedRoom || String(pg.id) !== String(id);
+  const isSingleRoom = isSingle(selectedRoom);
   useEffect(() => {
-    if (isSingleRoom && selectedRoommate) {
-      setSelectedRoommate(null);
-    } else if (selectedRoommate && selectedRoom) {
-      const targetSharing = (selectedRoom.sharing || selectedRoom.type || '').toLowerCase();
-      const rmSharing = (selectedRoommate.sharing || selectedRoommate.roomType || '').toLowerCase();
-      const capacity = Number(selectedRoom.capacity) || 0;
-      const isMismatch = (targetSharing.includes('triple') || capacity === 3)
-        ? (!rmSharing.includes('triple') && !rmSharing.includes('3'))
-        : (targetSharing.includes('double') || capacity === 2)
-          ? (!rmSharing.includes('double') && !rmSharing.includes('2'))
-          : false;
-      if (isMismatch) {
-        setSelectedRoommate(null);
-      }
-    }
-  }, [isSingleRoom, selectedRoom, selectedRoommate, setSelectedRoommate]);
+    if (invalid) navigate(`/pg/${id}`, { replace: true });
+    else if (!currentUser) navigate('/login', { replace: true, state: { from: `/book/${id}/review` } });
+  }, [invalid, currentUser, id, navigate]);
 
-  // CRITICAL: Block ineligible male booking on Girls PG
+  // Gender policy applies to the person who will actually live there.
   useEffect(() => {
-    const isGirlsPG = (pg.gender || '').toLowerCase() === 'girls' || pg.title?.toLowerCase().includes('girls');
-    const uGender = (currentUser?.gender || '').toLowerCase();
-    if (isGirlsPG && (uGender === 'male' || uGender === 'boy' || uGender === 'm')) {
-      window.alert(`You cannot book this PG! "${pg.title}" is strictly a Girls Only accommodation. Male residents cannot book this property.`);
+    if (invalid || !currentUser || bookingFor === 'friend') return;
+    const eligibility = checkGenderEligibility(pg, currentUser);
+    if (!eligibility.ok && !eligibility.needsGender) {
+      dispatch(toastError(eligibility.message));
       navigate(`/pg/${pg.id}`, { replace: true });
     }
-  }, [pg, currentUser, navigate]);
+  }, [invalid, pg, currentUser, bookingFor, navigate, dispatch]);
+
+  if (invalid || !currentUser) return null;
+
+  const validate = () => {
+    if (!moveInDate || moveInDate < today()) return 'Please choose a move-in date that is today or later';
+    if (bookingFor === 'friend') {
+      const email = friendDetails.email.trim().toLowerCase();
+      if (!friendDetails.name.trim()) return 'Please provide your friend’s full name';
+      if (!/^\+?[\d\s-]{9,}$/.test(friendDetails.phone.trim())) return 'Please provide a valid phone number for your friend';
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Please provide a valid email for your friend (their tenant account is created with it)';
+      if (email === String(currentUser.email || '').toLowerCase()) return 'Your friend’s email must be different from yours';
+      if (!friendDetails.gender) return 'Please select your friend’s gender';
+      const eligibility = checkGenderEligibility(pg, friendDetails);
+      if (!eligibility.ok) return eligibility.message;
+    }
+    if (!agreeTerms) return 'Please agree to the PG house rules and booking terms to proceed';
+    return '';
+  };
 
   const handleProceed = () => {
-    if (!agreeTerms) {
-      setError('Please agree to the PG house rules and booking terms to proceed');
+    let problem = validate();
+    // The server needs a gender for every resident, including unisex PGs.
+    if (!problem && bookingFor === 'self' && !currentUser.gender) problem = 'Please select your gender to continue';
+    setError(problem);
+    if (problem) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    if (bookingFor === 'friend' && (!friendDetails.name.trim() || !friendDetails.phone.trim())) {
-      setError('Please provide your friend’s full name and phone number');
-      return;
-    }
-    setError('');
     navigate(`/book/${pg.id}/payment`);
   };
 
@@ -123,7 +126,7 @@ export default function BookingReview() {
               <h3>{pg.title}</h3>
               <p>📍 {pg.location}</p>
               <span className="strip-room-badge">
-                Selected Room: <strong>{selectedRoom?.type || (isSingleRoom ? 'Single Room' : 'Double Sharing')}</strong> (₹{rent.toLocaleString()}/mo)
+                Selected Room: <strong>{selectedRoom.type}</strong> (₹{rent.toLocaleString()}/mo)
               </span>
             </div>
           </div>
@@ -154,17 +157,17 @@ export default function BookingReview() {
               <h4>Assigned Roommate</h4>
               {selectedRoommate ? (
                 <div className="rm-mini-profile">
-                  <img src={selectedRoommate.img || selectedRoommate.avatar} alt={selectedRoommate.name} />
+                  <img src={selectedRoommate.img} alt={selectedRoommate.name} />
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <strong>{selectedRoommate.name}</strong>
-                      {(selectedRoommate.matchPercentage || selectedRoommate.compatibility) && (
+                      {selectedRoommate.matchPercentage > 0 && (
                         <span className="compatibility-badge">
-                          ⚡ {selectedRoommate.matchPercentage || selectedRoommate.compatibility}% Match
+                          ⚡ {selectedRoommate.matchPercentage}% Match
                         </span>
                       )}
                     </div>
-                    <p>{selectedRoommate.job || selectedRoommate.profession} • {selectedRoommate.company} • Room #{selectedRoommate.roomNum}</p>
+                    <p>{[selectedRoommate.profession, selectedRoommate.company, selectedRoommate.room].filter(Boolean).join(' • ')}</p>
                   </div>
                 </div>
               ) : (
@@ -186,8 +189,8 @@ export default function BookingReview() {
                   <input
                     type="date"
                     value={moveInDate}
-                    min={new Date().toISOString().split('T')[0]}
-                    onChange={(e) => setMoveInDate(e.target.value)}
+                    min={today()}
+                    onChange={(e) => dispatch(setMoveInDate(e.target.value))}
                   />
                 </div>
               </div>
@@ -196,11 +199,10 @@ export default function BookingReview() {
                 <label>Stay Duration *</label>
                 <div className="input-box">
                   <span className="material-icons-outlined">timelapse</span>
-                  <select value={duration} onChange={(e) => setDuration(e.target.value)}>
-                    <option value="1 Month">1 Month (Short Stay)</option>
-                    <option value="3 Months">3 Months (Standard)</option>
-                    <option value="6 Months">6 Months (Recommended)</option>
-                    <option value="11 Months">11 Months (Full Academic/Work Year)</option>
+                  <select value={duration} onChange={(e) => dispatch(setDuration(e.target.value))}>
+                    {DURATIONS.map((d) => (
+                      <option key={d.value} value={d.value}>{d.label}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -215,7 +217,7 @@ export default function BookingReview() {
                     type="radio"
                     name="bookingFor"
                     checked={bookingFor === 'self'}
-                    onChange={() => setBookingFor('self')}
+                    onChange={() => dispatch(setBookingFor('self'))}
                   />
                   <span>Booking for Myself ({currentUser?.name || 'Guest User'})</span>
                 </label>
@@ -224,11 +226,29 @@ export default function BookingReview() {
                     type="radio"
                     name="bookingFor"
                     checked={bookingFor === 'friend'}
-                    onChange={() => setBookingFor('friend')}
+                    onChange={() => dispatch(setBookingFor('friend'))}
                   />
                   <span>Booking for a Friend / Colleague</span>
                 </label>
               </div>
+
+              {bookingFor === 'self' && !currentUser.gender && (
+                <div className="form-field" style={{ marginTop: '16px' }}>
+                  <label>Your Gender *</label>
+                  <div className="input-box">
+                    <span className="material-icons-outlined">wc</span>
+                    <select
+                      value=""
+                      onChange={(e) => e.target.value && runThunk(dispatch, updateMyProfile({ gender: e.target.value }), { success: 'Gender saved to your profile' })}
+                    >
+                      <option value="">Select gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+              )}
 
               {bookingFor === 'friend' && (
                 <div className="friend-details-inputs" style={{ marginTop: '16px' }}>
@@ -241,7 +261,7 @@ export default function BookingReview() {
                           type="text"
                           placeholder="e.g. Sravan Patel"
                           value={friendDetails.name}
-                          onChange={(e) => setFriendDetails({ ...friendDetails, name: e.target.value })}
+                          onChange={(e) => dispatch(setFriendDetails({ name: e.target.value }))}
                         />
                       </div>
                     </div>
@@ -253,8 +273,32 @@ export default function BookingReview() {
                           type="tel"
                           placeholder="+91 98765 00000"
                           value={friendDetails.phone}
-                          onChange={(e) => setFriendDetails({ ...friendDetails, phone: e.target.value })}
+                          onChange={(e) => dispatch(setFriendDetails({ phone: e.target.value }))}
                         />
+                      </div>
+                    </div>
+                    <div className="form-field">
+                      <label>Friend's Email *</label>
+                      <div className="input-box">
+                        <span className="material-icons-outlined">mail</span>
+                        <input
+                          type="email"
+                          placeholder="friend@example.com"
+                          value={friendDetails.email}
+                          onChange={(e) => dispatch(setFriendDetails({ email: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    <div className="form-field">
+                      <label>Friend's Gender *</label>
+                      <div className="input-box">
+                        <span className="material-icons-outlined">wc</span>
+                        <select value={friendDetails.gender} onChange={(e) => dispatch(setFriendDetails({ gender: e.target.value }))}>
+                          <option value="">Select gender</option>
+                          <option value="male">Male</option>
+                          <option value="female">Female</option>
+                          <option value="other">Other</option>
+                        </select>
                       </div>
                     </div>
                   </div>
@@ -271,14 +315,14 @@ export default function BookingReview() {
                   onChange={(e) => setAgreeTerms(e.target.checked)}
                 />
                 <span>
-                  I agree to the <strong>PG House Rules</strong>, 30-day move-out notice policy, and consent to automatic tenant onboarding in the database upon successful payment.
+                  I agree to the <strong>PG House Rules</strong>, 30-day move-out notice policy, and consent to automatic tenant onboarding upon successful payment.
                 </span>
               </label>
             </div>
           </div>
 
           <div className="step-bottom-actions">
-            <button className="btn-back-step" onClick={() => navigate(-1)}>
+            <button className="btn-back-step" onClick={() => navigate(isSingleRoom ? `/pg/${pg.id}` : `/book/${pg.id}/roommate`)}>
               ← Back
             </button>
             <button className="btn-primary-action" onClick={handleProceed}>
@@ -316,15 +360,15 @@ export default function BookingReview() {
             <div className="security-assurances">
               <div className="assurance-item">
                 <span className="material-icons-outlined">verified_user</span>
-                <span>Instant confirmation in Neon Database</span>
+                <span>Instant booking confirmation</span>
               </div>
               <div className="assurance-item">
                 <span className="material-icons-outlined">lock</span>
-                <span>Bank-grade 256-bit encrypted checkout</span>
+                <span>Test-mode checkout, no real money is charged</span>
               </div>
               <div className="assurance-item">
                 <span className="material-icons-outlined">assignment_ind</span>
-                <span>Automatic Tenant Credentials generated</span>
+                <span>Your tenant account is activated automatically</span>
               </div>
             </div>
           </div>

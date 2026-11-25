@@ -1,11 +1,27 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { logout, selectCurrentUser, ROLE_HOME } from '../features/auth/authSlice';
+
+const PORTALS = {
+  tenant: { label: 'Tenant Portal', icon: 'dashboard' },
+  owner: { label: 'Owner Portal', icon: 'apartment' },
+  admin: { label: 'Admin Portal', icon: 'admin_panel_settings' },
+  super_admin: { label: 'Super Admin Portal', icon: 'shield' },
+  warden: { label: 'Warden Portal', icon: 'manage_accounts' },
+};
 
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentUser, logout, setAuthModalOpen } = useAuth();
+  const dispatch = useDispatch();
+  const currentUser = useSelector(selectCurrentUser);
+  const portal = currentUser ? PORTALS[currentUser.role] : null;
+  const canBook = currentUser && ['guest', 'tenant'].includes(currentUser.role);
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate('/', { replace: true });
+  };
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -41,7 +57,7 @@ export default function Navbar() {
             </button>
           )}
 
-          {currentUser && (
+          {canBook && (
             <button className="btn-nav-text" onClick={() => navigate('/my-bookings')}>
               <span className="material-icons-outlined" style={{ fontSize: '18px' }}>assignment</span>
               My Bookings
@@ -74,39 +90,23 @@ export default function Navbar() {
                     <span className="user-role-chip">{currentUser.role?.toUpperCase() || 'GUEST'}</span>
                   </div>
                   <hr />
-                  {currentUser.role === 'tenant' && (
-                    <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate('/tenant/dashboard'); }}>
-                      <span className="material-icons-outlined">dashboard</span> Tenant Portal
+                  {portal && (
+                    <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate(ROLE_HOME[currentUser.role]); }}>
+                      <span className="material-icons-outlined">{portal.icon}</span> {portal.label}
                     </button>
                   )}
-                  {currentUser.role === 'owner' && (
-                    <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate('/owner'); }}>
-                      <span className="material-icons-outlined">apartment</span> Owner Portal
-                    </button>
+                  {canBook && (
+                    <>
+                      <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate('/my-bookings'); }}>
+                        <span className="material-icons-outlined">receipt_long</span> My Bookings
+                      </button>
+                      <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate('/transactions'); }}>
+                        <span className="material-icons-outlined">payments</span> Transactions
+                      </button>
+                    </>
                   )}
-                  {currentUser.role === 'admin' && (
-                    <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate('/admin'); }}>
-                      <span className="material-icons-outlined">admin_panel_settings</span> Admin Portal
-                    </button>
-                  )}
-                  {currentUser.role === 'super_admin' && (
-                    <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate('/super-admin'); }}>
-                      <span className="material-icons-outlined">shield</span> Super Admin Portal
-                    </button>
-                  )}
-                  {currentUser.role === 'warden' && (
-                    <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate('/warden/dashboard'); }}>
-                      <span className="material-icons-outlined">manage_accounts</span> Warden Portal
-                    </button>
-                  )}
-                  <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate('/my-bookings'); }}>
-                    <span className="material-icons-outlined">receipt_long</span> My Bookings
-                  </button>
-                  <button className="dropdown-item" onClick={() => { setDropdownOpen(false); navigate('/transactions'); }}>
-                    <span className="material-icons-outlined">payments</span> Transactions
-                  </button>
                   <hr />
-                  <button className="dropdown-item text-danger" onClick={() => { setDropdownOpen(false); logout(); }}>
+                  <button className="dropdown-item text-danger" onClick={() => { setDropdownOpen(false); handleLogout(); }}>
                     <span className="material-icons-outlined">logout</span> Log Out
                   </button>
                 </div>
@@ -115,7 +115,7 @@ export default function Navbar() {
           ) : (
             <button
               className="btn-nav-primary"
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/login', { state: { from: location.pathname } })}
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
               <span className="material-icons-outlined" style={{ fontSize: '18px' }}>login</span>

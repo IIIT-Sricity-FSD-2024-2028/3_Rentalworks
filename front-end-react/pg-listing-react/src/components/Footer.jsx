@@ -54,9 +54,9 @@ export default function Footer() {
         <div>
           <h4 style={{ color: '#f8fafc', fontSize: '15px', fontWeight: '600', marginBottom: '16px' }}>Portals</h4>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '14px' }}>
-            <li><Link to="/tenant/dashboard" style={{ color: '#94a3b8', textDecoration: 'none' }}>Tenant Portal</Link></li>
+            <li><Link to="/dashboard/tenant" style={{ color: '#94a3b8', textDecoration: 'none' }}>Tenant Portal</Link></li>
             <li><Link to="/owner" style={{ color: '#94a3b8', textDecoration: 'none' }}>Property Owner Portal</Link></li>
-            <li><Link to="/warden/dashboard" style={{ color: '#94a3b8', textDecoration: 'none' }}>Warden Portal</Link></li>
+            <li><Link to="/dashboard/warden" style={{ color: '#94a3b8', textDecoration: 'none' }}>Warden Portal</Link></li>
             <li><Link to="/admin" style={{ color: '#94a3b8', textDecoration: 'none' }}>Admin Operations</Link></li>
             <li><Link to="/super-admin" style={{ color: '#94a3b8', textDecoration: 'none' }}>SuperAdmin Executive</Link></li>
           </ul>

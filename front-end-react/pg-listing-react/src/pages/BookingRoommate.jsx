@@ -1,18 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { RAW_ROOMMATES, RAW_LISTINGS } from '../data/listingsData';
-import { useBooking } from '../context/BookingContext';
-import { useAuth } from '../context/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectCurrentUser } from '../features/auth/authSlice';
+import {
+  calculateRoommateMatches,
+  checkGenderEligibility,
+  isSingleRoom,
+  saveLifestyleProfile,
+  selectMatches,
+  selectRoommate,
+  selectSelectedPG,
+  selectSelectedRoom,
+  selectSelectedRoommate,
+} from '../features/booking/bookingSlice';
+import { toastError } from '../features/ui/uiSlice';
+
+const PROFILE_FIELDS = ['name', 'age', 'profession', 'company', 'sleepSchedule', 'cleanliness', 'foodHabit', 'drinking', 'smoking', 'interests'];
+const pickProfile = (p) => Object.fromEntries(PROFILE_FIELDS.filter((k) => p[k] !== undefined && p[k] !== null).map((k) => [k, p[k]]));
 
 const SLEEP_OPTIONS = ['Night Owl', 'Early Riser', 'Flexible'];
 
-const sleepKind = (v) => {
-  const t = String(v || '').toLowerCase();
-  if (t.includes('night')) return 'night';
-  if (t.includes('early')) return 'early';
-  if (t.includes('flex')) return 'flexible';
-  return t;
-};
 
 const AVAILABLE_INTERESTS = [
   'Gaming',
@@ -31,287 +38,117 @@ const AVAILABLE_INTERESTS = [
 export default function BookingRoommate() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const {
-    selectedPG,
-    selectedRoom,
-    selectedRoommate,
-    setSelectedRoommate,
-    guestLifestyleProfile,
-    setGuestLifestyleProfile,
-  } = useBooking();
-  const { currentUser } = useAuth();
+  const dispatch = useDispatch();
+  const currentUser = useSelector(selectCurrentUser);
+  const pg = useSelector(selectSelectedPG);
+  const selectedRoom = useSelector(selectSelectedRoom);
+  const selectedRoommate = useSelector(selectSelectedRoommate);
+  const savedProfile = useSelector((s) => s.booking.lifestyleProfile);
+  const { items: matchedRoommates, status: matchStatus, error: matchError } = useSelector(selectMatches);
+  const isLoading = matchStatus === 'loading';
+  const hasCalculated = matchStatus === 'succeeded' || matchStatus === 'failed';
 
-  const pg = selectedPG || RAW_LISTINGS.find(p => String(p.id) === String(id)) || RAW_LISTINGS[0];
-
-  // CRITICAL: Single rooms have capacity 1 and NEVER match a roommate
+  // Guard: the flow needs a selected PG + room (e.g. after a hard refresh in a new tab).
+  const invalid = !pg || !selectedRoom || String(pg.id) !== String(id);
   useEffect(() => {
-    if (selectedRoom?.sharing === 'single' || selectedRoom?.capacity === 1) {
-      setSelectedRoommate(null);
-      navigate(`/book/${pg.id}/review`, { replace: true });
-    }
-  }, [selectedRoom, pg.id, navigate, setSelectedRoommate]);
+    if (invalid) navigate(`/pg/${id}`, { replace: true });
+    else if (isSingleRoom(selectedRoom)) navigate(`/book/${pg.id}/review`, { replace: true });
+  }, [invalid, selectedRoom, pg, id, navigate]);
 
-  // Reset roommate selection and candidate results when selected room changes
+  // Gender policy guard (users can deep-link here).
   useEffect(() => {
-    setMatchedRoommates([]);
-    setHasCalculated(false);
-    setSelectedRoommate(null);
-  }, [selectedRoom?.id, selectedRoom?.sharing, selectedRoom?.type, setSelectedRoommate]);
-
-  // CRITICAL: Block ineligible male booking on Girls PG
-  useEffect(() => {
-    const isGirlsPG = (pg.gender || '').toLowerCase() === 'girls' || pg.title?.toLowerCase().includes('girls');
-    const uGender = (currentUser?.gender || '').toLowerCase();
-    if (isGirlsPG && (uGender === 'male' || uGender === 'boy' || uGender === 'm')) {
-      window.alert(`You cannot book this PG! "${pg.title}" is strictly a Girls Only accommodation. Male residents cannot book this property.`);
+    if (!pg || !currentUser) return;
+    const eligibility = checkGenderEligibility(pg, currentUser);
+    if (!eligibility.ok && !eligibility.needsGender) {
+      dispatch(toastError(eligibility.message));
       navigate(`/pg/${pg.id}`, { replace: true });
     }
-  }, [pg, currentUser, navigate]);
+  }, [pg, currentUser, navigate, dispatch]);
 
-  // Decision state: 'yes' (Smart Match) or 'no' (Auto-assign by warden)
-  const [optInChoice, setOptInChoice] = useState('yes');
+  // 'yes' = smart match, 'no' = warden auto-assigns
+  const [optInChoice, setOptInChoice] = useState(savedProfile?.optedSmartMatch === false ? 'no' : 'yes');
 
-  // Guest criteria details form
-  const [form, setForm] = useState({
-    name: currentUser?.name || 'Guest Resident',
+  const [form, setForm] = useState(() => ({
+    name: currentUser?.name || '',
     age: 24,
-
-    profession: 'Software Engineer',
-    company: 'Infosys',
+    profession: '',
+    company: '',
     sleepSchedule: 'Night Owl',
     cleanliness: 'High (Daily Cleanup)',
     foodHabit: 'Vegetarian',
     drinking: 'Non-Drinker',
     smoking: 'Non-Smoker',
-    interests: ['Gaming', 'Coding', 'Reading'],
-  });
-
-  const [matchedRoommates, setMatchedRoommates] = useState([]);
-  const [hasCalculated, setHasCalculated] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+    interests: ['Reading'],
+    ...(savedProfile ? pickProfile(savedProfile) : {}),
+  }));
 
   const [customHobby, setCustomHobby] = useState('');
-  const [customHobbies, setCustomHobbies] = useState([]);
+  const [customHobbies, setCustomHobbies] = useState(() =>
+    (savedProfile?.interests || []).filter((h) => !AVAILABLE_INTERESTS.includes(h)),
+  );
+
+  if (invalid || isSingleRoom(selectedRoom)) return null;
 
   const addCustomHobby = () => {
     const clean = customHobby.trim().replace(/\s+/g, ' ').slice(0, 24);
     if (!clean) return;
-    const known = [...AVAILABLE_INTERESTS, ...customHobbies].some(h => h.toLowerCase() === clean.toLowerCase());
-    if (!known) setCustomHobbies(prev => [...prev, clean]);
-    setForm(prev => prev.interests.some(i => i.toLowerCase() === clean.toLowerCase())
-      ? prev
-      : { ...prev, interests: [...prev.interests, known ? (([...AVAILABLE_INTERESTS, ...customHobbies].find(h => h.toLowerCase() === clean.toLowerCase())) || clean) : clean] });
+    const all = [...AVAILABLE_INTERESTS, ...customHobbies];
+    const existing = all.find((h) => h.toLowerCase() === clean.toLowerCase());
+    if (!existing) setCustomHobbies((prev) => [...prev, clean]);
+    const tag = existing || clean;
+    setForm((prev) => (prev.interests.includes(tag) ? prev : { ...prev, interests: [...prev.interests, tag] }));
     setCustomHobby('');
   };
 
   const removeCustomHobby = (tag) => {
-    setCustomHobbies(prev => prev.filter(h => h !== tag));
-    setForm(prev => ({ ...prev, interests: prev.interests.filter(i => i !== tag) }));
+    setCustomHobbies((prev) => prev.filter((h) => h !== tag));
+    setForm((prev) => ({ ...prev, interests: prev.interests.filter((i) => i !== tag) }));
   };
 
-  // Toggle interest chip
   const toggleInterest = (tag) => {
-    setForm(prev => {
-      const exists = prev.interests.includes(tag);
-      return {
-        ...prev,
-        interests: exists
-          ? prev.interests.filter(i => i !== tag)
-          : [...prev.interests, tag]
-      };
-    });
+    setForm((prev) => ({
+      ...prev,
+      interests: prev.interests.includes(tag) ? prev.interests.filter((i) => i !== tag) : [...prev.interests, tag],
+    }));
   };
 
-  // Local fallback compatibility scoring algorithm matching closeness
-  const calculateLocalMatches = (profile, list) => {
-    const targetSharing = (selectedRoom?.sharing || selectedRoom?.type || '').toLowerCase();
-    const capacity = Number(selectedRoom?.capacity) || 0;
+  const buildProfile = (optedSmartMatch) => ({
+    ...form,
+    age: Number(form.age) || undefined,
+    propertyId: pg.id,
+    optedSmartMatch,
+    userId: currentUser?.id || null,
+    roomId: selectedRoom.id || null,
+    roomNumber: selectedRoom.roomNumber || null,
+    roomType: selectedRoom.type,
+    sharingType: selectedRoom.sharing,
+    capacity: selectedRoom.capacity,
+  });
 
-    if (targetSharing.includes('single') || capacity === 1) {
-      return [];
-    }
-
-    // Filter candidate roommates strictly matching room sharing type
-    const eligibleList = list.filter(rm => {
-      const rmSharing = (rm.sharing || rm.roomType || '').toLowerCase();
-      if (targetSharing.includes('triple') || capacity === 3) {
-        return rmSharing.includes('triple') || rmSharing.includes('3');
-      }
-      if (targetSharing.includes('double') || capacity === 2) {
-        return rmSharing.includes('double') || rmSharing.includes('2');
-      }
-      return true;
-    });
-
-    return eligibleList.map(rm => {
-      let score = 50;
-
-      // Sleep schedule closeness
-      if (profile.sleepSchedule && rm.sleepHabit) {
-        const mine = sleepKind(profile.sleepSchedule);
-        const theirs = sleepKind(rm.sleepHabit);
-        if (mine === theirs) {
-          score += 20;
-        } else if (mine === 'flexible' || theirs === 'flexible') {
-          score += 10;
-        }
-      }
-
-      // Cleanliness
-      if (profile.cleanliness && rm.cleanliness) {
-        if (profile.cleanliness.toLowerCase() === rm.cleanliness.toLowerCase()) {
-          score += 15;
-        } else if (
-          profile.cleanliness.toLowerCase().includes('moderate') ||
-          rm.cleanliness.toLowerCase().includes('moderate')
-        ) {
-          score += 8;
-        }
-      }
-
-      // Food habit
-      if (profile.foodHabit && rm.foodHabit) {
-        if (profile.foodHabit.toLowerCase() === rm.foodHabit.toLowerCase()) {
-          score += 10;
-        } else if (
-          profile.foodHabit.toLowerCase().includes('flexible') ||
-          rm.foodHabit.toLowerCase().includes('flexible')
-        ) {
-          score += 6;
-        }
-      }
-
-      // Drinking & Smoking
-      if (profile.drinking === 'Non-Drinker') score += 5;
-      if (profile.smoking === 'Non-Smoker') score += 5;
-
-      // Hobbies overlap
-      const guestTags = profile.interests.map(t => t.toLowerCase());
-      const rmTags = (rm.hobbies || []).map(t => t.toLowerCase());
-      const common = guestTags.filter(t => rmTags.includes(t));
-      score += Math.min(15, common.length * 5);
-
-      // Company/Workplace closeness
-      if (
-        profile.company &&
-        rm.company &&
-        profile.company.toLowerCase() === rm.company.toLowerCase()
-      ) {
-        score += 5;
-      }
-
-      const matchPercentage = Math.min(98, Math.max(68, Math.round(score)));
-
-      return {
-        ...rm,
-        matchPercentage,
-        compatibility: matchPercentage,
-        roomNum: rm.roomNum || rm.roomNumber || rm.room?.replace(/\D/g, '') || '101',
-      };
-    }).sort((a, b) => b.matchPercentage - a.matchPercentage);
+  const validate = () => {
+    if (!form.name.trim()) return 'Please enter your name.';
+    if (!form.profession.trim()) return 'Please enter your profession (e.g. Student, Software Engineer).';
+    return null;
   };
 
-  const handleCalculateMatches = async () => {
-    setIsLoading(true);
-
-    const targetCapacity = Number(selectedRoom?.capacity) || (selectedRoom?.sharing === 'triple' ? 3 : selectedRoom?.sharing === 'single' ? 1 : 2);
-    const targetSharing = selectedRoom?.sharing || (selectedRoom?.type?.toLowerCase().includes('triple') ? 'triple' : selectedRoom?.type?.toLowerCase().includes('single') ? 'single' : 'double');
-
-    const guestData = {
-      ...form,
-      propertyId: pg.id || 1,
-      optedSmartMatch: true,
-      userId: currentUser?.id || null,
-      roomId: selectedRoom?.id || null,
-      roomNumber: selectedRoom?.roomNumber || null,
-      roomType: selectedRoom?.type || (targetCapacity === 3 ? 'Triple Sharing' : targetCapacity === 1 ? 'Single Room' : 'Double Sharing'),
-      sharingType: targetSharing,
-      capacity: targetCapacity,
-    };
-
-    setGuestLifestyleProfile(guestData);
-
-    // If single room, no roommates eligible
-    if (targetSharing === 'single' || targetCapacity === 1) {
-      setMatchedRoommates([]);
-      setHasCalculated(true);
-      setIsLoading(false);
+  const handleCalculateMatches = () => {
+    const problem = validate();
+    if (problem) {
+      dispatch(toastError(problem));
       return;
     }
-
-    try {
-      // 1. Save profile to backend table roommate_profiles
-      fetch('http://localhost:3000/roommates/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(guestData),
-      }).catch(() => { });
-
-      // 2. Fetch server-calculated matches in maximum match order
-      const res = await fetch('http://localhost:3000/roommates/calculate-matches', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(guestData),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          const formatted = data.map(item => ({
-            id: item.id,
-            name: item.name,
-            job: item.profession,
-            profession: item.profession,
-            age: item.age,
-            company: item.company,
-            room: item.roomNumber ? `Room ${item.roomNumber}` : 'Room 101',
-            roomNum: item.roomNumber || '101',
-            sharing: item.roomType || (targetCapacity === 3 ? 'Triple Sharing' : 'Double Sharing'),
-            sleepHabit: item.sleepSchedule,
-            cleanliness: item.cleanliness,
-            foodHabit: item.foodHabit,
-            hobbies: Array.isArray(item.interests) ? item.interests : ['Gaming', 'Coding'],
-            img: item.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500',
-            matchPercentage: item.matchPercentage || item.compatibility || 90,
-            compatibility: item.matchPercentage || item.compatibility || 90,
-          }));
-          setMatchedRoommates(formatted.sort((a, b) => b.matchPercentage - a.matchPercentage));
-          setHasCalculated(true);
-          setIsLoading(false);
-          return;
-        }
-      }
-    } catch (_) { }
-
-    // Fallback to local calculation on RAW_ROOMMATES filtered by room sharing type
-    const localRanked = calculateLocalMatches(form, RAW_ROOMMATES);
-    setMatchedRoommates(localRanked);
-    setHasCalculated(true);
-    setIsLoading(false);
+    dispatch(selectRoommate(null));
+    dispatch(calculateRoommateMatches(buildProfile(true)));
   };
 
   const handleSelectRoommate = (rm) => {
-    setSelectedRoommate(rm);
+    dispatch(selectRoommate(rm));
     navigate(`/book/${pg.id}/review`);
   };
 
   const handleOptOutAndProceed = () => {
-    // Collect details, save to DB, but DO NOT show tenants straight away go to review/payment
-    const guestData = {
-      ...form,
-      propertyId: pg.id || 1,
-      optedSmartMatch: false,
-      userId: currentUser?.id || null,
-    };
-    setGuestLifestyleProfile(guestData);
-
-    fetch('http://localhost:3000/roommates/profile', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(guestData),
-    }).catch(() => { });
-
-    setSelectedRoommate(null);
+    dispatch(saveLifestyleProfile(buildProfile(false)));
+    dispatch(selectRoommate(null));
     navigate(`/book/${pg.id}/review`);
   };
 
@@ -595,8 +432,10 @@ export default function BookingRoommate() {
 
             {matchedRoommates.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '32px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <p style={{ color: '#64748b', fontSize: '15px', margin: 0 }}>
-                  No compatible roommates currently found for {selectedRoom?.type || 'this room sharing type'}.
+                <p style={{ color: matchError ? '#b91c1c' : '#64748b', fontSize: '15px', margin: 0 }}>
+                  {matchError
+                    ? `We couldn't calculate matches right now (${matchError}).`
+                    : `No compatible roommates currently found for ${selectedRoom?.type || 'this room sharing type'}.`}
                 </p>
                 <p style={{ color: '#94a3b8', fontSize: '13px', marginTop: '6px' }}>
                   You can proceed with auto-assignment and the warden will allocate a matching roommate upon check-in.
@@ -606,7 +445,7 @@ export default function BookingRoommate() {
               <div className="roommate-cards-grid">
                 {matchedRoommates.map((rm) => {
                   const isSelected = selectedRoommate?.id === rm.id;
-                  const matchVal = rm.matchPercentage || rm.compatibility || 90;
+                  const matchVal = rm.matchPercentage || 0;
                   const badgeBg = matchVal >= 90 ? '#dcfce7' : matchVal >= 80 ? '#e0f2fe' : '#fef3c7';
                   const badgeColor = matchVal >= 90 ? '#15803d' : matchVal >= 80 ? '#0369a1' : '#b45309';
 

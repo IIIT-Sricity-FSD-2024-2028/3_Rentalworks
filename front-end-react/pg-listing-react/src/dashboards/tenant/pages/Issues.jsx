@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { apiFetch } from '../services/api';
+import { useDispatch, useSelector } from 'react-redux';
+import { runThunk } from '../../../app/hooks';
+import { tenantIssues } from '../../../features/tenant/tenantSlices';
+import { toastError } from '../../../features/ui/uiSlice';
+import { useTenant } from '../hooks/useTenant';
 import { StatCard, StatusBadge, FilterBar, EmptyState } from '../components';
 
 const getCategoryIcon = (category) => {
@@ -23,11 +26,13 @@ const getCategoryIcon = (category) => {
 };
 
 const Issues = () => {
-  const { tenant, activeBooking } = useAuth();
-
-  const [issues, setIssues] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const dispatch = useDispatch();
+  const { tenant, activeBooking } = useTenant();
+  const issues = useSelector(tenantIssues.selectors.selectItems);
+  const isLoading = useSelector(tenantIssues.selectors.selectIsLoading);
+  const error = useSelector(tenantIssues.selectors.selectError);
+  const submitting = useSelector(tenantIssues.selectors.selectMutating);
+  const loading = isLoading && issues.length === 0;
 
   // Filter & Search & View Mode
   const [statusFilter, setStatusFilter] = useState('all');
@@ -41,78 +46,48 @@ const Issues = () => {
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  const fetchIssues = async () => {
-    if (!tenant) return;
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await apiFetch(`/issues/my?tenantId=${tenant.id}`);
-      setIssues(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Failed to fetch issues:', err);
-      setError('Unable to load issues. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    fetchIssues();
-  }, [tenant]);
+    dispatch(tenantIssues.thunks.fetchAll());
+  }, [dispatch]);
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     if (!title.trim() || !description.trim()) {
-      alert('Please fill out all required fields (Title, Description).');
+      dispatch(toastError('Please fill out all required fields (Title, Description).'));
       return;
     }
-
-    try {
-      setSubmitting(true);
-      await apiFetch('/issues', {
-        method: 'POST',
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim(),
-          category: selectedCategory,
-          priority: selectedPriority,
-          location: location.trim() || (activeBooking?.room ? `Room ${activeBooking.room}` : undefined),
-          propertyId: Number(activeBooking?.propertyId || activeBooking?.property?.id || 1),
-          roomId: activeBooking?.roomId ? Number(activeBooking.roomId) : undefined,
-          tenantId: Number(tenant?.id || 1),
-        }),
-      });
-
-      // Reset form
-      setTitle('');
-      setLocation('');
-      setDescription('');
-      setSelectedCategory('Plumbing');
-      setSelectedPriority('medium');
-      setIsReporting(false);
-
-      await fetchIssues();
-    } catch (err) {
-      console.error('Error submitting issue:', err);
-      alert(err.message || 'Failed to submit issue. Please try again.');
-    } finally {
-      setSubmitting(false);
+    const propertyId = activeBooking?.propertyId ?? activeBooking?.property?.id;
+    if (!propertyId) {
+      dispatch(toastError('You need an active stay to report an issue.'));
+      return;
     }
+    const { ok } = await runThunk(
+      dispatch,
+      tenantIssues.thunks.createItem({
+        title: title.trim(),
+        description: description.trim(),
+        category: selectedCategory,
+        priority: selectedPriority,
+        location: location.trim() || (activeBooking.room ? `Room ${activeBooking.room}` : undefined),
+        propertyId: Number(propertyId),
+        roomId: activeBooking.roomId ? Number(activeBooking.roomId) : undefined,
+        tenantId: Number(tenant.id),
+      }),
+      { success: 'Issue reported. Your warden has been notified.' },
+    );
+    if (!ok) return;
+    setTitle('');
+    setLocation('');
+    setDescription('');
+    setSelectedCategory('Plumbing');
+    setSelectedPriority('medium');
+    setIsReporting(false);
   };
 
-  const handleDelete = async (issueId) => {
-    if (!window.confirm('Are you sure you want to cancel or delete this issue?')) {
-      return;
-    }
-    try {
-      await apiFetch(`/issues/${issueId}`, { method: 'DELETE' });
-      await fetchIssues();
-    } catch (err) {
-      console.error('Failed to delete issue:', err);
-      alert('Failed to delete issue.');
-    }
+  const handleDelete = (issueId) => {
+    if (!window.confirm('Are you sure you want to cancel or delete this issue?')) return;
+    runThunk(dispatch, tenantIssues.thunks.removeItem(issueId), { success: 'Issue removed' });
   };
 
   const normStatus = (s) => (s || 'open').replace('-', '_');

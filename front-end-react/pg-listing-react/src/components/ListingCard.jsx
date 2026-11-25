@@ -1,22 +1,16 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useBooking } from '../context/BookingContext';
 
 export default function ListingCard({ listing, isDisabled }) {
   const navigate = useNavigate();
-  const { setSelectedPG } = useBooking();
   const { id, title, location, price, rating, features, note, image } = listing;
 
+  // Fully-booked PGs stay viewable (details, reviews, contact) — only booking is blocked.
   const handleCardClick = () => {
-    if (isDisabled) return;
-    setSelectedPG(listing);
-    navigate(`/pg/${id || 1}`);
+    navigate(`/pg/${id}`);
   };
 
-  const cardStyle = isDisabled ? {
-    opacity: '0.6',
-    pointerEvents: 'none'
-  } : { cursor: 'pointer' };
+  const cardStyle = isDisabled ? { opacity: '0.75', cursor: 'pointer' } : { cursor: 'pointer' };
 
   return (
     <div className="listing-card" style={cardStyle} onClick={handleCardClick}>
@@ -44,7 +38,7 @@ export default function ListingCard({ listing, isDisabled }) {
           </span>
         )}
         <span className="badge badge-rating">
-          <span className="material-icons-outlined" style={{ fontSize: '20px' }}>star</span> {rating}
+          <span className="material-icons-outlined" style={{ fontSize: '20px' }}>star</span> {rating ? rating : 'New'}
         </span>
       </div>
       <div className="listing-content">
@@ -53,7 +47,7 @@ export default function ListingCard({ listing, isDisabled }) {
           <span className="material-icons-outlined" style={{ fontSize: '24px' }}>location_on</span>
           {location}
         </p>
-        <div className="price">₹{price.toLocaleString()} <span>/month</span></div>
+        <div className="price">{price ? <>₹{price.toLocaleString('en-IN')} <span>/month</span></> : <span>Price on request</span>}</div>
         <div className="features">
           {features.map((feature, idx) => (
             <span key={idx} className="tag">
@@ -67,7 +61,7 @@ export default function ListingCard({ listing, isDisabled }) {
           className="view-btn"
           style={isDisabled ? { background: '#e2e8f0', color: '#64748b', boxShadow: 'none' } : {}}
         >
-          {isDisabled ? 'Currently Unavailable' : 'View Details'}
+          {isDisabled ? 'Fully Booked · View Details' : 'View Details'}
         </button>
       </div>
     </div>

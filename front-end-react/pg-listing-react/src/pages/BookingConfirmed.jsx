@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useBooking } from '../context/BookingContext';
-import { useAuth } from '../context/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { login, selectCurrentUser } from '../features/auth/authSlice';
+import { forgetIssuedPassword, selectLastConfirmed } from '../features/booking/bookingSlice';
+import { toastError } from '../features/ui/uiSlice';
 import './BookingConfirmed.css';
 
 const money = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
@@ -29,7 +31,7 @@ async function copyText(text) {
       await navigator.clipboard.writeText(text);
       return true;
     }
-  } catch (_) {
+  } catch {
     /* fall through to legacy path */
   }
   try {
@@ -42,12 +44,12 @@ async function copyText(text) {
     const ok = document.execCommand('copy');
     document.body.removeChild(ta);
     return ok;
-  } catch (_) {
+  } catch {
     return false;
   }
 }
 
-/** Builds the receipt from the booking context only - no network call, so it can never hang. */
+/** Builds the receipt from the Redux booking slice only - no network call, so it can never hang. */
 function buildReceipt(record, fallbackUser) {
   const payment = record.payment || {};
   const tenant = record.tenant || fallbackUser || {};
@@ -113,15 +115,29 @@ ${r.fee ? `<tr class="sub"><td>Platform / maintenance fee</td><td style="text-al
 
 export default function BookingConfirmed() {
   const navigate = useNavigate();
-  const { lastConfirmedBooking, setLastConfirmedBooking } = useBooking();
-  const { currentUser, login, setSession } = useAuth();
+  const dispatch = useDispatch();
+  const currentUser = useSelector(selectCurrentUser);
+  const confirmed = useSelector(selectLastConfirmed);
 
   const [copied, setCopied] = useState(false);
   const [showPassword, setShowPassword] = useState(true);
   const [showReceipt, setShowReceipt] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
 
-  const record = lastConfirmedBooking;
+  const record = useMemo(
+    () =>
+      confirmed?.booking
+        ? {
+            ...confirmed.booking,
+            payment: confirmed.payment,
+            tenant: confirmed.tenant,
+            credentials: confirmed.credentials,
+            createdAt: confirmed.confirmedAt,
+          }
+        : null,
+    [confirmed],
+  );
+  const forFriend = confirmed?.bookingFor === 'friend';
   const credentials = record?.credentials || {};
   const tenant = record?.tenant || currentUser || {};
   const receipt = useMemo(() => (record ? buildReceipt(record, currentUser) : null), [record, currentUser]);
@@ -155,26 +171,22 @@ export default function BookingConfirmed() {
   };
 
   const handleLoginToDashboard = async () => {
-    setLoggingIn(true);
-    let user = null;
-    try {
-      // Sign in with the freshly issued credentials so the dashboard session comes from the server.
-      if (credentials.username && credentials.password) {
-        user = await login(credentials.username, credentials.password);
+    // Checkout already promoted the signed-in account to tenant.
+    if (currentUser?.role !== 'tenant' || String(currentUser.id) !== String(tenant.id)) {
+      if (!hasPassword) {
+        navigate('/login');
+        return;
       }
-    } catch (_) {
-      user = null;
+      setLoggingIn(true);
+      const result = await dispatch(login({ username: credentials.username, password: credentials.password }));
+      setLoggingIn(false);
+      if (login.rejected.match(result)) {
+        dispatch(toastError(result.payload || 'Could not sign you in. Please use the login page.'));
+        return;
+      }
     }
-    const session = { ...(user || tenant), role: 'tenant', status: 'active' };
-    try {
-      sessionStorage.setItem('tenant_user', JSON.stringify(session));
-      sessionStorage.setItem('pg_user', JSON.stringify(session));
-    } catch (_) {
-      /* storage can be unavailable in private mode */
-    }
-    setSession(session);
     // The one-time password has done its job: drop it from this tab's storage.
-    if (hasPassword) setLastConfirmedBooking({ ...record, credentials: { ...credentials, password: null, existingAccount: true } });
+    dispatch(forgetIssuedPassword());
     navigate('/dashboard/tenant/dashboard');
   };
 
@@ -208,8 +220,8 @@ export default function BookingConfirmed() {
           <span className="pill-confirmed">Payment Verified &amp; Room Booked</span>
           <h1>Congratulations, Your Booking is Confirmed!</h1>
           <p>
-            Your bed at <strong>{receipt.propertyName}</strong> is reserved for <strong>{receipt.tenantName}</strong>.
-            Your tenant account has been created.
+            {forFriend ? 'The' : 'Your'} bed at <strong>{receipt.propertyName}</strong> is reserved for <strong>{receipt.tenantName}</strong>.
+            {credentials.existingAccount ? 'The account is now an active tenant.' : 'A new tenant account has been created.'}
           </p>
         </div>
 
@@ -242,8 +254,8 @@ export default function BookingConfirmed() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span className="material-icons-outlined" style={{ color: '#ca8a04', fontSize: '28px' }}>badge</span>
               <div>
-                <h3>Your Account Credentials</h3>
-                <p>Use these to sign in to your Tenant Dashboard</p>
+                <h3>{forFriend ? 'Your Friend’s Account Credentials' : 'Your Account Credentials'}</h3>
+                <p>{forFriend ? 'Share these so they can sign in to their Tenant Dashboard' : 'Use these to sign in to your Tenant Dashboard'}</p>
               </div>
             </div>
             <span className="cred-status-tag">Status: Active Tenant</span>
@@ -285,10 +297,12 @@ export default function BookingConfirmed() {
               <span className="material-icons-outlined" style={{ fontSize: '18px' }}>content_copy</span>
               {copied === 'ok' ? 'Copied!' : copied === 'fail' ? 'Copy failed — select & copy manually' : 'Copy Credentials'}
             </button>
-            <button type="button" className="btn-tenant-portal-action" onClick={handleLoginToDashboard} disabled={loggingIn}>
-              <span className="material-icons-outlined">login</span>
-              {loggingIn ? 'Signing you in…' : 'Login to Tenant Dashboard'}
-            </button>
+            {!forFriend && (
+              <button type="button" className="btn-tenant-portal-action" onClick={handleLoginToDashboard} disabled={loggingIn}>
+                <span className="material-icons-outlined">login</span>
+                {loggingIn ? 'Signing you in…' : 'Go to Tenant Dashboard'}
+              </button>
+            )}
           </div>
 
           <div className="cred-notice-footer">
@@ -296,7 +310,7 @@ export default function BookingConfirmed() {
             <span>
               {hasPassword
                 ? 'Save these now — the password is shown only on this page. You can change it later from your Profile.'
-                : 'You already had a tenant account, so your existing sign-in details still work.'}{' '}
+                : 'This account already existed, so its current sign-in details still work.'}{' '}
               Your warden has been notified of your room and bed.
             </span>
           </div>

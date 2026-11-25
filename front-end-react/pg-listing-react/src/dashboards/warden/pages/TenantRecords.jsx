@@ -1,10 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useWardenData } from '../utils/dataStore';
+import { useDispatch, useSelector } from 'react-redux';
+import { useWardenData, useWardenRun, useWardenToast } from '../utils/dataStore';
 import {
-  createTenantApi, updateTenantApi, deleteTenantApi,
-  getRentLedgerApi, getTenantLedgerApi, markRentPaidOfflineApi, waiveRentApi,
-  notifyTenantApi, escalateTenantApi, evictTenantApi, getAuditLogsApi,
-} from '../utils/api';
+  createTenant,
+  deleteTenant,
+  escalateTenant,
+  evictTenant,
+  fetchRentLedger,
+  fetchTenantLedger,
+  markRentPaidOffline,
+  notifyTenant,
+  selectWardenLedger,
+  selectWardenTenantLedger,
+  updateTenant,
+  waiveRent,
+} from '../../../features/warden/wardenSlices';
 import Modal from '../components/Modal';
 
 const STATUS_TAGS = {
@@ -49,14 +59,17 @@ export default function TenantRecords() {
   const [statusFilter, setStatusFilter] = useState('all');
   const months = monthOptions();
   const [month, setMonth] = useState(months[2].value);
-  const [ledgerRows, setLedgerRows] = useState([]);
-  const [ledgerSummary, setLedgerSummary] = useState(null);
-  const [ledgerLoading, setLedgerLoading] = useState(false);
+  const dispatch = useDispatch();
+  const run = useWardenRun();
+  const ledger = useSelector(selectWardenLedger);
+  const tenantLedger = useSelector(selectWardenTenantLedger);
+  const ledgerRows = Array.isArray(ledger.data?.rows) ? ledger.data.rows : [];
+  const ledgerLoading = ledger.status === 'loading';
 
   // Details drawer
   const [drawer, setDrawer] = useState(null); // tenant
-  const [tenantDues, setTenantDues] = useState([]);
-  const [auditLogs, setAuditLogs] = useState([]);
+  const tenantDues = drawer && Array.isArray(tenantLedger.ledger) ? tenantLedger.ledger : [];
+  const auditLogs = drawer ? tenantLedger.audit : [];
   const [action, setAction] = useState(null); // { type, due? }
   const [actionText, setActionText] = useState('');
   const [actionTitle, setActionTitle] = useState('');
@@ -69,32 +82,19 @@ export default function TenantRecords() {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   
-  // Toast state
-  const [toast, setToast] = useState(null);
 
-  const showToast = (type, title, message) => {
-    setToast({ type, title, message });
-    setTimeout(() => setToast(null), 3500);
-  };
+  const showToast = useWardenToast();
 
   const tenants = data.tenants || [];
 
   const loadLedger = useCallback(async () => {
-    setLedgerLoading(true);
-    try {
-      const res = await getRentLedgerApi(month);
-      setLedgerRows(Array.isArray(res?.rows) ? res.rows : []);
-      setLedgerSummary(res?.summary || null);
-    } catch (err) {
-      setLedgerRows([]);
-      setLedgerSummary(null);
-      showToast('error', 'Could not load rent ledger', err.message);
-    } finally {
-      setLedgerLoading(false);
-    }
-  }, [month]);
+    const result = await dispatch(fetchRentLedger({ month }));
+    if (fetchRentLedger.rejected.match(result)) showToast('error', 'Could not load rent ledger', result.payload);
+  }, [dispatch, month, showToast]);
 
-  useEffect(() => { loadLedger(); }, [loadLedger]);
+  useEffect(() => {
+    loadLedger();
+  }, [loadLedger]);
 
   const ledgerByTenant = new Map(ledgerRows.map(r => [Number(r.tenantId), r]));
 
@@ -102,7 +102,7 @@ export default function TenantRecords() {
   const rows = tenants.map(t => {
     const led = ledgerByTenant.get(Number(t.id));
     const evicted = t.status === 'evicted' || t.stayStatus === 'evicted';
-    const status = evicted ? 'evicted' : (led?.status || (t.stayStatus === 'active' ? 'no_cycle' : 'no_cycle'));
+    const status = evicted ? 'evicted' : (led?.status || 'no_cycle');
     return { ...t, monthStatus: status, due: led?.due || null };
   });
 
@@ -124,15 +124,8 @@ export default function TenantRecords() {
 
   const openDrawer = async (tenant) => {
     setDrawer(tenant);
-    setTenantDues([]);
-    setAuditLogs([]);
     try {
-      const [dues, logs] = await Promise.all([
-        getTenantLedgerApi(tenant.id),
-        getAuditLogsApi({ tenantId: tenant.id }).catch(() => []),
-      ]);
-      setTenantDues(Array.isArray(dues) ? dues : []);
-      setAuditLogs(Array.isArray(logs) ? logs : []);
+      await run(fetchTenantLedger(tenant.id));
     } catch (err) {
       showToast('error', 'Could not load tenant ledger', err.message);
     }
@@ -173,27 +166,27 @@ export default function TenantRecords() {
     setSubmitting(true);
     try {
       if (action.type === 'offline') {
-        await markRentPaidOfflineApi(action.due.id, text);
+        await run(markRentPaidOffline({ dueId: action.due.id, note: text }));
         showToast('success', 'Recorded', 'Marked as paid (cash / offline)');
       } else if (action.type === 'waive') {
-        await waiveRentApi(action.due.id, text);
+        await run(waiveRent({ dueId: action.due.id, reason: text }));
         showToast('success', 'Fee waived', 'The rent for this cycle was waived');
       } else if (action.type === 'notify') {
-        await notifyTenantApi(drawer.id, {
+        await run(notifyTenant({ tenantId: drawer.id, payload: {
           title: actionTitle.trim() || undefined,
           message: text,
           kind: template,
           dueId: action.due?.id,
-        });
+        } }));
         showToast('success', 'Notification sent', `Sent to ${drawer.name}`);
       } else if (action.type === 'escalate') {
-        await escalateTenantApi(drawer.id, {
+        await run(escalateTenant({ tenantId: drawer.id, payload: {
           message: text,
           category: drawer.monthStatus === 'overdue' ? 'unpaid_rent' : 'violation',
-        });
+        } }));
         showToast('success', 'Escalated', 'The property owner has been notified');
       } else if (action.type === 'evict') {
-        await evictTenantApi(drawer.id, text);
+        await run(evictTenant({ tenantId: drawer.id, reason: text }));
         showToast('success', 'Tenant removed', 'Bed released and the action was logged');
         setAction(null);
         setDrawer(null);
@@ -222,7 +215,7 @@ export default function TenantRecords() {
     const newErrors = {};
     if (!formData.name?.trim()) { newErrors.name = 'Name is required'; valid = false; }
     if (!formData.room?.trim()) { newErrors.room = 'Room number is required'; valid = false; }
-    if (!formData.phone || !/^\+?[\d\s\-]{9,}$/.test(formData.phone)) { newErrors.phone = 'Enter a valid phone number'; valid = false; }
+    if (!formData.phone || !/^\+?[\d\s-]{9,}$/.test(formData.phone)) { newErrors.phone = 'Enter a valid phone number'; valid = false; }
     if (!formData.checkIn) { newErrors.checkIn = 'Check-in date is required'; valid = false; }
     if (!formData.rent || isNaN(formData.rent) || Number(formData.rent) <= 0) { newErrors.rent = 'Enter a valid rent amount'; valid = false; }
     
@@ -233,18 +226,18 @@ export default function TenantRecords() {
 
     setSubmitting(true);
     try {
-      await createTenantApi({
+      await run(createTenant({
         name: formData.name.trim(),
         room: formData.room.trim(),
         phone: formData.phone.trim(),
         checkIn: formData.checkIn,
         rent: parseInt(formData.rent),
         paymentStatus: formData.paymentStatus || 'pending',
-      });
+      }));
 
-      await refreshData();
+      await Promise.all([refreshData(), loadLedger()]);
       setActiveModal(null);
-      showToast('success', 'Changes Saved', 'Changes saved');
+      showToast('success', 'Tenant records updated');
     } catch (err) {
       showToast('error', 'Error Saving Tenant', err.message);
     } finally {
@@ -258,7 +251,7 @@ export default function TenantRecords() {
     let valid = true;
     const newErrors = {};
     if (!formData.room?.trim()) { newErrors.room = 'Room number is required'; valid = false; }
-    if (!formData.phone || !/^\+?[\d\s\-]{9,}$/.test(formData.phone)) { newErrors.phone = 'Enter a valid phone number'; valid = false; }
+    if (!formData.phone || !/^\+?[\d\s-]{9,}$/.test(formData.phone)) { newErrors.phone = 'Enter a valid phone number'; valid = false; }
     if (!formData.rent || isNaN(formData.rent) || Number(formData.rent) <= 0) { newErrors.rent = 'Enter a valid rent amount'; valid = false; }
     
     if (!valid) {
@@ -268,17 +261,17 @@ export default function TenantRecords() {
 
     setSubmitting(true);
     try {
-      await updateTenantApi(selectedTenant.id, {
+      await run(updateTenant({ id: selectedTenant.id, changes: {
         name: formData.name?.trim() || selectedTenant.name,
         room: formData.room.trim(),
         phone: formData.phone.trim(),
         rent: parseInt(formData.rent),
         paymentStatus: formData.paymentStatus,
-      });
+      } }));
 
-      await refreshData();
+      await Promise.all([refreshData(), loadLedger()]);
       setActiveModal(null);
-      showToast('success', 'Changes Saved', 'Changes saved');
+      showToast('success', 'Tenant records updated');
     } catch (err) {
       showToast('error', 'Update Failed', err.message);
     } finally {
@@ -291,10 +284,10 @@ export default function TenantRecords() {
 
     setSubmitting(true);
     try {
-      await deleteTenantApi(selectedTenant.id);
-      await refreshData();
+      await run(deleteTenant(selectedTenant.id));
+      await Promise.all([refreshData(), loadLedger()]);
       setActiveModal(null);
-      showToast('success', 'Changes Saved', 'Changes saved');
+      showToast('success', 'Tenant records updated');
     } catch (err) {
       showToast('error', 'Delete Failed', err.message);
     } finally {
@@ -683,20 +676,6 @@ export default function TenantRecords() {
         </div>
       </Modal>
 
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`toast ${toast.type} show`}>
-          <span className="toast-icon">
-            <span className="material-icons-outlined" style={{ fontSize: '24px' }}>
-              {toast.type === 'success' ? 'check_circle' : toast.type === 'error' ? 'cancel' : 'info'}
-            </span>
-          </span>
-          <div className="toast-text">
-            <strong>{toast.title}</strong>
-            <span>{toast.message}</span>
-          </div>
-        </div>
-      )}
     </section>
   );
 }
