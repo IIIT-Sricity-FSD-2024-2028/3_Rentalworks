@@ -1,0 +1,679 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { RAW_ROOMMATES, RAW_LISTINGS } from '../data/listingsData';
+import { useBooking } from '../context/BookingContext';
+import { useAuth } from '../context/AuthContext';
+
+const SLEEP_OPTIONS = ['Night Owl', 'Early Riser', 'Flexible'];
+
+const sleepKind = (v) => {
+  const t = String(v || '').toLowerCase();
+  if (t.includes('night')) return 'night';
+  if (t.includes('early')) return 'early';
+  if (t.includes('flex')) return 'flexible';
+  return t;
+};
+
+const AVAILABLE_INTERESTS = [
+  'Gaming',
+  'Coding',
+  'Reading',
+  'Music',
+  'Fitness',
+  'Gym',
+  'Chess',
+  'Badminton',
+  'Coffee',
+  'Cooking',
+  'Travel'
+];
+
+export default function BookingRoommate() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const {
+    selectedPG,
+    selectedRoom,
+    selectedRoommate,
+    setSelectedRoommate,
+    guestLifestyleProfile,
+    setGuestLifestyleProfile,
+  } = useBooking();
+  const { currentUser } = useAuth();
+
+  const pg = selectedPG || RAW_LISTINGS.find(p => String(p.id) === String(id)) || RAW_LISTINGS[0];
+
+  // CRITICAL: Single rooms have capacity 1 and NEVER match a roommate
+  useEffect(() => {
+    if (selectedRoom?.sharing === 'single' || selectedRoom?.capacity === 1) {
+      setSelectedRoommate(null);
+      navigate(`/book/${pg.id}/review`, { replace: true });
+    }
+  }, [selectedRoom, pg.id, navigate, setSelectedRoommate]);
+
+  // Reset roommate selection and candidate results when selected room changes
+  useEffect(() => {
+    setMatchedRoommates([]);
+    setHasCalculated(false);
+    setSelectedRoommate(null);
+  }, [selectedRoom?.id, selectedRoom?.sharing, selectedRoom?.type, setSelectedRoommate]);
+
+  // CRITICAL: Block ineligible male booking on Girls PG
+  useEffect(() => {
+    const isGirlsPG = (pg.gender || '').toLowerCase() === 'girls' || pg.title?.toLowerCase().includes('girls');
+    const uGender = (currentUser?.gender || '').toLowerCase();
+    if (isGirlsPG && (uGender === 'male' || uGender === 'boy' || uGender === 'm')) {
+      window.alert(`You cannot book this PG! "${pg.title}" is strictly a Girls Only accommodation. Male residents cannot book this property.`);
+      navigate(`/pg/${pg.id}`, { replace: true });
+    }
+  }, [pg, currentUser, navigate]);
+
+  // Decision state: 'yes' (Smart Match) or 'no' (Auto-assign by warden)
+  const [optInChoice, setOptInChoice] = useState('yes');
+
+  // Guest criteria details form
+  const [form, setForm] = useState({
+    name: currentUser?.name || 'Guest Resident',
+    age: 24,
+
+    profession: 'Software Engineer',
+    company: 'Infosys',
+    sleepSchedule: 'Night Owl',
+    cleanliness: 'High (Daily Cleanup)',
+    foodHabit: 'Vegetarian',
+    drinking: 'Non-Drinker',
+    smoking: 'Non-Smoker',
+    interests: ['Gaming', 'Coding', 'Reading'],
+  });
+
+  const [matchedRoommates, setMatchedRoommates] = useState([]);
+  const [hasCalculated, setHasCalculated] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [customHobby, setCustomHobby] = useState('');
+  const [customHobbies, setCustomHobbies] = useState([]);
+
+  const addCustomHobby = () => {
+    const clean = customHobby.trim().replace(/\s+/g, ' ').slice(0, 24);
+    if (!clean) return;
+    const known = [...AVAILABLE_INTERESTS, ...customHobbies].some(h => h.toLowerCase() === clean.toLowerCase());
+    if (!known) setCustomHobbies(prev => [...prev, clean]);
+    setForm(prev => prev.interests.some(i => i.toLowerCase() === clean.toLowerCase())
+      ? prev
+      : { ...prev, interests: [...prev.interests, known ? (([...AVAILABLE_INTERESTS, ...customHobbies].find(h => h.toLowerCase() === clean.toLowerCase())) || clean) : clean] });
+    setCustomHobby('');
+  };
+
+  const removeCustomHobby = (tag) => {
+    setCustomHobbies(prev => prev.filter(h => h !== tag));
+    setForm(prev => ({ ...prev, interests: prev.interests.filter(i => i !== tag) }));
+  };
+
+  // Toggle interest chip
+  const toggleInterest = (tag) => {
+    setForm(prev => {
+      const exists = prev.interests.includes(tag);
+      return {
+        ...prev,
+        interests: exists
+          ? prev.interests.filter(i => i !== tag)
+          : [...prev.interests, tag]
+      };
+    });
+  };
+
+  // Local fallback compatibility scoring algorithm matching closeness
+  const calculateLocalMatches = (profile, list) => {
+    const targetSharing = (selectedRoom?.sharing || selectedRoom?.type || '').toLowerCase();
+    const capacity = Number(selectedRoom?.capacity) || 0;
+
+    if (targetSharing.includes('single') || capacity === 1) {
+      return [];
+    }
+
+    // Filter candidate roommates strictly matching room sharing type
+    const eligibleList = list.filter(rm => {
+      const rmSharing = (rm.sharing || rm.roomType || '').toLowerCase();
+      if (targetSharing.includes('triple') || capacity === 3) {
+        return rmSharing.includes('triple') || rmSharing.includes('3');
+      }
+      if (targetSharing.includes('double') || capacity === 2) {
+        return rmSharing.includes('double') || rmSharing.includes('2');
+      }
+      return true;
+    });
+
+    return eligibleList.map(rm => {
+      let score = 50;
+
+      // Sleep schedule closeness
+      if (profile.sleepSchedule && rm.sleepHabit) {
+        const mine = sleepKind(profile.sleepSchedule);
+        const theirs = sleepKind(rm.sleepHabit);
+        if (mine === theirs) {
+          score += 20;
+        } else if (mine === 'flexible' || theirs === 'flexible') {
+          score += 10;
+        }
+      }
+
+      // Cleanliness
+      if (profile.cleanliness && rm.cleanliness) {
+        if (profile.cleanliness.toLowerCase() === rm.cleanliness.toLowerCase()) {
+          score += 15;
+        } else if (
+          profile.cleanliness.toLowerCase().includes('moderate') ||
+          rm.cleanliness.toLowerCase().includes('moderate')
+        ) {
+          score += 8;
+        }
+      }
+
+      // Food habit
+      if (profile.foodHabit && rm.foodHabit) {
+        if (profile.foodHabit.toLowerCase() === rm.foodHabit.toLowerCase()) {
+          score += 10;
+        } else if (
+          profile.foodHabit.toLowerCase().includes('flexible') ||
+          rm.foodHabit.toLowerCase().includes('flexible')
+        ) {
+          score += 6;
+        }
+      }
+
+      // Drinking & Smoking
+      if (profile.drinking === 'Non-Drinker') score += 5;
+      if (profile.smoking === 'Non-Smoker') score += 5;
+
+      // Hobbies overlap
+      const guestTags = profile.interests.map(t => t.toLowerCase());
+      const rmTags = (rm.hobbies || []).map(t => t.toLowerCase());
+      const common = guestTags.filter(t => rmTags.includes(t));
+      score += Math.min(15, common.length * 5);
+
+      // Company/Workplace closeness
+      if (
+        profile.company &&
+        rm.company &&
+        profile.company.toLowerCase() === rm.company.toLowerCase()
+      ) {
+        score += 5;
+      }
+
+      const matchPercentage = Math.min(98, Math.max(68, Math.round(score)));
+
+      return {
+        ...rm,
+        matchPercentage,
+        compatibility: matchPercentage,
+        roomNum: rm.roomNum || rm.roomNumber || rm.room?.replace(/\D/g, '') || '101',
+      };
+    }).sort((a, b) => b.matchPercentage - a.matchPercentage);
+  };
+
+  const handleCalculateMatches = async () => {
+    setIsLoading(true);
+
+    const targetCapacity = Number(selectedRoom?.capacity) || (selectedRoom?.sharing === 'triple' ? 3 : selectedRoom?.sharing === 'single' ? 1 : 2);
+    const targetSharing = selectedRoom?.sharing || (selectedRoom?.type?.toLowerCase().includes('triple') ? 'triple' : selectedRoom?.type?.toLowerCase().includes('single') ? 'single' : 'double');
+
+    const guestData = {
+      ...form,
+      propertyId: pg.id || 1,
+      optedSmartMatch: true,
+      userId: currentUser?.id || null,
+      roomId: selectedRoom?.id || null,
+      roomNumber: selectedRoom?.roomNumber || null,
+      roomType: selectedRoom?.type || (targetCapacity === 3 ? 'Triple Sharing' : targetCapacity === 1 ? 'Single Room' : 'Double Sharing'),
+      sharingType: targetSharing,
+      capacity: targetCapacity,
+    };
+
+    setGuestLifestyleProfile(guestData);
+
+    // If single room, no roommates eligible
+    if (targetSharing === 'single' || targetCapacity === 1) {
+      setMatchedRoommates([]);
+      setHasCalculated(true);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // 1. Save profile to backend table roommate_profiles
+      fetch('http://localhost:3000/roommates/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(guestData),
+      }).catch(() => { });
+
+      // 2. Fetch server-calculated matches in maximum match order
+      const res = await fetch('http://localhost:3000/roommates/calculate-matches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(guestData),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          const formatted = data.map(item => ({
+            id: item.id,
+            name: item.name,
+            job: item.profession,
+            profession: item.profession,
+            age: item.age,
+            company: item.company,
+            room: item.roomNumber ? `Room ${item.roomNumber}` : 'Room 101',
+            roomNum: item.roomNumber || '101',
+            sharing: item.roomType || (targetCapacity === 3 ? 'Triple Sharing' : 'Double Sharing'),
+            sleepHabit: item.sleepSchedule,
+            cleanliness: item.cleanliness,
+            foodHabit: item.foodHabit,
+            hobbies: Array.isArray(item.interests) ? item.interests : ['Gaming', 'Coding'],
+            img: item.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500',
+            matchPercentage: item.matchPercentage || item.compatibility || 90,
+            compatibility: item.matchPercentage || item.compatibility || 90,
+          }));
+          setMatchedRoommates(formatted.sort((a, b) => b.matchPercentage - a.matchPercentage));
+          setHasCalculated(true);
+          setIsLoading(false);
+          return;
+        }
+      }
+    } catch (_) { }
+
+    // Fallback to local calculation on RAW_ROOMMATES filtered by room sharing type
+    const localRanked = calculateLocalMatches(form, RAW_ROOMMATES);
+    setMatchedRoommates(localRanked);
+    setHasCalculated(true);
+    setIsLoading(false);
+  };
+
+  const handleSelectRoommate = (rm) => {
+    setSelectedRoommate(rm);
+    navigate(`/book/${pg.id}/review`);
+  };
+
+  const handleOptOutAndProceed = () => {
+    // Collect details, save to DB, but DO NOT show tenants straight away go to review/payment
+    const guestData = {
+      ...form,
+      propertyId: pg.id || 1,
+      optedSmartMatch: false,
+      userId: currentUser?.id || null,
+    };
+    setGuestLifestyleProfile(guestData);
+
+    fetch('http://localhost:3000/roommates/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(guestData),
+    }).catch(() => { });
+
+    setSelectedRoommate(null);
+    navigate(`/book/${pg.id}/review`);
+  };
+
+  return (
+    <div className="booking-step-container">
+      {/* STEPPER HEADER */}
+      <div className="booking-stepper-header">
+        <div className="stepper-track">
+          <div className="step-node active">
+            <span className="step-num">1</span>
+            <span className="step-label">Roommate Match</span>
+          </div>
+          <div className="step-line" />
+          <div className="step-node">
+            <span className="step-num">2</span>
+            <span className="step-label">Review Details</span>
+          </div>
+          <div className="step-line" />
+          <div className="step-node">
+            <span className="step-num">3</span>
+            <span className="step-label">Payment</span>
+          </div>
+          <div className="step-line" />
+          <div className="step-node">
+            <span className="step-num">4</span>
+            <span className="step-label">Confirmed</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="booking-step-card">
+        {/* HEADER: Clean, without any 'Optional AI Match' tag */}
+        <div className="step-intro-head">
+          <h2>Smart Roommate Matching &amp; Lifestyle Preferences</h2>
+          <p>
+            You selected <strong>{selectedRoom?.type || 'Double Sharing'}</strong> at <strong>{pg.title}</strong>.
+            Configure your living habits and compatibility preferences before proceeding to payment.
+          </p>
+        </div>
+
+        {/* WORKFLOW DECISION: OPT-IN OR OPT-OUT */}
+        <div className="smart-match-decision-grid">
+          <div
+            className={`decision-card ${optInChoice === 'yes' ? 'active' : ''}`}
+            onClick={() => setOptInChoice('yes')}
+          >
+            <div className="decision-radio">
+              {optInChoice === 'yes' && <div className="decision-radio-dot" />}
+            </div>
+            <div>
+              <div className="decision-title">✨ Yes, Match Me with a Compatible Roommate</div>
+              <div className="decision-desc">
+                Select your lifestyle habits to calculate compatibility % against active residents in this PG and choose your preferred roommate.
+              </div>
+            </div>
+          </div>
+
+          <div
+            className={`decision-card ${optInChoice === 'no' ? 'active' : ''}`}
+            onClick={() => setOptInChoice('no')}
+          >
+            <div className="decision-radio">
+              {optInChoice === 'no' && <div className="decision-radio-dot" />}
+            </div>
+            <div>
+              <div className="decision-title">⚡ No, Auto-Assign Roommate</div>
+              <div className="decision-desc">
+                Prefer warden auto-allocation. Save your living habits for PG records and skip tenant browsing directly to payment.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* LIFESTYLE & CRITERIA FORM */}
+        <div className="smart-form-container">
+          <div className="smart-form-header">
+            <h3>
+              <span className="material-icons-outlined" style={{ color: '#ca8a04', fontSize: '20px' }}>tune</span>
+              Your Lifestyle &amp; Compatibility Criteria
+            </h3>
+            <span style={{ fontSize: '12px', color: '#64748b' }}>Used to calculate real-time compatibility %</span>
+          </div>
+
+          <div className="smart-form-grid">
+            {/* Full Name */}
+            <div className="smart-input-group">
+              <label>Full Name *</label>
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="e.g. Arun Kumar"
+              />
+            </div>
+
+            {/* Age */}
+            <div className="smart-input-group">
+              <label>Age *</label>
+              <input
+                type="number"
+                min="18"
+                max="65"
+                value={form.age}
+                onChange={(e) => setForm({ ...form, age: e.target.value })}
+                placeholder="e.g. 24"
+              />
+            </div>
+
+            {/* Profession */}
+            <div className="smart-input-group">
+              <label>Profession / Job *</label>
+              <input
+                type="text"
+                value={form.profession}
+                onChange={(e) => setForm({ ...form, profession: e.target.value })}
+                placeholder="e.g. Software Engineer, Designer, Student"
+              />
+            </div>
+
+            {/* Workplace / Company */}
+            <div className="smart-input-group">
+              <label>Workplace / Company ("Where Working") *</label>
+              <input
+                type="text"
+                value={form.company}
+                onChange={(e) => setForm({ ...form, company: e.target.value })}
+                placeholder="e.g. Infosys, TCS, Swiggy, University"
+              />
+            </div>
+
+            {/* Sleep Schedule */}
+            <div className="smart-input-group">
+              <label>Sleep Schedule *</label>
+              <div className="sleep-pill-group" role="radiogroup" aria-label="Sleep schedule">
+                {SLEEP_OPTIONS.map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    role="radio"
+                    aria-checked={form.sleepSchedule === opt}
+                    className={`smart-chip-btn ${form.sleepSchedule === opt ? 'active' : ''}`}
+                    onClick={() => setForm({ ...form, sleepSchedule: opt })}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Cleanliness */}
+            <div className="smart-input-group">
+              <label>Cleanliness Standard *</label>
+              <select
+                value={form.cleanliness}
+                onChange={(e) => setForm({ ...form, cleanliness: e.target.value })}
+              >
+                <option value="High (Daily Cleanup)">High (Daily Cleanup)</option>
+                <option value="Moderate & Organized">Moderate &amp; Organized</option>
+                <option value="Basic / Relaxed">Basic / Relaxed</option>
+              </select>
+            </div>
+
+            {/* Food Habits */}
+            <div className="smart-input-group">
+              <label>Food Habits *</label>
+              <select
+                value={form.foodHabit}
+                onChange={(e) => setForm({ ...form, foodHabit: e.target.value })}
+              >
+                <option value="Vegetarian">Vegetarian</option>
+                <option value="Eggetarian / Non-Veg">Eggetarian / Non-Veg</option>
+                <option value="Non-Vegetarian">Non-Vegetarian</option>
+                <option value="Flexible Diet">Flexible Diet</option>
+              </select>
+            </div>
+
+            {/* Drinking Habits */}
+            <div className="smart-input-group">
+              <label>Drinking Habits *</label>
+              <select
+                value={form.drinking}
+                onChange={(e) => setForm({ ...form, drinking: e.target.value })}
+              >
+                <option value="Non-Drinker">Non-Drinker</option>
+                <option value="Occasional Drinker">Occasional Drinker</option>
+                <option value="Regular">Regular</option>
+              </select>
+            </div>
+
+            {/* Smoking Habits */}
+            <div className="smart-input-group">
+              <label>Smoking Habits *</label>
+              <select
+                value={form.smoking}
+                onChange={(e) => setForm({ ...form, smoking: e.target.value })}
+              >
+                <option value="Non-Smoker">Non-Smoker</option>
+                <option value="Occasional Smoker">Occasional Smoker</option>
+                <option value="Smoker">Smoker</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Interests & Hobbies Chips */}
+          <div className="smart-hobbies-section">
+            <label>Interests &amp; Hobbies (Select all that apply)</label>
+            <div className="smart-chips-wrapper">
+              {AVAILABLE_INTERESTS.map((tag) => {
+                const isSelected = form.interests.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    className={`smart-chip-btn ${isSelected ? 'active' : ''}`}
+                    onClick={() => toggleInterest(tag)}
+                  >
+                    #{tag}
+                  </button>
+                );
+              })}
+              {customHobbies.map((tag) => {
+                const isSelected = form.interests.includes(tag);
+                return (
+                  <span key={`c-${tag}`} className={`smart-chip-btn ${isSelected ? 'active' : ''}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <button type="button" onClick={() => toggleInterest(tag)} style={{ background: 'none', border: 0, color: 'inherit', cursor: 'pointer', padding: 0, font: 'inherit' }}>
+                      #{tag}
+                    </button>
+                    <button type="button" aria-label={`Remove ${tag}`} onClick={() => removeCustomHobby(tag)} style={{ background: 'none', border: 0, color: 'inherit', cursor: 'pointer', padding: 0, font: 'inherit' }}>×</button>
+                  </span>
+                );
+              })}
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+              <input
+                type="text"
+                value={customHobby}
+                maxLength={24}
+                placeholder="Add your own hobby…"
+                onChange={(e) => setCustomHobby(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomHobby(); } }}
+                style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid #cbd5e1' }}
+              />
+              <button type="button" className="smart-chip-btn active" onClick={addCustomHobby}>[ + Add ]</button>
+            </div>
+          </div>
+
+          {/* Action Trigger inside Form */}
+          {optInChoice === 'yes' ? (
+            <button
+              type="button"
+              className="btn-calculate-matches"
+              onClick={handleCalculateMatches}
+              disabled={isLoading}
+            >
+              <span className="material-icons-outlined" style={{ fontSize: '20px' }}>sync_alt</span>
+              {isLoading ? 'Calculating Compatibility Scores...' : 'Calculate Compatibility & Show Ranked Roommates →'}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn-calculate-matches"
+              onClick={handleOptOutAndProceed}
+              style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
+            >
+              <span className="material-icons-outlined" style={{ fontSize: '20px' }}>check_circle</span>
+              Save Preferences &amp; Proceed Directly to Payment (Auto-Assign) →
+            </button>
+          )}
+        </div>
+
+        {/* MATCHED ROOMMATES SECTION: Displayed in Maximum Match Order if Opted In */}
+        {optInChoice === 'yes' && hasCalculated && (
+          <div className="matches-results-container">
+            <div className="matches-section-title">
+              <h3>
+                <span className="material-icons-outlined" style={{ color: '#ca8a04', fontSize: '22px' }}>groups</span>
+                Available Roommates (Ranked by Compatibility)
+              </h3>
+              <span className="matches-order-pill">⚡ Sorted in Maximum Match Order</span>
+            </div>
+
+            {matchedRoommates.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '32px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <p style={{ color: '#64748b', fontSize: '15px', margin: 0 }}>
+                  No compatible roommates currently found for {selectedRoom?.type || 'this room sharing type'}.
+                </p>
+                <p style={{ color: '#94a3b8', fontSize: '13px', marginTop: '6px' }}>
+                  You can proceed with auto-assignment and the warden will allocate a matching roommate upon check-in.
+                </p>
+              </div>
+            ) : (
+              <div className="roommate-cards-grid">
+                {matchedRoommates.map((rm) => {
+                  const isSelected = selectedRoommate?.id === rm.id;
+                  const matchVal = rm.matchPercentage || rm.compatibility || 90;
+                  const badgeBg = matchVal >= 90 ? '#dcfce7' : matchVal >= 80 ? '#e0f2fe' : '#fef3c7';
+                  const badgeColor = matchVal >= 90 ? '#15803d' : matchVal >= 80 ? '#0369a1' : '#b45309';
+
+                  return (
+                    <div key={rm.id} className={`roommate-profile-card ${isSelected ? 'selected' : ''}`}>
+                      <div className="rm-card-top">
+                        <img src={rm.img || rm.avatar} alt={rm.name} className="rm-avatar" />
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <strong className="rm-name">{rm.name}</strong>
+                            <span
+                              className="compatibility-badge"
+                              style={{ background: badgeBg, color: badgeColor }}
+                            >
+                              ⚡ {matchVal}% Match
+                            </span>
+                          </div>
+                          <p className="rm-job">{rm.job || rm.profession} • {rm.age} yrs • {rm.company}</p>
+                          <span className="rm-room-chip">{rm.room} ({rm.sharing})</span>
+                        </div>
+                      </div>
+
+                      <div className="rm-habits-list">
+                        <div className="habit-row">
+                          <span className="habit-label">Sleep Schedule:</span>
+                          <span className="habit-val">{rm.sleepHabit}</span>
+                        </div>
+                        <div className="habit-row">
+                          <span className="habit-label">Cleanliness:</span>
+                          <span className="habit-val">{rm.cleanliness}</span>
+                        </div>
+                        <div className="habit-row">
+                          <span className="habit-label">Food Habit:</span>
+                          <span className="habit-val">{rm.foodHabit}</span>
+                        </div>
+                      </div>
+
+                      <div className="rm-hobbies-chips">
+                        {(rm.hobbies || []).map((h, i) => (
+                          <span key={i} className="hobby-chip">#{h}</span>
+                        ))}
+                      </div>
+
+                      <button
+                        className={`btn-select-rm ${isSelected ? 'btn-selected' : ''}`}
+                        onClick={() => handleSelectRoommate(rm)}
+                      >
+                        {isSelected ? '✓ Selected Roommate' : 'Choose as Roommate →'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* BOTTOM NAV BUTTONS */}
+        <div className="step-bottom-actions">
+          <button className="btn-back-step" onClick={() => navigate(`/pg/${pg.id}`)}>
+            ← Back to Room Details
+          </button>
+          <button className="btn-skip-step" onClick={handleOptOutAndProceed}>
+            Skip Matching &amp; Auto-Assign →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

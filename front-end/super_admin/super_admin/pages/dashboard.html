@@ -1,0 +1,65 @@
+<!-- ================================
+  DASHBOARD FRAGMENT (SUPER ADMIN)
+  Loaded by: navigateTo('dashboard')
+  Rendered by: dashboard_super_admin.js
+================================= -->
+<section id="dashboard-sec" class="section active">
+  <div class="sec-hdr">
+    <h2>Super Admin Dashboard</h2>
+    <p>Global revenue oversight and platform growth</p>
+  </div>
+
+  <!-- 6 KPI Cards -->
+  <div class="stats-row stats-row-6">
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-blue"><span class="material-icons-outlined" style="font-size:32px;">admin_panel_settings</span></div><span class="stat-trend up">↑ Live</span></div>
+      <div class="stat-val" id="d-total-admins">–</div>
+      <div class="stat-lbl">Regional Admins</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-purple"><span class="material-icons-outlined" style="font-size:32px;">apartment</span></div><span class="stat-trend up">↑ Live</span></div>
+      <div class="stat-val" id="d-total-pgs">–</div>
+      <div class="stat-lbl">Verified PGs</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-green"><span class="material-icons-outlined" style="font-size:32px;">payments</span></div></div>
+      <div class="stat-val" id="d-subs-rev">–</div>
+      <div class="stat-lbl">Subscriptions Revenue</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-yellow"><span class="material-icons-outlined" style="font-size:32px;">account_balance_wallet</span></div></div>
+      <div class="stat-val" id="d-comm-rev">–</div>
+      <div class="stat-lbl">Commissions Revenue</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-green"><span class="material-icons-outlined" style="font-size:32px;">monetization_on</span></div><span class="stat-trend up">↑ 12%</span></div>
+      <div class="stat-val" id="d-total-rev">–</div>
+      <div class="stat-lbl">Total Platform Revenue</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-purple"><span class="material-icons-outlined" style="font-size:32px;">pending_actions</span></div></div>
+      <div class="stat-val" id="d-pending-pgs">–</div>
+      <div class="stat-lbl">Pending PG Approvals</div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <h3>Revenue Growth</h3>
+      <p>Monthly platform revenue (Subscriptions + Commissions)</p>
+      <div class="line-chart-wrap" id="revenue-chart"></div>
+      <div class="chart-labels">
+        <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>PG Onboarding Trends</h3>
+      <p>Monthly new PG additions</p>
+      <div class="chart-area" id="booking-chart"></div>
+      <div class="chart-labels">
+        <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span>
+      </div>
+    </div>
+  </div>
+</section>

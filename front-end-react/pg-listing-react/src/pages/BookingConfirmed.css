@@ -1,0 +1,93 @@
+/* Booking confirmation: credentials actions + receipt modal */
+.cred-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 18px 0 6px;
+}
+.btn-copy-cred.strong {
+  padding: 11px 18px;
+  font-weight: 700;
+}
+.cred-actions .btn-tenant-portal-action[disabled] {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.rcpt-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 16px;
+}
+.rcpt-modal {
+  background: #fff;
+  width: min(520px, 100%);
+  max-height: 92vh;
+  overflow: auto;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.3);
+}
+.rcpt-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.rcpt-head h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 800;
+}
+.rcpt-muted {
+  color: #64748b;
+  font-size: 13px;
+}
+.rcpt-paid {
+  background: #dcfce7;
+  color: #15803d;
+  font-weight: 800;
+  font-size: 12px;
+  padding: 5px 14px;
+  border-radius: 99px;
+  letter-spacing: 0.04em;
+}
+.rcpt-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+.rcpt-table td {
+  padding: 9px 2px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 14px;
+}
+.rcpt-table td:last-child {
+  text-align: right;
+  font-weight: 600;
+}
+.rcpt-sub td {
+  color: #64748b;
+  font-size: 12.5px;
+  padding-left: 16px;
+  font-weight: 500 !important;
+}
+.rcpt-total td {
+  border-top: 2px solid #0f172a;
+  border-bottom: none;
+  font-size: 17px;
+  font-weight: 800 !important;
+}
+.rcpt-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}

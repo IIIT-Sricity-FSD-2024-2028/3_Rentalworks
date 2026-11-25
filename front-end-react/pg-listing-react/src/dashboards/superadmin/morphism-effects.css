@@ -1,0 +1,1406 @@
+/* ============================================================
+   MORPHISM EFFECTS — Dynamic Transitions & Visual Morphisms
+   Shared CSS for all legacy HTML dashboards
+   ============================================================ */
+
+/* ===== KEYFRAME ANIMATIONS ===== */
+
+@keyframes fadeInUp {
+  0% { opacity: 0; transform: translateY(24px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInScale {
+  0% { opacity: 0; transform: scale(0.96) translateY(12px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes slideInLeft {
+  0% { opacity: 0; transform: translateX(-20px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes shimmerSweep {
+  0% { transform: skewX(-18deg) translateX(-150%); }
+  100% { transform: skewX(-18deg) translateX(350%); }
+}
+
+@keyframes gradientDrift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes pulseRing {
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(2.4); opacity: 0; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+@keyframes badgePop {
+  0% { opacity: 0; transform: scale(0.6) translateY(6px); }
+  60% { transform: scale(1.1) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes progressFill {
+  0% { width: 0 !important; }
+}
+
+@keyframes tableRowFade {
+  0% { opacity: 0; transform: translateX(-10px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes valueScaleIn {
+  0% { opacity: 0; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes btnShineSweep {
+  0% { transform: skewX(-20deg) translateX(-150%); }
+  100% { transform: skewX(-20deg) translateX(350%); }
+}
+
+@keyframes orbFloat {
+  0% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(15px, -10px) scale(1.03); }
+  66% { transform: translate(-8px, 8px) scale(0.97); }
+  100% { transform: translate(10px, -15px) scale(1.01); }
+}
+
+@keyframes toggleBounce {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.12, 0.88); }
+  60% { transform: scale(0.96, 1.04); }
+  100% { transform: scale(1); }
+}
+
+@keyframes textShimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* ===== PAGE ENTRANCE ANIMATIONS ===== */
+
+/* Main content area fades in */
+.content,
+.content-area,
+.page-content,
+#main-content-target,
+#dynamic-page-container {
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Active section/page stagger */
+.section.active > * {
+  opacity: 0;
+  animation: fadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.section.active > *:nth-child(1) { animation-delay: 0.04s; }
+.section.active > *:nth-child(2) { animation-delay: 0.1s; }
+.section.active > *:nth-child(3) { animation-delay: 0.16s; }
+.section.active > *:nth-child(4) { animation-delay: 0.22s; }
+.section.active > *:nth-child(5) { animation-delay: 0.28s; }
+.section.active > *:nth-child(6) { animation-delay: 0.34s; }
+.section.active > *:nth-child(7) { animation-delay: 0.40s; }
+.section.active > *:nth-child(8) { animation-delay: 0.46s; }
+
+/* ===== SIDEBAR GLASS MORPHISM ===== */
+
+.sidebar,
+#sidebar {
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  border-right: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.04) !important;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.3s ease,
+              box-shadow 0.3s ease;
+}
+
+.sidebar .sb-brand,
+.sidebar .sidebar-brand,
+.sidebar .sidebar-logo,
+.sidebar-brand,
+.sidebar-logo {
+  background: transparent;
+  transition: background 0.2s ease;
+}
+
+/* --- APPLE-STYLE SLIDING GLASS PILL INDICATOR --- */
+
+/* Normalize nav containers */
+.sb-nav,
+.sidebar-nav {
+  position: relative !important;
+  padding: 12px 12px !important;
+}
+
+/* Uniform nav item metrics so the pill math is deterministic */
+.sb-nav .nav-item,
+.sidebar-nav .nav-item {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  height: 42px !important;
+  margin-bottom: 4px !important;
+  padding: 0 14px !important;
+  box-sizing: border-box !important;
+  border-radius: 999px !important;
+}
+
+/* The sliding glass pill itself */
+.sb-nav::before,
+.sidebar-nav::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 12px;
+  height: 42px;
+  border-radius: 999px;
+  /* Apple frosted pill: translucent white + blur + hairline + soft shadow */
+  background: linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.55) 100%);
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.9),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.03);
+  pointer-events: none;
+  z-index: 0;
+  transform: translateY(calc(var(--pill-i, 0) * 46px));
+  opacity: var(--pill-o, 0);
+  transition: transform 0.45s cubic-bezier(0.32, 0.72, 0.28, 1),
+              opacity 0.3s ease;
+}
+
+/* Show pill only when some item is active */
+.sb-nav:has(.nav-item.active)::before,
+.sidebar-nav:has(.nav-item.active)::before {
+  --pill-o: 1;
+}
+
+/* Pill position mapping — default containers (admin, warden, tenant) */
+.sb-nav:has(.nav-item:nth-child(1).active),
+.sidebar-nav:not(:has(> .nav-section-title)):has(.nav-item:nth-child(1).active) { --pill-i: 0; }
+.sb-nav:has(.nav-item:nth-child(2).active),
+.sidebar-nav:not(:has(> .nav-section-title)):has(.nav-item:nth-child(2).active) { --pill-i: 1; }
+.sb-nav:has(.nav-item:nth-child(3).active),
+.sidebar-nav:not(:has(> .nav-section-title)):has(.nav-item:nth-child(3).active) { --pill-i: 2; }
+.sb-nav:has(.nav-item:nth-child(4).active),
+.sidebar-nav:not(:has(> .nav-section-title)):has(.nav-item:nth-child(4).active) { --pill-i: 3; }
+.sb-nav:has(.nav-item:nth-child(5).active),
+.sidebar-nav:not(:has(> .nav-section-title)):has(.nav-item:nth-child(5).active) { --pill-i: 4; }
+.sb-nav:has(.nav-item:nth-child(6).active),
+.sidebar-nav:not(:has(> .nav-section-title)):has(.nav-item:nth-child(6).active) { --pill-i: 5; }
+.sb-nav:has(.nav-item:nth-child(7).active),
+.sidebar-nav:not(:has(> .nav-section-title)):has(.nav-item:nth-child(7).active) { --pill-i: 6; }
+.sb-nav:has(.nav-item:nth-child(8).active),
+.sidebar-nav:not(:has(> .nav-section-title)):has(.nav-item:nth-child(8).active) { --pill-i: 7; }
+
+/* Owner portal: .nav-section-title occupied child 1, items started at child 2
+   — but title is now removed from the HTML. Keep these rules as safety
+   fallback in case a cached version still has it. */
+.sidebar-nav:has(> .nav-section-title):has(.nav-item:nth-child(2).active) { --pill-i: 0; }
+.sidebar-nav:has(> .nav-section-title):has(.nav-item:nth-child(3).active) { --pill-i: 1; }
+.sidebar-nav:has(> .nav-section-title):has(.nav-item:nth-child(4).active) { --pill-i: 2; }
+.sidebar-nav:has(> .nav-section-title):has(.nav-item:nth-child(5).active) { --pill-i: 3; }
+.sidebar-nav:has(> .nav-section-title):has(.nav-item:nth-child(6).active) { --pill-i: 4; }
+.sidebar-nav:has(> .nav-section-title):has(.nav-item:nth-child(7).active) { --pill-i: 5; }
+.sidebar-nav:has(> .nav-section-title):has(.nav-item:nth-child(8).active) { --pill-i: 6; }
+.sidebar-nav:has(> .nav-section-title):has(.nav-item:nth-child(9).active) { --pill-i: 7; }
+
+/* Hide nav-section-title if it still exists (cached JS) */
+.nav-section-title {
+  display: none !important;
+}
+
+/* Kill legacy active backgrounds/bars — replaced by glass pill */
+.sb-nav .nav-item.active::before,
+.sidebar-nav .nav-item.active::before {
+  display: none !important;
+}
+
+/* Per-item glass active state — fallback for browsers without :has().
+   When :has() IS supported, the sliding pill handles everything,
+   so we make the per-item background transparent to avoid doubles. */
+.sb-nav .nav-item.active,
+.sidebar-nav .nav-item.active {
+  color: var(--primary, #2563eb) !important;
+  font-weight: 600;
+  background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.55) 100%);
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.9),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.03);
+}
+
+/* When :has() is supported: per-item bg becomes transparent
+   so ONLY the sliding pill shows — no double */
+@supports selector(:has(*)) {
+  .sb-nav:has(.nav-item.active) .nav-item.active,
+  .sidebar-nav:has(.nav-item.active) .nav-item.active {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Sidebar brand hover */
+.sidebar .sb-brand:hover,
+.sidebar .sidebar-brand:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+/* Nav item hover — gentle tint only (no movement, pill must stay aligned) */
+.nav-item {
+  transition: background 0.25s ease, color 0.2s ease,
+              box-shadow 0.25s ease, border-color 0.25s ease !important;
+}
+
+.nav-item:hover {
+  background: rgba(0, 0, 0, 0.035) !important;
+}
+
+/* ===== NAVBAR / TOPBAR GLASS MORPHISM ===== */
+
+.navbar,
+.topbar {
+  /* NOTE: no !important here — scroll-driven animation must be able
+     to override these properties (animations lose to !important). */
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.03),
+              inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: box-shadow 0.3s ease, background 0.3s ease,
+              border-radius 0.3s ease, margin 0.3s ease;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.navbar:hover,
+.topbar:hover {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+/* --- SCROLL-DRIVEN MORPH (Apple floating bar) ---
+   As you scroll, the topbar lifts off the edge into a floating,
+   fully-rounded, more-frosted glass bar. Uses CSS scroll-driven
+   animations; browsers without support keep the static glass. */
+@supports (animation-timeline: scroll()) {
+  @keyframes topbarScrollMorph {
+    0% {
+      margin: 0 0 0 0;
+      border-radius: 0;
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.03),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(20px) saturate(1.2);
+      -webkit-backdrop-filter: blur(20px) saturate(1.2);
+    }
+    100% {
+      margin: 8px 14px 0 14px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.10),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(28px) saturate(1.6);
+      -webkit-backdrop-filter: blur(28px) saturate(1.6);
+    }
+  }
+
+  .navbar,
+  .topbar {
+    animation: topbarScrollMorph linear both;
+    animation-timeline: scroll(root block);
+    animation-range: 0px 140px;
+  }
+}
+
+/* Notification bell pulse */
+.nb-dot,
+.notif-dot,
+.notif-badge {
+  animation: pulseRing 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ===== STAT CARDS — GLASS MORPHISM ===== */
+
+.stat-card,
+.u-sum-card,
+.booking-summary .stat-card,
+.pay-summary .stat-card {
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  border-radius: var(--radius-md, 10px) !important;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s ease,
+              border-color 0.3s ease,
+              background 0.3s ease;
+}
+
+/* Glass shine highlight on top of card */
+.stat-card::before,
+.u-sum-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 100%);
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 0;
+}
+
+.stat-card:hover,
+.u-sum-card:hover {
+  transform: translateY(-5px) scale(1.01);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1) !important;
+  border-color: rgba(37, 99, 235, 0.2) !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Stagger stat cards entrance */
+.stats-row > *,
+.user-summary > *,
+.booking-summary > *,
+.pay-summary > * {
+  opacity: 0;
+  animation: fadeInScale 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.stats-row > *:nth-child(1) { animation-delay: 0.08s; }
+.stats-row > *:nth-child(2) { animation-delay: 0.14s; }
+.stats-row > *:nth-child(3) { animation-delay: 0.2s; }
+.stats-row > *:nth-child(4) { animation-delay: 0.26s; }
+.stats-row > *:nth-child(5) { animation-delay: 0.32s; }
+.stats-row > *:nth-child(6) { animation-delay: 0.38s; }
+
+.user-summary > *:nth-child(1) { animation-delay: 0.08s; }
+.user-summary > *:nth-child(2) { animation-delay: 0.14s; }
+.user-summary > *:nth-child(3) { animation-delay: 0.2s; }
+.user-summary > *:nth-child(4) { animation-delay: 0.26s; }
+.user-summary > *:nth-child(5) { animation-delay: 0.32s; }
+
+.booking-summary > *:nth-child(1) { animation-delay: 0.08s; }
+.booking-summary > *:nth-child(2) { animation-delay: 0.14s; }
+.booking-summary > *:nth-child(3) { animation-delay: 0.2s; }
+.booking-summary > *:nth-child(4) { animation-delay: 0.26s; }
+.booking-summary > *:nth-child(5) { animation-delay: 0.32s; }
+
+.pay-summary > *:nth-child(1) { animation-delay: 0.08s; }
+.pay-summary > *:nth-child(2) { animation-delay: 0.14s; }
+.pay-summary > *:nth-child(3) { animation-delay: 0.2s; }
+.pay-summary > *:nth-child(4) { animation-delay: 0.26s; }
+
+/* Stat value scale pulse on load */
+.stat-val,
+.u-sum-val {
+  animation: valueScaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+}
+
+/* ===== CHART CARDS — GLASS MORPHISM ===== */
+
+.chart-card,
+.charts-row > * {
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s ease;
+}
+
+.chart-card::before,
+.charts-row > *::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.chart-card:hover,
+.charts-row > *:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+}
+
+.charts-row > * {
+  opacity: 0;
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.charts-row > *:nth-child(1) { animation-delay: 0.15s; }
+.charts-row > *:nth-child(2) { animation-delay: 0.25s; }
+
+/* ===== TABLE WRAPPER — GLASS MORPHISM ===== */
+
+.tbl-wrap,
+.data-tbl-wrap {
+  background: rgba(255, 255, 255, 0.65) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  overflow: hidden;
+  transition: box-shadow 0.3s ease;
+}
+
+.tbl-wrap:hover,
+.data-tbl-wrap:hover {
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.06);
+}
+
+/* Table row stagger fade */
+.data-tbl tbody tr {
+  animation: tableRowFade 0.35s ease both;
+}
+.data-tbl tbody tr:nth-child(1) { animation-delay: 0.05s; }
+.data-tbl tbody tr:nth-child(2) { animation-delay: 0.08s; }
+.data-tbl tbody tr:nth-child(3) { animation-delay: 0.11s; }
+.data-tbl tbody tr:nth-child(4) { animation-delay: 0.14s; }
+.data-tbl tbody tr:nth-child(5) { animation-delay: 0.17s; }
+.data-tbl tbody tr:nth-child(6) { animation-delay: 0.2s; }
+
+.data-tbl tr {
+  transition: background 0.2s ease;
+}
+
+.data-tbl tr:hover td {
+  background: rgba(0, 0, 0, 0.015) !important;
+}
+
+/* ===== ACTIVITY / FEED CARDS — GLASS ===== */
+
+.activity-card,
+.system-health-card,
+.quick-actions-card,
+.recipients-card,
+.notif-history,
+.notif-compose {
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.activity-card::before,
+.system-health-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 100%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.activity-card:hover,
+.system-health-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+/* ===== PROPERTY CARDS — GLASS ===== */
+
+.prop-card,
+.prop-grid > * {
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s ease,
+              border-color 0.3s ease;
+}
+
+.prop-card::before,
+.prop-grid > *::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.prop-card:hover,
+.prop-grid > *:hover {
+  transform: translateY(-5px) scale(1.005);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.1);
+  border-color: rgba(108, 99, 255, 0.25) !important;
+}
+
+.prop-grid > * {
+  opacity: 0;
+  animation: fadeInScale 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.prop-grid > *:nth-child(1) { animation-delay: 0.1s; }
+.prop-grid > *:nth-child(2) { animation-delay: 0.2s; }
+
+/* ===== BUTTONS — SHIMMER & HOVER EFFECTS ===== */
+
+.btn-add,
+.btn-send,
+.btn-login,
+.btn-confirm-blue,
+.btn-confirm-green,
+.btn-approve,
+.btn-issue-refund {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.btn-add::before,
+.btn-send::before,
+.btn-login::before,
+.btn-confirm-blue::before,
+.btn-confirm-green::before,
+.btn-approve::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -60%;
+  width: 40%;
+  height: 200%;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.18) 45%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.18) 55%,
+    transparent 70%
+  );
+  transform: skewX(-20deg) translateX(-150%);
+  transition: none;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.btn-add:hover::before,
+.btn-send:hover::before,
+.btn-login:hover::before,
+.btn-confirm-blue:hover::before,
+.btn-confirm-green:hover::before,
+.btn-approve:hover::before {
+  animation: btnShineSweep 0.7s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+.btn-add:hover,
+.btn-send:hover,
+.btn-login:hover,
+.btn-confirm-blue:hover,
+.btn-confirm-green:hover,
+.btn-approve:hover,
+.btn-issue-refund:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.btn-add:active,
+.btn-send:active,
+.btn-login:active,
+.btn-confirm-blue:active,
+.btn-confirm-green:active,
+.btn-approve:active {
+  transform: translateY(1px) scale(0.98);
+  transition: transform 0.1s ease;
+}
+
+/* ===== BADGE POP-IN ===== */
+
+.badge,
+.room-chip,
+.badge-active,
+.badge-pending,
+.badge-overdue,
+.badge-suspended,
+.badge-cancelled,
+.badge-completed,
+.badge-approved,
+.badge-rejected,
+.badge-offboarding,
+.badge-verified,
+.badge-tenant,
+.badge-owner,
+.badge-warden,
+.badge-admin,
+.nh-type-badge {
+  animation: badgePop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.badge:hover,
+.room-chip:hover {
+  transform: translateY(-1px);
+}
+
+/* ===== PROGRESS BAR FILL ===== */
+
+.safety-fill,
+.progress-fill,
+.bar-fill {
+  animation: progressFill 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+  position: relative;
+  overflow: hidden;
+}
+
+.safety-fill::after,
+.progress-fill::after,
+.bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  animation: shimmerSweep 2s ease-in-out infinite;
+  transform: skewX(-18deg);
+}
+
+/* ===== QUICK ACTION BUTTONS — GLASS ===== */
+
+.qa-btn,
+.qa-grid > * {
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.qa-btn:hover,
+.qa-grid > *:hover {
+  transform: translateY(-3px) scale(1.02);
+  background: rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* ===== MODAL GLASS MORPHISM ===== */
+
+.modal-overlay {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: opacity 0.3s ease;
+}
+
+.modal {
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.15) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ===== TOAST ENHANCEMENT ===== */
+
+.toast {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* ===== NOTIFICATION HISTORY ITEMS ===== */
+
+.nh-item {
+  transition: background 0.2s ease, transform 0.2s ease;
+  border-radius: var(--radius-sm, 6px);
+}
+
+.nh-item:hover {
+  background: rgba(0, 0, 0, 0.02);
+  transform: translateX(4px);
+}
+
+/* ===== FEED ITEMS — SUBTLE HOVER ===== */
+
+.feed-item {
+  transition: background 0.2s ease, transform 0.2s ease;
+  border-radius: var(--radius-sm, 6px);
+}
+
+.feed-item:hover {
+  background: rgba(0, 0, 0, 0.015);
+  transform: translateX(4px);
+}
+
+/* ===== HEALTH ITEMS ===== */
+
+.health-item {
+  transition: background 0.2s ease, transform 0.2s ease;
+  border-radius: var(--radius-sm, 6px);
+}
+
+.health-item:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+/* ===== FORM INPUT FOCUS MORPHISM ===== */
+
+.inp-wrap input,
+.form-field input,
+.f-field input,
+.notif-field input,
+.notif-field textarea,
+input[type="text"],
+input[type="password"],
+input[type="email"],
+textarea,
+select {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.inp-wrap input:focus,
+.form-field input:focus,
+.f-field input:focus,
+.notif-field input:focus,
+.notif-field textarea:focus,
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+textarea:focus,
+select:focus {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+  background: white !important;
+}
+
+/* ===== TOGGLE SWITCH BOUNCE ===== */
+
+.toggle-slider,
+.toggle-slider:before {
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  animation: toggleBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ===== ICON BUTTON HOVER ===== */
+
+.nb-icon,
+.nav-icon-btn,
+.ico-btn,
+.topbar-btn {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.nb-icon:hover,
+.nav-icon-btn:hover,
+.ico-btn:hover,
+.topbar-btn:hover {
+  transform: translateY(-2px) scale(1.06);
+}
+
+.nb-icon:active,
+.nav-icon-btn:active,
+.ico-btn:active,
+.topbar-btn:active {
+  transform: translateY(0) scale(0.95);
+}
+
+/* ===== RECIPIENT ITEMS ===== */
+
+.recipient-item {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.recipient-item:hover,
+.recipient-item.selected {
+  transform: translateX(4px);
+}
+
+/* ===== TYPE / PRIORITY BUTTONS ===== */
+
+.type-btn,
+.priority-btn {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.type-btn:hover,
+.priority-btn:hover {
+  transform: translateY(-1px);
+}
+
+/* ===== AMENITY TAGS ===== */
+
+.amenity-tag {
+  transition: all 0.2s ease !important;
+}
+
+.amenity-tag:hover {
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--primary, #2563eb);
+  transform: translateY(-1px);
+}
+
+/* ===== LOGOUT BUTTON ===== */
+
+.btn-logout {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.btn-logout:hover {
+  transform: translateY(-1px) scale(1.02);
+}
+
+/* ===== TOAST NOTIFICATION ANIMATION ===== */
+
+.toast.show {
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ===== LOADING SPINNER ===== */
+
+.spinner {
+  border: 3px solid rgba(37, 99, 235, 0.1);
+  border-top: 3px solid var(--primary, #2563eb);
+}
+
+/* ===== GRADIENT DIVIDER LINES ===== */
+
+.sec-hdr {
+  position: relative;
+  padding-bottom: 8px;
+}
+
+.sec-hdr::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary, #2563eb), transparent);
+  border-radius: 1px;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sec-hdr:hover::after {
+  width: 120px;
+}
+
+/* ===== PROPERTY SUMMARY ROW STAGGER ===== */
+
+.prop-summary > * {
+  opacity: 0;
+  animation: fadeInScale 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.prop-summary > *:nth-child(1) { animation-delay: 0.08s; }
+.prop-summary > *:nth-child(2) { animation-delay: 0.14s; }
+.prop-summary > *:nth-child(3) { animation-delay: 0.2s; }
+.prop-summary > *:nth-child(4) { animation-delay: 0.26s; }
+
+/* ===== DASHBOARD BOTTOM ROW ===== */
+
+.dashboard-bottom-row > * {
+  opacity: 0;
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.dashboard-bottom-row > *:nth-child(1) { animation-delay: 0.2s; }
+.dashboard-bottom-row > *:nth-child(2) { animation-delay: 0.3s; }
+
+/* ===== NOTIFICATION LAYOUT ===== */
+
+.notif-layout > * {
+  opacity: 0;
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.notif-layout > *:nth-child(1) { animation-delay: 0.1s; }
+.notif-layout > *:nth-child(2) { animation-delay: 0.2s; }
+
+/* ===== NOTIFICATION STATS CARD ===== */
+
+.notif-stats-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.notif-stats-card::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -30%;
+  width: 200px;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* ===== PROFILE AVATAR MORPHISM ===== */
+
+.profile-avatar-circle {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.profile-avatar-circle:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.2);
+}
+
+/* ===== AMBIENT ORB BACKGROUND ===== */
+
+.sidebar::after {
+  content: '';
+  position: absolute;
+  bottom: -60px;
+  left: -40px;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.06) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: orbFloat 10s ease-in-out infinite alternate;
+  z-index: 0;
+}
+
+/* ===== RESPONSIVE MORPHISM ADJUSTMENTS ===== */
+
+@media (max-width: 700px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .stat-card:hover,
+  .prop-card:hover,
+  .chart-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .btn-add:hover,
+  .btn-send:hover,
+  .btn-login:hover {
+    transform: translateY(-1px);
+  }
+}
+
+/* ===== REDUCED MOTION ===== */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================
+   APPLE-STYLE REFINEMENTS — Curvy edges & deeper glass
+   ============================================================ */
+
+/* --- Cards: large continuous curves + frosted depth --- */
+.stat-card,
+.u-sum-card,
+.chart-card,
+.activity-card,
+.system-health-card,
+.quick-actions-card,
+.recipients-card,
+.notif-history,
+.notif-compose,
+.tbl-wrap,
+.data-tbl-wrap {
+  border-radius: 20px !important;
+  background: rgba(255, 255, 255, 0.62) !important;
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+.prop-card,
+.prop-grid > * {
+  border-radius: 22px !important;
+}
+
+/* Inner table corners clip cleanly inside wrapper radius */
+.tbl-wrap .data-tbl,
+.data-tbl-wrap .data-tbl {
+  border-radius: 20px;
+}
+.tbl-wrap .tbl-hdr,
+.data-tbl-wrap .tbl-hdr {
+  border-radius: 20px 20px 0 0;
+}
+
+/* --- Buttons: Apple continuous-corner pills --- */
+.btn-add,
+.btn-send,
+.btn-confirm-blue,
+.btn-confirm-green,
+.btn-confirm-red,
+.btn-login,
+.btn-approve,
+.btn-reject,
+.btn-issue-refund,
+.btn-schedule,
+.btn-verify-docs,
+.btn-inspection,
+.btn-offboard {
+  border-radius: 999px !important;
+}
+
+.btn-cancel,
+.btn-edit-prop,
+.btn-logout {
+  border-radius: 999px !important;
+}
+
+.type-btn,
+.priority-btn,
+.qa-btn {
+  border-radius: 14px !important;
+}
+
+/* --- Inputs: soft rounded fields with Apple focus ring --- */
+.inp-wrap input,
+.form-grp input,
+.form-grp textarea,
+.form-grp select,
+.f-field input,
+.f-field select,
+.notif-field input,
+.notif-field textarea,
+.notif-field select,
+.modal-field input,
+.search-wrap input,
+.topbar-search input,
+textarea,
+select,
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="datetime-local"] {
+  border-radius: 12px !important;
+}
+
+.inp-wrap input:focus,
+.form-grp input:focus,
+.form-grp textarea:focus,
+.form-grp select:focus,
+.f-field input:focus,
+.f-field select:focus,
+.notif-field input:focus,
+.notif-field textarea:focus,
+.modal-field input:focus,
+.search-wrap input:focus,
+.topbar-search input:focus,
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+textarea:focus,
+select:focus {
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.18),
+              0 2px 10px rgba(0, 0, 0, 0.04) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  outline: none;
+}
+
+.search-wrap input,
+.topbar-search input {
+  border-radius: 999px !important;
+}
+
+/* --- Modals & Toasts: big frosted sheets --- */
+.modal {
+  border-radius: 24px !important;
+}
+
+.toast {
+  border-radius: 16px !important;
+}
+
+/* --- Icon buttons: perfect circles with spring press --- */
+.nb-icon,
+.nav-icon-btn,
+.ico-btn,
+.topbar-btn,
+.icon-btn {
+  border-radius: 999px !important;
+}
+
+/* --- Badges & chips stay pill-shaped --- */
+.badge,
+.room-chip,
+.amenity-tag,
+.nh-type-badge,
+.skeuo-badge,
+.nav-badge {
+  border-radius: 999px !important;
+}
+
+/* --- Toggle switches: Apple style --- */
+.toggle-switch {
+  width: 48px !important;
+  height: 28px !important;
+}
+.toggle-slider {
+  border-radius: 999px !important;
+  background: rgba(120, 120, 128, 0.24) !important;
+}
+.toggle-slider:before {
+  width: 24px !important;
+  height: 24px !important;
+  left: 2px !important;
+  bottom: 2px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15),
+              0 0 1px rgba(0, 0, 0, 0.1) !important;
+}
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(20px) !important;
+}
+
+/* --- Progress bars: thin rounded Apple style --- */
+.safety-bar,
+.mini-progress {
+  border-radius: 999px !important;
+  height: 6px !important;
+}
+.safety-fill {
+  border-radius: 999px !important;
+}
+
+/* --- Section headers: refined typography spacing --- */
+.sec-hdr h2,
+.modal-title,
+.topbar-title {
+  letter-spacing: -0.02em !important;
+}
+
+/* --- Scrollbars: slim overlay style --- */
+.sidebar-nav::-webkit-scrollbar,
+.content::-webkit-scrollbar,
+.content-area::-webkit-scrollbar {
+  width: 5px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb,
+.content::-webkit-scrollbar-thumb,
+.content-area::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 999px;
+}
+
+/* ============================================================
+   OWNER PORTAL SPECIFIC CLASS COVERAGE
+   Owner uses different class names — map them to effects
+   ============================================================ */
+
+/* Owner generic card (.card) → same glass as .stat-card */
+.card,
+.card-title,
+.card-header {
+  border-radius: 20px !important;
+  background: rgba(255, 255, 255, 0.62) !important;
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Owner stat-card already covered, but .stat-value scale-in */
+.stat-value,
+.stat-label,
+.stat-info {
+  /* stat-value: value scale pulse on load */
+}
+.stat-value {
+  animation: valueScaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both !important;
+}
+
+/* Owner stats-grid stagger */
+.stats-grid > *,
+.grid-2 > * {
+  opacity: 0;
+  animation: fadeInScale 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.stats-grid > *:nth-child(1),
+.grid-2 > *:nth-child(1) { animation-delay: 0.08s; }
+.stats-grid > *:nth-child(2),
+.grid-2 > *:nth-child(2) { animation-delay: 0.14s; }
+.stats-grid > *:nth-child(3),
+.grid-2 > *:nth-child(3) { animation-delay: 0.20s; }
+.stats-grid > *:nth-child(4),
+.grid-2 > *:nth-child(4) { animation-delay: 0.26s; }
+
+/* Owner issue-card & notif-card glass + hover lift */
+.issue-card,
+.notif-card {
+  border-radius: 20px !important;
+  background: rgba(255, 255, 255, 0.62) !important;
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+}
+.issue-card:hover,
+.notif-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.10) !important;
+}
+
+/* Owner occupancy-fill progress animation */
+.occupancy-fill {
+  animation: progressFill 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both !important;
+  position: relative;
+  overflow: hidden;
+}
+.occupancy-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.3) 50%, transparent 100%);
+  animation: shimmerSweep 2s ease-in-out infinite;
+  transform: skewX(-18deg);
+}
+
+/* Owner buttons (btn-primary, btn-secondary) → Apple pill + shine */
+.btn-primary,
+.btn-secondary {
+  border-radius: 999px !important;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.btn-primary::before,
+.btn-secondary::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -60%; width: 40%; height: 200%;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.18) 45%, rgba(255,255,255,.3) 50%, rgba(255,255,255,.18) 55%, transparent 70%);
+  transform: skewX(-20deg) translateX(-150%);
+  pointer-events: none; z-index: 2;
+}
+.btn-primary:hover::before,
+.btn-secondary:hover::before {
+  animation: btnShineSweep 0.7s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+.btn-primary:hover,
+.btn-secondary:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(0,0,0,.12);
+}
+
+/* Owner form inputs & select */
+.form-input,
+.form-select,
+.form-group input,
+.form-group select,
+.form-group textarea {
+  border-radius: 12px !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.form-input:focus,
+.form-select:focus,
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  box-shadow: 0 0 0 4px rgba(59,130,246,.18), 0 2px 10px rgba(0,0,0,.04) !important;
+  background: rgba(255,255,255,.95) !important;
+}
+
+/* Owner filter/search inputs */
+.filter-search,
+.filter-select {
+  border-radius: 999px !important;
+}
+
+/* Owner filter-bar glass */
+.filter-bar {
+  background: rgba(255,255,255,.65);
+  backdrop-filter: blur(16px);
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.7);
+}
+
+/* Owner empty-state glass */
+.empty-state {
+  background: rgba(255,255,255,.6);
+  backdrop-filter: blur(16px);
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.6);
+}
+
+/* Owner amenities-grid / amenity-tag */
+.amenity-tag {
+  border-radius: 999px !important;
+  transition: all 0.2s ease !important;
+}
+.amenity-tag:hover {
+  background: rgba(108,99,255,.08) !important;
+  transform: translateY(-1px);
+}
+
+/* Owner back-link hover */
+.back-link:hover {
+  text-decoration: underline;
+}
+
+/* Owner modal already covered by .modal rules above */
+
+/* Owner toast already covered */
+
+/* Owner toggle-switch already covered */
+
+/* Owner divider → subtle gradient */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+  border: none;
+}

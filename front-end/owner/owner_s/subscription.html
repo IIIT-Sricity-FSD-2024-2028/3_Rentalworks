@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RentBro - Select Subscription Plan</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="../../shared/morphism-effects.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+  <style>
+    body { background: #f8fafc; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+    .subs-container { max-width: 900px; width: 100%; padding: 40px; }
+    .subs-header { text-align: center; margin-bottom: 40px; }
+    .subs-header h1 { font-size: 32px; color: #1e293b; margin-bottom: 12px; }
+    .subs-header p { color: #64748b; font-size: 16px; }
+    .plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+    .plan-card { background: white; border-radius: 16px; padding: 40px; border: 1px solid #e2e8f0; text-align: center; transition: transform 0.3s, box-shadow 0.3s; position: relative; }
+    .plan-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+    .plan-card.premium { border-color: #3b82f6; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1); }
+    .plan-badge { position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%); background: #3b82f6; color: white; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+    .plan-name { font-size: 24px; font-weight: 700; color: #1e293b; margin-bottom: 16px; }
+    .plan-price { font-size: 48px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
+    .plan-price span { font-size: 16px; font-weight: 500; color: #64748b; }
+    .plan-features { list-style: none; padding: 0; margin: 30px 0; text-align: left; }
+    .plan-features li { display: flex; align-items: center; margin-bottom: 16px; color: #475569; font-size: 15px; }
+    .plan-features li .material-icons-outlined { color: #10b981; margin-right: 12px; font-size: 20px; }
+    .btn-subscribe { display: inline-block; width: 100%; padding: 14px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; text-decoration: none; }
+    .btn-subscribe:hover { background: #2563eb; }
+    .plan-card.basic .btn-subscribe { background: #f1f5f9; color: #475569; }
+    .plan-card.basic .btn-subscribe:hover { background: #e2e8f0; }
+
+    /* Mock Checkout Modal */
+    .checkout-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+    .checkout-box { background: white; padding: 40px; border-radius: 16px; width: 400px; text-align: center; }
+    .checkout-box h3 { margin-bottom: 20px; color: #1e293b; }
+    .mock-spinner { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <div class="subs-container">
+    <div class="subs-header">
+      <h1>Choose Your Subscription Plan</h1>
+      <p>Select a plan to activate your Owner Dashboard and list your properties on RentBro.</p>
+    </div>
+
+    <div class="plans-grid">
+      <!-- Basic Plan -->
+      <div class="plan-card basic">
+        <div class="plan-name">Standard</div>
+        <div class="plan-price">₹5,000<span>/year</span></div>
+        <p style="color:#64748b; font-size:14px;">Perfect for single property owners.</p>
+        <ul class="plan-features">
+          <li><span class="material-icons-outlined">check_circle</span> List 1 PG Property</li>
+          <li><span class="material-icons-outlined">check_circle</span> Basic Dashboard Analytics</li>
+          <li><span class="material-icons-outlined">check_circle</span> Tenant Management Tools</li>
+          <li><span class="material-icons-outlined" style="color:#cbd5e1">cancel</span> Priority Support</li>
+        </ul>
+        <button class="btn-subscribe" onclick="selectPlan('Standard', 5000)">Get Standard</button>
+      </div>
+
+      <!-- Premium Plan -->
+      <div class="plan-card premium">
+        <div class="plan-badge">Most Popular</div>
+        <div class="plan-name">Premium</div>
+        <div class="plan-price">₹8,000<span>/year</span></div>
+        <p style="color:#64748b; font-size:14px;">For owners with multiple properties.</p>
+        <ul class="plan-features">
+          <li><span class="material-icons-outlined">check_circle</span> List Unlimited Properties</li>
+          <li><span class="material-icons-outlined">check_circle</span> Advanced Analytics & Reports</li>
+          <li><span class="material-icons-outlined">check_circle</span> Tenant Management Tools</li>
+          <li><span class="material-icons-outlined">check_circle</span> 24/7 Priority Support</li>
+        </ul>
+        <button class="btn-subscribe" onclick="selectPlan('Premium', 8000)">Get Premium</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mock Checkout Modal -->
+  <div class="checkout-modal" id="checkoutModal">
+    <div class="checkout-box">
+      <div id="checkout-loading">
+        <div class="mock-spinner"></div>
+        <h3>Processing Payment...</h3>
+        <p style="color:#64748b">Please do not close this window.</p>
+      </div>
+      <div id="checkout-success" style="display:none;">
+        <span class="material-icons-outlined" style="font-size:64px; color:#10b981; margin-bottom:16px;">check_circle</span>
+        <h3>Payment Successful!</h3>
+        <p style="color:#64748b; margin-bottom:24px;">Your subscription is now active.</p>
+        <button class="btn-subscribe" onclick="proceedToDashboard()">Go to Dashboard</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Redirect if not logged in
+    const session = JSON.parse(sessionStorage.getItem('pg_user'));
+    if (!session || session.role !== 'owner') {
+      window.location.href = '../../login/login/login.html';
+    }
+
+    let selectedPlanData = null;
+
+    function selectPlan(planName, price) {
+      selectedPlanData = { plan: planName, price: price };
+      document.getElementById('checkoutModal').style.display = 'flex';
+      
+      // Simulate API payment delay
+      setTimeout(() => {
+        document.getElementById('checkout-loading').style.display = 'none';
+        document.getElementById('checkout-success').style.display = 'block';
+      }, 2000);
+    }
+
+    function proceedToDashboard() {
+      // 1. Update session
+      session.subscriptionPlan = selectedPlanData.plan;
+      session.subscriptionFee = selectedPlanData.price;
+      sessionStorage.setItem('pg_user', JSON.stringify(session));
+
+      // 2. Update registered_owners so Super Admin can see it
+      const owners = JSON.parse(localStorage.getItem('registered_owners') || '[]');
+      const ownerIdx = owners.findIndex(o => o.email === session.email);
+      if (ownerIdx !== -1) {
+        owners[ownerIdx].subscriptionPlan = selectedPlanData.plan;
+        owners[ownerIdx].subscriptionFee = selectedPlanData.price;
+        localStorage.setItem('registered_owners', JSON.stringify(owners));
+      }
+
+      // Redirect
+      window.location.href = 'index.html';
+    }
+  </script>
+</body>
+</html>

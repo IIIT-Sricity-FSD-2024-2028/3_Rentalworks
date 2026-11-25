@@ -1,0 +1,57 @@
+<!-- ================================
+  GLOBAL REPORTS FRAGMENT (SUPER ADMIN)
+  Loaded by: navigateTo('global_reports')
+================================= -->
+<section id="global-reports-sec" class="section active">
+  <div class="sec-hdr">
+    <h2>Global Platform Reports</h2>
+    <p>Detailed view of PG properties and their subscription revenue</p>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="pay-summary">
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-blue"><span class="material-icons-outlined" style="font-size:32px;">business</span></div></div>
+      <div class="stat-val" id="rep-total-props">–</div>
+      <div class="stat-lbl">Total Properties</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-green"><span class="material-icons-outlined" style="font-size:32px;">check_circle</span></div></div>
+      <div class="stat-val" id="rep-active-props">–</div>
+      <div class="stat-lbl">Active Properties</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-yellow"><span class="material-icons-outlined" style="font-size:32px;">pending_actions</span></div></div>
+      <div class="stat-val" style="color:#d97706" id="rep-pending-props">–</div>
+      <div class="stat-lbl">Pending Approval</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon bg-purple"><span class="material-icons-outlined" style="font-size:32px;">monetization_on</span></div></div>
+      <div class="stat-val" id="rep-total-rev">–</div>
+      <div class="stat-lbl">Total Subscription Rev</div>
+    </div>
+  </div>
+
+  <div class="tbl-wrap">
+    <div class="tbl-hdr">
+      <div class="search-wrap">
+        <span class="s-ico"><span class="material-icons-outlined" style="font-size:24px;">search</span></span>
+        <input type="text" id="rep-search" placeholder="Search by property, owner, or region...">
+      </div>
+    </div>
+    <table class="data-tbl">
+      <thead>
+        <tr>
+          <th>Property Name</th>
+          <th>Owner Email</th>
+          <th>Region</th>
+          <th>Status</th>
+          <th>Subscription Plan</th>
+          <th class="ta-right">Subscription Revenue</th>
+        </tr>
+      </thead>
+      <tbody id="global-reports-table-body">
+      </tbody>
+    </table>
+  </div>
+</section>

@@ -1,0 +1,759 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ===== VARIABLES (Premium Light Grey & Gold) ===== */
+.exact-login-page {
+  --bg:          linear-gradient(135deg, #f8fafc, #e2e8f0);
+  --card-bg:     rgba(255, 255, 255, 0.95);
+  --primary:     #d4af37;      /* Metallic Gold */
+  --primary-hover: #b8860b;    /* Dark Gold */
+  --accent:      #d4af37;      
+  --green:       #10b981;
+  --green-light: rgba(16, 185, 129, 0.1);
+  --red:         #ef4444;
+  --red-light:   rgba(239, 68, 68, 0.1);
+  --border:      #e2e8f0; 
+  --input-bg:    #ffffff;
+  --text:        #1e293b;
+  --muted:       #64748b;
+  --radius:      24px;
+  --radius-sm:   12px;
+  --shadow:      0 20px 40px -10px rgba(0, 0, 0, 0.1);
+  --font:        'Inter', system-ui, sans-serif;
+
+  min-height: 100vh;
+  width: 100%;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.exact-login-page *, 
+.exact-login-page *::before, 
+.exact-login-page *::after { 
+  box-sizing: border-box; 
+}
+
+/* ===== MAIN CONTAINER ===== */
+.exact-login-page .main-container {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+/* ===== HOME BUTTON ===== */
+.exact-login-page .home-back-link {
+  position: absolute;
+  top: 30px;
+  left: 40px;
+  text-decoration: none;
+  color: #111827 !important;
+  background: linear-gradient(135deg, #d4af37, #b8860b) !important;
+  border: none !important;
+  padding: 10px 22px !important;
+  border-radius: 30px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.45) !important;
+  cursor: pointer !important;
+  z-index: 100 !important;
+}
+
+.exact-login-page .home-back-link:hover {
+  background: linear-gradient(135deg, #f1cf59, #d4af37) !important;
+  color: #000000 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6) !important;
+}
+
+/* ===== TOP HEADER ===== */
+.exact-login-page .top-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.exact-login-page .brand-logo { 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  gap: 10px; 
+  margin-bottom: 16px; 
+}
+
+.exact-login-page .brand-icon { 
+  font-size: 44px; 
+  filter: drop-shadow(0 0 8px rgba(212,175,55,0.4)); 
+  color: #d4af37;
+  display: flex;
+  align-items: center;
+}
+
+.exact-login-page .brand-name { 
+  font-size: 34px; 
+  font-weight: 800; 
+  color: #1e293b; 
+  letter-spacing: -0.5px; 
+}
+
+.exact-login-page .brand-headline {
+  font-size: 46px;
+  font-weight: 800;
+  line-height: 1.2;
+  background: linear-gradient(135deg, #b8860b, #d4af37);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 16px;
+  letter-spacing: -0.5px;
+  filter: drop-shadow(0 2px 10px rgba(0,0,0,0.1));
+}
+
+/* ===== CARD PANEL ===== */
+.exact-login-page .card-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  background: transparent;
+}
+
+.exact-login-page .card-panel-inner {
+  width: 100%;
+  max-width: 480px;
+  transition: max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== BACK BUTTON ===== */
+.exact-login-page .back-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #b8860b;
+  background: rgba(212, 175, 55, 0.12);
+  border: 1.5px solid #d4af37;
+  padding: 8px 18px;
+  border-radius: 20px;
+  margin-bottom: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: fit-content;
+  backdrop-filter: blur(8px);
+}
+.exact-login-page .back-btn:hover { 
+  color: #111; 
+  border-color: #b8860b; 
+  background: linear-gradient(135deg, #f1cf59, #d4af37); 
+  transform: translateX(-4px); 
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+
+/* ===== BASE CARD ===== */
+.exact-login-page .card {
+  margin: 0 auto;
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--radius);
+  padding: 48px 40px;
+  box-shadow: var(--shadow);
+  width: 100%;
+  border: 1px solid var(--border);
+}
+
+.exact-login-page .card-title { 
+  font-size: 26px; 
+  font-weight: 800; 
+  color: var(--text); 
+  margin-bottom: 8px; 
+  letter-spacing: -0.5px; 
+}
+
+.exact-login-page .card-sub { 
+  font-size: 15px; 
+  color: var(--muted); 
+  margin-bottom: 32px; 
+  line-height: 1.5; 
+}
+
+/* ===== ROLE SELECTOR CARD ===== */
+.exact-login-page .role-card { 
+  max-width: 500px;
+  padding: 48px 40px; 
+}
+
+.exact-login-page .role-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+}
+
+.exact-login-page .role-layout-text {
+  flex: 0 0 auto;
+}
+
+.exact-login-page .role-layout-text .card-title {
+  font-size: 32px;
+  line-height: 1.2;
+  margin-bottom: 0;
+  text-align: center;
+}
+
+.exact-login-page .role-grid { 
+  display: flex; 
+  flex-wrap: wrap; 
+  justify-content: center; 
+  gap: 16px; 
+  max-width: 350px; /* limits to exactly 3 items per row */
+}
+
+.exact-login-page .role-btn {
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  justify-content: center; 
+  gap: 12px;
+  padding: 24px 12px; 
+  border-radius: var(--radius-sm); 
+  font-size: 14px; 
+  font-weight: 600; 
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+  border: 1.5px solid var(--border); 
+  color: var(--text); 
+  background: var(--input-bg);
+  width: 96px; /* Fixed width for perfect 3x2 wrapping */
+}
+
+.exact-login-page .role-btn:hover {
+  border-color: var(--accent); 
+  color: var(--accent); 
+  background: rgba(212,175,55,0.05);
+  transform: translateY(-4px); 
+  box-shadow: 0 10px 20px -5px rgba(212, 175, 55, 0.2);
+}
+
+.exact-login-page .role-btn:active { 
+  transform: scale(0.97); 
+}
+
+.exact-login-page .role-initial {
+  width: 44px; 
+  height: 44px; 
+  border-radius: 50%; 
+  background: #f1f5f9; 
+  display: flex; 
+  align-items: center;
+  justify-content: center; 
+  font-size: 16px; 
+  font-weight: 700; 
+  color: #475569; 
+  transition: all 0.3s;
+}
+
+.exact-login-page .role-btn:hover .role-initial { 
+  background: linear-gradient(135deg, #f1cf59, #b8860b); 
+  color: #111; 
+  box-shadow: 0 0 15px rgba(212,175,55,0.4); 
+}
+
+/* ===== LOGIN FORM CARD ===== */
+.exact-login-page .login-card { 
+  display: block; 
+}
+
+.exact-login-page .login-banner { 
+  padding: 14px 16px; 
+  border-radius: var(--radius-sm); 
+  font-size: 14px; 
+  margin-bottom: 24px; 
+  line-height: 1.5; 
+  font-weight: 500; 
+}
+
+.exact-login-page .login-banner.error   { background: var(--red-light);   color: #991b1b; border: 1px solid #fca5a5; }
+.exact-login-page .login-banner.success { background: var(--green-light); color: #14532d; border: 1px solid #86efac; }
+.exact-login-page .login-banner.warning { background: #fef9c3; color: #92400e; border: 1px solid #fde68a; }
+
+.exact-login-page .form-field { 
+  margin-bottom: 24px; 
+}
+
+.exact-login-page .form-field label { 
+  display: block; 
+  font-size: 14px; 
+  font-weight: 600; 
+  margin-bottom: 8px; 
+  color: var(--text); 
+}
+
+.exact-login-page .inp-wrap { 
+  position: relative; 
+  display: flex; 
+  align-items: center; 
+}
+
+.exact-login-page .inp-ico { 
+  position: absolute; 
+  left: 16px; 
+  font-size: 16px; 
+  color: var(--muted); 
+  pointer-events: none; 
+  display: flex;
+  align-items: center;
+}
+
+.exact-login-page .inp-wrap input { 
+  width: 100%; 
+  padding: 14px 16px 14px 46px; 
+  background: var(--input-bg); 
+  border: 1.5px solid var(--border); 
+  border-radius: var(--radius-sm); 
+  font-size: 15px; 
+  outline: none; 
+  transition: all 0.3s; 
+  color: var(--text); 
+}
+
+.exact-login-page .inp-wrap input::placeholder { 
+  color: #94a3b8; 
+}
+
+.exact-login-page .inp-wrap input:focus { 
+  border-color: var(--accent); 
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.15); 
+  background: #ffffff; 
+}
+
+.exact-login-page .inp-wrap input.input-error { 
+  border-color: var(--red); 
+  background: rgba(239, 68, 68, 0.05); 
+}
+
+.exact-login-page .toggle-pw { 
+  position: absolute; 
+  right: 16px; 
+  cursor: pointer; 
+  font-size: 16px; 
+  color: var(--muted); 
+  user-select: none; 
+  transition: color 0.2s; 
+  display: flex;
+  align-items: center;
+}
+
+.exact-login-page .toggle-pw:hover { 
+  color: var(--text); 
+}
+
+.exact-login-page .login-err-msg { 
+  font-size: 13px; 
+  color: #ef4444; 
+  margin-top: 6px; 
+  min-height: 18px; 
+  font-weight: 500; 
+}
+
+.exact-login-page .btn-login { 
+  width: 100%; 
+  padding: 16px; 
+  background: linear-gradient(135deg, #d4af37, #b8860b); 
+  color: #ffffff; 
+  border-radius: var(--radius-sm); 
+  font-size: 16px; 
+  font-weight: 800; 
+  margin-top: 8px; 
+  transition: all 0.3s; 
+  border: none; 
+  letter-spacing: 0.5px; 
+  cursor: pointer;
+}
+
+.exact-login-page .btn-login:hover { 
+  background: linear-gradient(135deg, #f1cf59, #d4af37); 
+  transform: translateY(-2px); 
+  box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3); 
+  color: #111; 
+}
+
+.exact-login-page .btn-login:active { 
+  transform: scale(0.98); 
+}
+
+.exact-login-page .card-footer { 
+  text-align: center; 
+  margin-top: 28px; 
+  font-size: 14px; 
+  color: var(--muted); 
+  padding-top: 20px; 
+  border-top: 1px solid var(--border); 
+}
+
+.exact-login-page .footer-link { 
+  font-weight: 700; 
+  color: var(--accent); 
+  margin-left: 6px; 
+  transition: color 0.2s; 
+  cursor: pointer;
+}
+
+.exact-login-page .footer-link:hover { 
+  color: var(--primary-hover); 
+  text-shadow: 0 0 8px rgba(212,175,55,0.2); 
+}
+
+/* ===== GUEST SIGNUP (multi-step) ===== */
+.exact-login-page .signup-layout { 
+  display: flex; 
+  gap: 0; 
+  min-height: 520px; 
+  border-radius: var(--radius); 
+  overflow: hidden; 
+  box-shadow: var(--shadow); 
+  border: 1px solid rgba(0,0,0,0.03); 
+  width: 100%; 
+  max-width: 950px; 
+  background: #ffffff;
+}
+
+.exact-login-page .stepper-panel { 
+  background: var(--primary); 
+  color: white; 
+  padding: 40px 32px; 
+  width: 260px; 
+  flex-shrink: 0; 
+  display: flex; 
+  flex-direction: column; 
+}
+
+.exact-login-page .stepper-brand { 
+  display: flex; 
+  align-items: center; 
+  gap: 10px; 
+  margin-bottom: 32px; 
+}
+
+.exact-login-page .stepper-avatar { 
+  width: 42px; 
+  height: 42px; 
+  border-radius: 50%; 
+  background: rgba(255,255,255,0.15); 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  font-size: 18px; 
+  font-weight: 700; 
+  color: white; 
+}
+
+.exact-login-page .stepper-brand h3 { 
+  font-size: 15px; 
+  font-weight: 700; 
+  margin: 0;
+}
+
+.exact-login-page .stepper-brand p  { 
+  font-size: 12px; 
+  color: rgba(255,255,255,0.7); 
+  margin-top: 2px; 
+  margin-bottom: 0;
+}
+
+.exact-login-page .stepper-headline { 
+  font-size: 22px; 
+  font-weight: 800; 
+  line-height: 1.25; 
+  margin-bottom: 12px; 
+  letter-spacing: -0.3px; 
+}
+
+.exact-login-page .stepper-sub { 
+  font-size: 13px; 
+  color: rgba(255,255,255,0.7); 
+  margin-bottom: 36px; 
+  line-height: 1.6; 
+}
+
+.exact-login-page .steps-list { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 20px; 
+}
+
+.exact-login-page .step-item { 
+  display: flex; 
+  align-items: center; 
+  gap: 14px; 
+  opacity: 0.5; 
+  transition: opacity 0.2s; 
+}
+
+.exact-login-page .step-item.active { opacity: 1; }
+.exact-login-page .step-item.done   { opacity: 0.8; }
+
+.exact-login-page .step-circle { 
+  width: 32px; 
+  height: 32px; 
+  border-radius: 50%; 
+  background: rgba(255,255,255,0.15); 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  font-size: 13px; 
+  font-weight: 700; 
+  flex-shrink: 0; 
+  transition: background 0.2s; 
+}
+
+.exact-login-page .step-item.active .step-circle { background: white; color: var(--primary); }
+.exact-login-page .step-item.done .step-circle { background: var(--green); color: white; }
+
+.exact-login-page .step-info strong { display: block; font-size: 14px; font-weight: 600; }
+.exact-login-page .step-info span   { font-size: 12px; color: rgba(255,255,255,0.6); }
+
+.exact-login-page .signup-card { 
+  border-radius: 0; 
+  flex: 1; 
+  overflow-y: auto; 
+  max-height: 90vh; 
+  padding: 56px 50px; 
+  box-shadow: none; 
+  border: none; 
+  background: #ffffff;
+}
+
+/* ===== REGISTRATION FIELDS ===== */
+.exact-login-page .reg-field { margin-bottom: 24px; }
+.exact-login-page .reg-field label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+
+.exact-login-page .reg-inp-wrap { position: relative; display: flex; align-items: center; }
+.exact-login-page .reg-ico { position: absolute; left: 14px; font-size: 14px; color: var(--muted); pointer-events: none; }
+.exact-login-page .reg-inp-wrap input, 
+.exact-login-page .reg-inp-wrap textarea, 
+.exact-login-page .reg-inp-wrap select { 
+  width: 100%; 
+  padding: 13px 14px 13px 40px; 
+  background: var(--input-bg); 
+  border: 1.5px solid var(--border); 
+  border-radius: var(--radius-sm); 
+  font-size: 14px; 
+  outline: none; 
+  transition: all 0.3s; 
+  color: var(--text); 
+}
+
+.exact-login-page .reg-inp-wrap input:focus, 
+.exact-login-page .reg-inp-wrap textarea:focus, 
+.exact-login-page .reg-inp-wrap select:focus { 
+  background: #ffffff; 
+  border-color: var(--accent); 
+  box-shadow: 0 0 0 3px rgba(212,175,55,0.15); 
+}
+
+.exact-login-page .toggle-reg-pw { position: absolute; right: 14px; cursor: pointer; font-size: 14px; color: var(--muted); }
+.exact-login-page .reg-err { font-size: 13px; color: #ef4444; margin-top: 6px; font-weight: 500; }
+
+.exact-login-page .reg-actions { margin-top: 24px; }
+.exact-login-page .reg-actions.two-btn { display: flex; gap: 12px; }
+
+.exact-login-page .btn-next { 
+  width: 100%; 
+  padding: 14px; 
+  background: linear-gradient(135deg, #d4af37, #b8860b); 
+  color: #ffffff; 
+  border-radius: var(--radius-sm); 
+  font-size: 15px; 
+  font-weight: 700; 
+  border: none; 
+  cursor: pointer; 
+  transition: all 0.3s; 
+}
+.exact-login-page .btn-next:hover { 
+  background: linear-gradient(135deg, #f1cf59, #d4af37); 
+  transform: translateY(-2px); 
+  box-shadow: 0 8px 16px rgba(212,175,55,0.25); 
+  color: #111; 
+}
+.exact-login-page .btn-next.flex-1 { flex: 1; }
+
+.exact-login-page .btn-prev { 
+  flex: 1; 
+  padding: 14px; 
+  background: #ffffff; 
+  color: var(--muted); 
+  border-radius: var(--radius-sm); 
+  font-size: 15px; 
+  font-weight: 600; 
+  border: 1.5px solid var(--border); 
+  cursor: pointer; 
+  transition: all 0.3s; 
+}
+.exact-login-page .btn-prev:hover { 
+  background: #f8fafc; 
+  border-color: #cbd5e1; 
+  color: var(--text); 
+}
+
+.exact-login-page .reg-login-link { 
+  text-align: center; 
+  font-size: 14px; 
+  color: var(--muted); 
+  margin-top: 20px; 
+  padding-top: 20px; 
+  border-top: 1px solid var(--border); 
+}
+.exact-login-page .reg-login-link a { color: var(--accent); font-weight: 600; transition: color 0.2s;}
+.exact-login-page .reg-login-link a:hover { color: var(--primary-hover); text-shadow: 0 0 8px rgba(212,175,55,0.2); }
+
+/* ===== OWNER REGISTRATION CARD ===== */
+.exact-login-page .owner-reg-card { 
+  max-height: 90vh; 
+  overflow-y: auto; 
+  max-width: 800px; 
+  padding: 48px 40px;
+}
+.exact-login-page .owner-reg-grid { 
+  display: grid; 
+  grid-template-columns: 1fr 1fr; 
+  gap: 24px; 
+  margin-bottom: 0; 
+}
+.exact-login-page .reg-field.full { grid-column: 1 / -1; }
+
+.exact-login-page .btn-submit-reg { 
+  width: 100%; 
+  padding: 16px; 
+  background: linear-gradient(135deg, #d4af37, #b8860b); 
+  color: #ffffff; 
+  border-radius: var(--radius-sm); 
+  font-size: 16px; 
+  font-weight: 800; 
+  border: none; 
+  cursor: pointer; 
+  transition: all 0.3s; 
+  margin-top: 24px; 
+  letter-spacing: 0.5px; 
+}
+.exact-login-page .btn-submit-reg:hover { 
+  background: linear-gradient(135deg, #f1cf59, #d4af37); 
+  transform: translateY(-2px); 
+  box-shadow: 0 8px 24px rgba(212, 175, 55, 0.3); 
+  color: #111; 
+}
+
+/* ===== SUCCESS CARD ===== */
+.exact-login-page .success-card { 
+  margin: 0 auto;
+  text-align: center; 
+  padding: 60px 48px; 
+  max-width: 480px; 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid var(--border);
+  box-shadow: 0 30px 60px -15px rgba(212, 175, 55, 0.2);
+}
+
+.exact-login-page .success-icon-wrap {
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981, #059669);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28px;
+  color: white;
+  box-shadow: 0 0 0 15px rgba(16, 185, 129, 0.1);
+}
+
+.exact-login-page .redirect-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 24px;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.exact-login-page .spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid rgba(212, 175, 55, 0.3);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Demo box */
+.exact-login-page .demo-accounts-pill-box {
+  margin-top: 20px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px dashed #cbd5e1;
+  text-align: center;
+}
+
+.exact-login-page .demo-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.exact-login-page .demo-btn-chip {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.exact-login-page .demo-btn-chip:hover {
+  border-color: #d4af37;
+  color: #b8860b;
+  background: #fefce8;
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+  .exact-login-page .main-container { padding: 32px 20px; }
+  .exact-login-page .brand-headline { font-size: 36px; }
+}
+
+@media (max-width: 650px) {
+  .exact-login-page .card, 
+  .exact-login-page .role-card, 
+  .exact-login-page .signup-card { padding: 32px 24px; }
+  .exact-login-page .role-layout { flex-direction: column; gap: 24px; text-align: center; }
+  .exact-login-page .role-grid { max-width: 100%; justify-content: center; }
+  .exact-login-page .signup-layout { flex-direction: column; max-width: 100%; }
+  .exact-login-page .stepper-panel { width: 100%; padding: 32px 24px; }
+  .exact-login-page .owner-reg-grid { grid-template-columns: 1fr; }
+}
