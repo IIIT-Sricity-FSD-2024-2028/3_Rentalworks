@@ -358,13 +358,8 @@ export default function BookingReview() {
 
             <div className="security-assurances">
               <div className="assurance-item">
-<<<<<<< HEAD
-                <span className="material-icons-outlined">verified_user</span>
-                <span>Instant booking confirmation</span>
-=======
                 <span className="material-icons-outlined">bed</span>
                 <span>A bed is assigned as soon as payment goes through</span>
->>>>>>> redux-migration
               </div>
               <div className="assurance-item">
                 <span className="material-icons-outlined">lock</span>

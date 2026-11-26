@@ -8,13 +8,9 @@ import {
   mapIssueFromDb,
   mapWardenNotificationFromDb,
   mapRuleViolationFromDb,
-<<<<<<< HEAD
-} from './wardenMappers';
-=======
   mapStayFromDb,
 } from './wardenMappers';
 import { fetchListings } from '../listings/listingsSlice';
->>>>>>> redux-migration
 
 const msg = (err) => err?.message || 'Request failed';
 const sameId = (a, b) => String(a) === String(b);
@@ -24,29 +20,18 @@ const sameId = (a, b) => String(a) === String(b);
 // ====================================================================
 
 export const fetchWardenData = createAsyncThunk('warden/fetchAll', async () => {
-<<<<<<< HEAD
-  const [rooms, tenants, complaints, issues, notifications, violations] = await Promise.allSettled([
-=======
   const [rooms, tenants, complaints, issues, notifications, violations, stays] = await Promise.allSettled([
->>>>>>> redux-migration
     api.getRoomsApi(),
     api.getTenantsApi(),
     api.getComplaintsApi(),
     api.getIssuesApi(),
     api.getWardenNotificationsApi(),
     api.getRuleViolationsApi(),
-<<<<<<< HEAD
-  ]);
-  const ok = (r) => (r.status === 'fulfilled' ? asArray(r.value) : []);
-  const mappedTenants = ok(tenants).map(mapTenantFromDb);
-  const failures = [rooms, tenants, complaints, issues, notifications, violations].filter((r) => r.status === 'rejected');
-=======
     api.getStaysApi(),
   ]);
   const ok = (r) => (r.status === 'fulfilled' ? asArray(r.value) : []);
   const mappedTenants = ok(tenants).map(mapTenantFromDb);
   const failures = [rooms, tenants, complaints, issues, notifications, violations, stays].filter((r) => r.status === 'rejected');
->>>>>>> redux-migration
   return {
     rooms: ok(rooms).map(mapRoomFromDb),
     tenants: mappedTenants,
@@ -56,11 +41,8 @@ export const fetchWardenData = createAsyncThunk('warden/fetchAll', async () => {
     ],
     notifications: ok(notifications).map(mapWardenNotificationFromDb),
     violations: ok(violations).map(mapRuleViolationFromDb),
-<<<<<<< HEAD
-=======
     stays: ok(stays).map(mapStayFromDb).filter((s) => s.status === 'active'),
     staysLoaded: stays.status === 'fulfilled',
->>>>>>> redux-migration
     error: failures.length ? msg(failures[0].reason) : null,
   };
 });
@@ -86,12 +68,6 @@ export const deleteRoom = thunk('deleteRoom', async (id) => {
   return id;
 });
 
-<<<<<<< HEAD
-// Tenants (server keeps booking / stay / payment in sync)
-export const createTenant = thunk('createTenant', (data) => api.createTenantApi(data));
-export const updateTenant = thunk('updateTenant', ({ id, changes }) => api.updateTenantApi(id, changes));
-export const deleteTenant = thunk('deleteTenant', async (id) => {
-=======
 // Tenant changes move people in and out of beds, so afterwards reload the
 // warden data and the public listings so bed counts agree everywhere.
 const occupancyThunk = (type, fn) =>
@@ -110,7 +86,6 @@ const occupancyThunk = (type, fn) =>
 export const createTenant = occupancyThunk('createTenant', (data) => api.createTenantApi(data));
 export const updateTenant = occupancyThunk('updateTenant', ({ id, changes }) => api.updateTenantApi(id, changes));
 export const deleteTenant = occupancyThunk('deleteTenant', async (id) => {
->>>>>>> redux-migration
   await api.deleteTenantApi(id);
   return id;
 });
@@ -160,9 +135,6 @@ export const markRentPaidOffline = thunk('markRentPaidOffline', ({ dueId, note }
 export const waiveRent = thunk('waiveRent', ({ dueId, reason }) => api.waiveRentApi(dueId, reason));
 export const notifyTenant = thunk('notifyTenant', ({ tenantId, payload }) => api.notifyTenantApi(tenantId, payload));
 export const escalateTenant = thunk('escalateTenant', ({ tenantId, payload }) => api.escalateTenantApi(tenantId, payload));
-<<<<<<< HEAD
-export const evictTenant = thunk('evictTenant', ({ tenantId, reason }) => api.evictTenantApi(tenantId, reason));
-=======
 export const evictTenant = occupancyThunk('evictTenant', ({ tenantId, reason }) => api.evictTenantApi(tenantId, reason));
 
 /**
@@ -190,7 +162,6 @@ export const syncBedCounts = createAsyncThunk('warden/syncBedCounts', async (_, 
     dispatch(fetchListings());
   }
 });
->>>>>>> redux-migration
 
 // ====================================================================
 //  Slice
@@ -204,12 +175,9 @@ const wardenSlice = createSlice({
     complaints: [],
     notifications: [],
     violations: [],
-<<<<<<< HEAD
-=======
     stays: [],
     staysLoaded: false,
     syncing: false,
->>>>>>> redux-migration
     loaded: false,
     status: 'idle',
     error: null,
@@ -239,8 +207,6 @@ const wardenSlice = createSlice({
         s.error = error.message;
         s.loaded = true;
       })
-<<<<<<< HEAD
-=======
       .addCase(syncBedCounts.pending, (s) => {
         s.syncing = true;
       })
@@ -250,7 +216,6 @@ const wardenSlice = createSlice({
       .addCase(syncBedCounts.rejected, (s) => {
         s.syncing = false;
       })
->>>>>>> redux-migration
       // rooms
       .addCase(createRoom.fulfilled, (s, { payload }) => {
         s.rooms.push(payload);
@@ -332,8 +297,6 @@ export const selectWarden = (s) => s.warden;
 export const selectWardenUnreadCount = createSelector([(s) => s.warden.notifications], (list) => list.filter((n) => !n.read).length);
 export const selectWardenLedger = (s) => s.warden.ledger;
 export const selectWardenTenantLedger = (s) => s.warden.tenantLedger;
-<<<<<<< HEAD
-=======
 
 /**
  * Beds as they really are (active stays) next to what each room has stored.
@@ -408,4 +371,3 @@ export const selectOccupancyReport = createSelector(
     };
   },
 );
->>>>>>> redux-migration

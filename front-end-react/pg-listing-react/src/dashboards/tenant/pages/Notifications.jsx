@@ -1,10 +1,7 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
-<<<<<<< HEAD
-=======
 import { formatDateTime } from '../../../utils/normalize';
->>>>>>> redux-migration
 import {
   markAllTenantNotificationsRead,
   markTenantNotificationRead,

@@ -11,13 +11,8 @@ export default function Complaints() {
   const dispatch = useDispatch();
   const items = useSelector(adminComplaints.selectors.selectItems);
   const loading = useSelector(adminComplaints.selectors.selectIsLoading) && items.length === 0;
-<<<<<<< HEAD
-  // Rows may be stored as "in_progress" or "in-progress" depending on who updated them.
-  const complaints = items.map((c) => ({ ...c, status: String(c.status || 'open').replace('_', '-') }));
-=======
   // Status is normalised to 'open' | 'in_progress' | 'resolved' by the resource slice.
   const complaints = items.map((c) => ({ ...c, status: c.status || 'open' }));
->>>>>>> redux-migration
   const [search, setSearch] = useState('');
   const [statusF, setStatusF] = useState('all');
   const [modal, setModal] = useState(null);

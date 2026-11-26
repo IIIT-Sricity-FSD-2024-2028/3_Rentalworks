@@ -1,34 +1,6 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import * as api from '../../dashboards/owner/services/api';
 import { showToast } from '../ui/uiSlice';
-<<<<<<< HEAD
-
-// ------------------------------------------------------------------ mappers
-
-export const mapOwnerProperty = (p) => ({
-  id: p.id,
-  images: p.images || [],
-  description: p.description || '',
-  name: p.name,
-  address: p.address || p.location || '',
-  city: p.city || '',
-  state: p.state || '',
-  pincode: p.pincode || '',
-  type: p.type || 'Mixed',
-  totalCapacity: p.totalCapacity ?? 0,
-  totalRooms: p.totalRooms ?? 0,
-  occupiedRooms: p.occupiedRooms ?? 0,
-  monthlyRent: Number(p.monthlyRent ?? p.rentMin ?? 0),
-  amenities: p.amenities || [],
-  gender: p.gender || (p.type === 'Female' ? 'girls' : p.type === 'Male' ? 'boys' : 'unisex'),
-  status: p.status === 'approved' ? 'Active' : p.status ? p.status.charAt(0).toUpperCase() + p.status.slice(1) : 'Pending',
-  addedDate: p.createdAt ? String(p.createdAt).split('T')[0] : '',
-  owner: p.owner ? p.owner.name : '',
-  ownerEmail: p.owner ? p.owner.email : '',
-});
-
-const ISSUE_STATUS = { open: 'Open', 'in-progress': 'In Progress', 'in progress': 'In Progress', in_progress: 'In Progress', resolved: 'Resolved', closed: 'Closed' };
-=======
 import { mapRoom } from '../listings/listingMappers';
 import { normalizeStatus, statusLabel, toNumber, toISODate, parseList, amenityLabel, cityFromLocation } from '../../utils/normalize';
 
@@ -79,7 +51,6 @@ export const mapOwnerProperty = (p) => {
 };
 
 const ISSUE_STATUS = { open: 'Open', in_progress: 'In Progress', resolved: 'Resolved', closed: 'Closed' };
->>>>>>> redux-migration
 
 export const mapOwnerIssue = (i) => ({
   id: i.id,
@@ -89,15 +60,9 @@ export const mapOwnerIssue = (i) => ({
   description: i.description || '',
   category: i.category || 'Maintenance',
   priority: i.priority ? i.priority.charAt(0).toUpperCase() + i.priority.slice(1) : 'Medium',
-<<<<<<< HEAD
-  status: ISSUE_STATUS[String(i.status || '').toLowerCase()] || i.status || 'Open',
-  reportedBy: i.reportedBy || (i.tenant ? i.tenant.name : 'Tenant'),
-  reportedDate: i.reportedAt || (i.createdAt ? String(i.createdAt).split('T')[0] : ''),
-=======
   status: ISSUE_STATUS[normalizeStatus(i.status)] || statusLabel(i.status, 'Open'),
   reportedBy: i.reportedBy || (i.tenant ? i.tenant.name : 'Tenant'),
   reportedDate: toISODate(i.reportedAt || i.createdAt),
->>>>>>> redux-migration
 });
 
 export const mapOwnerNotification = (n) => ({
@@ -106,11 +71,7 @@ export const mapOwnerNotification = (n) => ({
   message: n.message,
   type: n.type || 'reminder',
   read: Boolean(n.read || n.isRead),
-<<<<<<< HEAD
-  date: n.sentAt ? String(n.sentAt).split('T')[0] : n.createdAt ? String(n.createdAt).split('T')[0] : '',
-=======
   date: toISODate(n.sentAt || n.createdAt),
->>>>>>> redux-migration
 });
 
 export function ownerPropertyPayload(p) {
@@ -189,13 +150,9 @@ export const addOwnerIssue = ownerMutation(
 );
 export const updateOwnerIssueStatus = ownerMutation(
   'updateIssueStatus',
-<<<<<<< HEAD
-  ({ id, status }) => api.updateIssueStatus(id, String(status).toLowerCase().replace(' ', '-')),
-=======
   // The owner endpoint only accepts 'open' | 'in-progress' | 'resolved' (hyphen),
   // unlike /issues and /complaints which use 'in_progress'. Reads are normalised.
   ({ id, status }) => api.updateIssueStatus(id, normalizeStatus(status).replace(/_/g, '-')),
->>>>>>> redux-migration
   'Issue updated',
 );
 export const deleteOwnerIssue = ownerMutation('deleteIssue', (id) => api.deleteIssue(id), 'Issue deleted');

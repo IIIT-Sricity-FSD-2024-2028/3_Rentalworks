@@ -1,8 +1,5 @@
-<<<<<<< HEAD
-=======
 import { normalizeStatus, toNumber } from '../../utils/normalize';
 
->>>>>>> redux-migration
 // Normalisers that turn backend rows into the shapes the warden pages render.
 
 export function mapRoomFromDb(r) {
@@ -29,11 +26,7 @@ export function mapRoomFromDb(r) {
     type: capacityType,
     capacity: r.capacity,
     currentOccupancy: r.currentOccupancy,
-<<<<<<< HEAD
-    rent: Number(r.rent) || 0,
-=======
     rent: toNumber(r.rent),
->>>>>>> redux-migration
     occupancy: occupancyStatus,
     status: r.status,
     maintenance: r.maintenanceStatus || 'Ready',
@@ -57,11 +50,7 @@ export function mapTenantFromDb(t) {
     propertyId: t.propertyId ?? null,
     phone: t.phone || '',
     checkIn: t.checkIn || '',
-<<<<<<< HEAD
-    rent: Number(t.rent) || 0,
-=======
     rent: toNumber(t.rent),
->>>>>>> redux-migration
     paymentStatus: t.paymentStatus || 'pending',
     status: t.status || 'active',
     stayStatus: t.stayStatus || null,
@@ -114,11 +103,7 @@ export function mapComplaintFromDb(c, tenantsList = []) {
     type: compType,
     title: c.title || compType,
     priority: (c.priority || 'medium').toLowerCase(),
-<<<<<<< HEAD
-    status: (c.status || 'open').toLowerCase().replace('-', '_'),
-=======
     status: normalizeStatus(c.status, 'open'),
->>>>>>> redux-migration
     severity: c.severity || (c.priority === 'high' ? 'High' : c.priority === 'low' ? 'Low' : 'Medium'),
     date: dateStr,
     description: c.description || c.title || '',
@@ -199,11 +184,7 @@ export function mapIssueFromDb(i) {
     title: i.title || i.category || 'Maintenance',
     category: i.category || 'General',
     priority: (i.priority || 'medium').toLowerCase(),
-<<<<<<< HEAD
-    status: (i.status || 'open').toLowerCase().replace('-', '_'),
-=======
     status: normalizeStatus(i.status, 'open'),
->>>>>>> redux-migration
     severity: i.priority === 'high' ? 'High' : i.priority === 'low' ? 'Low' : 'Medium',
     date: dateStr,
     createdAt: i.createdAt,
@@ -213,8 +194,6 @@ export function mapIssueFromDb(i) {
     propertyId: i.propertyId ?? null,
   };
 }
-<<<<<<< HEAD
-=======
 
 /** tenant_stays row → one occupied bed. */
 export function mapStayFromDb(s) {
@@ -231,4 +210,3 @@ export function mapStayFromDb(s) {
     status: normalizeStatus(s.status),
   };
 }
->>>>>>> redux-migration

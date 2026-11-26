@@ -4,19 +4,11 @@
 //  hard-coded admin id; errors now surface to the UI instead.
 // ===================================================================
 import { http, asArray } from '../../../services/apiClient';
-<<<<<<< HEAD
-
-const pick = (obj, keys) =>
-  Object.fromEntries(keys.filter((k) => obj[k] !== undefined && obj[k] !== '').map((k) => [k, obj[k]]));
-
-const PLAN_PRICES = { MONTHLY: 499, YEARLY: 4999, LIFETIME: 14999 };
-=======
 import { findPlan } from '../../../data/catalog';
 import { normalizeStatus, toNumber, toISODate } from '../../../utils/normalize';
 
 const pick = (obj, keys) =>
   Object.fromEntries(keys.filter((k) => obj[k] !== undefined && obj[k] !== '').map((k) => [k, obj[k]]));
->>>>>>> redux-migration
 
 export const api = {
   // --- USERS
@@ -101,36 +93,22 @@ export function deriveSubscriptions(users = []) {
   return users
     .filter((u) => u.role === 'owner')
     .map((o) => {
-<<<<<<< HEAD
-      const planType = String(o.subscriptionPlan || '').toUpperCase() || 'NONE';
-      const amount = Number(o.subscriptionFee) || PLAN_PRICES[planType] || 0;
-=======
       // users.subscriptionPlan holds 'Monthly' / 'Yearly' / legacy 'Premium'.
       const plan = findPlan(o.subscriptionPlan);
       const planType = plan ? plan.name : String(o.subscriptionPlan || '').trim().toUpperCase() || 'NONE';
       const amount = toNumber(o.subscriptionFee) || plan?.price || 0;
       const status = planType === 'NONE' ? 'INACTIVE' : normalizeStatus(o.status) === 'active' ? 'ACTIVE' : normalizeStatus(o.status).toUpperCase();
->>>>>>> redux-migration
       return {
         id: o.id,
         ownerId: o.id,
         owner: { name: o.name, email: o.email },
         planType,
-<<<<<<< HEAD
-        plan: { displayName: planType === 'NONE' ? 'No plan' : `${planType.charAt(0)}${planType.slice(1).toLowerCase()} Plan` },
-        amount,
-        startDate: o.joinDate || (o.createdAt ? String(o.createdAt).slice(0, 10) : null),
-        endDate: null,
-        status: planType === 'NONE' ? 'INACTIVE' : o.status === 'active' ? 'ACTIVE' : String(o.status || '').toUpperCase(),
-        evaluatedStatus: planType === 'NONE' ? 'INACTIVE' : o.status === 'active' ? 'ACTIVE' : String(o.status || '').toUpperCase(),
-=======
         plan: { displayName: planType === 'NONE' ? 'No plan' : `${plan?.displayName || planType.charAt(0) + planType.slice(1).toLowerCase()} Plan` },
         amount,
         startDate: toISODate(o.joinDate || o.createdAt) || null,
         endDate: null,
         status,
         evaluatedStatus: status,
->>>>>>> redux-migration
         receiptNumber: planType === 'NONE' ? null : `SUB-${String(o.id).padStart(5, '0')}`,
         paymentId: o.id,
       };
