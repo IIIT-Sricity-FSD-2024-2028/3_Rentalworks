@@ -1,4 +1,5 @@
 import PropertyImage from '../components/PropertyImage';
+import PropertyDocuments, { DocumentStatusLine } from '../components/PropertyDocuments';
 import Icon from '../components/Icon';
 import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -11,6 +12,8 @@ export default function Properties({
   properties = [],
   onUpdateProperty,
   onDeleteProperty,
+  onUploadDocument,
+  onDeleteDocument,
 }) {
   const [params, setParams] = useSearchParams();
   const search = params.get('q') || '';
@@ -20,6 +23,8 @@ export default function Properties({
   const [filterSort, setFilterSort] = useState('');
 
   const [viewingProperty, setViewingProperty] = useState(null);
+  // The dialog reads the live store copy so document uploads show immediately.
+  const liveViewing = viewingProperty && (properties.find((x) => x.id === viewingProperty.id) || viewingProperty);
   const [editingProperty, setEditingProperty] = useState(null);
   const [deletingProperty, setDeletingProperty] = useState(null);
   const [editError, setEditError] = useState('');
@@ -34,6 +39,12 @@ export default function Properties({
     return isNaN(d.getTime())
       ? dateStr
       : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  // Same price wording as the public listing card (ListingCard): "₹X – ₹Y/mo" when rents vary.
+  const priceText = (p) => {
+    if (!p.price) return 'Rent not listed';
+    return `${formatCurrency(p.price)}${p.rentMax > p.price ? ` – ${formatCurrency(p.rentMax)}` : ''}/mo`;
   };
 
   const getOccupancyPercent = (occupied = 0, total = 0) => {
@@ -52,7 +63,7 @@ export default function Properties({
       const q = search.toLowerCase().trim();
       const nameStr = (p.name || '').toLowerCase();
       const cityStr = (p.city || p.location || '').toLowerCase();
-      const addrStr = (p.address || '').toLowerCase();
+      const addrStr = `${p.address || ''} ${p.location || ''}`.toLowerCase();
       const matchSearch =
         !q ||
         nameStr.includes(q) ||
@@ -61,20 +72,16 @@ export default function Properties({
       const matchType = !filterType || p.type === filterType;
       const pStatus = (p.status || '').toLowerCase();
       const fStatus = filterStatus.toLowerCase();
-      const matchStatus =
-        !filterStatus ||
-        pStatus === fStatus ||
-        (fStatus === 'active' && (pStatus === 'approved' || pStatus === 'active')) ||
-        (fStatus === 'inactive' && (pStatus === 'pending' || pStatus === 'inactive'));
+      const matchStatus = !filterStatus || pStatus === fStatus;
       return matchSearch && matchType && matchStatus;
     })
     .sort((a, b) => {
       if (filterSort === 'name') return a.name.localeCompare(b.name);
-      if (filterSort === 'rent_asc') return a.monthlyRent - b.monthlyRent;
-      if (filterSort === 'rent_desc') return b.monthlyRent - a.monthlyRent;
+      if (filterSort === 'rent_asc') return a.price - b.price;
+      if (filterSort === 'rent_desc') return b.price - a.price;
       if (filterSort === 'occupancy') {
-        const pctA = getOccupancyPercent(a.occupiedRooms, a.totalRooms);
-        const pctB = getOccupancyPercent(b.occupiedRooms, b.totalRooms);
+        const pctA = getOccupancyPercent(a.occupiedBeds, a.totalBeds);
+        const pctB = getOccupancyPercent(b.occupiedBeds, b.totalBeds);
         return pctB - pctA;
       }
       return 0;
@@ -161,7 +168,8 @@ export default function Properties({
         >
           <option value="">All Status</option>
           <option value="Active">Active</option>
-          <option value="Inactive">Inactive</option>
+          <option value="Pending">Pending review</option>
+          <option value="Rejected">Rejected</option>
         </select>
 
         <select
@@ -194,7 +202,7 @@ export default function Properties({
           </div>
         ) : (
           filteredProperties.map((p) => {
-            const pct = getOccupancyPercent(p.occupiedRooms, p.totalRooms);
+            const pct = getOccupancyPercent(p.occupiedBeds, p.totalBeds);
             const cls = getOccupancyClass(pct);
             const amenitiesShown = (p.amenities || []).slice(0, 4);
             const extraAmenities = (p.amenities || []).length - 4;
@@ -202,7 +210,7 @@ export default function Properties({
             return (
               <div key={p.id} className="property-card" id={`card-${p.id}`}>
                 <div className="property-card-img">
-                  <PropertyImage key={p.images?.[0]} src={p.images?.[0]} name={p.name} />
+                  <PropertyImage key={p.image} src={p.image} name={p.name} />
                   <div className="property-card-status" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                     <span className={`badge badge-${(p.status || 'active').toLowerCase()}`}>
                       {p.status}
@@ -225,7 +233,7 @@ export default function Properties({
                   <div className="property-card-title">{p.name}</div>
                   <div className="property-card-addr">
                     <Icon className="material-icons icon-14 icon-middle">location_on</Icon>{' '}
-                    {p.address}, {p.city}, {p.state}
+                    {p.location}
                   </div>
 
                   <div className="property-meta">
@@ -235,23 +243,38 @@ export default function Properties({
                     </div>
                     <div className="property-meta-item">
                       <Icon className="material-icons icon-14 icon-middle">bed</Icon>{' '}
-                      <span>{p.totalRooms} rooms</span>
+                      <span>{p.hasRooms ? `${p.roomCount} room${p.roomCount === 1 ? '' : 's'}` : 'No rooms added yet'}</span>
                     </div>
                     <div className="property-meta-item">
                       <Icon className="material-icons icon-14 icon-middle">payments</Icon>{' '}
-                      <span>{formatCurrency(p.monthlyRent)}/mo</span>
+                      <span>{priceText(p)}</span>
                     </div>
                   </div>
 
-                  <div className="occupancy-bar-wrap">
-                    <div className="occupancy-bar-label">
-                      <span>Occupancy</span>
-                      <span>{p.occupiedRooms}/{p.totalRooms} ({pct}%)</span>
+                  {p.hasRooms ? (
+                    <div className="occupancy-bar-wrap">
+                      <div className="occupancy-bar-label">
+                        <span>Occupancy</span>
+                        <span>{p.occupiedBeds}/{p.totalBeds} beds ({pct}%)</span>
+                      </div>
+                      <div className="occupancy-bar">
+                        <div className={`occupancy-fill ${cls}`} style={{ width: `${pct}%` }}></div>
+                      </div>
                     </div>
-                    <div className="occupancy-bar">
-                      <div className={`occupancy-fill ${cls} pct-${pct}`}></div>
+                  ) : (
+                    <div className="occupancy-bar-wrap">
+                      <div className="occupancy-bar-label">
+                        <span>Occupancy</span>
+                        <span>Rooms not listed yet</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {p.status !== 'Active' && p.docs && (
+                    <div style={{ marginBottom: 10 }}>
+                      <DocumentStatusLine property={p} />
+                    </div>
+                  )}
 
                   <div className="property-amenities">
                     {amenitiesShown.map((a, i) => (
@@ -325,13 +348,13 @@ export default function Properties({
                 <div>
                   <div className="text-xs text-muted">Address</div>
                   <div className="font-bold text-sm">
-                    {viewingProperty.address}, {viewingProperty.city}
+                    {[viewingProperty.address, viewingProperty.location].filter(Boolean).join(', ')}
                   </div>
                 </div>
                 <div>
                   <div className="text-xs text-muted">State / PIN</div>
                   <div className="font-bold text-sm">
-                    {viewingProperty.state} — {viewingProperty.pincode}
+                    {[viewingProperty.state, viewingProperty.pincode].filter(Boolean).join(' — ') || '—'}
                   </div>
                 </div>
                 <div>
@@ -351,19 +374,23 @@ export default function Properties({
                   </span>
                 </div>
                 <div>
-                  <div className="text-xs text-muted">Total Rooms</div>
-                  <div className="font-bold text-sm">{viewingProperty.totalRooms}</div>
+                  <div className="text-xs text-muted">Rooms</div>
+                  <div className="font-bold text-sm">{viewingProperty.hasRooms ? viewingProperty.roomCount : 'Not listed yet'}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted">Occupied</div>
+                  <div className="text-xs text-muted">Occupied beds</div>
                   <div className="font-bold text-sm">
-                    {viewingProperty.occupiedRooms} ({getOccupancyPercent(viewingProperty.occupiedRooms, viewingProperty.totalRooms)}%)
+                    {viewingProperty.hasRooms
+                      ? `${viewingProperty.occupiedBeds}/${viewingProperty.totalBeds} (${getOccupancyPercent(viewingProperty.occupiedBeds, viewingProperty.totalBeds)}%)`
+                      : '—'}
                   </div>
                 </div>
                 <div>
                   <div className="text-xs text-muted">Monthly Rent</div>
                   <div className="font-bold text-sm text-primary-cost">
-                    {formatCurrency(viewingProperty.monthlyRent)}
+                    {viewingProperty.rentMax > viewingProperty.price
+                      ? `${formatCurrency(viewingProperty.price)} – ${formatCurrency(viewingProperty.rentMax)}`
+                      : formatCurrency(viewingProperty.price)}
                   </div>
                 </div>
                 <div>
@@ -389,16 +416,23 @@ export default function Properties({
                 <div className="occupancy-bar-label">
                   <span>Occupancy</span>
                   <span>
-                    {getOccupancyPercent(viewingProperty.occupiedRooms, viewingProperty.totalRooms)}%
+                    {getOccupancyPercent(viewingProperty.occupiedBeds, viewingProperty.totalBeds)}%
                   </span>
                 </div>
                 <div className="occupancy-bar">
                   <div
-                    className={`occupancy-fill ${getOccupancyClass(getOccupancyPercent(viewingProperty.occupiedRooms, viewingProperty.totalRooms))}`}
+                    className={`occupancy-fill ${getOccupancyClass(getOccupancyPercent(viewingProperty.occupiedBeds, viewingProperty.totalBeds))}`}
+                    style={{ width: `${getOccupancyPercent(viewingProperty.occupiedBeds, viewingProperty.totalBeds)}%` }}
                   ></div>
                 </div>
               </div>
             </div>
+
+            {liveViewing?.docs && (
+              <div style={{ marginTop: 16 }}>
+                <PropertyDocuments property={liveViewing} onUpload={onUploadDocument} onDelete={onDeleteDocument} />
+              </div>
+            )}
 
             <div className="modal-footer">
               <button
@@ -541,34 +575,31 @@ export default function Properties({
                     />
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Occupied Rooms</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={editingProperty.occupiedRooms}
-                      onChange={(e) => {
-                        const update = { occupiedRooms: Number(e.target.value) };
-                        setEditingProperty((prev) => Object.assign({}, prev, update));
-                      }}
-                      min="0"
-                      required
-                    />
-                  </div>
+                  {editingProperty.roomsFromDb ? (
+                    <div className="form-group">
+                      <span className="form-label">Occupancy</span>
+                      <p className="text-muted">{editingProperty.occupiedBeds}/{editingProperty.totalBeds} beds filled (from room records)</p>
+                    </div>
+                  ) : (
+                    <div className="form-group">
+                      <label className="form-label">Occupied Rooms</label>
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={editingProperty.occupiedRooms}
+                        onChange={(e) => {
+                          const update = { occupiedRooms: Number(e.target.value) };
+                          setEditingProperty((prev) => Object.assign({}, prev, update));
+                        }}
+                        min="0"
+                        required
+                      />
+                    </div>
+                  )}
 
                   <div className="form-group">
-                    <label className="form-label">Status</label>
-                    <select
-                      className="form-input"
-                      value={editingProperty.status}
-                      onChange={(e) => {
-                        const update = { status: e.target.value };
-                        setEditingProperty((prev) => Object.assign({}, prev, update));
-                      }}
-                    >
-                      <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
-                    </select>
+                    <span className="form-label">Status</span>
+                    <p className="text-muted">{editingProperty.status} (set by the admin review)</p>
                   </div>
                 </div>
 

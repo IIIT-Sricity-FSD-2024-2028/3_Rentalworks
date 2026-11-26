@@ -10,10 +10,7 @@ import {
   fetchTenantLedger,
   markRentPaidOffline,
   notifyTenant,
-<<<<<<< HEAD
-=======
   selectOccupancyReport,
->>>>>>> redux-migration
   selectWardenLedger,
   selectWardenTenantLedger,
   updateTenant,
@@ -109,13 +106,9 @@ export default function TenantRecords() {
     const led = ledgerByTenant.get(Number(t.id));
     const evicted = t.status === 'evicted' || t.stayStatus === 'evicted';
     const status = evicted ? 'evicted' : (led?.status || 'no_cycle');
-<<<<<<< HEAD
-    return { ...t, monthStatus: status, due: led?.due || null };
-=======
     // Every bed this tenant actually holds (one account can hold several).
     const beds = report.bedsByTenant.get(String(t.id)) || [];
     return { ...t, monthStatus: status, due: led?.due || null, beds };
->>>>>>> redux-migration
   });
 
   const filteredTenants = rows.filter(t => {

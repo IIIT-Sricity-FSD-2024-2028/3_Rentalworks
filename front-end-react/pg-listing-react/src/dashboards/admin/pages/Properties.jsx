@@ -5,6 +5,8 @@ import { adminProperties, adminUsers } from '../../../features/admin/adminSlices
 import { useToast } from '../components/useToast';
 import Modal from '../components/Modal';
 import { mapRoom } from '../../../features/listings/listingMappers';
+import { propertyDocumentsRepo } from '../../../features/repositories';
+import DocumentReview from '../components/DocumentReview';
 
 const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 const getName = (val) => typeof val === 'object' ? (val?.name || 'Unknown') : (val || 'Unknown');
@@ -22,7 +24,10 @@ export default function Properties() {
   useEffect(() => {
     dispatch(adminProperties.thunks.fetchAll());
     dispatch(adminUsers.thunks.fetchAll());
+    dispatch(propertyDocumentsRepo.thunks.fetchAll());
   }, [dispatch]);
+  const documents = useSelector(propertyDocumentsRepo.selectors.selectItems);
+  const waitingDocs = (id) => documents.filter((d) => String(d.propertyId) === String(id) && d.status === 'pending').length;
 
   const filtered = properties.filter(p => {
     const q = search.toLowerCase();
@@ -98,8 +103,8 @@ export default function Properties() {
     setModal({
       type: 'verify-docs',
       prop: p,
-      title: `Verify Docs: ${p.name}`,
-      subtitle: `Please verify the submitted legal & safety documentation for ${p.name}`
+      title: `Review documents: ${p.name}`,
+      subtitle: 'Open each file, then approve it or reject it with a reason for the owner'
     });
   };
 
@@ -327,7 +332,7 @@ export default function Properties() {
                       <>
                         {!docsOk && (
                           <button className="btn-verify-docs" onClick={() => handleViewDocs(p)}>
-                            📂 View & Verify Docs
+                            📂 Review Documents{waitingDocs(p.id) ? ` (${waitingDocs(p.id)} waiting)` : ''}
                           </button>
                         )}
                         {docsOk && !inspectionOk && (
@@ -375,17 +380,7 @@ export default function Properties() {
               </button>
             </>
           ) : modal?.type === 'verify-docs' ? (
-            <>
-              <button className="btn-cancel" onClick={() => setModal(null)}>Cancel</button>
-              <button
-                className="btn-confirm-blue"
-                onClick={async () => {
-                  if (await updatePropState(modal.prop.id, { docsVerified: true }, 'Docs Verified', `Documentation for ${modal.prop.name} marked as verified`)) setModal(null);
-                }}
-              >
-                Approve All Documents
-              </button>
-            </>
+            <button className="btn-cancel" onClick={() => setModal(null)}>Close</button>
           ) : modal?.type === 'inspection' ? (
             <>
               <button className="btn-cancel" onClick={() => setModal(null)}>Cancel</button>
@@ -415,23 +410,7 @@ export default function Properties() {
         }
       >
         {/* Document Viewer Modal Content */}
-        {modal?.type === 'verify-docs' && (
-          <div style={{ marginTop: 10, borderTop: '1px solid #eee', paddingTop: 10 }}>
-            <p style={{ fontSize: 13, color: '#666', marginBottom: 10 }}>
-              Documents are checked offline with the owner. Confirm only after you have seen each of these:
-            </p>
-            <ul style={{ fontSize: 14, display: 'grid', gap: 8, paddingLeft: 18 }}>
-              <li>Ownership deed or lease agreement</li>
-              <li>Fire safety NOC</li>
-              <li>Owner ID proof</li>
-            </ul>
-            <p style={{ fontSize: 13, marginTop: 12 }}>
-              Owner: <strong>{getName(modal.prop.owner)}</strong>
-              {modal.prop.owner?.phone ? ` • ${modal.prop.owner.phone}` : ''}
-              {modal.prop.owner?.email ? ` • ${modal.prop.owner.email}` : ''}
-            </p>
-          </div>
-        )}
+        {modal?.type === 'verify-docs' && <DocumentReview property={modal.prop} />}
 
         {/* Live Inspection Audit Modal Content */}
         {modal?.type === 'inspection' && (

@@ -1,4 +1,10 @@
 const paths = {
+  "upload_file": "M6 2h9l5 5v15H6zM14 2v6h6M12 18v-7m-3 3 3-3 3 3",
+  "meeting_room": "M4 22h16M6 22V3h9v19M15 5h3v17M12 12h.01",
+  "groups": "M9 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0M21 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0M15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0M1 20v-2a4 4 0 0 1 5-4M23 20v-2a4 4 0 0 0-5-4M6 21v-2a6 6 0 0 1 12 0v2",
+  "pending_actions": "M8 3h8v3H8zM6 5H4v17h8M16 5h4v6M18 14a4 4 0 1 1 0 8 4 4 0 0 1 0-8M18 16v2l1 1",
+  "receipt_long": "M5 2h14v20l-3-2-2 2-2-2-2 2-2-2-3 2zM9 7h6m-6 4h6m-6 4h4",
+  "close":"M6 6l12 12M18 6 6 18",
   "build": "M14 3a6 6 0 0 0-6 8L2 17l5 5 6-6a6 6 0 0 0 8-6l-4 3-4-4 3-4z",
   "computer": "M2 3h20v14H2zM8 21h8m-4-4v4",
   "cleaning_services": "m16 2-6 10m-4 0 8 4-3 6-9-4 4-6z",

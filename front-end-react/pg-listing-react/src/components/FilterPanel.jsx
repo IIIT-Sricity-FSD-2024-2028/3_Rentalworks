@@ -7,10 +7,7 @@ import {
   resetFilters,
   setFilterPanelOpen,
 } from '../features/listings/listingsSlice';
-<<<<<<< HEAD
-=======
 import { AMENITIES } from '../utils/normalize';
->>>>>>> redux-migration
 
 /** Slide-in filter panel. All filter state lives in the `listings` slice. */
 export default function FilterPanel() {
@@ -115,21 +112,12 @@ export default function FilterPanel() {
             ))}
           </div>
 
-<<<<<<< HEAD
-          {/* RATINGS */}
-          <div className="filter-section">
-            <h4>Ratings</h4>
-            <label><input type="radio" name="rating" value="4.5" checked={filters.rating === '4.5'} onChange={handleRadioChange} /> 4.5 &amp; above</label>
-            <label><input type="radio" name="rating" value="4" checked={filters.rating === '4'} onChange={handleRadioChange} /> 4 &amp; above</label>
-            <label><input type="radio" name="rating" value="3" checked={filters.rating === '3'} onChange={handleRadioChange} /> 3 &amp; above</label>
-=======
           {/* AVAILABILITY */}
           <div className="filter-section">
             <h4>Availability</h4>
             <label>
               <input type="checkbox" checked={filters.availableOnly} onChange={(e) => onFilterChange('availableOnly', e.target.checked)} /> Only PGs with a free bed
             </label>
->>>>>>> redux-migration
           </div>
 
           {/* ACTION BUTTONS */}

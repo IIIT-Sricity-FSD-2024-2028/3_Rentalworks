@@ -17,6 +17,10 @@ export default function Header({ onToggleSidebar, unreadNotifsCount = 0, onLogou
         return { title: 'Properties', subtitle: 'Manage all your PG properties' };
       case '/owner/add-property':
         return { title: 'Add Property', subtitle: 'Submit property details for system verification' };
+      case '/owner/tenants':
+        return { title: 'Tenants & Rent', subtitle: 'Who lives in your properties and what they have paid' };
+      case '/owner/rooms':
+        return { title: 'Rooms', subtitle: 'Rooms and beds tenants can book' };
       case '/owner/issues':
         return { title: 'Issues', subtitle: 'Track and resolve property issues' };
       case '/owner/notifications':
@@ -26,7 +30,7 @@ export default function Header({ onToggleSidebar, unreadNotifsCount = 0, onLogou
       case '/owner/profile':
         return { title: 'Profile', subtitle: 'Manage your account information' };
       case '/owner/subscription':
-        return { title: 'Subscription', subtitle: 'Select a plan to activate and list properties' };
+        return { title: 'Subscription', subtitle: 'Your plan and what each plan includes' };
       default:
         return { title: 'RentBro Owner Portal', subtitle: 'Property & Tenant Management' };
     }

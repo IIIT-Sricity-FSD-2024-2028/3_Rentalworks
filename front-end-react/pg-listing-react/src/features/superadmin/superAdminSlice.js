@@ -1,12 +1,22 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
+import { usersRepo, propertiesRepo, paymentsRepo, notificationsRepo } from '../repositories';
 import { api } from '../../dashboards/superadmin/services/api';
 import { patchUser } from '../auth/authSlice';
 
 const fail = (err) => err?.message || 'Request failed';
 
-export const fetchSuperAdminOverview = createAsyncThunk('superAdmin/fetchOverview', async (_, { rejectWithValue }) => {
+/**
+ * One request for the whole platform (users carry the property ids they are
+ * linked to). The rows are stored in the shared repository slices, not here.
+ */
+export const fetchSuperAdminOverview = createAsyncThunk('superAdmin/fetchOverview', async (_, { dispatch, rejectWithValue }) => {
   try {
-    return await api.overview();
+    const { users = [], properties = [], payments = [], notifications = [] } = (await api.overview()) || {};
+    dispatch(usersRepo.actions.setItems(users));
+    dispatch(propertiesRepo.actions.setItems(properties));
+    dispatch(paymentsRepo.actions.setItems(payments));
+    dispatch(notificationsRepo.actions.setItems(notifications));
+    return true;
   } catch (err) {
     return rejectWithValue(fail(err));
   }
@@ -49,14 +59,15 @@ export const updateSuperAdminProfile = createAsyncThunk('superAdmin/updateProfil
 
 const superAdminSlice = createSlice({
   name: 'superAdmin',
-  initialState: { overview: null, status: 'idle', error: null, profile: null, saving: false },
+  // Platform data lives in the repository slices; this slice keeps load state and the profile.
+  initialState: { loaded: false, status: 'idle', error: null, profile: null, saving: false },
   reducers: {},
   extraReducers: (b) => {
     b.addCase(fetchSuperAdminOverview.pending, (s) => {
-      if (!s.overview) s.status = 'loading';
+      if (!s.loaded) s.status = 'loading';
     })
-      .addCase(fetchSuperAdminOverview.fulfilled, (s, { payload }) => {
-        s.overview = payload;
+      .addCase(fetchSuperAdminOverview.fulfilled, (s) => {
+        s.loaded = true;
         s.status = 'succeeded';
         s.error = null;
       })
@@ -87,5 +98,9 @@ const superAdminSlice = createSlice({
 
 export default superAdminSlice.reducer;
 
-export const selectSuperAdmin = (s) => s.superAdmin;
-export const selectSuperAdminOverview = (s) => s.superAdmin.overview;
+/** The platform overview the super-admin pages render, read from the repository slices. */
+export const selectSuperAdminOverview = createSelector(
+  [(s) => s.superAdmin.loaded, usersRepo.selectors.selectItems, propertiesRepo.selectors.selectItems, paymentsRepo.selectors.selectItems, notificationsRepo.selectors.selectItems],
+  (loaded, users, properties, payments, notifications) => (loaded ? { users, properties, payments, notifications } : null),
+);
+export const selectSuperAdmin = createSelector([(s) => s.superAdmin, selectSuperAdminOverview], (state, overview) => ({ ...state, overview }));

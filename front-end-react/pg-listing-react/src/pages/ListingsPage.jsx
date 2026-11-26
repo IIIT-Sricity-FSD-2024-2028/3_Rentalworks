@@ -4,11 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import ListingCard from '../components/ListingCard';
 import FilterPanel from '../components/FilterPanel';
 import {
-<<<<<<< HEAD
-  CITIES,
-=======
   selectCities,
->>>>>>> redux-migration
   fetchListings,
   resetFilters,
   setCity,
@@ -23,14 +19,11 @@ import {
   selectListingsStatus,
   selectSearch,
 } from '../features/listings/listingsSlice';
-<<<<<<< HEAD
-=======
 import { amenityLabel } from '../utils/normalize';
 import { GENDER_LABEL } from '../features/listings/listingMappers';
 import useAutoRefresh from '../hooks/useAutoRefresh';
 
 const PRICE_LABEL = { '0-5000': 'Under ₹5,000', '5000-8000': '₹5,000 – ₹8,000', '8000-99999': '₹8,000+' };
->>>>>>> redux-migration
 
 export default function ListingsPage() {
   const dispatch = useDispatch();
@@ -44,11 +37,7 @@ export default function ListingsPage() {
   const status = useSelector(selectListingsStatus);
   const error = useSelector(selectListingsError);
   const isLoading = status === 'idle' || status === 'loading';
-<<<<<<< HEAD
-  const cities = CITIES;
-=======
   const cities = useSelector(selectCities);
->>>>>>> redux-migration
 
   // URL → store (once, so links like /listings?city=Chennai work)
   useEffect(() => {
@@ -65,18 +54,11 @@ export default function ListingsPage() {
     setSearchParams(params, { replace: true });
   }, [activeCity, searchQuery, setSearchParams]);
 
-<<<<<<< HEAD
-  // Always load fresh availability when the page opens.
-  useEffect(() => {
-    dispatch(fetchListings());
-  }, [dispatch]);
-=======
   // Always load fresh availability when the page opens, then keep it current.
   useEffect(() => {
     dispatch(fetchListings());
   }, [dispatch]);
   useAutoRefresh(() => dispatch(fetchListings()));
->>>>>>> redux-migration
 
   const setSearchQuery = (v) => dispatch(setSearch(v));
   const setActiveCity = (v) => dispatch(setCity(v));
@@ -139,11 +121,7 @@ export default function ListingsPage() {
             <h2>PGs</h2>
             <p className="result-count">
               {isLoading ? (
-<<<<<<< HEAD
-                'Loading live availability...'
-=======
                 'Loading…'
->>>>>>> redux-migration
               ) : filteredListings.length === 1 ? (
                 '1 property found'
               ) : (
@@ -199,11 +177,7 @@ export default function ListingsPage() {
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>
             <div className="spinner" style={{ margin: '0 auto 16px', width: '36px', height: '36px', border: '3px solid #e5e7eb', borderTopColor: '#f59e0b', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-<<<<<<< HEAD
-            <p style={{ color: '#6b7280', fontSize: '15px' }}>Fetching properties and rooms...</p>
-=======
             <p style={{ color: '#6b7280', fontSize: '15px' }}>Loading PGs…</p>
->>>>>>> redux-migration
           </div>
         ) : status === 'failed' ? (
           <div className="empty-state">

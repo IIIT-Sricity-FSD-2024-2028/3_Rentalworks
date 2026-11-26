@@ -1,13 +1,15 @@
 import Icon from '../components/Icon';
+import FileDropZone from '../components/FileDropZone';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AMENITIES } from '../../../utils/normalize';
+import { REQUIRED_DOCUMENTS, OPTIONAL_DOCUMENTS, DOCUMENT_ACCEPT, DOCUMENT_MAX_MB, documentFileError } from '../../../features/repositories/propertyDocumentsSlice';
 
 // Built from the shared amenity table so saved labels match what listings display.
 const AMENITY_LIST = Object.values(AMENITIES).map(({ label, icon }) => ({ label, icon }));
 
 // AddProperty: Controlled form with validation to add a new property
-export default function AddProperty({ onAddProperty }) {
+export default function AddProperty({ onSubmitProperty }) {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -28,6 +30,8 @@ export default function AddProperty({ onAddProperty }) {
   });
 
   const [selectedAmenities, setSelectedAmenities] = useState([]);
+  // Verification documents, kept as File objects until the property is created.
+  const [documents, setDocuments] = useState({});
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -51,6 +55,15 @@ export default function AddProperty({ onAddProperty }) {
       }
       return prev.concat(label);
     });
+  };
+
+  // The same file uploaded as two different documents is almost always a mistake.
+  const sameFile = (a, b) => a && b && a.name === b.name && a.size === b.size && a.lastModified === b.lastModified;
+  const duplicateError = (type, file, docs = documents) => {
+    const other = Object.entries(docs).find(([t, f]) => t !== type && sameFile(f, file));
+    if (!other) return '';
+    const name = [...REQUIRED_DOCUMENTS, ...OPTIONAL_DOCUMENTS].find((d) => d.type === other[0])?.label || other[0];
+    return `This is the same file you chose for ${name}. Choose the correct document`;
   };
 
   const validate = () => {
@@ -77,6 +90,14 @@ export default function AddProperty({ onAddProperty }) {
     if (Number(formData.occupied) > Number(formData.rooms)) {
       newErrors.occupied = 'Occupied rooms cannot exceed total rooms';
     }
+    REQUIRED_DOCUMENTS.forEach(({ type, label }) => {
+      const err = documents[type] ? documentFileError(documents[type]) || duplicateError(type, documents[type]) : `${label} is required`;
+      if (err) newErrors[`doc_${type}`] = err;
+    });
+    OPTIONAL_DOCUMENTS.forEach(({ type }) => {
+      const err = documents[type] ? documentFileError(documents[type]) || duplicateError(type, documents[type]) : '';
+      if (err) newErrors[`doc_${type}`] = err;
+    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -87,10 +108,8 @@ export default function AddProperty({ onAddProperty }) {
     if (!validate()) return;
 
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 300));
 
     const newProperty = {
-      id: 'prop_' + Date.now(),
       name: formData.name.trim(),
       address: formData.address.trim(),
       city: formData.city.trim(),
@@ -104,13 +123,12 @@ export default function AddProperty({ onAddProperty }) {
       monthlyRent: Number(formData.rent),
       amenities: selectedAmenities,
       images: formData.imageUrl.trim() ? [formData.imageUrl.trim()] : [],
-      status: formData.status,
-      addedDate: new Date().toISOString().split('T')[0],
       description: formData.description.trim(),
     };
 
-    if (await onAddProperty(newProperty) === false) { setIsSubmitting(false); return; }
+    const result = await onSubmitProperty({ property: newProperty, documents });
     setIsSubmitting(false);
+    if (!result) return;
     navigate('/dashboard/owner/properties');
   };
 
@@ -378,6 +396,44 @@ export default function AddProperty({ onAddProperty }) {
               value={formData.description}
               onChange={handleChange}
             ></textarea>
+          </div>
+        </div>
+
+        {/* Section 05: Verification Documents */}
+        <div className="form-section">
+          <div className="form-section-header">
+            <div className="num-badge">05</div>
+            <div className="form-section-title">
+              Verification Documents <span className="prop-sub-row">(an admin reviews these before your PG goes live)</span>
+            </div>
+          </div>
+          <p className="text-muted" style={{ marginTop: 0 }}>
+            PDF, JPG, PNG or WEBP, up to {DOCUMENT_MAX_MB} MB each. Only you and RentBro admins can open these files.
+          </p>
+          <div className="form-grid">
+            {[...REQUIRED_DOCUMENTS.map((d) => ({ ...d, required: true })), ...OPTIONAL_DOCUMENTS].map(({ type, label, hint, required }) => (
+              <div className="form-group" key={type}>
+                <label className="form-label" htmlFor={`doc_${type}`}>
+                  {label} {required ? <span className="req">*</span> : <span className="prop-sub-row">(optional)</span>}
+                </label>
+                <FileDropZone
+                  id={`doc_${type}`}
+                  accept={DOCUMENT_ACCEPT}
+                  file={documents[type]}
+                  hint={hint}
+                  error={errors[`doc_${type}`]}
+                  onFile={(file) => {
+                    setDocuments((prev) => ({ ...prev, [type]: file }));
+                    setErrors((prev) => ({ ...prev, [`doc_${type}`]: documentFileError(file) || duplicateError(type, file) }));
+                  }}
+                  onClear={() => {
+                    setDocuments((prev) => ({ ...prev, [type]: null }));
+                    setErrors((prev) => ({ ...prev, [`doc_${type}`]: '' }));
+                  }}
+                />
+                {errors[`doc_${type}`] && <div className="form-error" role="alert">{errors[`doc_${type}`]}</div>}
+              </div>
+            ))}
           </div>
         </div>
 

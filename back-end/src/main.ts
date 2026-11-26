@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -8,10 +9,13 @@ import helmet from 'helmet';
 import { HttpErrorFilter } from './middleware/http-error.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Apply Helmet for security headers
-  app.use(helmet());
+  // Images are loaded by the frontend from another port, so allow cross-origin reads.
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+  // Property / room photos uploaded through /properties/:id/upload-image.
+  app.useStaticAssets(path.join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
 
   // Apply Global Exception Filter for error handling and logging
   app.useGlobalFilters(new HttpErrorFilter());

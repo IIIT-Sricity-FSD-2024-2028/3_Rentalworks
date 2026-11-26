@@ -1,85 +1,70 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
-import * as api from '../../dashboards/owner/services/api';
+import { http } from '../../services/apiClient';
 import { showToast } from '../ui/uiSlice';
-<<<<<<< HEAD
+import { propertiesRepo, issuesRepo, notificationsRepo, rentDuesRepo, roomsRepo, propertyDocumentsRepo, tenantStaysRepo, bookingRequestsRepo } from '../repositories';
+import { REQUIRED_DOCUMENTS } from '../repositories/propertyDocumentsSlice';
+import { markNotificationRead, markAllNotificationsRead, clearNotifications } from '../repositories/notificationsSlice';
+import { mapProperty, mapRoom } from '../listings/listingMappers';
+import { normalizeStatus, statusLabel, toNumber, toISODate, cityFromLocation } from '../../utils/normalize';
+
+// =====================================================================
+//  Owner portal
+//  - properties / issues / notifications: shared repository slices
+//    (features/repositories), called through the owner-scoped /api controller.
+//  - ownerAccount: the owner's own settings (policy, profile, plan summary),
+//    which are not repository tables.
+//  Pages only ever read through the selectors at the bottom of this file.
+// =====================================================================
 
 // ------------------------------------------------------------------ mappers
 
-export const mapOwnerProperty = (p) => ({
-  id: p.id,
-  images: p.images || [],
-  description: p.description || '',
-  name: p.name,
-  address: p.address || p.location || '',
-  city: p.city || '',
-  state: p.state || '',
-  pincode: p.pincode || '',
-  type: p.type || 'Mixed',
-  totalCapacity: p.totalCapacity ?? 0,
-  totalRooms: p.totalRooms ?? 0,
-  occupiedRooms: p.occupiedRooms ?? 0,
-  monthlyRent: Number(p.monthlyRent ?? p.rentMin ?? 0),
-  amenities: p.amenities || [],
-  gender: p.gender || (p.type === 'Female' ? 'girls' : p.type === 'Male' ? 'boys' : 'unisex'),
-  status: p.status === 'approved' ? 'Active' : p.status ? p.status.charAt(0).toUpperCase() + p.status.slice(1) : 'Pending',
-  addedDate: p.createdAt ? String(p.createdAt).split('T')[0] : '',
-  owner: p.owner ? p.owner.name : '',
-  ownerEmail: p.owner ? p.owner.email : '',
-});
-
-const ISSUE_STATUS = { open: 'Open', 'in-progress': 'In Progress', 'in progress': 'In Progress', in_progress: 'In Progress', resolved: 'Resolved', closed: 'Closed' };
-=======
-import { mapRoom } from '../listings/listingMappers';
-import { normalizeStatus, statusLabel, toNumber, toISODate, parseList, amenityLabel, cityFromLocation } from '../../utils/normalize';
-
-// ------------------------------------------------------------------ mappers
-
-// When the property has rooms in the database, occupancy and income come from
-// those rooms (they change as tenants book). The hand-typed totalRooms /
-// occupiedRooms fields are only a fallback for properties with no rooms yet.
-function roomStats(p) {
-  const rooms = (p.roomEntities || []).map(mapRoom);
-  if (!rooms.length) return null;
-  return {
-    totalRooms: rooms.length,
-    occupiedRooms: rooms.filter((r) => r.bedsLeft === 0).length,
-    totalBeds: rooms.reduce((n, r) => n + r.capacity, 0),
-    occupiedBeds: rooms.reduce((n, r) => n + r.currentOccupancy, 0),
-    monthlyIncome: rooms.reduce((n, r) => n + r.currentOccupancy * r.rent, 0),
-  };
-}
-
+/**
+ * Owner card = the public listing card + the raw fields the Edit form needs.
+ * Photo, location, price, rooms / beds, gender and amenities all come from
+ * mapProperty (features/listings/listingMappers), the same function the
+ * landing and listing pages use, so the owner sees exactly what tenants see.
+ */
 export const mapOwnerProperty = (p) => {
-  const stats = roomStats(p);
+  const listing = mapProperty(p);
   return {
     id: p.id,
-    images: p.images || [],
+    name: listing.title,
+    // As shown publicly
+    image: listing.image,
+    hasPhotos: listing.hasPhotos,
+    location: listing.location,
+    price: listing.price,
+    rentMax: listing.rentMax,
+    hasRooms: listing.hasRooms,
+    roomCount: listing.roomCount,
+    totalBeds: listing.totalBeds,
+    occupiedBeds: listing.occupiedBeds,
+    freeBeds: listing.freeBeds,
+    availabilityText: listing.availabilityText,
+    gender: listing.gender,
+    amenities: listing.amenityLabels,
+    // Rent due from beds that are taken (0 until rooms are added).
+    monthlyIncome: listing.rooms.reduce((n, r) => n + r.currentOccupancy * r.rent, 0),
+    status: normalizeStatus(p.status) === 'approved' ? 'Active' : statusLabel(p.status, 'Pending'),
+    docsVerified: Boolean(p.docsVerified),
+    inspectionPassed: Boolean(p.inspectionPassed),
+    addedDate: toISODate(p.createdAt),
+    // Raw values the owner typed, used to pre-fill the Edit form
+    images: listing.images,
     description: p.description || '',
-    name: p.name,
-    address: p.address || p.location || '',
-    city: p.city || cityFromLocation(p.location),
+    address: p.address || '',
+    city: p.city || listing.city || cityFromLocation(p.location),
     state: p.state || '',
     pincode: p.pincode || '',
     type: p.type || 'Mixed',
-    totalCapacity: stats ? stats.totalBeds : p.totalCapacity ?? 0,
-    totalRooms: stats ? stats.totalRooms : p.totalRooms ?? 0,
-    occupiedRooms: stats ? stats.occupiedRooms : Math.min(p.occupiedRooms ?? 0, p.totalRooms ?? 0),
-    totalBeds: stats ? stats.totalBeds : null,
-    occupiedBeds: stats ? stats.occupiedBeds : null,
-    roomsFromDb: Boolean(stats),
-    monthlyIncome: stats ? stats.monthlyIncome : Math.min(p.occupiedRooms ?? 0, p.totalRooms ?? 0) * toNumber(p.monthlyRent ?? p.rentMin),
+    totalRooms: p.totalRooms ?? 0,
+    totalCapacity: p.totalCapacity ?? 0,
+    occupiedRooms: p.occupiedRooms ?? 0,
     monthlyRent: toNumber(p.monthlyRent) || toNumber(p.rentMin),
-    amenities: parseList(p.amenities).map(amenityLabel),
-    gender: p.gender || (p.type === 'Female' ? 'girls' : p.type === 'Male' ? 'boys' : 'unisex'),
-    status: normalizeStatus(p.status) === 'approved' ? 'Active' : statusLabel(p.status, 'Pending'),
-    addedDate: toISODate(p.createdAt),
-    owner: p.owner ? p.owner.name : '',
-    ownerEmail: p.owner ? p.owner.email : '',
   };
 };
 
 const ISSUE_STATUS = { open: 'Open', in_progress: 'In Progress', resolved: 'Resolved', closed: 'Closed' };
->>>>>>> redux-migration
 
 export const mapOwnerIssue = (i) => ({
   id: i.id,
@@ -89,15 +74,9 @@ export const mapOwnerIssue = (i) => ({
   description: i.description || '',
   category: i.category || 'Maintenance',
   priority: i.priority ? i.priority.charAt(0).toUpperCase() + i.priority.slice(1) : 'Medium',
-<<<<<<< HEAD
-  status: ISSUE_STATUS[String(i.status || '').toLowerCase()] || i.status || 'Open',
-  reportedBy: i.reportedBy || (i.tenant ? i.tenant.name : 'Tenant'),
-  reportedDate: i.reportedAt || (i.createdAt ? String(i.createdAt).split('T')[0] : ''),
-=======
   status: ISSUE_STATUS[normalizeStatus(i.status)] || statusLabel(i.status, 'Open'),
   reportedBy: i.reportedBy || (i.tenant ? i.tenant.name : 'Tenant'),
   reportedDate: toISODate(i.reportedAt || i.createdAt),
->>>>>>> redux-migration
 });
 
 export const mapOwnerNotification = (n) => ({
@@ -106,172 +85,330 @@ export const mapOwnerNotification = (n) => ({
   message: n.message,
   type: n.type || 'reminder',
   read: Boolean(n.read || n.isRead),
-<<<<<<< HEAD
-  date: n.sentAt ? String(n.sentAt).split('T')[0] : n.createdAt ? String(n.createdAt).split('T')[0] : '',
-=======
   date: toISODate(n.sentAt || n.createdAt),
->>>>>>> redux-migration
 });
 
-export function ownerPropertyPayload(p) {
-  return {
-    name: p.name,
-    address: p.address,
-    city: p.city,
-    state: p.state,
-    pincode: p.pincode,
-    location: `${p.city}, ${p.state}`,
-    type: p.type,
-    gender: p.gender,
-    totalCapacity: Number(p.totalCapacity),
-    totalRooms: Number(p.totalRooms),
-    occupiedRooms: Number(p.occupiedRooms) || 0,
-    monthlyRent: Number(p.monthlyRent),
-    rentMin: Number(p.monthlyRent),
-    rentMax: Number(p.monthlyRent),
-    rooms: `${Number(p.occupiedRooms) || 0}/${p.totalRooms}`,
-    amenities: p.amenities,
-    description: p.description,
-    images: p.images || [],
-  };
-}
+// ------------------------------------------------------------------ account (policy / profile / plan)
 
-// ------------------------------------------------------------------ thunks
-
-export const loadOwnerData = createAsyncThunk('owner/load', async (_, { rejectWithValue }) => {
+export const fetchOwnerAccount = createAsyncThunk('ownerAccount/fetch', async (_, { rejectWithValue }) => {
   try {
-    const [properties, issues, notifications, policy, profile, subscription] = await Promise.all([
-      api.getProperties(),
-      api.getIssues(),
-      api.getNotifications(),
-      api.getPolicy(),
-      api.getProfile(),
-      api.getSubscription().catch(() => null),
+    const [policy, profile, subscription] = await Promise.all([
+      http.get('/api/policies'),
+      http.get('/api/profile'),
+      http.get('/api/subscription').catch(() => null),
     ]);
-    return {
-      properties: properties.map(mapOwnerProperty),
-      issues: issues.map(mapOwnerIssue),
-      notifications: notifications.map(mapOwnerNotification),
-      policy: policy || {},
-      profile: profile || {},
-      subscription: subscription || null,
-    };
+    return { policy: policy || {}, profile: profile || {}, subscription: subscription || null };
   } catch (err) {
     return rejectWithValue(err.message);
   }
 });
 
+/** Load everything the owner portal shows into the store. */
+export const loadOwnerData = createAsyncThunk('ownerAccount/loadAll', async (_, { dispatch, rejectWithValue }) => {
+  const [results] = await Promise.all([
+    Promise.all([
+      dispatch(propertiesRepo.thunks.fetchAll()),
+      dispatch(issuesRepo.thunks.fetchAll()),
+      dispatch(notificationsRepo.thunks.fetchAll()),
+      dispatch(fetchOwnerAccount()),
+    ]),
+    // Secondary data: loaded in the same round, but a failure here does not
+    // block the portal (each slice keeps its own error).
+    Promise.all([
+      dispatch(rentDuesRepo.thunks.fetchAll()),
+      dispatch(roomsRepo.thunks.fetchAll()),
+      dispatch(propertyDocumentsRepo.thunks.fetchAll()),
+      dispatch(tenantStaysRepo.thunks.fetchAll()),
+      dispatch(bookingRequestsRepo.thunks.fetchAll()),
+    ]),
+  ]);
+  const failed = results.find((r) => r.error);
+  if (failed) return rejectWithValue(failed.payload || 'Could not load the owner portal');
+  return true;
+});
+
 /**
- * One write path for every owner mutation: call the API, reload the
- * portal data from the server, then toast. Returns true on success.
+ * Run a store thunk, then toast. Resolves to the thunk's result action, so
+ * callers can check `.error`. `after` lets a mutation refresh data the server
+ * recomputes (e.g. property occupancy).
  */
-const ownerMutation = (type, call, successMessage) =>
-  createAsyncThunk(`owner/${type}`, async (arg, { dispatch, rejectWithValue }) => {
+const withToast = (type, makeAction, successMessage, after) =>
+  createAsyncThunk(`ownerAccount/${type}`, async (arg, { dispatch, rejectWithValue }) => {
+    const result = await dispatch(makeAction(arg));
+    if (result.error) {
+      const message = result.payload || result.error.message || 'Operation failed';
+      dispatch(showToast({ message, type: 'error' }));
+      return rejectWithValue(message);
+    }
+    if (after) await dispatch(after());
+    dispatch(showToast({ message: successMessage, type: 'success' }));
+    return true;
+  });
+
+const plainCall = (name, call) =>
+  createAsyncThunk(`ownerAccount/${name}Call`, async (arg, { rejectWithValue }) => {
     try {
-      await call(arg);
-      await dispatch(loadOwnerData());
-      dispatch(showToast({ message: successMessage, type: 'success' }));
-      return true;
+      return await call(arg);
     } catch (err) {
-      dispatch(showToast({ message: err.message || 'Operation failed', type: 'error' }));
       return rejectWithValue(err.message);
     }
   });
 
-export const addOwnerProperty = ownerMutation('addProperty', (p) => api.createProperty(ownerPropertyPayload(p)), 'Property submitted for review');
-export const updateOwnerProperty = ownerMutation('updateProperty', (p) => api.updateProperty(p.id, ownerPropertyPayload(p)), 'Property updated');
-export const deleteOwnerProperty = ownerMutation('deleteProperty', (id) => api.deleteProperty(id), 'Property deleted');
+const refetchProperties = () => propertiesRepo.thunks.fetchAll();
 
-export const addOwnerIssue = ownerMutation(
-  'addIssue',
-  (i) => api.createIssue({ propertyId: Number(i.propertyId), title: i.title, description: i.description, category: i.category, priority: String(i.priority).toLowerCase() }),
-  'Issue reported',
-);
-export const updateOwnerIssueStatus = ownerMutation(
-  'updateIssueStatus',
-<<<<<<< HEAD
-  ({ id, status }) => api.updateIssueStatus(id, String(status).toLowerCase().replace(' ', '-')),
-=======
-  // The owner endpoint only accepts 'open' | 'in-progress' | 'resolved' (hyphen),
-  // unlike /issues and /complaints which use 'in_progress'. Reads are normalised.
-  ({ id, status }) => api.updateIssueStatus(id, normalizeStatus(status).replace(/_/g, '-')),
->>>>>>> redux-migration
-  'Issue updated',
-);
-export const deleteOwnerIssue = ownerMutation('deleteIssue', (id) => api.deleteIssue(id), 'Issue deleted');
+/**
+ * Add Property: create the listing, then upload each verification document.
+ * Resolves to { propertyId, failed: [docType…] }. A property whose uploads
+ * fail still exists (pending) and the owner can upload from Properties.
+ */
+export const submitOwnerProperty = createAsyncThunk('ownerAccount/submitProperty', async ({ property, documents }, { dispatch, rejectWithValue }) => {
+  const created = await dispatch(propertiesRepo.thunks.createItem(property));
+  if (created.error) {
+    const message = created.payload || 'Could not create the property';
+    dispatch(showToast({ message, type: 'error' }));
+    return rejectWithValue(message);
+  }
+  const propertyId = created.payload?.id;
+  const failed = [];
+  for (const [docType, file] of Object.entries(documents || {})) {
+    if (!file) continue;
+    const up = await dispatch(propertyDocumentsRepo.thunks.createItem({ propertyId, docType, file }));
+    if (up.error) failed.push(docType);
+  }
+  await Promise.all([dispatch(propertiesRepo.thunks.fetchAll()), dispatch(propertyDocumentsRepo.thunks.fetchAll())]);
+  dispatch(
+    showToast(
+      failed.length
+        ? { message: `Property saved, but ${failed.length} document(s) failed to upload. Upload them from Properties.`, type: 'warning' }
+        : { message: 'Property and documents submitted for admin review', type: 'success' },
+    ),
+  );
+  return { propertyId, failed };
+});
 
-export const markOwnerNotificationRead = ownerMutation('markNotificationRead', (id) => api.markNotificationRead(id), 'Notification marked as read');
-export const markAllOwnerNotificationsRead = ownerMutation('markAllNotificationsRead', () => api.markAllNotificationsRead(), 'Notifications marked as read');
-export const deleteOwnerNotification = ownerMutation('deleteNotification', (id) => api.deleteNotification(id), 'Notification deleted');
-export const clearOwnerNotifications = ownerMutation('clearNotifications', () => api.clearAllNotifications(), 'Notifications cleared');
-export const sendOwnerNotification = ownerMutation(
+const refetchDocuments = () => propertyDocumentsRepo.thunks.fetchAll();
+export const uploadOwnerDocument = withToast('uploadDocument', (d) => propertyDocumentsRepo.thunks.createItem(d), 'Document uploaded for review', refetchDocuments);
+export const deleteOwnerDocument = withToast('deleteDocument', (id) => propertyDocumentsRepo.thunks.removeItem(id), 'Document removed', refetchDocuments);
+
+// Rooms change occupancy and prices on the property cards, so refetch properties too.
+const refetchRoomsAndProperties = () => async (dispatch) => {
+  await Promise.all([dispatch(roomsRepo.thunks.fetchAll()), dispatch(propertiesRepo.thunks.fetchAll())]);
+};
+export const addOwnerRoom = withToast('addRoom', (r) => roomsRepo.thunks.createItem(r), 'Room added', refetchRoomsAndProperties);
+export const updateOwnerRoom = withToast('updateRoom', (r) => roomsRepo.thunks.updateItem({ id: r.id, changes: r }), 'Room updated', refetchRoomsAndProperties);
+export const deleteOwnerRoom = withToast('deleteRoom', (id) => roomsRepo.thunks.removeItem(id), 'Room deleted', refetchRoomsAndProperties);
+
+export const updateOwnerProperty = withToast('updateProperty', (p) => propertiesRepo.thunks.updateItem({ id: p.id, changes: p }), 'Property updated', refetchProperties);
+export const deleteOwnerProperty = withToast('deleteProperty', (id) => propertiesRepo.thunks.removeItem(id), 'Property deleted');
+
+export const addOwnerIssue = withToast('addIssue', (i) => issuesRepo.thunks.createItem(i), 'Issue reported', () => issuesRepo.thunks.fetchAll());
+export const updateOwnerIssueStatus = withToast('updateIssueStatus', ({ id, status }) => issuesRepo.thunks.updateItem({ id, changes: { status } }), 'Issue updated');
+export const deleteOwnerIssue = withToast('deleteIssue', (id) => issuesRepo.thunks.removeItem(id), 'Issue deleted');
+
+export const markOwnerNotificationRead = withToast('markNotificationRead', (id) => markNotificationRead(id), 'Notification marked as read');
+export const markAllOwnerNotificationsRead = withToast('markAllNotificationsRead', () => markAllNotificationsRead(), 'Notifications marked as read');
+export const deleteOwnerNotification = withToast('deleteNotification', (id) => notificationsRepo.thunks.removeItem(id), 'Notification deleted');
+export const clearOwnerNotifications = withToast('clearNotifications', () => clearNotifications(), 'Notifications cleared');
+export const sendOwnerNotification = withToast(
   'sendNotification',
-  (n) => api.createNotification({ title: n.title, message: n.message, type: 'info', priority: 'normal', targetRole: String(n.recipient || 'all').toLowerCase() }),
+  (n) => notificationsRepo.thunks.createItem({ title: n.title, message: n.message, targetRole: n.recipient || 'all' }),
   'Notification sent',
 );
 
-export const saveOwnerPolicy = ownerMutation('savePolicy', (policy) => api.updatePolicy(policy), 'Policy saved');
-export const resetOwnerPolicy = ownerMutation('resetPolicy', (policy) => api.updatePolicy(policy), 'Policy reset');
-export const saveOwnerProfile = ownerMutation('saveProfile', (profile) => api.updateProfile(profile), 'Profile updated');
-export const changeOwnerPassword = ownerMutation(
-  'changePassword',
-  ({ currentPassword, newPassword }) => api.changePassword(currentPassword, newPassword),
-  'Password changed successfully',
-);
+const savePolicyCall = plainCall('savePolicy', (policy) => http.put('/api/policies', policy));
+const saveProfileCall = plainCall('saveProfile', (profile) => http.put('/api/profile', profile));
+const changePasswordCall = plainCall('changePassword', ({ currentPassword, newPassword }) => http.put('/api/profile/password', { currentPassword, newPassword }));
+
+export const saveOwnerPolicy = withToast('savePolicy', savePolicyCall, 'Policy saved', fetchOwnerAccount);
+export const resetOwnerPolicy = withToast('resetPolicy', savePolicyCall, 'Policy reset', fetchOwnerAccount);
+export const saveOwnerProfile = withToast('saveProfile', saveProfileCall, 'Profile updated', fetchOwnerAccount);
+export const changeOwnerPassword = withToast('changePassword', changePasswordCall, 'Password changed successfully');
 
 // ------------------------------------------------------------------ slice
 
-const ownerSlice = createSlice({
-  name: 'owner',
-  initialState: {
-    properties: [],
-    issues: [],
-    notifications: [],
-    policy: {},
-    profile: {},
-    subscription: null,
-    status: 'idle',
-    error: null,
-    busy: false,
-  },
+const ownerAccountSlice = createSlice({
+  name: 'ownerAccount',
+  initialState: { policy: {}, profile: {}, subscription: null, status: 'idle', error: null },
   reducers: {},
   extraReducers: (b) => {
-    b.addCase(loadOwnerData.pending, (s) => {
-      if (s.status === 'idle') s.status = 'loading';
+    b.addCase(fetchOwnerAccount.fulfilled, (s, { payload }) => {
+      Object.assign(s, payload);
     })
-      .addCase(loadOwnerData.fulfilled, (s, { payload }) => {
-        Object.assign(s, payload);
+      .addCase(loadOwnerData.pending, (s) => {
+        if (s.status === 'idle') s.status = 'loading';
+      })
+      .addCase(loadOwnerData.fulfilled, (s) => {
         s.status = 'succeeded';
         s.error = null;
       })
       .addCase(loadOwnerData.rejected, (s, { payload }) => {
         s.status = s.status === 'loading' ? 'failed' : s.status;
         s.error = payload;
-      })
-      .addMatcher(
-        (a) => a.type.startsWith('owner/') && !a.type.startsWith('owner/load') && a.type.endsWith('/pending'),
-        (s) => {
-          s.busy = true;
-        },
-      )
-      .addMatcher(
-        (a) => a.type.startsWith('owner/') && !a.type.startsWith('owner/load') && (a.type.endsWith('/fulfilled') || a.type.endsWith('/rejected')),
-        (s) => {
-          s.busy = false;
-        },
-      );
+      });
   },
 });
 
-export const ownerReducers = { owner: ownerSlice.reducer };
+export const ownerReducers = { ownerAccount: ownerAccountSlice.reducer };
 
 // ------------------------------------------------------------------ selectors
-export const selectOwner = (s) => s.owner;
-export const selectOwnerUnreadCount = createSelector([(s) => s.owner.notifications], (n) => n.filter((x) => !x.read).length);
-export const selectOwnerOpenIssues = createSelector([(s) => s.owner.issues], (i) => i.filter((x) => x.status === 'Open').length);
-export const selectOwnerUser = createSelector([(s) => s.owner.profile, (s) => s.owner.subscription], (profile, sub) => ({
+
+const selectAccount = (s) => s.ownerAccount;
+
+/** Documents per property, with a summary of what is still needed. */
+export const selectOwnerDocumentsByProperty = createSelector([propertyDocumentsRepo.selectors.selectItems], (docs) => {
+  const byProperty = {};
+  docs.forEach((d) => {
+    (byProperty[d.propertyId] = byProperty[d.propertyId] || []).push(d);
+  });
+  return byProperty;
+});
+
+export function documentSummary(docs = []) {
+  const latest = (type) => docs.find((d) => d.docType === type);
+  const required = REQUIRED_DOCUMENTS.map((r) => ({ ...r, doc: latest(r.type) || null }));
+  return {
+    required,
+    missing: required.filter((r) => !r.doc).length,
+    rejected: required.filter((r) => r.doc?.status === 'rejected').length,
+    pending: required.filter((r) => r.doc?.status === 'pending').length,
+    approved: required.filter((r) => r.doc?.status === 'approved').length,
+  };
+}
+
+/** The signed-in owner's properties (the repository also holds the public catalogue). */
+const selectMyPropertyRows = createSelector([propertiesRepo.selectors.selectItems, (s) => s.auth.user?.id], (items, me) =>
+  items.filter((p) => Number(p.ownerId ?? p.owner?.id) === Number(me)),
+);
+
+export const selectOwnerProperties = createSelector([selectMyPropertyRows, selectOwnerDocumentsByProperty], (items, docsByProperty) =>
+  items.map((p) => {
+    const documents = docsByProperty[p.id] || [];
+    return { ...mapOwnerProperty(p), documents, docs: documentSummary(documents) };
+  }),
+);
+
+/** Rooms of the owner's properties, as the public pages show them, plus raw values for editing. */
+export const selectOwnerRooms = createSelector([roomsRepo.selectors.selectItems, selectMyPropertyRows], (rooms, properties) => {
+  const names = Object.fromEntries(properties.map((p) => [p.id, p.name]));
+  return rooms
+    .filter((r) => r.propertyId in names)
+    .map((r) => ({ ...mapRoom(r), propertyName: names[r.propertyId] || `Property #${r.propertyId}`, rawStatus: r.status, maintenanceStatus: r.maintenanceStatus }))
+    .sort((a, b) => a.propertyName.localeCompare(b.propertyName) || String(a.roomNumber).localeCompare(String(b.roomNumber), undefined, { numeric: true }));
+});
+export const selectOwnerIssues = createSelector([issuesRepo.selectors.selectItems], (items) =>
+  items.map(mapOwnerIssue).sort((a, b) => String(b.reportedDate).localeCompare(String(a.reportedDate))),
+);
+export const selectOwnerNotifications = createSelector([notificationsRepo.selectors.selectItems], (items) =>
+  items.map(mapOwnerNotification).sort((a, b) => String(b.date).localeCompare(String(a.date))),
+);
+
+/** Everything the owner pages render, read from the store. */
+export const selectOwner = createSelector(
+  [selectOwnerProperties, selectOwnerIssues, selectOwnerNotifications, selectAccount],
+  (properties, issues, notifications, account) => ({
+    properties,
+    issues,
+    notifications,
+    policy: account.policy,
+    profile: account.profile,
+    subscription: account.subscription,
+    status: account.status,
+    error: account.error,
+  }),
+);
+
+export const selectOwnerUnreadCount = createSelector([selectOwnerNotifications], (n) => n.filter((x) => !x.read).length);
+/** Issues still needing work: Open and In Progress. */
+export const selectOwnerOpenIssues = createSelector([selectOwnerIssues], (i) => i.filter((x) => x.status === 'Open' || x.status === 'In Progress').length);
+export const selectOwnerUser = createSelector([(s) => s.ownerAccount.profile, (s) => s.ownerAccount.subscription], (profile, sub) => ({
   ...profile,
   subscriptionPlan: sub?.currentPlan || null,
   subscriptionFee: sub?.monthlyFee || 0,
   subscription: sub,
 }));
+
+/** Rent actually collected this calendar month, from the rent_dues repository. */
+export const selectOwnerRentThisMonth = createSelector([rentDuesRepo.selectors.selectItems], (dues) => {
+  const month = new Date().toISOString().slice(0, 7);
+  const thisMonth = dues.filter((d) => String(d.periodStart || d.dueDate || '').slice(0, 7) === month);
+  const paid = thisMonth.filter((d) => normalizeStatus(d.status) === 'paid');
+  return {
+    collected: paid.reduce((n, d) => n + toNumber(d.amount), 0),
+    billed: thisMonth.reduce((n, d) => n + toNumber(d.amount), 0),
+    overdue: dues.filter((d) => normalizeStatus(d.status) === 'overdue').length,
+  };
+});
+
+// ------------------------------------------------------------------ tenants & rent
+
+const DUE_LABEL = { upcoming: 'Upcoming', due_soon: 'Due soon', overdue: 'Overdue', paid: 'Paid', waived: 'Waived' };
+const dueRow = (d, names) => ({
+  id: d.id,
+  tenantId: d.tenantId,
+  tenantName: names[d.tenantId] || `Tenant #${d.tenantId}`,
+  propertyId: d.propertyId,
+  period: String(d.periodStart || '').slice(0, 7),
+  amount: toNumber(d.amount),
+  dueDate: toISODate(d.dueDate),
+  status: normalizeStatus(d.effectiveStatus || d.status),
+  statusLabel: DUE_LABEL[normalizeStatus(d.effectiveStatus || d.status)] || statusLabel(d.status),
+  paidAt: toISODate(d.paidAt),
+  paidVia: d.paidVia || '',
+});
+
+/** Tenants currently staying in the owner's properties, with their latest rent due. */
+export const selectOwnerTenants = createSelector(
+  [tenantStaysRepo.selectors.selectItems, rentDuesRepo.selectors.selectItems, propertiesRepo.selectors.selectItems],
+  (stays, dues, properties) => {
+    const propertyNames = Object.fromEntries(properties.map((p) => [p.id, p.name]));
+    const names = Object.fromEntries(stays.filter((s) => s.tenant).map((s) => [s.tenantId, s.tenant.name]));
+    return stays
+      .filter((s) => normalizeStatus(s.status) === 'active')
+      .map((s) => {
+        const mine = dues.filter((d) => d.tenantId === s.tenantId).sort((a, b) => String(b.periodStart).localeCompare(String(a.periodStart)));
+        // The due that matters now: the oldest unpaid one, else the latest.
+        const open = [...mine].reverse().find((d) => ['overdue', 'due_soon', 'upcoming'].includes(normalizeStatus(d.status)));
+        const current = open || mine[0];
+        return {
+          id: s.id,
+          tenantId: s.tenantId,
+          name: s.tenant?.name || `Tenant #${s.tenantId}`,
+          email: s.tenant?.email || '',
+          phone: s.tenant?.phone || '',
+          propertyId: s.propertyId,
+          propertyName: s.property?.name || propertyNames[s.propertyId] || '',
+          room: s.roomEntity?.roomNumber || '',
+          bed: s.bedNumber || '',
+          moveInDate: toISODate(s.moveInDate),
+          due: current ? dueRow(current, names) : null,
+        };
+      })
+      .sort((a, b) => a.propertyName.localeCompare(b.propertyName) || String(a.room).localeCompare(String(b.room), undefined, { numeric: true }));
+  },
+);
+
+/** Every rent due in the owner's properties, newest period first. */
+export const selectOwnerRentLedger = createSelector([rentDuesRepo.selectors.selectItems, tenantStaysRepo.selectors.selectItems, propertiesRepo.selectors.selectItems], (dues, stays, properties) => {
+  const names = Object.fromEntries(stays.filter((s) => s.tenant).map((s) => [s.tenantId, s.tenant.name]));
+  const propertyNames = Object.fromEntries(properties.map((p) => [p.id, p.name]));
+  return dues
+    .map((d) => ({ ...dueRow(d, names), propertyName: propertyNames[d.propertyId] || '' }))
+    .sort((a, b) => b.period.localeCompare(a.period) || a.tenantName.localeCompare(b.tenantName));
+});
+
+/** Booking requests (unpaid holds) waiting on the tenant's payment. */
+export const selectOwnerBookingRequests = createSelector([bookingRequestsRepo.selectors.selectItems], (rows) =>
+  rows
+    .map((r) => ({
+      id: r.id,
+      name: r.tenant?.name || `Tenant #${r.tenantId}`,
+      email: r.tenant?.email || '',
+      phone: r.tenant?.phone || '',
+      propertyName: r.property?.name || '',
+      room: r.roomEntity?.roomNumber || '',
+      requestedDate: toISODate(r.requestedDate || r.createdAt),
+      message: r.message || '',
+      status: normalizeStatus(r.status),
+    }))
+    .sort((a, b) => String(b.requestedDate).localeCompare(String(a.requestedDate))),
+);

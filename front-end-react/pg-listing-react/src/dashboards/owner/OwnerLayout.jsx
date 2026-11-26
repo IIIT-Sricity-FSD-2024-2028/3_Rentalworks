@@ -11,6 +11,8 @@ import Notifications from './pages/Notifications';
 import Policy from './pages/Policy';
 import Profile from './pages/Profile';
 import Subscription from './pages/Subscription';
+import Rooms from './pages/Rooms';
+import Tenants from './pages/Tenants';
 
 import {
   loadOwnerData,
@@ -18,7 +20,7 @@ import {
   selectOwnerUser,
   selectOwnerUnreadCount,
   selectOwnerOpenIssues,
-  addOwnerProperty,
+  selectOwnerRentThisMonth,
   updateOwnerProperty,
   deleteOwnerProperty,
   addOwnerIssue,
@@ -33,6 +35,16 @@ import {
   resetOwnerPolicy,
   saveOwnerProfile,
   changeOwnerPassword,
+  selectOwnerRooms,
+  selectOwnerTenants,
+  selectOwnerRentLedger,
+  selectOwnerBookingRequests,
+  addOwnerRoom,
+  updateOwnerRoom,
+  deleteOwnerRoom,
+  submitOwnerProperty,
+  uploadOwnerDocument,
+  deleteOwnerDocument,
 } from '../../features/owner/ownerSlices';
 import { logout } from '../../features/auth/authSlice';
 
@@ -100,16 +112,50 @@ export default function OwnerLayout() {
 
 export function OwnerDashboardRoute() {
   const { properties, issues, notifications } = useSelector(selectOwner);
-  return <Dashboard properties={properties} issues={issues} notifications={notifications} />;
+  const rent = useSelector(selectOwnerRentThisMonth);
+  return <Dashboard properties={properties} issues={issues} notifications={notifications} rent={rent} />;
 }
 
 export function OwnerPropertiesRoute() {
   const { properties } = useSelector(selectOwner);
-  return <Properties properties={properties} onUpdateProperty={useAction(updateOwnerProperty)} onDeleteProperty={useAction(deleteOwnerProperty)} />;
+  return (
+    <Properties
+      properties={properties}
+      onUpdateProperty={useAction(updateOwnerProperty)}
+      onDeleteProperty={useAction(deleteOwnerProperty)}
+      onUploadDocument={useAction(uploadOwnerDocument)}
+      onDeleteDocument={useAction(deleteOwnerDocument)}
+    />
+  );
 }
 
 export function OwnerAddPropertyRoute() {
-  return <AddProperty onAddProperty={useAction(addOwnerProperty)} />;
+  const dispatch = useDispatch();
+  // Resolves to { propertyId, failed } or null when the property could not be created.
+  const onSubmit = (arg) => dispatch(submitOwnerProperty(arg)).then((a) => (a.error ? null : a.payload));
+  return <AddProperty onSubmitProperty={onSubmit} />;
+}
+
+export function OwnerTenantsRoute() {
+  const { properties } = useSelector(selectOwner);
+  const tenants = useSelector(selectOwnerTenants);
+  const ledger = useSelector(selectOwnerRentLedger);
+  const requests = useSelector(selectOwnerBookingRequests);
+  return <Tenants tenants={tenants} ledger={ledger} requests={requests} properties={properties} />;
+}
+
+export function OwnerRoomsRoute() {
+  const { properties } = useSelector(selectOwner);
+  const rooms = useSelector(selectOwnerRooms);
+  return (
+    <Rooms
+      rooms={rooms}
+      properties={properties}
+      onAddRoom={useAction(addOwnerRoom)}
+      onUpdateRoom={useAction(updateOwnerRoom)}
+      onDeleteRoom={useAction(deleteOwnerRoom)}
+    />
+  );
 }
 
 export function OwnerIssuesRoute() {

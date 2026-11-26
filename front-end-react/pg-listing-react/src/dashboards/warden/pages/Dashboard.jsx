@@ -195,11 +195,6 @@ export default function Dashboard() {
       </div>
 
       <div className="stats-grid">
-<<<<<<< HEAD
-        <StatCard color="blue" materialIcon="group" label="Total Tenants" value={tenants.length} sub="At your properties" />
-        <StatCard color="green" materialIcon="home" label="Occupied Rooms" value={occupiedRooms} sub={`of ${totalRooms} rooms`} />
-        <StatCard color="yellow" materialIcon="home" label="Vacant Rooms" value={vacantRooms} sub="Available" />
-=======
         <StatCard
           color="blue"
           materialIcon="group"
@@ -209,7 +204,6 @@ export default function Dashboard() {
         />
         <StatCard color="green" materialIcon="home" label="Full Rooms" value={occupiedRooms} sub={`of ${totalRooms} rooms`} />
         <StatCard color="yellow" materialIcon="bed" label="Free Beds" value={report.staysLoaded ? report.freeBeds : '—'} sub={report.staysLoaded ? `of ${report.totalBeds} beds` : ''} />
->>>>>>> redux-migration
         <StatCard color="red" materialIcon="schedule" label="Active Complaints" value={activeComplaints} sub={`${complaints.filter(c => c.priority === 'high' && c.status !== 'resolved').length} urgent`} />
         <StatCard color="orange" materialIcon="warning" label="Rule Violations" value={ruleViolations} sub={`${violations.filter(v => v.severity === 'high').length} high severity`} />
       </div>

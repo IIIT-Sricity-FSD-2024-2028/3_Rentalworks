@@ -8,6 +8,7 @@ import {
   Delete,
   Query,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { BookingRequestsService } from './booking-requests.service';
 import {
@@ -15,6 +16,8 @@ import {
   UpdateBookingRequestDto,
 } from './booking-requests.dto';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { DataSource } from 'typeorm';
+import { AuthUser, assertCanSee, scopeRows } from '../common/crud';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 
@@ -24,6 +27,7 @@ import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 export class BookingRequestsController {
   constructor(
     private readonly bookingRequestsService: BookingRequestsService,
+    private readonly db: DataSource,
   ) {}
 
   @Get()
@@ -31,21 +35,25 @@ export class BookingRequestsController {
   @ApiOperation({ summary: 'Get all booking requests' })
   @ApiQuery({ name: 'tenantId', required: false })
   @ApiQuery({ name: 'propertyId', required: false })
-  findAll(
+  async findAll(
+    @Req() req: { user: AuthUser },
     @Query('tenantId') tenantId?: string,
     @Query('propertyId') propertyId?: string,
   ) {
-    return this.bookingRequestsService.findAll(
+    // Owners see their properties' requests; tenants their own.
+    return scopeRows(this.db, req.user, await this.bookingRequestsService.findAll(
       tenantId ? +tenantId : undefined,
       propertyId ? +propertyId : undefined,
-    );
+    ));
   }
 
   @Get(':id')
   @Roles('admin', 'warden', 'tenant', 'owner')
   @ApiOperation({ summary: 'Get booking request by ID' })
-  findOne(@Param('id') id: string) {
-    return this.bookingRequestsService.findOne(+id);
+  async findOne(@Req() req: { user: AuthUser }, @Param('id') id: string) {
+    const row = await this.bookingRequestsService.findOne(+id);
+    await assertCanSee(this.db, req.user, row);
+    return row;
   }
 
   @Post()
@@ -58,14 +66,16 @@ export class BookingRequestsController {
   @Put(':id')
   @Roles('admin', 'warden', 'owner')
   @ApiOperation({ summary: 'Update booking request status' })
-  update(@Param('id') id: string, @Body() updateDto: UpdateBookingRequestDto) {
+  async update(@Req() req: { user: AuthUser }, @Param('id') id: string, @Body() updateDto: UpdateBookingRequestDto) {
+    await assertCanSee(this.db, req.user, await this.bookingRequestsService.findOne(+id));
     return this.bookingRequestsService.update(+id, updateDto);
   }
 
   @Delete(':id')
   @Roles('admin', 'tenant')
   @ApiOperation({ summary: 'Delete booking request' })
-  remove(@Param('id') id: string) {
+  async remove(@Req() req: { user: AuthUser }, @Param('id') id: string) {
+    await assertCanSee(this.db, req.user, await this.bookingRequestsService.findOne(+id));
     return this.bookingRequestsService.remove(+id);
   }
 }

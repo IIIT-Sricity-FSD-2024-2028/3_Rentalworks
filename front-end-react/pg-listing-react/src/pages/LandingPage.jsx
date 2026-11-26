@@ -4,11 +4,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { logout, selectCurrentUser, ROLE_HOME } from '../features/auth/authSlice';
 import { fetchListings, selectAllListings, selectListingsError, selectListingsStatus } from '../features/listings/listingsSlice';
 import { toastSuccess } from '../features/ui/uiSlice';
-<<<<<<< HEAD
-=======
 import { formatINR } from '../utils/normalize';
 import useAutoRefresh from '../hooks/useAutoRefresh';
->>>>>>> redux-migration
 import '../styles/landing.css';
 
 const SUPPORT_EMAIL = 'support@rentbro.com';
@@ -25,11 +22,6 @@ export default function LandingPage() {
   useEffect(() => {
     dispatch(fetchListings());
   }, [dispatch]);
-<<<<<<< HEAD
-
-  const explore = listings.slice(0, 5);
-  const newest = [...listings].sort((a, b) => b.id - a.id).slice(0, 4);
-=======
   useAutoRefresh(() => dispatch(fetchListings()));
 
   // "Available now": PGs with free beds first, cheapest first.
@@ -39,7 +31,6 @@ export default function LandingPage() {
   const newest = [...listings].sort((a, b) => b.id - a.id).slice(0, 4);
   const freeBeds = listings.reduce((n, l) => n + l.freeBeds, 0);
   const cities = [...new Set(listings.map((l) => l.city).filter(Boolean))];
->>>>>>> redux-migration
   const listingsMessage =
     listingsStatus === 'failed'
       ? listingsError || 'Could not load properties right now.'
@@ -151,15 +142,6 @@ export default function LandingPage() {
       {/* 2. HERO SECTION */}
       <section id="home" className="hero">
         <div className="hero-text">
-<<<<<<< HEAD
-          <h1>Discover Your Next Home</h1>
-          <p>Browse safe, affordable, and comfortable PG accommodation</p>
-          <ul>
-            <li>Secure and trusted platform</li>
-            <li>{listings.length > 0 ? `${listings.length} verified properties listed` : 'Verified properties'}</li>
-            <li>Fully secured</li>
-          </ul>
-=======
           <h1>Find a PG that has a bed for you</h1>
           <p>See rent, room types and free beds before you book.</p>
           {listings.length > 0 && (
@@ -169,7 +151,6 @@ export default function LandingPage() {
               <li>Book and pay online</li>
             </ul>
           )}
->>>>>>> redux-migration
           <button
             id="exploreBtn"
             className="neumorphic-btn"
@@ -194,14 +175,9 @@ export default function LandingPage() {
                 <div key={pg.id} className="explore-card" onClick={() => navigate(`/pg/${pg.id}`)}>
                   <img src={pg.image} alt={pg.title} />
                   <h3 className="card-h3">{pg.title}</h3>
-<<<<<<< HEAD
-                  <p className="card-p">{pg.features[0].text}</p>
-                  <strong>Rs. {pg.price.toLocaleString('en-IN')}</strong>
-=======
                   <p className="card-p">{pg.location}</p>
                   <p className="card-p">{pg.availabilityText}</p>
                   {pg.price > 0 && <strong>{formatINR(pg.price)} / month</strong>}
->>>>>>> redux-migration
                 </div>
               ))}
         </div>
@@ -218,30 +194,18 @@ export default function LandingPage() {
                   <img src={pg.image} alt={pg.title} />
                   <h3 className="title">{pg.title}</h3>
                   <div className="details-badges">
-<<<<<<< HEAD
-                    {pg.amenities.slice(0, 4).map((a) => (
-                      <span key={a}>{a.toUpperCase()}</span>
-                    ))}
-                    {pg.safetyScore && <span>Safety: {pg.safetyScore}/10</span>}
-=======
                     <span>{pg.genderLabel}</span>
                     {pg.amenityLabels.slice(0, 3).map((a) => (
                       <span key={a}>{a}</span>
                     ))}
->>>>>>> redux-migration
                   </div>
                   <p className="location">
                     <span className="material-icons-outlined">location_on</span>
                     {pg.location}
                   </p>
                   <div className="price-row">
-<<<<<<< HEAD
-                    <span className="price">₹{pg.price.toLocaleString('en-IN')}/mo</span>
-                    <button className="btn-view-pg">View Details</button>
-=======
                     <span className="price">{pg.price > 0 ? `${formatINR(pg.price)}/mo` : 'Rent not listed'}</span>
                     <button className="btn-view-pg">View</button>
->>>>>>> redux-migration
                   </div>
                 </div>
               ))}
@@ -276,17 +240,10 @@ export default function LandingPage() {
         <div className="footer-container">
           {/* LEFT */}
           <div className="footer-left">
-<<<<<<< HEAD
-            <h4>Support</h4>
-            {[
-              ['Browse PGs', () => navigate('/listings')],
-              ['About', () => scrollTo('about')],
-=======
             <h4>RentBro</h4>
             {[
               ['Browse PGs', () => navigate('/listings')],
               ['Available now', () => scrollTo('about')],
->>>>>>> redux-migration
               ['Features', () => scrollTo('feature')],
               ['List Your PG', () => navigate('/register', { state: { mode: 'owner' } })],
               ['Contact', () => { window.location.href = `mailto:${SUPPORT_EMAIL}`; }],
@@ -299,27 +256,10 @@ export default function LandingPage() {
 
           {/* CENTER */}
           <div className="footer-center">
-<<<<<<< HEAD
-            <h4>24/7 Customer Support</h4>
-            <p>support@rentbro.com</p>
-            <p>+91 92345 67810</p>
-            <div className="social-icons">
-              {[
-                ['Facebook', 'thumb_up', 'https://www.facebook.com'],
-                ['Instagram', 'photo_camera', 'https://www.instagram.com'],
-                ['YouTube', 'play_circle', 'https://www.youtube.com'],
-              ].map(([title, icon, href]) => (
-                <a key={title} className="social-btn" title={title} href={href} target="_blank" rel="noreferrer">
-                  <span className="material-icons-outlined" style={{ fontSize: '20px' }}>{icon}</span>
-                </a>
-              ))}
-            </div>
-=======
             <h4>Contact</h4>
             <p>
               <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
             </p>
->>>>>>> redux-migration
           </div>
 
           {/* RIGHT */}
@@ -334,11 +274,7 @@ export default function LandingPage() {
               />
               <br />
               <button id="helpSubmitBtn" type="submit" className="neumorphic-btn">
-<<<<<<< HEAD
-                Email Support
-=======
                 Send by email
->>>>>>> redux-migration
               </button>
             </form>
           </div>

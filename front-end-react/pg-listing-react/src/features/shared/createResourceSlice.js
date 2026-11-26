@@ -1,9 +1,6 @@
 import { createSlice, createAsyncThunk, isFulfilled, isPending, isRejected } from '@reduxjs/toolkit';
 import { asArray } from '../../services/apiClient';
-<<<<<<< HEAD
-=======
 import { withNormalizedStatus } from '../../utils/normalize';
->>>>>>> redux-migration
 
 /**
  * Factory for the common "list + create + update + delete" REST resource.
@@ -11,61 +8,57 @@ import { withNormalizedStatus } from '../../utils/normalize';
  *   const issues = createResourceSlice({
  *     name: 'tenantIssues',
  *     api: { list, create, update, remove },   // functions returning promises
-<<<<<<< HEAD
- *     mapItem: (raw) => ({ ...raw }),          // optional normaliser
-=======
  *     mapItem: (raw) => ({ ...raw }),          // optional normaliser (status is already normalised)
->>>>>>> redux-migration
  *   });
  *
  * The reducer must be mounted in the store under the same key as `name`.
  * Exposes `thunks` (fetchAll, createItem, updateItem, removeItem),
  * `actions` (setItems, upsertItem, removeLocal, clear) and `selectors`.
  */
-<<<<<<< HEAD
-export function createResourceSlice({ name, api, mapItem = (x) => x, idKey = 'id', reducers = {}, extraReducers }) {
-=======
 export function createResourceSlice({ name, api, mapItem: customMap = (x) => x, idKey = 'id', reducers = {}, extraReducers }) {
   // Every row gets one status spelling ('in-progress' / 'ACTIVE' → 'in_progress' / 'active')
   // before the slice-specific mapper sees it.
   const mapItem = (raw) => customMap(withNormalizedStatus(raw));
->>>>>>> redux-migration
   const idOf = (item) => item?.[idKey];
   const sameId = (a, b) => String(a) === String(b);
   const fail = (err) => err?.message || 'Request failed';
 
-  const fetchAll = createAsyncThunk(`${name}/fetchAll`, async (arg, { rejectWithValue }) => {
+  // Every api function receives the signed-in role last, so one repository
+  // slice can call the right controller for owner / tenant / admin.
+  const roleOf = (getState) => getState()?.auth?.user?.role;
+
+  const fetchAll = createAsyncThunk(`${name}/fetchAll`, async (arg, { rejectWithValue, getState }) => {
     try {
-      return asArray(await api.list(arg)).map(mapItem);
+      return asArray(await api.list(arg, roleOf(getState))).map(mapItem);
     } catch (err) {
       return rejectWithValue(fail(err));
     }
   });
 
-  const createItem = createAsyncThunk(`${name}/create`, async (data, { rejectWithValue }) => {
+  const createItem = createAsyncThunk(`${name}/create`, async (data, { rejectWithValue, getState }) => {
     if (!api.create) return rejectWithValue('Create is not supported');
     try {
-      const created = await api.create(data);
+      const created = await api.create(data, roleOf(getState));
       return created && typeof created === 'object' ? mapItem(created) : null;
     } catch (err) {
       return rejectWithValue(fail(err));
     }
   });
 
-  const updateItem = createAsyncThunk(`${name}/update`, async ({ id, changes }, { rejectWithValue }) => {
+  const updateItem = createAsyncThunk(`${name}/update`, async ({ id, changes }, { rejectWithValue, getState }) => {
     if (!api.update) return rejectWithValue('Update is not supported');
     try {
-      const updated = await api.update(id, changes);
+      const updated = await api.update(id, changes, roleOf(getState));
       return { id, changes, item: updated && typeof updated === 'object' && idOf(updated) != null ? mapItem(updated) : null };
     } catch (err) {
       return rejectWithValue(fail(err));
     }
   });
 
-  const removeItem = createAsyncThunk(`${name}/remove`, async (id, { rejectWithValue }) => {
+  const removeItem = createAsyncThunk(`${name}/remove`, async (id, { rejectWithValue, getState }) => {
     if (!api.remove) return rejectWithValue('Delete is not supported');
     try {
-      await api.remove(id);
+      await api.remove(id, roleOf(getState));
       return id;
     } catch (err) {
       return rejectWithValue(fail(err));

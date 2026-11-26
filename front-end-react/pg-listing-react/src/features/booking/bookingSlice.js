@@ -1,10 +1,8 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
-import { http, qs, asArray } from '../../services/apiClient';
+import { http, asArray } from '../../services/apiClient';
 import { setSession } from '../auth/authSlice';
-<<<<<<< HEAD
-=======
 import { fetchListings, fetchListingById } from '../listings/listingsSlice';
->>>>>>> redux-migration
+import { bookingsRepo, paymentsRepo } from '../repositories';
 
 export const PLATFORM_FEE = 500;
 export const DURATIONS = [
@@ -19,30 +17,6 @@ const defaultMoveIn = () => {
   d.setDate(d.getDate() + 5);
   return d.toISOString().split('T')[0];
 };
-
-// The in-progress booking survives a refresh within the tab (sessionStorage).
-const DRAFT_KEY = 'rentbro_booking_draft';
-const DRAFT_FIELDS = ['selectedPG', 'selectedRoom', 'selectedRoommate', 'lifestyleProfile', 'moveInDate', 'duration', 'bookingFor', 'friendDetails', 'paymentMethod', 'lastConfirmed', 'pendingBookingId'];
-
-function loadDraft() {
-  try {
-    return JSON.parse(sessionStorage.getItem(DRAFT_KEY) || '{}') || {};
-  } catch {
-    return {};
-  }
-}
-
-export function saveDraft(bookingState) {
-  try {
-    const draft = {};
-    DRAFT_FIELDS.forEach((k) => {
-      draft[k] = bookingState[k];
-    });
-    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-  } catch {
-    // ignore
-  }
-}
 
 export const isSingleRoom = (room) => room?.sharing === 'single' || Number(room?.capacity) === 1;
 
@@ -151,12 +125,9 @@ export const submitCheckout = createAsyncThunk(
       }
       // Checkout creates the confirmed booking, so drop the unpaid request it replaces.
       if (booking.pendingBookingId) await http.delete(`/bookings/${booking.pendingBookingId}`).catch(() => null);
-<<<<<<< HEAD
-=======
       // The server just took a bed: reload availability so every page shows the new counts.
       dispatch(fetchListings());
       dispatch(fetchListingById(pg.id));
->>>>>>> redux-migration
       return result;
     } catch (err) {
       return rejectWithValue(err.message);
@@ -164,60 +135,44 @@ export const submitCheckout = createAsyncThunk(
   },
 );
 
-export const fetchMyBookings = createAsyncThunk('booking/fetchMyBookings', async (_, { getState, rejectWithValue }) => {
-  const id = getState().auth.user?.id;
-  if (!id) return [];
-  try {
-    // Never show another user's bookings, whatever the server returns.
-    return asArray(await http.get(`/bookings${qs({ tenantId: id })}`))
-      .filter((b) => Number(b.tenantId ?? b.tenant?.id) === Number(id))
-      .sort((a, b) => b.id - a.id);
-  } catch (err) {
-    return rejectWithValue(err.message);
-  }
+// "My bookings" and "my transactions" are the bookings / payments repository
+// slices; the server already returns only the signed-in user's own rows.
+export const fetchMyBookings = createAsyncThunk('booking/fetchMyBookings', async (_, { getState, dispatch }) => {
+  if (!getState().auth.user?.id) return false;
+  await dispatch(bookingsRepo.thunks.fetchAll());
+  return true;
 });
 
-export const cancelMyBooking = createAsyncThunk('booking/cancelMyBooking', async (id, { rejectWithValue }) => {
-  try {
-    await http.delete(`/bookings/${id}`);
-    return id;
-  } catch (err) {
-    return rejectWithValue(err.message);
-  }
+export const cancelMyBooking = createAsyncThunk('booking/cancelMyBooking', async (id, { dispatch, rejectWithValue }) => {
+  const result = await dispatch(bookingsRepo.thunks.removeItem(id));
+  return result.error ? rejectWithValue(result.payload) : id;
 });
 
-export const fetchMyTransactions = createAsyncThunk('booking/fetchMyTransactions', async (_, { getState, rejectWithValue }) => {
+export const fetchMyTransactions = createAsyncThunk('booking/fetchMyTransactions', async (_, { getState, dispatch }) => {
   const { id, role } = getState().auth.user || {};
   // Guests have no payments yet (the payments API is for tenants).
-  if (!id || role !== 'tenant') return [];
-  try {
-    return asArray(await http.get(`/payments${qs({ tenantId: id })}`));
-  } catch (err) {
-    return rejectWithValue(err.message);
-  }
+  if (!id || role !== 'tenant') return false;
+  await dispatch(paymentsRepo.thunks.fetchAll());
+  return true;
 });
 
 // ------------------------------------------------------------------ slice
 
-const draft = loadDraft();
-
 const initialState = {
-  selectedPG: draft.selectedPG || null,
-  selectedRoom: draft.selectedRoom || null,
-  selectedRoommate: draft.selectedRoommate || null,
-  lifestyleProfile: draft.lifestyleProfile || null,
-  moveInDate: draft.moveInDate || defaultMoveIn(),
-  duration: draft.duration || '6 Months',
-  bookingFor: draft.bookingFor || 'self',
-  friendDetails: draft.friendDetails || { name: '', phone: '', email: '', gender: '' },
-  paymentMethod: draft.paymentMethod || 'upi',
-  lastConfirmed: draft.lastConfirmed || null,
-  pendingBookingId: draft.pendingBookingId || null,
+  selectedPG: null,
+  selectedRoom: null,
+  selectedRoommate: null,
+  lifestyleProfile: null,
+  moveInDate: defaultMoveIn(),
+  duration: '6 Months',
+  bookingFor: 'self',
+  friendDetails: { name: '', phone: '', email: '', gender: '' },
+  paymentMethod: 'upi',
+  lastConfirmed: null,
+  pendingBookingId: null,
 
   matches: { items: [], status: 'idle', error: null },
   checkout: { status: 'idle', error: null },
-  myBookings: { items: [], status: 'idle', error: null },
-  myTransactions: { items: [], status: 'idle', error: null },
 };
 
 const bookingSlice = createSlice({
@@ -260,7 +215,7 @@ const bookingSlice = createSlice({
       state.checkout.error = null;
     },
     resetBookingFlow(state) {
-      return { ...initialState, lastConfirmed: state.lastConfirmed, myBookings: state.myBookings, myTransactions: state.myTransactions, selectedPG: null, selectedRoom: null, selectedRoommate: null, lifestyleProfile: null, moveInDate: defaultMoveIn() };
+      return { ...initialState, lastConfirmed: state.lastConfirmed, selectedPG: null, selectedRoom: null, selectedRoommate: null, lifestyleProfile: null, moveInDate: defaultMoveIn() };
     },
     /** Drop the one-time password once the user has seen it. */
     forgetIssuedPassword(state) {
@@ -302,31 +257,6 @@ const bookingSlice = createSlice({
       })
       .addCase(submitCheckout.rejected, (state, { payload }) => {
         state.checkout = { status: 'failed', error: payload || 'Payment failed. Please retry.' };
-      })
-      .addCase(fetchMyBookings.pending, (state) => {
-        state.myBookings.status = 'loading';
-        state.myBookings.error = null;
-      })
-      .addCase(fetchMyBookings.fulfilled, (state, { payload }) => {
-        state.myBookings = { items: payload, status: 'succeeded', error: null };
-      })
-      .addCase(fetchMyBookings.rejected, (state, { payload }) => {
-        state.myBookings.status = 'failed';
-        state.myBookings.error = payload;
-      })
-      .addCase(cancelMyBooking.fulfilled, (state, { payload: id }) => {
-        state.myBookings.items = state.myBookings.items.filter((x) => String(x.id) !== String(id));
-      })
-      .addCase(fetchMyTransactions.pending, (state) => {
-        state.myTransactions.status = 'loading';
-        state.myTransactions.error = null;
-      })
-      .addCase(fetchMyTransactions.fulfilled, (state, { payload }) => {
-        state.myTransactions = { items: payload, status: 'succeeded', error: null };
-      })
-      .addCase(fetchMyTransactions.rejected, (state, { payload }) => {
-        state.myTransactions.status = 'failed';
-        state.myTransactions.error = payload;
       });
   },
 });
@@ -355,8 +285,14 @@ export const selectSelectedRoommate = (state) => state.booking.selectedRoommate;
 export const selectMatches = (state) => state.booking.matches;
 export const selectCheckout = (state) => state.booking.checkout;
 export const selectLastConfirmed = (state) => state.booking.lastConfirmed;
-export const selectMyBookings = (state) => state.booking.myBookings;
-export const selectMyTransactions = (state) => state.booking.myTransactions;
+const listView = (slice, me) => ({
+  items: slice.items.filter((x) => Number(x.tenantId ?? x.tenant?.id) === Number(me)).sort((a, b) => b.id - a.id),
+  status: slice.status,
+  error: slice.error,
+});
+/** The signed-in user's bookings / payments, read from the repository slices. */
+export const selectMyBookings = createSelector([(s) => s.bookings, (s) => s.auth.user?.id], listView);
+export const selectMyTransactions = createSelector([(s) => s.payments, (s) => s.auth.user?.id], listView);
 
 export const selectTotals = createSelector([selectSelectedRoom], (room) => {
   const rent = Number(room?.rent) || 0;

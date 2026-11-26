@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
-import { adminUsers, selectAdminSubscriptions, selectAdminSubscriptionStats } from '../../../features/admin/adminSlices';
+import { adminUsers, adminSubscriptions, selectAdminSubscriptions, selectAdminSubscriptionStats } from '../../../features/admin/adminSlices';
+import { SUBSCRIPTION_PLANS } from '../../../data/catalog';
 import Modal from '../components/Modal';
 
 const BILLING = { MONTHLY: 'Monthly', YEARLY: 'Yearly', LIFETIME: 'One-time' };
@@ -17,12 +18,35 @@ export default function Subscriptions() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [planFilter, setPlanFilter] = useState('ALL');
   const [receiptModal, setReceiptModal] = useState(null);
+  // { sub, planType } while assigning / changing a plan; { sub, cancel: true } while cancelling.
+  const [planModal, setPlanModal] = useState(null);
+  const saving = useSelector(adminSubscriptions.selectors.selectMutating);
 
   useEffect(() => {
     dispatch(adminUsers.thunks.fetchAll());
+    dispatch(adminSubscriptions.thunks.fetchAll());
   }, [dispatch]);
 
-  const loadData = () => runThunk(dispatch, adminUsers.thunks.fetchAll(), { success: 'Subscriptions refreshed' });
+  const loadData = async () => {
+    await dispatch(adminUsers.thunks.fetchAll());
+    return runThunk(dispatch, adminSubscriptions.thunks.fetchAll(), { success: 'Subscriptions refreshed' });
+  };
+
+  /** Activate a new plan (POST) or cancel the current one (PATCH status). The server sets price and dates. */
+  const savePlan = async () => {
+    const { sub } = planModal;
+    const action = planModal.cancel
+      ? adminSubscriptions.thunks.updateItem({ id: sub.subscriptionId, changes: { status: 'cancelled' } })
+      : adminSubscriptions.thunks.createItem({ ownerId: sub.ownerId, planType: planModal.planType });
+    const name = sub.owner?.name || 'owner';
+    const { ok } = await runThunk(dispatch, action, {
+      success: planModal.cancel ? `Plan cancelled for ${name}` : `${planModal.planType.charAt(0) + planModal.planType.slice(1).toLowerCase()} plan activated for ${name}`,
+    });
+    if (ok) {
+      await Promise.all([dispatch(adminSubscriptions.thunks.fetchAll()), dispatch(adminUsers.thunks.fetchAll())]);
+      setPlanModal(null);
+    }
+  };
 
   const filtered = subscriptions.filter(sub => {
     const ownerName = (sub.owner?.name || '').toLowerCase();
@@ -246,7 +270,23 @@ export default function Subscriptions() {
                     <td style={{ padding: '14px 16px', fontFamily: 'monospace', fontSize: 12, color: '#64748b' }}>
                       {s.receiptNumber || '—'}
                     </td>
-                    <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                    <td style={{ padding: '14px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <button
+                        className="btn-action-small"
+                        onClick={() => setPlanModal({ sub: s, planType: s.status === 'ACTIVE' && SUBSCRIPTION_PLANS.some((p) => p.name === s.planType) ? s.planType : 'MONTHLY' })}
+                        style={{ padding: '4px 10px', background: '#ecfdf5', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: 6, fontWeight: 600, fontSize: 11, cursor: 'pointer', marginRight: 6 }}
+                      >
+                        {s.status === 'ACTIVE' ? 'Change plan' : 'Activate plan'}
+                      </button>
+                      {s.status === 'ACTIVE' && (
+                        <button
+                          className="btn-action-small"
+                          onClick={() => setPlanModal({ sub: s, cancel: true })}
+                          style={{ padding: '4px 10px', background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', borderRadius: 6, fontWeight: 600, fontSize: 11, cursor: 'pointer', marginRight: 6 }}
+                        >
+                          Cancel
+                        </button>
+                      )}
                       <button
                         className="btn-action-small"
                         disabled={!s.receiptNumber}
@@ -272,6 +312,44 @@ export default function Subscriptions() {
           </tbody>
         </table>
       </div>
+
+      {/* Activate / change / cancel plan */}
+      <Modal
+        show={!!planModal}
+        onClose={() => setPlanModal(null)}
+        title={planModal?.cancel ? 'Cancel subscription' : planModal?.sub?.status === 'ACTIVE' ? 'Change plan' : 'Activate plan'}
+        subtitle={planModal ? `${planModal.sub.owner?.name || 'Owner'} · ${planModal.sub.owner?.email || ''}` : ''}
+        footer={
+          <>
+            <button className="btn-cancel" onClick={() => setPlanModal(null)}>Close</button>
+            <button className={planModal?.cancel ? 'btn-confirm-red' : 'btn-confirm-blue'} disabled={saving} onClick={savePlan}>
+              {planModal?.cancel ? 'Cancel plan' : 'Activate'}
+            </button>
+          </>
+        }
+      >
+        {planModal?.cancel ? (
+          <p style={{ fontSize: 13, color: '#475569' }}>
+            {planModal.sub.plan?.displayName} will end now. The owner is notified and their portal shows no active plan.
+          </p>
+        ) : (
+          planModal && (
+            <div style={{ display: 'grid', gap: 8 }}>
+              {SUBSCRIPTION_PLANS.map((p) => (
+                <label key={p.name} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: 10, border: `1px solid ${planModal.planType === p.name ? '#2563eb' : '#e2e8f0'}`, borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>
+                  <input type="radio" name="plan" checked={planModal.planType === p.name} onChange={() => setPlanModal({ ...planModal, planType: p.name })} />
+                  <span style={{ flex: 1 }}>
+                    <strong>{p.displayName}</strong> — ₹{p.price.toLocaleString('en-IN')} {p.durationMonths === 1 ? 'per month' : p.durationMonths ? `for ${p.durationMonths} months` : 'one-time'}
+                  </span>
+                </label>
+              ))}
+              <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>
+                Starts today. {planModal.sub.status === 'ACTIVE' ? 'The current plan is closed and replaced.' : ''} The owner is notified.
+              </p>
+            </div>
+          )
+        )}
+      </Modal>
 
       {/* Receipt Modal */}
       <Modal

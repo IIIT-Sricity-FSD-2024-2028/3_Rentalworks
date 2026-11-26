@@ -1,36 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-<<<<<<< HEAD
-import { RAW_FAQS } from '../data/faqs';
-=======
 import { buildFaqs } from '../data/faqs';
->>>>>>> redux-migration
 import { fetchListingById, selectListingDetail } from '../features/listings/listingsSlice';
 import { startBooking, checkGenderEligibility, isSingleRoom } from '../features/booking/bookingSlice';
 import { selectCurrentUser, updateMyProfile, MANAGEMENT_ROLES } from '../features/auth/authSlice';
 import { toastError } from '../features/ui/uiSlice';
-<<<<<<< HEAD
-
-const AMENITY_META = {
-  wifi: { label: 'High-Speed WiFi', desc: '100 Mbps fiber broadband', icon: 'wifi' },
-  ac: { label: 'Air Conditioning', desc: 'Individual climate control', icon: 'ac_unit' },
-  cctv: { label: '24/7 Security', desc: 'Guard & CCTV monitoring', icon: 'shield' },
-  security: { label: '24/7 Security Guard', desc: 'Guard & CCTV monitoring', icon: 'shield' },
-  parking: { label: 'Parking Space', desc: 'Secure parking space', icon: 'local_parking' },
-  laundry: { label: 'Laundry Service', desc: 'Automated washing machines', icon: 'local_laundry_service' },
-  meals: { label: '3 Healthy Meals', desc: 'Breakfast, lunch & dinner', icon: 'restaurant' },
-  food: { label: 'Healthy Meals', desc: 'Nutritious daily meals', icon: 'restaurant' },
-  geyser: { label: 'Hot Water Geyser', desc: '24/7 hot water supply', icon: 'hot_tub' },
-  backup: { label: 'Power Backup', desc: '100% generator backup', icon: 'bolt' },
-  water: { label: '24/7 Water Supply', desc: 'RO purified drinking water', icon: 'water_drop' },
-  gym: { label: 'Gym Facility', desc: 'Fitness equipment for residents', icon: 'fitness_center' },
-  mess: { label: 'Dining Hall', desc: 'Hygienic communal mess', icon: 'lunch_dining' },
-};
-=======
 import { amenityLabel, amenityIcon, formatINR } from '../utils/normalize';
 import useAutoRefresh from '../hooks/useAutoRefresh';
->>>>>>> redux-migration
 
 export default function PgDetailsLanding() {
   const { id } = useParams();
@@ -51,22 +28,6 @@ export default function PgDetailsLanding() {
   useEffect(() => {
     dispatch(fetchListingById(id));
   }, [dispatch, id]);
-<<<<<<< HEAD
-
-  const loading = status === 'idle' || status === 'loading' || String(listing?.id ?? '') !== String(id) && status !== 'failed';
-  const pg = listing
-    ? {
-        ...listing,
-        safetyLabel: listing.gender === 'girls' ? 'Female Safety Score' : 'Safety Score',
-        stats: {
-          residents: listing.totalRooms ? `${listing.rooms.reduce((n, r) => n + r.currentOccupancy, 0)}` : '0',
-          security: listing.gender === 'girls' ? '24/7 CCTV & Biometric' : '24/7 CCTV & Security',
-          backup: listing.amenities.includes('backup') ? '100%' : '—',
-        },
-      }
-    : null;
-  const displayRooms = pg?.rooms || [];
-=======
   // Keep bed counts current if someone else books while this page is open.
   useAutoRefresh(() => dispatch(fetchListingById(id)));
 
@@ -74,7 +35,6 @@ export default function PgDetailsLanding() {
   const pg = listing;
   const displayRooms = pg?.rooms || [];
   const faqs = buildFaqs(pg);
->>>>>>> redux-migration
 
   // After signing in, the login page sends the user back here with the room they picked.
   useEffect(() => {
@@ -142,13 +102,8 @@ export default function PgDetailsLanding() {
     return (
       <div style={{ textAlign: 'center', padding: '100px 20px', minHeight: '60vh' }}>
         <span className="material-icons-outlined" style={{ fontSize: 48, color: '#94a3b8' }}>home_work</span>
-<<<<<<< HEAD
-        <h2 style={{ margin: '12px 0 6px' }}>Property unavailable</h2>
-        <p style={{ color: '#64748b', marginBottom: 20 }}>{error || 'This PG could not be loaded.'}</p>
-=======
         <h2 style={{ margin: '12px 0 6px' }}>This PG couldn't be loaded</h2>
         <p style={{ color: '#64748b', marginBottom: 20 }}>{error || 'Please try again.'}</p>
->>>>>>> redux-migration
         <button className="btn-save" onClick={() => dispatch(fetchListingById(id))} style={{ marginRight: 8 }}>Retry</button>
         <button className="btn-save" onClick={() => navigate('/listings')}>Browse all PGs</button>
       </div>
@@ -159,11 +114,7 @@ export default function PgDetailsLanding() {
     return (
       <div style={{ textAlign: 'center', padding: '100px 20px', minHeight: '60vh' }}>
         <div className="spinner" style={{ margin: '0 auto 16px', width: '40px', height: '40px', border: '3px solid #e5e7eb', borderTopColor: '#f59e0b', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-<<<<<<< HEAD
-        <p style={{ color: '#4b5563', fontSize: '16px' }}>Loading accommodation details...</p>
-=======
         <p style={{ color: '#4b5563', fontSize: '16px' }}>Loading…</p>
->>>>>>> redux-migration
       </div>
     );
   }
@@ -184,34 +135,11 @@ export default function PgDetailsLanding() {
       >
         <div className="container" style={{ width: '100%', maxWidth: '1140px', margin: '0 auto', padding: '0 24px', color: '#fff' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
-<<<<<<< HEAD
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(202,138,4,0.9)', padding: '5px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>
-              ✓ {pg.compliance === 'Verified' ? 'Verified' : 'Listed'} Accommodation
-            </div>
-            {pg.gender === 'girls' && (
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: '#be185d',
-                padding: '5px 14px',
-                borderRadius: '20px',
-                fontSize: '12px',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.8px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
-              }}>
-                👩 Girls Only
-              </div>
-            )}
-=======
             {pg.verified && <span className="hero-chip hero-chip-verified">Verified</span>}
             <span className="hero-chip">{pg.genderLabel}</span>
             <span className={`hero-chip ${pg.availability === 'available' ? 'hero-chip-open' : 'hero-chip-full'}`}>
               {pg.availabilityText}
             </span>
->>>>>>> redux-migration
           </div>
           <h1 style={{ fontSize: '38px', fontWeight: 800, marginBottom: '8px', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
             {pg.title}
@@ -221,15 +149,6 @@ export default function PgDetailsLanding() {
               <span className="material-icons-outlined" style={{ fontSize: '18px', color: '#facc15' }}>location_on</span>
               {pg.location}
             </span>
-<<<<<<< HEAD
-            <span>•</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <span className="material-icons-outlined" style={{ fontSize: '18px', color: '#facc15' }}>star</span>
-              {pg.safetyScore ? `Safety ${pg.safetyScore}/10` : 'Newly listed'}
-            </span>
-            <span>•</span>
-            <span style={{ color: '#86efac', fontWeight: 600 }}>₹{Number(pg.price).toLocaleString('en-IN')}/mo onwards</span>
-=======
             {pg.price > 0 && (
               <>
                 <span>•</span>
@@ -239,7 +158,6 @@ export default function PgDetailsLanding() {
                 </span>
               </>
             )}
->>>>>>> redux-migration
           </p>
         </div>
       </div>
@@ -249,11 +167,7 @@ export default function PgDetailsLanding() {
         <div className="container" style={{ maxWidth: '1140px', margin: '0 auto', padding: '0 24px', display: 'flex', gap: '24px', overflowX: 'auto' }}>
           <a href="#About" className="subnav-link">About</a>
           <a href="#Amenities" className="subnav-link">Amenities</a>
-<<<<<<< HEAD
-          <a href="#Rooms" className="subnav-link highlight">Available Rooms</a>
-=======
           <a href="#Rooms" className="subnav-link highlight">Rooms</a>
->>>>>>> redux-migration
           <a href="#FAQs" className="subnav-link">FAQs</a>
           <a href="#Contact" className="subnav-link">Contact</a>
         </div>
@@ -264,28 +178,6 @@ export default function PgDetailsLanding() {
         <section className="detail-section" id="About">
           <h2 className="section-title">About</h2>
           <p className="section-text" style={{ lineHeight: 1.8, color: '#475569', fontSize: '16px', marginBottom: '24px' }}>
-<<<<<<< HEAD
-            {pg.about || `${pg.title} is a paying-guest accommodation in ${pg.location}. Browse the available rooms below and reserve your bed online.`}
-          </p>
-          <div className="stats-grid">
-            <div className="stat-box">
-              <span className="stat-number">{pg.stats.residents}</span>
-              <span className="stat-desc">Current Residents</span>
-            </div>
-            <div className="stat-box">
-              <span className="stat-number">{pg.stats.security}</span>
-              <span className="stat-desc">Security &amp; Monitoring</span>
-            </div>
-            <div className="stat-box">
-              <span className="stat-number">{pg.stats.backup}</span>
-              <span className="stat-desc">Power Backup</span>
-            </div>
-            <div className="stat-box">
-              <span className="stat-number">{pg.safetyScore ? `${pg.safetyScore}/10` : '—'}</span>
-              <span className="stat-desc">{pg.safetyLabel}</span>
-            </div>
-          </div>
-=======
             {pg.about || `${pg.genderLabel} PG in ${pg.location}. The owner hasn't added a description yet.`}
           </p>
           {pg.hasRooms && (
@@ -322,37 +214,17 @@ export default function PgDetailsLanding() {
               Fire safety {pg.verification.fireSafety ? 'certified' : 'not confirmed'}
             </li>
           </ul>
->>>>>>> redux-migration
         </section>
 
         {/* AMENITIES SECTION */}
         <section className="detail-section" id="Amenities" style={{ marginTop: '50px' }}>
           <h2 className="section-title">Amenities</h2>
           <div className="amenities-grid">
-<<<<<<< HEAD
-            {pg.amenities.length === 0 && <p style={{ color: '#64748b' }}>Amenity details have not been added yet.</p>}
-            {pg.amenities.map((key, idx) => {
-              const meta = AMENITY_META[key.toLowerCase()] || {
-                label: key.charAt(0).toUpperCase() + key.slice(1),
-                desc: 'Verified facility for all residents',
-                icon: 'check_circle'
-              };
-              return (
-                <div key={idx} className="amenity-card">
-                  <div className="amenity-icon">
-                    <span className="material-icons-outlined">{meta.icon}</span>
-                  </div>
-                  <div>
-                    <strong>{meta.label}</strong>
-                    <p>{meta.desc}</p>
-                  </div>
-=======
             {pg.amenities.length === 0 && <p style={{ color: '#64748b' }}>The owner hasn't listed any amenities yet.</p>}
             {pg.amenities.map((key) => (
               <div key={key} className="amenity-card">
                 <div className="amenity-icon">
                   <span className="material-icons-outlined">{amenityIcon(key)}</span>
->>>>>>> redux-migration
                 </div>
                 <strong>{amenityLabel(key)}</strong>
               </div>
@@ -462,11 +334,7 @@ export default function PgDetailsLanding() {
           </div>
 
           {displayRooms.length === 0 && (
-<<<<<<< HEAD
-            <p style={{ color: '#64748b', padding: '16px 0' }}>No rooms have been listed for this property yet. Please check back soon.</p>
-=======
             <p style={{ color: '#64748b', padding: '16px 0' }}>The owner hasn't added rooms for this PG yet, so it can't be booked online.</p>
->>>>>>> redux-migration
           )}
           <div className="rooms-grid">
             {displayRooms.map((room, idx) => {
@@ -582,11 +450,7 @@ export default function PgDetailsLanding() {
           <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
             <div>
               <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '6px' }}>
-<<<<<<< HEAD
-                Managed by: {pg.owner?.name || 'RentBro Property Partner'}
-=======
                 {pg.owner?.name ? `Owner: ${pg.owner.name}` : 'Owner details not available'}
->>>>>>> redux-migration
               </h3>
               <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '4px' }}>
                 {pg.owner ? (
@@ -594,14 +458,7 @@ export default function PgDetailsLanding() {
                     Email: <a href={`mailto:${pg.owner.email}`}>{pg.owner.email}</a>
                     {pg.owner.phone ? <> • Phone: <a href={`tel:${pg.owner.phone}`}>{pg.owner.phone}</a></> : null}
                   </>
-<<<<<<< HEAD
-                ) : 'Contact details are shared after booking.'}
-              </p>
-              <p style={{ color: '#16a34a', fontSize: '13px', fontWeight: 600 }}>
-                ✓ Official Registered Property on RentBro
-=======
                 ) : "The owner hasn't shared contact details for this listing."}
->>>>>>> redux-migration
               </p>
             </div>
             <button
@@ -620,11 +477,7 @@ export default function PgDetailsLanding() {
                 cursor: 'pointer',
               }}
             >
-<<<<<<< HEAD
-              {displayRooms.some(r => r.available) ? 'Reserve A Bed Now' : 'View Rooms'}
-=======
               {displayRooms.some(r => r.available) ? 'Book a bed' : 'See rooms'}
->>>>>>> redux-migration
             </button>
           </div>
         </section>

@@ -10,6 +10,8 @@ import { Complaint } from '../complaints/complaint.entity';
 import { Notification } from '../notifications/notification.entity';
 import { User } from '../users/user.entity';
 import { Subscription } from './subscription.entity';
+import { Booking } from '../bookings/booking.entity';
+import { SUBSCRIPTION_PLANS, planTypeOf } from './subscription-plans';
 
 @Injectable()
 export class OwnerService {
@@ -172,33 +174,26 @@ export class OwnerService {
     if (!user) {
       throw new NotFoundException('Owner not found');
     }
-
-    let subRecord = await this.subscriptionRepo.findOne({
-      where: { ownerId: ownerId },
+    // The latest active row is the current plan (admins activate / change it).
+    const subRecord = await this.subscriptionRepo.findOne({
+      where: { ownerId, status: In(['active', 'ACTIVE']) },
       order: { id: 'DESC' },
     });
-
     if (!subRecord) return { currentPlan: null, status: 'inactive', monthlyFee: 0, renewalDate: null };
 
-    const propertiesCount = await this.propertyRepo.count({
-      where: { ownerId: ownerId },
-    });
-
+    const type = planTypeOf(subRecord.planType || subRecord.planName);
+    const propertiesCount = await this.propertyRepo.count({ where: { ownerId } });
     return {
-      currentPlan: subRecord.planName,
-      status: subRecord.status,
-      monthlyFee: Number(subRecord.monthlyFee),
+      id: subRecord.id,
+      // Older rows store the plan in planType only, newer ones in both.
+      currentPlan: type ? SUBSCRIPTION_PLANS[type].displayName : subRecord.planName || subRecord.planType,
+      planType: type,
+      status: 'active',
+      monthlyFee: Number(subRecord.amount ?? subRecord.monthlyFee ?? 0),
       billingCycle: subRecord.billingCycle,
       propertiesManaged: propertiesCount,
-      maxProperties: subRecord.planName === 'Standard' ? 1 : 10,
+      startDate: subRecord.startDate || null,
       renewalDate: subRecord.endDate || null,
-      features: [
-        'Up to ' + (subRecord.planName === 'Standard' ? '1 Property' : '10 Properties'),
-        'Advanced Analytics',
-        'Direct Messaging',
-        'Automated Rent Reminders',
-        'Priority Support',
-      ],
     };
   }
 
@@ -211,10 +206,13 @@ export class OwnerService {
     const receipts = await this.userRepo.manager.getRepository(NotificationReceipt).findBy({ userId: ownerId });
     return notifications.filter(n => {
       const receipt = receipts.find(r => r.notificationId === n.id);
+      const forOwners = !n.targetRole || ['owner', 'all'].includes(n.targetRole);
+      // A message with an explicit recipient list goes to those users only.
+      const hasRecipientList = Array.isArray(n.recipientUserIds) && n.recipientUserIds.length > 0;
       const audience = n.userId === ownerId ||
         n.byUserId === ownerId ||
-        (n.recipientUserIds?.includes(ownerId) && (!n.targetRole || ['owner', 'all'].includes(n.targetRole))) ||
-        (!n.userId && (!n.targetRole || ['owner', 'all'].includes(n.targetRole)));
+        (hasRecipientList && !!n.recipientUserIds?.includes(ownerId) && forOwners) ||
+        (!n.userId && !hasRecipientList && forOwners);
       return audience && !receipt?.dismissed && new Date(n.sentAt).getTime() <= Date.now();
     }).map(n => {
       const receipt = receipts.find(r => r.notificationId === n.id);
@@ -309,9 +307,16 @@ export class OwnerService {
         }
       }
 
-      // Notify Tenants of owner's properties (or all active tenants)
+      // Notify only tenants currently staying in this owner's properties.
       if (role === 'tenant' || role === 'all') {
-        const tenants = await manager.getRepository(User).findBy({ role: 'tenant', status: 'active' });
+        const propertyIds = properties.map((p) => p.id);
+        const bookings = propertyIds.length
+          ? await manager.getRepository(Booking).find({ where: { propertyId: In(propertyIds), status: In(['active', 'confirmed']) }, select: { tenantId: true } })
+          : [];
+        const tenantIds = [...new Set(bookings.map((b) => b.tenantId).filter(Boolean))];
+        const tenants = tenantIds.length
+          ? await manager.getRepository(User).findBy({ id: In(tenantIds), role: 'tenant', status: 'active' })
+          : [];
         for (const tenant of tenants) {
           await manager.getRepository(Notification).save({
             title: body.title,

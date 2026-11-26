@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { SUBSCRIPTION_PLANS, findPlan } from '../../../data/catalog';
 import { formatDate, formatINR, normalizeStatus, statusLabel, toNumber } from '../../../utils/normalize';
 
@@ -111,9 +112,9 @@ export default function Subscription({ user }) {
         <p style={{ margin: 0 }}>
           Online checkout is not enabled yet. To start or change a plan, message your administrator and they will activate it for you.
         </p>
-        <a className="btn btn-primary" href="/dashboard/owner/notifications">
+        <Link className="btn btn-primary" to="/dashboard/owner/notifications">
           Contact administrator
-        </a>
+        </Link>
       </div>
     </section>
   );

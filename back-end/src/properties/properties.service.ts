@@ -1,3 +1,7 @@
+import * as fs from 'fs';
+import * as path from 'path';
+import { PropertyDocument } from '../property-documents/property-document.entity';
+import { DOCUMENT_DIR } from '../property-documents/property-documents.service';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -87,7 +91,18 @@ export class PropertiesService {
   async remove(id: number) {
     const property = await this.findOne(id);
     const removed = Object.assign({}, property);
+    // Document rows cascade with the property; their private files must go too.
+    const docs = await this.propertiesRepository.manager
+      .getRepository(PropertyDocument)
+      .createQueryBuilder('d')
+      .addSelect('d.filePath')
+      .where('d.propertyId = :id', { id })
+      .getMany();
     await this.propertiesRepository.remove(property);
+    for (const d of docs) {
+      const full = path.resolve(process.cwd(), d.filePath);
+      if (full.startsWith(DOCUMENT_DIR) && fs.existsSync(full)) fs.unlinkSync(full);
+    }
     return removed;
   }
 }

@@ -52,6 +52,8 @@ import OwnerLayout, {
   OwnerDashboardRoute,
   OwnerPropertiesRoute,
   OwnerAddPropertyRoute,
+  OwnerRoomsRoute,
+  OwnerTenantsRoute,
   OwnerIssuesRoute,
   OwnerNotificationsRoute,
   OwnerPolicyRoute,
@@ -168,6 +170,8 @@ export default function AppRoutes() {
         <Route index element={<OwnerDashboardRoute />} />
         <Route path="properties" element={<OwnerPropertiesRoute />} />
         <Route path="add-property" element={<OwnerAddPropertyRoute />} />
+        <Route path="rooms" element={<OwnerRoomsRoute />} />
+        <Route path="tenants" element={<OwnerTenantsRoute />} />
         <Route path="issues" element={<OwnerIssuesRoute />} />
         <Route path="notifications" element={<OwnerNotificationsRoute />} />
         <Route path="policy" element={<OwnerPolicyRoute />} />

@@ -14,6 +14,8 @@ export default function Sidebar({
     { to: '/dashboard/owner', icon: 'dashboard', label: 'Dashboard', end: true },
     { to: '/dashboard/owner/properties', icon: 'apartment', label: 'Properties' },
     { to: '/dashboard/owner/add-property', icon: 'add_business', label: 'Add Property' },
+    { to: '/dashboard/owner/rooms', icon: 'meeting_room', label: 'Rooms' },
+    { to: '/dashboard/owner/tenants', icon: 'groups', label: 'Tenants & Rent' },
     { to: '/dashboard/owner/issues', icon: 'warning', label: 'Issues', badge: openIssuesCount, isDanger: true },
     { to: '/dashboard/owner/notifications', icon: 'notifications', label: 'Notifications', badge: unreadNotifsCount },
     { to: '/dashboard/owner/policy', icon: 'description', label: 'Policy' },

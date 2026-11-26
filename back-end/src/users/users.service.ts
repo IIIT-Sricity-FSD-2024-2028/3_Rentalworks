@@ -112,10 +112,8 @@ export class UsersService {
 
     const result = Object.assign({}, user);
     delete (result as any).password;
-    if (['super_admin', 'owner'].includes(user.role) && user.status === 'active') {
-      return Object.assign(result, { token: issueSuperAdminToken(user.id) });
-    }
-    return result;
+    // Every active account gets a signed session token; the guard trusts nothing else.
+    return Object.assign(result, { token: issueSuperAdminToken(user.id) });
   }
 
   async registerOwner(dto: OwnerRegistrationDto) {
@@ -154,12 +152,21 @@ export class UsersService {
           `Unauthorized account: This email belongs to an ${user.role.toUpperCase()} account. Management accounts cannot register or book as guests.`
         );
       }
+      // An existing account is only returned when its password matches;
+      // otherwise anyone could sign in as a tenant just by knowing their email.
+      const withPassword = await this.usersRepository
+        .createQueryBuilder('user')
+        .where('user.id = :id', { id: user.id })
+        .addSelect('user.password')
+        .getOne();
+      const ok = await bcrypt.compare(dto.password || '', withPassword?.password || '');
+      if (!ok) throw new UnauthorizedException('An account with this email or phone already exists. Please sign in.');
       if (dto.gender && !user.gender) {
         user.gender = dto.gender;
         await this.usersRepository.save(user);
       }
       const { password, ...result } = user;
-      return result;
+      return Object.assign(result, { token: issueSuperAdminToken(user.id) });
     }
 
     const timestamp = Date.now();
@@ -181,7 +188,7 @@ export class UsersService {
 
     const saved = await this.usersRepository.save(user);
     const { password, ...result } = saved;
-    return result;
+    return Object.assign(result, { token: issueSuperAdminToken(saved.id) });
   }
 
   // --- TENANT SPECIFIC WORKFLOWS ---
