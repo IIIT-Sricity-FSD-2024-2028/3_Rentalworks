@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
+import { formatDateTime } from '../../../utils/normalize';
 import {
   markAllTenantNotificationsRead,
   markTenantNotificationRead,
@@ -125,9 +126,7 @@ const Notifications = () => {
                           {n.message}
                         </div>
                         <div style={{ fontSize: '12px', marginTop: '6px', color: 'var(--text-muted)' }}>
-                          {n.createdAt
-                            ? new Date(n.createdAt).toLocaleString()
-                            : n.sentAt || 'Just now'}
+                          {formatDateTime(n.createdAt || n.sentAt, 'Just now')}
                         </div>
                       </div>
 

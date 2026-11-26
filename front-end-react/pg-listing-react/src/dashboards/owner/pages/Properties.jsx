@@ -2,17 +2,9 @@ import PropertyImage from '../components/PropertyImage';
 import Icon from '../components/Icon';
 import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { AMENITIES } from '../../../utils/normalize';
 
-const AMENITY_OPTIONS = [
-  'WiFi',
-  'AC',
-  'Laundry',
-  'Parking',
-  'Gym',
-  'Mess',
-  'Power Backup',
-  'Security',
-];
+const AMENITY_OPTIONS = Object.values(AMENITIES).map((a) => a.label);
 
 // Properties: Displays property listings with search, filter, view, edit, and delete
 export default function Properties({

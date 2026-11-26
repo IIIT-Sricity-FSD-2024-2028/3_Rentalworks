@@ -113,7 +113,7 @@ export default function MyBookings() {
         <div className="empty-state" style={{ background: '#fff', borderRadius: '16px', padding: '48px', border: '1px solid #e5e7eb' }}>
           <span className="material-icons-outlined" style={{ fontSize: '48px', color: '#9ca3af' }}>event_busy</span>
           <h3>No active bookings yet</h3>
-          <p>You haven't reserved any PG accommodation. Browse our top verified properties to get started.</p>
+          <p>You haven't booked a PG yet.</p>
           <button className="btn-nav-primary" style={{ marginTop: '16px' }} onClick={() => navigate('/listings')}>
             Explore Available PGs →
           </button>
@@ -125,7 +125,7 @@ export default function MyBookings() {
             const isPending = b.status === 'pending';
             const badgeBg = isConfirmed ? '#dcfce7' : isPending ? '#fef9c3' : '#fee2e2';
             const badgeColor = isConfirmed ? '#15803d' : isPending ? '#854d0e' : '#b91c1c';
-            const badgeLabel = isConfirmed ? '✓ Confirmed & Paid' : isPending ? '⏱ Pending Payment Confirmation' : b.status;
+            const badgeLabel = isConfirmed ? 'Confirmed' : isPending ? 'Awaiting payment' : b.status;
 
             return (
               <div key={b.id || idx} className="my-booking-card" style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>

@@ -11,10 +11,8 @@ export default function Dashboard({ properties = [], issues = [], notifications 
   const totalRooms = properties.reduce((acc, p) => acc + (p.totalRooms || 0), 0);
   const occupiedRooms = properties.reduce((acc, p) => acc + (p.occupiedRooms || 0), 0);
   const occupancyPct = totalRooms ? Math.round((occupiedRooms / totalRooms) * 100) : 0;
-  const monthlyRevenue = properties.reduce(
-    (acc, p) => acc + (p.occupiedRooms || 0) * (p.monthlyRent || p.rentMin || 0),
-    0
-  );
+  // Rent from beds that are actually taken (see mapOwnerProperty).
+  const monthlyRevenue = properties.reduce((acc, p) => acc + (p.monthlyIncome || 0), 0);
   const openIssues = issues.filter(
     (i) => (i.status || '').toLowerCase() === 'open'
   ).length;

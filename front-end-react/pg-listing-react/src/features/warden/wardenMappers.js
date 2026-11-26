@@ -1,3 +1,5 @@
+import { normalizeStatus, toNumber } from '../../utils/normalize';
+
 // Normalisers that turn backend rows into the shapes the warden pages render.
 
 export function mapRoomFromDb(r) {
@@ -24,7 +26,7 @@ export function mapRoomFromDb(r) {
     type: capacityType,
     capacity: r.capacity,
     currentOccupancy: r.currentOccupancy,
-    rent: Number(r.rent) || 0,
+    rent: toNumber(r.rent),
     occupancy: occupancyStatus,
     status: r.status,
     maintenance: r.maintenanceStatus || 'Ready',
@@ -48,7 +50,7 @@ export function mapTenantFromDb(t) {
     propertyId: t.propertyId ?? null,
     phone: t.phone || '',
     checkIn: t.checkIn || '',
-    rent: Number(t.rent) || 0,
+    rent: toNumber(t.rent),
     paymentStatus: t.paymentStatus || 'pending',
     status: t.status || 'active',
     stayStatus: t.stayStatus || null,
@@ -101,7 +103,7 @@ export function mapComplaintFromDb(c, tenantsList = []) {
     type: compType,
     title: c.title || compType,
     priority: (c.priority || 'medium').toLowerCase(),
-    status: (c.status || 'open').toLowerCase().replace('-', '_'),
+    status: normalizeStatus(c.status, 'open'),
     severity: c.severity || (c.priority === 'high' ? 'High' : c.priority === 'low' ? 'Low' : 'Medium'),
     date: dateStr,
     description: c.description || c.title || '',
@@ -182,7 +184,7 @@ export function mapIssueFromDb(i) {
     title: i.title || i.category || 'Maintenance',
     category: i.category || 'General',
     priority: (i.priority || 'medium').toLowerCase(),
-    status: (i.status || 'open').toLowerCase().replace('-', '_'),
+    status: normalizeStatus(i.status, 'open'),
     severity: i.priority === 'high' ? 'High' : i.priority === 'low' ? 'Low' : 'Medium',
     date: dateStr,
     createdAt: i.createdAt,
@@ -190,5 +192,21 @@ export function mapIssueFromDb(i) {
     timeline: [{ time: dateStr, event: `Issue submitted by ${tenantName}`, by: tenantName }],
     property: i.property?.name || '',
     propertyId: i.propertyId ?? null,
+  };
+}
+
+/** tenant_stays row → one occupied bed. */
+export function mapStayFromDb(s) {
+  return {
+    id: s.id,
+    tenantId: s.tenantId ?? s.tenant?.id ?? null,
+    tenantName: s.tenant?.name || `Tenant #${s.tenantId}`,
+    propertyId: s.propertyId ?? s.property?.id ?? null,
+    propertyName: s.property?.name || '',
+    roomId: s.roomId ?? s.roomEntity?.id ?? null,
+    roomNumber: s.roomEntity?.roomNumber || '',
+    bedNumber: s.bedNumber || '',
+    moveInDate: s.moveInDate || null,
+    status: normalizeStatus(s.status),
   };
 }
