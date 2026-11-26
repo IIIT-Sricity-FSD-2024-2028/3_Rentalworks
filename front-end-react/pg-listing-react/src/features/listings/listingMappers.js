@@ -161,6 +161,8 @@ export function mapProperty(prop, rooms = [], idx = 0) {
     verified,
     about: prop.description || '',
     rules: prop.rules || '',
+    // The owner's tenant-facing policy (see back-end properties/house-rules.ts).
+    houseRules: prop.houseRules || null,
     owner: prop.owner ? { name: prop.owner.name, email: prop.owner.email, phone: prop.owner.phone } : null,
     rooms: propRooms,
     roomCount: propRooms.length,

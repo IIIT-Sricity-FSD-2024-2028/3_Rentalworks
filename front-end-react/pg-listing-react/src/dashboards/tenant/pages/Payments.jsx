@@ -9,34 +9,10 @@ import {
 } from '../../../features/tenant/tenantSlices';
 import { toastError, toastInfo } from '../../../features/ui/uiSlice';
 import { useTenant } from '../hooks/useTenant';
+import { loadPaymentConfig, selectPaymentMode } from '../../../features/booking/bookingSlice';
 import RentLedger from '../components/RentLedger';
 import './Payments.css';
 
-// Luhn algorithm for strict credit/debit card checksum validation
-const isValidLuhn = (val) => {
-  let sum = 0;
-  let shouldDouble = false;
-  for (let i = val.length - 1; i >= 0; i--) {
-    let digit = parseInt(val.charAt(i), 10);
-    if (shouldDouble) {
-      digit *= 2;
-      if (digit > 9) digit -= 9;
-    }
-    sum += digit;
-    shouldDouble = !shouldDouble;
-  }
-  return sum % 10 === 0;
-};
-
-// Card brand detection based on BIN
-const getCardBrand = (num) => {
-  const clean = num.replace(/\D/g, '');
-  if (/^4/.test(clean)) return 'VISA';
-  if (/^(5[1-5]|2[2-7])/.test(clean)) return 'MASTERCARD';
-  if (/^(60|65|81|82)/.test(clean)) return 'RUPAY';
-  if (/^3[47]/.test(clean)) return 'AMEX';
-  return 'DEBIT / CREDIT';
-};
 
 const Payments = () => {
   const dispatch = useDispatch();
@@ -48,29 +24,17 @@ const Payments = () => {
   const payments = useMemo(() => allPayments.filter((p) => Number(p.tenantId) === Number(tenant?.id)), [allPayments, tenant?.id]);
   const loading = paymentsLoading && payments.length === 0;
   const [isPaying, setIsPaying] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('upi');
-
-  // Form states for each payment channel
-  const [upiForm, setUpiForm] = useState({ upiId: '' });
-  const [cardForm, setCardForm] = useState({
-    cardNumber: '',
-    cardHolder: '',
-    cardExpiry: '',
-    cardCvv: '',
-  });
-  const [netBankingForm, setNetBankingForm] = useState({
-    bank: '',
-    customerId: '',
-  });
-
-  // Strict validation error tracking
-  const [errors, setErrors] = useState({});
-  const [touched, setTouched] = useState({});
+  // 'razorpay' (real money) or 'test', reported by the server.
+  const paymentMode = useSelector(selectPaymentMode);
 
   // Receipt Modal State
   const [receiptData, setReceiptData] = useState(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [selectedDueId, setSelectedDueId] = useState(null);
+
+  useEffect(() => {
+    dispatch(loadPaymentConfig());
+  }, [dispatch]);
 
   useEffect(() => {
     if (!tenant?.id) return;
@@ -136,142 +100,7 @@ const Payments = () => {
     }
   };
 
-  // Strict Field Validation
-  const validateField = (name, value, method = paymentMethod) => {
-    if (method === 'upi') {
-      if (name === 'upiId') {
-        const val = (value || '').trim();
-        if (!val) return 'UPI ID is required.';
-        if (!/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(val)) {
-          return 'Enter a valid UPI ID (e.g. name@okhdfcbank or 9876543210@paytm)';
-        }
-      }
-    } else if (method === 'card') {
-      if (name === 'cardNumber') {
-        const clean = (value || '').replace(/\D/g, '');
-        if (!clean) return 'Card number is required.';
-        if (clean.length !== 16) return 'Card number must be exactly 16 digits.';
-        if (!isValidLuhn(clean)) return 'Invalid card number (checksum failed).';
-      }
-      if (name === 'cardHolder') {
-        const val = (value || '').trim();
-        if (!val) return 'Cardholder name is required.';
-        if (!/^[a-zA-Z\s]{3,40}$/.test(val)) {
-          return 'Enter a valid name (letters only, min 3 characters).';
-        }
-      }
-      if (name === 'cardExpiry') {
-        const val = (value || '').trim();
-        if (!val) return 'Expiry date is required.';
-        if (!/^(0[1-9]|1[0-2])\/([0-9]{2})$/.test(val)) {
-          return 'Enter valid expiry format (MM/YY).';
-        }
-        const [mStr, yStr] = val.split('/');
-        const m = parseInt(mStr, 10);
-        const y = 2000 + parseInt(yStr, 10);
-        const now = new Date();
-        const curY = now.getFullYear();
-        const curM = now.getMonth() + 1;
-        if (y < curY || (y === curY && m < curM)) {
-          return 'Card has already expired.';
-        }
-        if (y > curY + 20) {
-          return 'Invalid expiry year.';
-        }
-      }
-      if (name === 'cardCvv') {
-        const clean = (value || '').replace(/\D/g, '');
-        if (!clean) return 'CVV is required.';
-        if (clean.length < 3 || clean.length > 4) {
-          return 'CVV must be 3 or 4 digits.';
-        }
-      }
-    } else if (method === 'netbanking') {
-      if (name === 'bank') {
-        if (!value || !value.trim()) return 'Please select your bank.';
-      }
-      if (name === 'customerId') {
-        const val = (value || '').trim();
-        if (!val) return 'Customer ID or Account Number is required.';
-        if (!/^[a-zA-Z0-9]{6,20}$/.test(val)) {
-          return 'Enter valid ID or Account Number (min 6 characters).';
-        }
-      }
-    }
-    return '';
-  };
-
-  // Validate entire active method
-  const validateCurrentForm = () => {
-    const newErrors = {};
-    if (paymentMethod === 'upi') {
-      const err = validateField('upiId', upiForm.upiId, 'upi');
-      if (err) newErrors.upiId = err;
-    } else if (paymentMethod === 'card') {
-      const numErr = validateField('cardNumber', cardForm.cardNumber, 'card');
-      if (numErr) newErrors.cardNumber = numErr;
-
-      const holderErr = validateField('cardHolder', cardForm.cardHolder, 'card');
-      if (holderErr) newErrors.cardHolder = holderErr;
-
-      const expErr = validateField('cardExpiry', cardForm.cardExpiry, 'card');
-      if (expErr) newErrors.cardExpiry = expErr;
-
-      const cvvErr = validateField('cardCvv', cardForm.cardCvv, 'card');
-      if (cvvErr) newErrors.cardCvv = cvvErr;
-    } else if (paymentMethod === 'netbanking') {
-      const bankErr = validateField('bank', netBankingForm.bank, 'netbanking');
-      if (bankErr) newErrors.bank = bankErr;
-
-      const idErr = validateField('customerId', netBankingForm.customerId, 'netbanking');
-      if (idErr) newErrors.customerId = idErr;
-    }
-    return newErrors;
-  };
-
-  const handleBlur = (fieldName) => {
-    setTouched((prev) => ({ ...prev, [fieldName]: true }));
-    let val = '';
-    if (paymentMethod === 'upi') val = upiForm[fieldName];
-    if (paymentMethod === 'card') val = cardForm[fieldName];
-    if (paymentMethod === 'netbanking') val = netBankingForm[fieldName];
-    const err = validateField(fieldName, val, paymentMethod);
-    setErrors((prev) => ({ ...prev, [fieldName]: err }));
-  };
-
-  // Card input formatters
-  const handleCardNumberChange = (e) => {
-    const raw = e.target.value.replace(/\D/g, '').slice(0, 16);
-    const formatted = raw.replace(/(\d{4})(?=\d)/g, '$1 ');
-    setCardForm((prev) => ({ ...prev, cardNumber: formatted }));
-    if (touched.cardNumber) {
-      const err = validateField('cardNumber', formatted, 'card');
-      setErrors((prev) => ({ ...prev, cardNumber: err }));
-    }
-  };
-
-  const handleExpiryChange = (e) => {
-    let raw = e.target.value.replace(/\D/g, '').slice(0, 4);
-    if (raw.length >= 3) {
-      raw = raw.slice(0, 2) + '/' + raw.slice(2);
-    }
-    setCardForm((prev) => ({ ...prev, cardExpiry: raw }));
-    if (touched.cardExpiry) {
-      const err = validateField('cardExpiry', raw, 'card');
-      setErrors((prev) => ({ ...prev, cardExpiry: err }));
-    }
-  };
-
-  const handleCvvChange = (e) => {
-    const raw = e.target.value.replace(/\D/g, '').slice(0, 4);
-    setCardForm((prev) => ({ ...prev, cardCvv: raw }));
-    if (touched.cardCvv) {
-      const err = validateField('cardCvv', raw, 'card');
-      setErrors((prev) => ({ ...prev, cardCvv: err }));
-    }
-  };
-
-  // Submit payment handler with strict validation
+  // Pay the selected due through the gateway (the server sets the amount)
   const handleProcessPayment = async (e) => {
     if (e) e.preventDefault();
 
@@ -280,29 +109,13 @@ const Payments = () => {
       return;
     }
 
-    // Trigger strict validation on all fields
-    const formErrors = validateCurrentForm();
-    if (Object.keys(formErrors).length > 0) {
-      setErrors(formErrors);
-      // Mark all fields in current method as touched
-      if (paymentMethod === 'upi') {
-        setTouched({ upiId: true });
-      } else if (paymentMethod === 'card') {
-        setTouched({ cardNumber: true, cardHolder: true, cardExpiry: true, cardCvv: true });
-      } else if (paymentMethod === 'netbanking') {
-        setTouched({ bank: true, customerId: true });
-      }
-      return;
-    }
-
     if (!pendingDue) {
       dispatch(toastInfo('There is no rent due to pay right now.'));
       return;
     }
-    const txnId = `TXN-${Date.now()}`;
     // The amount comes from the ledger on the server, never from the browser.
     const payableAmount = Number(pendingDue.amount);
-    const result = await dispatch(payRentDue({ dueId: pendingDue.id, method: paymentMethod, transactionId: txnId }));
+    const result = await dispatch(payRentDue({ dueId: pendingDue.id, description: `Rent ${fmtDue(pendingDue.periodStart)} – ${fmtDue(pendingDue.periodEnd)}` }));
     if (payRentDue.rejected.match(result)) {
       dispatch(toastError(result.payload || 'Payment failed. Please check your details and try again.'));
       return;
@@ -310,9 +123,9 @@ const Payments = () => {
 
     const now = new Date();
     setReceiptData({
-      transactionId: txnId,
+      transactionId: result.payload.transactionId,
       amount: payableAmount,
-      method: paymentMethod.toUpperCase(),
+      method: result.payload.mode === 'test' ? 'TEST' : 'ONLINE',
       date: now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
       propertyName: activeBooking?.property?.name || '—',
@@ -323,12 +136,6 @@ const Payments = () => {
     });
     setSelectedDueId(null);
 
-    // Reset forms
-    setUpiForm({ upiId: '' });
-    setCardForm({ cardNumber: '', cardHolder: '', cardExpiry: '', cardCvv: '' });
-    setNetBankingForm({ bank: '', customerId: '' });
-    setErrors({});
-    setTouched({});
 
     // The server adds the payment row and opens the next cycle.
     dispatch(tenantPayments.thunks.fetchAll(tenant.id));
@@ -383,8 +190,6 @@ const Payments = () => {
           className="btn btn-ghost btn-sm mb-16"
           onClick={() => {
             setIsPaying(false);
-            setErrors({});
-            setTouched({});
           }}
           style={{ marginBottom: '16px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           disabled={processing}
@@ -398,385 +203,26 @@ const Payments = () => {
             {/* Step 1: Payment Channel Tiles */}
             <div className="card mb-16" style={{ marginBottom: '16px' }}>
               <div className="card-body">
-                <div className="card-title">Select Payment Method</div>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '16px' }}>
-                  Choose your preferred payment mode with 256-bit bank encryption.
+                <div className="card-title">Pay rent online</div>
+                {paymentMode === 'test' && (
+                  <div role="note" style={{ background: '#fef3c7', border: '1px solid #f59e0b', color: '#92400e', borderRadius: 10, padding: '12px 14px', margin: '12px 0' }}>
+                    <strong>Test mode — no real money is charged.</strong> Online payments are not connected yet, so this is recorded as a test payment.
+                  </div>
+                )}
+                <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: '8px 0 16px' }}>
+                  {paymentMode === 'test'
+                    ? 'Click Pay to record a test payment for this rent.'
+                    : 'Click Pay to open the Razorpay window and pay by UPI, card or netbanking. Card details are entered with Razorpay and never reach RentBro.'}
                 </p>
-
-                <div className="payment-methods-grid">
-                  <div
-                    className={`payment-method-tile ${paymentMethod === 'upi' ? 'active' : ''}`}
-                    onClick={() => {
-                      if (!processing) {
-                        setPaymentMethod('upi');
-                        setErrors({});
-                      }
-                    }}
-                  >
-                    <div className="method-tile-icon">
-                      <span className="material-icons-outlined" style={{ fontSize: '24px' }}>smartphone</span>
-                    </div>
-                    <div className="method-tile-label">UPI</div>
-                    <div className="method-tile-sub">Instant 0% Fee</div>
-                  </div>
-
-                  <div
-                    className={`payment-method-tile ${paymentMethod === 'card' ? 'active' : ''}`}
-                    onClick={() => {
-                      if (!processing) {
-                        setPaymentMethod('card');
-                        setErrors({});
-                      }
-                    }}
-                  >
-                    <div className="method-tile-icon">
-                      <span className="material-icons-outlined" style={{ fontSize: '24px' }}>credit_card</span>
-                    </div>
-                    <div className="method-tile-label">Cards</div>
-                    <div className="method-tile-sub">Debit &amp; Credit</div>
-                  </div>
-
-                  <div
-                    className={`payment-method-tile ${paymentMethod === 'netbanking' ? 'active' : ''}`}
-                    onClick={() => {
-                      if (!processing) {
-                        setPaymentMethod('netbanking');
-                        setErrors({});
-                      }
-                    }}
-                  >
-                    <div className="method-tile-icon">
-                      <span className="material-icons-outlined" style={{ fontSize: '24px' }}>account_balance</span>
-                    </div>
-                    <div className="method-tile-label">Net Banking</div>
-                    <div className="method-tile-sub">All Indian Banks</div>
-                  </div>
-                </div>
-
-                {/* Step 2A: UPI FORM WITH STRICT VALIDATION */}
-                {paymentMethod === 'upi' && (
-                  <div className="gateway-panel">
-                    <div className="panel-header-title">
-                      <span className="material-icons-outlined" style={{ color: 'var(--primary)', fontSize: '20px' }}>
-                        qr_code_scanner
-                      </span>
-                      UPI ID (Virtual Payment Address)
-                    </div>
-                    <div className="panel-header-desc">
-                      Enter your UPI VPA handle from Google Pay, PhonePe, Paytm or BHIM.
-                    </div>
-
-                    <div className="form-field-group">
-                      <label htmlFor="upiId">
-                        UPI ID / VPA *
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Required</span>
-                      </label>
-                      <div className="input-with-icon-wrap">
-                        <span className="input-prefix-icon">
-                          <span className="material-icons-outlined" style={{ fontSize: '20px' }}>alternate_email</span>
-                        </span>
-                        <input
-                          type="text"
-                          id="upiId"
-                          placeholder="e.g. yourname@okhdfcbank"
-                          className={`gateway-input ${touched.upiId && errors.upiId ? 'input-error' : ''}`}
-                          value={upiForm.upiId}
-                          onChange={(e) => {
-                            const val = e.target.value.trim();
-                            setUpiForm({ upiId: val });
-                            if (touched.upiId) {
-                              setErrors((prev) => ({ ...prev, upiId: validateField('upiId', val, 'upi') }));
-                            }
-                          }}
-                          onBlur={() => handleBlur('upiId')}
-                          disabled={processing}
-                          autoComplete="off"
-                        />
-                      </div>
-                      {touched.upiId && errors.upiId && (
-                        <div className="form-error-msg">
-                          <span className="material-icons-outlined" style={{ fontSize: '15px' }}>error_outline</span>
-                          {errors.upiId}
-                        </div>
-                      )}
-
-                      {/* Quick handle helpers */}
-                      <div className="upi-handles-chips">
-                        <span style={{ fontSize: '11px', color: '#64748b', alignSelf: 'center' }}>Quick Handles:</span>
-                        {['@okhdfcbank', '@okaxis', '@paytm', '@ybl', '@upi'].map((handle) => (
-                          <button
-                            key={handle}
-                            type="button"
-                            className="upi-chip"
-                            onClick={() => {
-                              const base = upiForm.upiId.includes('@')
-                                ? upiForm.upiId.split('@')[0]
-                                : upiForm.upiId;
-                              const updated = (base || 'myaccount') + handle;
-                              setUpiForm({ upiId: updated });
-                              setTouched((prev) => ({ ...prev, upiId: true }));
-                              setErrors((prev) => ({ ...prev, upiId: validateField('upiId', updated, 'upi') }));
-                            }}
-                          >
-                            {handle}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      className="btn btn-primary btn-full"
-                      style={{ height: '46px', fontSize: '15px', fontWeight: '700' }}
-                      onClick={handleProcessPayment}
-                      disabled={processing}
-                    >
-                      {processing ? 'Connecting Gateway...' : `Verify & Pay ₹${currentPayable.toLocaleString()}`}
-                    </button>
-                  </div>
-                )}
-
-                {/* Step 2B: CARD FORM WITH LIVE VISUAL PREVIEW & STRICT VALIDATION */}
-                {paymentMethod === 'card' && (
-                  <div className="gateway-panel">
-                    {/* Live Visual Card Mockup */}
-                    <div className="interactive-card-mockup">
-                      <div className="card-mockup-top">
-                        <div className="card-chip-sim"></div>
-                        <div className="card-brand-badge">{getCardBrand(cardForm.cardNumber)}</div>
-                      </div>
-                      <div className="card-mockup-number">
-                        {cardForm.cardNumber || '•••• •••• •••• ••••'}
-                      </div>
-                      <div className="card-mockup-bottom">
-                        <div>
-                          <div style={{ fontSize: '9px', opacity: 0.75, letterSpacing: '0.5px' }}>CARDHOLDER</div>
-                          <div className="card-mockup-holder">{cardForm.cardHolder || 'FULL NAME'}</div>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '9px', opacity: 0.75, letterSpacing: '0.5px' }}>EXPIRES</div>
-                          <div className="card-mockup-expiry">{cardForm.cardExpiry || 'MM/YY'}</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Card Number */}
-                    <div className="form-field-group">
-                      <label htmlFor="cardNumber">
-                        16-Digit Card Number *
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Luhn Verified</span>
-                      </label>
-                      <div className="input-with-icon-wrap">
-                        <span className="input-prefix-icon">
-                          <span className="material-icons-outlined" style={{ fontSize: '20px' }}>credit_card</span>
-                        </span>
-                        <input
-                          type="text"
-                          id="cardNumber"
-                          inputMode="numeric"
-                          placeholder="4123 4567 8901 2345"
-                          className={`gateway-input ${touched.cardNumber && errors.cardNumber ? 'input-error' : ''}`}
-                          value={cardForm.cardNumber}
-                          onChange={handleCardNumberChange}
-                          onBlur={() => handleBlur('cardNumber')}
-                          disabled={processing}
-                          maxLength={19}
-                        />
-                      </div>
-                      {touched.cardNumber && errors.cardNumber && (
-                        <div className="form-error-msg">
-                          <span className="material-icons-outlined" style={{ fontSize: '15px' }}>error_outline</span>
-                          {errors.cardNumber}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Cardholder Name */}
-                    <div className="form-field-group">
-                      <label htmlFor="cardHolder">Name on Card *</label>
-                      <div className="input-with-icon-wrap">
-                        <span className="input-prefix-icon">
-                          <span className="material-icons-outlined" style={{ fontSize: '20px' }}>person</span>
-                        </span>
-                        <input
-                          type="text"
-                          id="cardHolder"
-                          placeholder="e.g. Arun Kumar"
-                          className={`gateway-input ${touched.cardHolder && errors.cardHolder ? 'input-error' : ''}`}
-                          value={cardForm.cardHolder}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setCardForm((prev) => ({ ...prev, cardHolder: val }));
-                            if (touched.cardHolder) {
-                              setErrors((prev) => ({ ...prev, cardHolder: validateField('cardHolder', val, 'card') }));
-                            }
-                          }}
-                          onBlur={() => handleBlur('cardHolder')}
-                          disabled={processing}
-                        />
-                      </div>
-                      {touched.cardHolder && errors.cardHolder && (
-                        <div className="form-error-msg">
-                          <span className="material-icons-outlined" style={{ fontSize: '15px' }}>error_outline</span>
-                          {errors.cardHolder}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Expiry & CVV */}
-                    <div className="form-row-2">
-                      <div className="form-field-group">
-                        <label htmlFor="cardExpiry">Valid Thru *</label>
-                        <div className="input-with-icon-wrap">
-                          <span className="input-prefix-icon">
-                            <span className="material-icons-outlined" style={{ fontSize: '20px' }}>calendar_today</span>
-                          </span>
-                          <input
-                            type="text"
-                            id="cardExpiry"
-                            placeholder="MM/YY"
-                            className={`gateway-input ${touched.cardExpiry && errors.cardExpiry ? 'input-error' : ''}`}
-                            value={cardForm.cardExpiry}
-                            onChange={handleExpiryChange}
-                            onBlur={() => handleBlur('cardExpiry')}
-                            disabled={processing}
-                            maxLength={5}
-                          />
-                        </div>
-                        {touched.cardExpiry && errors.cardExpiry && (
-                          <div className="form-error-msg">
-                            <span className="material-icons-outlined" style={{ fontSize: '15px' }}>error_outline</span>
-                            {errors.cardExpiry}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="form-field-group">
-                        <label htmlFor="cardCvv">CVV / CVC *</label>
-                        <div className="input-with-icon-wrap">
-                          <span className="input-prefix-icon">
-                            <span className="material-icons-outlined" style={{ fontSize: '20px' }}>lock</span>
-                          </span>
-                          <input
-                            type="password"
-                            id="cardCvv"
-                            placeholder="•••"
-                            className={`gateway-input ${touched.cardCvv && errors.cardCvv ? 'input-error' : ''}`}
-                            value={cardForm.cardCvv}
-                            onChange={handleCvvChange}
-                            onBlur={() => handleBlur('cardCvv')}
-                            disabled={processing}
-                            maxLength={4}
-                          />
-                        </div>
-                        {touched.cardCvv && errors.cardCvv && (
-                          <div className="form-error-msg">
-                            <span className="material-icons-outlined" style={{ fontSize: '15px' }}>error_outline</span>
-                            {errors.cardCvv}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      className="btn btn-primary btn-full"
-                      style={{ height: '46px', fontSize: '15px', fontWeight: '700', marginTop: '10px' }}
-                      onClick={handleProcessPayment}
-                      disabled={processing}
-                    >
-                      {processing ? 'Processing Card...' : `Pay ₹${currentPayable.toLocaleString()} Securely`}
-                    </button>
-                  </div>
-                )}
-
-                {/* Step 2C: NET BANKING FORM WITH STRICT VALIDATION */}
-                {paymentMethod === 'netbanking' && (
-                  <div className="gateway-panel">
-                    <div className="panel-header-title">
-                      <span className="material-icons-outlined" style={{ color: 'var(--primary)', fontSize: '20px' }}>
-                        account_balance
-                      </span>
-                      Select Bank &amp; Customer Authentication
-                    </div>
-                    <div className="panel-header-desc">
-                      Select your institutional bank to initiate online transfer.
-                    </div>
-
-                    <div className="form-field-group">
-                      <label htmlFor="bankSelect">Select Authorized Bank *</label>
-                      <select
-                        id="bankSelect"
-                        className={`gateway-input no-icon ${touched.bank && errors.bank ? 'input-error' : ''}`}
-                        value={netBankingForm.bank}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setNetBankingForm((prev) => ({ ...prev, bank: val }));
-                          if (touched.bank) {
-                            setErrors((prev) => ({ ...prev, bank: validateField('bank', val, 'netbanking') }));
-                          }
-                        }}
-                        onBlur={() => handleBlur('bank')}
-                        disabled={processing}
-                      >
-                        <option value="">-- Choose Bank --</option>
-                        <option value="HDFC Bank">HDFC Bank</option>
-                        <option value="State Bank of India">State Bank of India (SBI)</option>
-                        <option value="ICICI Bank">ICICI Bank</option>
-                        <option value="Axis Bank">Axis Bank</option>
-                        <option value="Kotak Mahindra Bank">Kotak Mahindra Bank</option>
-                        <option value="Punjab National Bank">Punjab National Bank</option>
-                      </select>
-                      {touched.bank && errors.bank && (
-                        <div className="form-error-msg">
-                          <span className="material-icons-outlined" style={{ fontSize: '15px' }}>error_outline</span>
-                          {errors.bank}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="form-field-group">
-                      <label htmlFor="customerId">Net Banking User ID / Account Number *</label>
-                      <div className="input-with-icon-wrap">
-                        <span className="input-prefix-icon">
-                          <span className="material-icons-outlined" style={{ fontSize: '20px' }}>badge</span>
-                        </span>
-                        <input
-                          type="text"
-                          id="customerId"
-                          placeholder="Enter your Customer ID or NetBanking username"
-                          className={`gateway-input ${touched.customerId && errors.customerId ? 'input-error' : ''}`}
-                          value={netBankingForm.customerId}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setNetBankingForm((prev) => ({ ...prev, customerId: val }));
-                            if (touched.customerId) {
-                              setErrors((prev) => ({ ...prev, customerId: validateField('customerId', val, 'netbanking') }));
-                            }
-                          }}
-                          onBlur={() => handleBlur('customerId')}
-                          disabled={processing}
-                        />
-                      </div>
-                      {touched.customerId && errors.customerId && (
-                        <div className="form-error-msg">
-                          <span className="material-icons-outlined" style={{ fontSize: '15px' }}>error_outline</span>
-                          {errors.customerId}
-                        </div>
-                      )}
-                    </div>
-
-                    <button
-                      type="button"
-                      className="btn btn-primary btn-full"
-                      style={{ height: '46px', fontSize: '15px', fontWeight: '700', marginTop: '10px' }}
-                      onClick={handleProcessPayment}
-                      disabled={processing}
-                    >
-                      {processing ? 'Redirecting...' : `Pay ₹${currentPayable.toLocaleString()} via Net Banking`}
-                    </button>
-                  </div>
-                )}
+                <button
+                  type="button"
+                  className="btn btn-primary btn-full"
+                  style={{ height: '46px', fontSize: '15px', fontWeight: '700' }}
+                  onClick={handleProcessPayment}
+                  disabled={processing || !pendingDue}
+                >
+                  {processing ? 'Waiting for payment...' : `${paymentMode === 'test' ? 'Record test payment' : 'Pay'} ₹${currentPayable.toLocaleString()}`}
+                </button>
               </div>
             </div>
           </div>
@@ -1007,8 +453,6 @@ const Payments = () => {
                 className="btn btn-primary btn-sm"
                 style={{ minWidth: '120px', height: '40px', fontSize: '14px', fontWeight: '700' }}
                 onClick={() => {
-                  setErrors({});
-                  setTouched({});
                   setIsPaying(true);
                 }}
               >

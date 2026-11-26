@@ -1,3 +1,4 @@
+import { PaymentGatewayModule } from './payments/payment-gateway.module';
 import { PropertyDocument } from './property-documents/property-document.entity';
 import { PropertyDocumentsModule } from './property-documents/property-documents.module';
 import { PropertyDocuments1940000000000 } from './migrations/1940000000000-PropertyDocuments';
@@ -118,6 +119,7 @@ import { WardenActionsModule } from './warden-actions/warden-actions.module';
     UsersModule,
     PropertiesModule,
     PropertyDocumentsModule,
+    PaymentGatewayModule,
     RoomsModule,
     BookingsModule,
     BookingRequestsModule,

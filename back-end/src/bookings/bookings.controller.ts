@@ -26,10 +26,16 @@ export class BookingsController {
   @Roles('guest', 'tenant')
   @ApiOperation({ summary: 'Complete guest booking payment and convert to active tenant' })
   checkout(@Req() req: any, @Body() checkoutDto: CheckoutBookingDto) {
-    // The booker is always the signed-in account, never an id/email from the form.
-    checkoutDto.guestId = req.user.id;
-    checkoutDto.email = req.user.email || checkoutDto.email;
-    return this.bookingsService.completeCheckout(checkoutDto);
+    // Booking for yourself: the account is always the signed-in one. Booking
+    // for a friend (a different email): the friend's account is used/created,
+    // and the form can never point at another existing user by id.
+    const forFriend = Boolean(checkoutDto.email) && String(checkoutDto.email).trim().toLowerCase() !== String(req.user.email || '').toLowerCase();
+    if (forFriend) delete checkoutDto.guestId;
+    else {
+      checkoutDto.guestId = req.user.id;
+      checkoutDto.email = req.user.email || checkoutDto.email;
+    }
+    return this.bookingsService.completeCheckout(checkoutDto, req.user.id);
   }
 
   @Get()

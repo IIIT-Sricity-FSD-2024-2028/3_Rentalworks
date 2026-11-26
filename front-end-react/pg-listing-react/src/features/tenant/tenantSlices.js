@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import { http, qs, asArray } from '../../services/apiClient';
+import { payOnline } from '../../services/paymentGateway';
 
 import {
   issuesRepo,
@@ -34,12 +35,31 @@ export const fetchMyRentDues = createAsyncThunk('tenantRent/fetchMyRentDues', as
   }
 });
 
-export const payRentDue = createAsyncThunk('tenantRent/payRentDue', async ({ dueId, method, transactionId }, { rejectWithValue }) => {
+/**
+ * Pay one rent due online. The server sets the amount from the ledger, the
+ * gateway (Razorpay, or test mode) collects it, and the server verifies the
+ * payment before marking the due paid.
+ */
+export const payRentDue = createAsyncThunk('tenantRent/payRentDue', async ({ dueId, description }, { getState, rejectWithValue }) => {
+  const user = getState().auth.user || {};
+  let proof;
   try {
-    const result = await http.post(`/rent-dues/${dueId}/pay`, { method, transactionId });
-    return { dueId, result };
+    proof = await payOnline({ purpose: 'rent', rentDueId: dueId }, { description: description || 'Monthly rent', name: user.name, email: user.email, phone: user.phone });
   } catch (err) {
     return rejectWithValue(err.message);
+  }
+  try {
+    const result = await http.post(`/rent-dues/${dueId}/pay`, {
+      method: proof.mode === 'test' ? 'TEST' : 'ONLINE',
+      gatewayOrderId: proof.gatewayOrderId,
+      gatewayPaymentId: proof.gatewayPaymentId,
+      gatewaySignature: proof.gatewaySignature,
+    });
+    return { dueId, result, transactionId: proof.gatewayPaymentId, mode: proof.mode };
+  } catch (err) {
+    return rejectWithValue(
+      proof.mode === 'razorpay' ? `${err.message} Your payment (${proof.gatewayPaymentId}) was received; contact your warden with this ID.` : err.message,
+    );
   }
 });
 

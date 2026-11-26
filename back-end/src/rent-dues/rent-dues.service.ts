@@ -1,3 +1,5 @@
+import { PaymentGatewayService } from '../payments/payment-gateway.service';
+import { rentReceipt } from '../payments/payment-gateway.controller';
 import {
   BadRequestException,
   ForbiddenException,
@@ -47,7 +49,7 @@ export class RentDuesService implements OnApplicationBootstrap, OnModuleDestroy 
   private running: Promise<any> | null = null;
   private lastRunAt = 0;
 
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(private readonly dataSource: DataSource, private readonly gateway: PaymentGatewayService) {}
 
   /* ------------------------------------------------------------------ *
    * Scheduler: no extra dependency. Runs once at start-up (so a server that was
@@ -412,13 +414,20 @@ export class RentDuesService implements OnApplicationBootstrap, OnModuleDestroy 
   }
 
   /** Tenant pays their own due. Amount ALWAYS comes from the ledger row, never from the client. */
-  async pay(dueId: number, actor: Actor, body: { method?: string; transactionId?: string }) {
+  async pay(dueId: number, actor: Actor, body: { method?: string; gatewayOrderId?: string; gatewayPaymentId?: string; gatewaySignature?: string }) {
     return this.dataSource.transaction(async (manager) => {
       const due = await this.loadDueForUpdate(manager, dueId);
       if (actor.role === 'tenant' && Number(actor.id) !== due.tenantId) throw new ForbiddenException('This rent belongs to another tenant');
+      if (['paid', 'waived'].includes(String(due.status))) throw new BadRequestException('This rent is already settled');
+      // The gateway payment must be for exactly this due and its amount.
+      const paid = await this.gateway.verify(
+        { orderId: body.gatewayOrderId, paymentId: body.gatewayPaymentId, signature: body.gatewaySignature },
+        Number(due.amount),
+        rentReceipt(due.id),
+      );
       const payment = await this.recordRentPayment(manager, due, {
-        method: (body.method || 'UPI').toUpperCase(),
-        transactionId: body.transactionId,
+        method: paid.mode === 'test' ? 'TEST' : (body.method || 'ONLINE').toUpperCase(),
+        transactionId: paid.transactionId,
       });
       due.status = 'paid';
       due.paymentId = payment.id;

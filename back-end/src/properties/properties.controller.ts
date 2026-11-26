@@ -20,6 +20,7 @@ import { PropertiesService } from './properties.service';
 import { CreatePropertyDto, UpdatePropertyDto } from './properties.dto';
 import { RolesGuard, optionalUser } from '../common/guards/roles.guard';
 import { DataSource } from 'typeorm';
+import { houseRulesFrom, publicOwner } from './house-rules';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiQuery } from '@nestjs/swagger';
 
@@ -101,7 +102,7 @@ export class PropertiesController {
   ) {
     const rows = await this.propertiesService.findAll(location, ownerId ? +ownerId : undefined);
     const viewer = await optionalUser(this.db, req.headers.authorization);
-    return rows.filter((p) => PropertiesController.canView(viewer, p));
+    return rows.filter((p) => PropertiesController.canView(viewer, p)).map((p) => PropertiesController.present(viewer, p));
   }
 
   @Get(':id')
@@ -110,7 +111,17 @@ export class PropertiesController {
     const property = await this.propertiesService.findOne(+id);
     const viewer = await optionalUser(this.db, req.headers.authorization);
     if (!PropertiesController.canView(viewer, property)) throw new NotFoundException(`Property with ID ${id} not found`);
-    return property;
+    return PropertiesController.present(viewer, property);
+  }
+
+  /**
+   * Adds the owner's tenant-facing house rules. Admins get the full owner
+   * record; everyone else only the owner's contact details.
+   */
+  private static present(viewer: { id: number; role: string } | null, p: any) {
+    const houseRules = houseRulesFrom(p.owner?.policy);
+    const isAdmin = viewer?.role === 'admin' || viewer?.role === 'super_admin';
+    return { ...p, houseRules, owner: isAdmin ? p.owner : publicOwner(p.owner) };
   }
 
   /**

@@ -3,6 +3,7 @@ import { http, asArray } from '../../services/apiClient';
 import { setSession } from '../auth/authSlice';
 import { fetchListings, fetchListingById } from '../listings/listingsSlice';
 import { bookingsRepo, paymentsRepo } from '../repositories';
+import { payOnline, fetchGatewayConfig } from '../../services/paymentGateway';
 
 export const PLATFORM_FEE = 500;
 export const DURATIONS = [
@@ -81,18 +82,32 @@ export const saveLifestyleProfile = createAsyncThunk('booking/saveLifestyleProfi
  * Pays and confirms the booking in one server transaction
  * (user promotion, bed allocation, payment, stay, rent ledger, notifications).
  */
+/** Which payment mode the server runs: 'razorpay' (real money) or 'test'. */
+export const loadPaymentConfig = createAsyncThunk('booking/loadPaymentConfig', async () => fetchGatewayConfig());
+
 export const submitCheckout = createAsyncThunk(
   'booking/submitCheckout',
-  async ({ paymentMethod, upiId }, { getState, dispatch, rejectWithValue }) => {
+  async (_arg, { getState, dispatch, rejectWithValue }) => {
     const { booking, auth } = getState();
     const user = auth.user;
     const { selectedPG: pg, selectedRoom: room, selectedRoommate, lifestyleProfile, bookingFor, friendDetails } = booking;
     if (!pg || !room) return rejectWithValue('Your booking session has expired. Please choose a room again.');
     if (!user) return rejectWithValue('Please sign in to complete your booking.');
 
-    const totals = selectTotals(getState());
     const forFriend = bookingFor === 'friend';
     const single = isSingleRoom(room);
+    const roomNumber = single ? room.roomNumber || undefined : selectedRoommate?.roomNum || room.roomNumber || undefined;
+
+    // 1. Pay through the gateway. The server prices the room; this page never sends an amount.
+    let proof;
+    try {
+      proof = await payOnline(
+        { purpose: 'checkout', propertyId: Number(pg.id), roomNumber },
+        { description: `${pg.title} · Room ${roomNumber || ''}`.trim(), name: user.name, email: user.email, phone: user.phone },
+      );
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
 
     const payload = {
       guestId: forFriend ? undefined : user.id,
@@ -103,17 +118,18 @@ export const submitCheckout = createAsyncThunk(
       propertyId: Number(pg.id),
       propertyName: pg.title,
       roomType: room.type,
-      roomNumber: single ? room.roomNumber || undefined : selectedRoommate?.roomNum || room.roomNumber || undefined,
+      roomNumber,
       checkIn: booking.moveInDate,
       duration: booking.duration,
-      rent: totals.rent,
-      deposit: totals.deposit,
-      totalAmount: totals.total,
-      paymentMethod: paymentMethod.toUpperCase(),
-      transactionId: `TXN-${Date.now().toString().slice(-8)}`,
+      // Required by the DTO; the server replaces them with the room's real price.
+      rent: 0,
+      totalAmount: 0,
+      paymentMethod: proof.mode === 'test' ? 'TEST' : 'ONLINE',
+      gatewayOrderId: proof.gatewayOrderId,
+      gatewayPaymentId: proof.gatewayPaymentId,
+      gatewaySignature: proof.gatewaySignature,
       roommate: single ? undefined : selectedRoommate || undefined,
       lifestyleProfile: single ? undefined : lifestyleProfile || undefined,
-      upiId: paymentMethod === 'upi' ? upiId : undefined,
     };
 
     try {
@@ -130,7 +146,12 @@ export const submitCheckout = createAsyncThunk(
       dispatch(fetchListingById(pg.id));
       return result;
     } catch (err) {
-      return rejectWithValue(err.message);
+      // 2. Paid but the booking could not be completed (e.g. the bed was just taken).
+      return rejectWithValue(
+        proof.mode === 'razorpay'
+          ? `${err.message} Your payment (${proof.gatewayPaymentId}) was received; contact support with this ID for a refund or another room.`
+          : err.message,
+      );
     }
   },
 );
@@ -173,6 +194,7 @@ const initialState = {
 
   matches: { items: [], status: 'idle', error: null },
   checkout: { status: 'idle', error: null },
+  paymentMode: null, // 'razorpay' | 'test', from the server
 };
 
 const bookingSlice = createSlice({
@@ -255,6 +277,9 @@ const bookingSlice = createSlice({
           confirmedAt: new Date().toISOString(),
         };
       })
+      .addCase(loadPaymentConfig.fulfilled, (state, { payload }) => {
+        state.paymentMode = payload?.mode || 'test';
+      })
       .addCase(submitCheckout.rejected, (state, { payload }) => {
         state.checkout = { status: 'failed', error: payload || 'Payment failed. Please retry.' };
       });
@@ -284,6 +309,7 @@ export const selectSelectedRoom = (state) => state.booking.selectedRoom;
 export const selectSelectedRoommate = (state) => state.booking.selectedRoommate;
 export const selectMatches = (state) => state.booking.matches;
 export const selectCheckout = (state) => state.booking.checkout;
+export const selectPaymentMode = (state) => state.booking.paymentMode;
 export const selectLastConfirmed = (state) => state.booking.lastConfirmed;
 const listView = (slice, me) => ({
   items: slice.items.filter((x) => Number(x.tenantId ?? x.tenant?.id) === Number(me)).sort((a, b) => b.id - a.id),

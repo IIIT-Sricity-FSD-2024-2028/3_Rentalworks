@@ -21,8 +21,14 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpErrorFilter());
 
   // Enable CORS for frontend integration
+  // Only our own frontend may call the API from a browser. Set CORS_ORIGINS
+  // (comma-separated) for other hosts, e.g. the deployed site's URL.
+  const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
   app.enableCors({
-    origin: '*', // For development
+    origin: allowedOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     preflightContinue: false,
     optionsSuccessStatus: 204,
@@ -73,6 +79,6 @@ async function bootstrap() {
   );
 
   // Note: user specifically asked to use port 3000
-  await app.listen(3000);
+  await app.listen(Number(process.env.PORT) || 3000);
 }
 bootstrap();

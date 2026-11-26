@@ -32,6 +32,21 @@ class PayDueDto {
   @IsString()
   @IsOptional()
   upiId?: string;
+
+  @ApiProperty({ required: false, description: 'Payment gateway order id' })
+  @IsString()
+  @IsOptional()
+  gatewayOrderId?: string;
+
+  @ApiProperty({ required: false, description: 'Payment gateway payment id' })
+  @IsString()
+  @IsOptional()
+  gatewayPaymentId?: string;
+
+  @ApiProperty({ required: false, description: 'Payment gateway signature' })
+  @IsString()
+  @IsOptional()
+  gatewaySignature?: string;
 }
 
 class MarkPaidDto {
