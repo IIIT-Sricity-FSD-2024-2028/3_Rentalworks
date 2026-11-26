@@ -3,6 +3,7 @@ import { http } from '../../services/apiClient';
 import { showToast } from '../ui/uiSlice';
 import { propertiesRepo, issuesRepo, notificationsRepo, rentDuesRepo, roomsRepo, propertyDocumentsRepo, tenantStaysRepo, bookingRequestsRepo } from '../repositories';
 import { REQUIRED_DOCUMENTS } from '../repositories/propertyDocumentsSlice';
+import { uploadPropertyPhoto } from '../repositories/propertiesSlice';
 import { markNotificationRead, markAllNotificationsRead, clearNotifications } from '../repositories/notificationsSlice';
 import { mapProperty, mapRoom } from '../listings/listingMappers';
 import { normalizeStatus, statusLabel, toNumber, toISODate, cityFromLocation } from '../../utils/normalize';
@@ -49,14 +50,20 @@ export const mapOwnerProperty = (p) => {
     docsVerified: Boolean(p.docsVerified),
     inspectionPassed: Boolean(p.inspectionPassed),
     addedDate: toISODate(p.createdAt),
-    // Raw values the owner typed, used to pre-fill the Edit form
-    images: listing.images,
+    // Photos: stored paths are sent back on save; display URLs are for <img>.
+    rawImages: Array.isArray(p.images) ? p.images : [],
+    photoUrls: listing.images,
+    rentBySharing: listing.rentBySharing,
+    // Raw values the owner typed, used to pre-fill the Edit form. Older
+    // listings have no sharingRents yet: start from what their rooms charge.
+    sharingRents: p.sharingRents || listing.rentBySharing,
     description: p.description || '',
     address: p.address || '',
     city: p.city || listing.city || cityFromLocation(p.location),
     state: p.state || '',
     pincode: p.pincode || '',
-    type: p.type || 'Mixed',
+    // Older listings saved only a gender; read the type from it so saving never turns a girls PG into mixed.
+    type: p.type || (listing.gender === 'girls' ? 'Female' : listing.gender === 'boys' ? 'Male' : 'Mixed'),
     totalRooms: p.totalRooms ?? 0,
     totalCapacity: p.totalCapacity ?? 0,
     occupiedRooms: p.occupiedRooms ?? 0,
@@ -161,7 +168,7 @@ const refetchProperties = () => propertiesRepo.thunks.fetchAll();
  * Resolves to { propertyId, failed: [docType…] }. A property whose uploads
  * fail still exists (pending) and the owner can upload from Properties.
  */
-export const submitOwnerProperty = createAsyncThunk('ownerAccount/submitProperty', async ({ property, documents }, { dispatch, rejectWithValue }) => {
+export const submitOwnerProperty = createAsyncThunk('ownerAccount/submitProperty', async ({ property, documents, photos = [] }, { dispatch, rejectWithValue }) => {
   const created = await dispatch(propertiesRepo.thunks.createItem(property));
   if (created.error) {
     const message = created.payload || 'Could not create the property';
@@ -170,6 +177,11 @@ export const submitOwnerProperty = createAsyncThunk('ownerAccount/submitProperty
   }
   const propertyId = created.payload?.id;
   const failed = [];
+  // Photos first: an admin cannot approve a listing without one.
+  for (const file of photos) {
+    const up = await dispatch(uploadPropertyPhoto({ propertyId, file }));
+    if (up.error) failed.push(`photo ${file.name}`);
+  }
   for (const [docType, file] of Object.entries(documents || {})) {
     if (!file) continue;
     const up = await dispatch(propertyDocumentsRepo.thunks.createItem({ propertyId, docType, file }));
@@ -179,14 +191,38 @@ export const submitOwnerProperty = createAsyncThunk('ownerAccount/submitProperty
   dispatch(
     showToast(
       failed.length
-        ? { message: `Property saved, but ${failed.length} document(s) failed to upload. Upload them from Properties.`, type: 'warning' }
-        : { message: 'Property and documents submitted for admin review', type: 'success' },
+        ? { message: `Property saved, but ${failed.length} file(s) failed to upload (${failed.join(', ')}). Add them from Properties → View.`, type: 'warning' }
+        : { message: 'Property, photos and documents submitted for admin review', type: 'success' },
     ),
   );
   return { propertyId, failed };
 });
 
 const refetchDocuments = () => propertyDocumentsRepo.thunks.fetchAll();
+
+/** Add photos to an existing listing (Properties → View). */
+export const addOwnerPhotos = createAsyncThunk('ownerAccount/addPhotos', async ({ propertyId, files }, { dispatch, rejectWithValue }) => {
+  const failed = [];
+  for (const file of files) {
+    const up = await dispatch(uploadPropertyPhoto({ propertyId, file }));
+    if (up.error) failed.push(`${file.name}: ${up.payload}`);
+  }
+  await dispatch(propertiesRepo.thunks.fetchAll());
+  if (failed.length) {
+    dispatch(showToast({ message: `Some photos failed: ${failed.join('; ')}`, type: 'error' }));
+    return rejectWithValue(failed.join('; '));
+  }
+  dispatch(showToast({ message: files.length > 1 ? `${files.length} photos added` : 'Photo added', type: 'success' }));
+  return true;
+});
+
+/** Remove one photo; the listing must keep at least one. */
+export const removeOwnerPhoto = withToast(
+  'removePhoto',
+  ({ property, path }) => propertiesRepo.thunks.updateItem({ id: property.id, changes: { ...property, rawImages: property.rawImages.filter((x) => x !== path) } }),
+  'Photo removed',
+  refetchProperties,
+);
 export const uploadOwnerDocument = withToast('uploadDocument', (d) => propertyDocumentsRepo.thunks.createItem(d), 'Document uploaded for review', refetchDocuments);
 export const deleteOwnerDocument = withToast('deleteDocument', (id) => propertyDocumentsRepo.thunks.removeItem(id), 'Document removed', refetchDocuments);
 

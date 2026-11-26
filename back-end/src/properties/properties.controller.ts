@@ -52,6 +52,7 @@ export class PropertiesController {
   private assertApprovable(property: { docsVerified: boolean; inspectionPassed: boolean; status: string }, dto: Record<string, unknown>) {
     if (dto.status !== 'approved' || property.status === 'approved') return;
     const inspection = dto.inspectionPassed ?? property.inspectionPassed;
+    if (!Array.isArray((property as any).images) || !(property as any).images.length) throw new ForbiddenException('The owner must upload at least one property photo before approval');
     if (!property.docsVerified) throw new ForbiddenException('Approve all required documents before approving the property');
     if (!inspection) throw new ForbiddenException('Complete the live inspection before approving the property');
   }

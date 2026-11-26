@@ -161,7 +161,8 @@ export function amenityKey(value) {
 export function amenityLabel(value) {
   const key = amenityKey(value);
   if (AMENITIES[key]) return AMENITIES[key].label;
-  return String(value || '').trim().replace(/\b\w/g, (c) => c.toUpperCase());
+  // Custom amenities typed by the owner may arrive as slugs: 'rooftop-garden' → 'Rooftop Garden'.
+  return String(value || '').trim().replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 /** Any spelling → Material icon name. */

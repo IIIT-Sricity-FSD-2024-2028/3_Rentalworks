@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from '../components/Icon';
 import { formatINR } from '../../../utils/normalize';
+import { sharingKeyForCapacity } from '../../../features/repositories/propertiesSlice';
 
 const SHARING = [
   { capacity: 1, label: 'Single' },
@@ -36,9 +37,22 @@ export default function Rooms({ rooms = [], properties = [], onAddRoom, onUpdate
     [shown],
   );
 
+  // A new room starts at the rent the owner listed for that room size.
+  const listedRent = (propertyId, capacity) => {
+    const p = properties.find((x) => String(x.id) === String(propertyId));
+    const key = sharingKeyForCapacity(capacity);
+    return (key && p?.sharingRents?.[key]) || '';
+  };
+  // Change property / room size: update the rent too, unless the owner already typed their own.
+  const withDefaultRent = (prev, next) => {
+    const untouched = !prev.rent || String(prev.rent) === String(listedRent(prev.propertyId, prev.capacity));
+    return untouched && !next.id ? { ...next, rent: listedRent(next.propertyId, next.capacity) } : next;
+  };
+
   const openAdd = () => {
     setError('');
-    setEditing({ ...EMPTY, propertyId: filterProperty || (properties[0] ? String(properties[0].id) : '') });
+    const propertyId = filterProperty || (properties[0] ? String(properties[0].id) : '');
+    setEditing({ ...EMPTY, propertyId, rent: listedRent(propertyId, EMPTY.capacity) });
   };
   const openEdit = (r) => {
     setError('');
@@ -211,7 +225,7 @@ export default function Rooms({ rooms = [], properties = [], onAddRoom, onUpdate
                   <label className="form-label" htmlFor="roomProperty">
                     Property <span className="req">*</span>
                   </label>
-                  <select id="roomProperty" className="form-input" value={editing.propertyId} disabled={Boolean(editing.id)} onChange={(e) => setEditing({ ...editing, propertyId: e.target.value })}>
+                  <select id="roomProperty" className="form-input" value={editing.propertyId} disabled={Boolean(editing.id)} onChange={(e) => setEditing(withDefaultRent(editing, { ...editing, propertyId: e.target.value }))}>
                     <option value="">Select…</option>
                     {properties.map((p) => (
                       <option key={p.id} value={p.id}>
@@ -230,7 +244,7 @@ export default function Rooms({ rooms = [], properties = [], onAddRoom, onUpdate
                   <label className="form-label" htmlFor="roomCapacity">
                     Beds (sharing) <span className="req">*</span>
                   </label>
-                  <select id="roomCapacity" className="form-input" value={editing.capacity} onChange={(e) => setEditing({ ...editing, capacity: Number(e.target.value) })}>
+                  <select id="roomCapacity" className="form-input" value={editing.capacity} onChange={(e) => setEditing(withDefaultRent(editing, { ...editing, capacity: Number(e.target.value) }))}>
                     {SHARING.map((s) => (
                       <option key={s.capacity} value={s.capacity}>
                         {s.label} ({s.capacity} bed{s.capacity === 1 ? '' : 's'})

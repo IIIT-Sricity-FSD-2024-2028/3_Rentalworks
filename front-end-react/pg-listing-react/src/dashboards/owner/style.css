@@ -2766,3 +2766,7 @@ select:focus {
 
 /* Long dialogs (property details + documents) scroll inside the viewport. */
 .portal-owner-scope .modal { max-height: 90vh; overflow-y: auto; }
+
+/* Amenity tiles are <button>s: keep the tile look, not the browser button look. */
+button.amenity-toggle { font: inherit; background: var(--bg-card, #fff); color: inherit; cursor: pointer; }
+button.amenity-toggle.selected { background: var(--primary-light); color: var(--primary); }

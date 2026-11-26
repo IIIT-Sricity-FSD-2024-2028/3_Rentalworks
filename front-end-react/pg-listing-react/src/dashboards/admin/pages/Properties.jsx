@@ -269,10 +269,22 @@ export default function Properties() {
                   </div>
                 )}
 
+                {/* Approval needs at least one photo (enforced on the server too). */}
+                {p.status === 'pending' && !(Array.isArray(p.images) && p.images.length) && (
+                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '8px 10px', marginBottom: 10, fontSize: 11, color: '#991b1b' }}>
+                    📷 <strong>No photo uploaded</strong> — the owner must add one before this property can be approved
+                  </div>
+                )}
+
                 <div className="prop-details">
                   <div className="prop-detail">
-                    <div className="pd-lbl">Rent Range</div>
-                    <div className="pd-val">₹{(p.rentMin || 0).toLocaleString()} – ₹{(p.rentMax || 0).toLocaleString()}</div>
+                    <div className="pd-lbl">Rent per bed</div>
+                    <div className="pd-val">
+                      {[['single', 'Single'], ['double', 'Double'], ['triple', 'Triple']]
+                        .filter(([k]) => p.sharingRents?.[k])
+                        .map(([k, l]) => `${l} ₹${Number(p.sharingRents[k]).toLocaleString('en-IN')}`)
+                        .join(' · ') || `₹${(p.rentMin || 0).toLocaleString()} – ₹${(p.rentMax || 0).toLocaleString()}`}
+                    </div>
                   </div>
                   <div className="prop-detail">
                     <div className="pd-lbl">Verification</div>

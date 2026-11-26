@@ -3,9 +3,10 @@ import PropertyDocuments, { DocumentStatusLine } from '../components/PropertyDoc
 import Icon from '../components/Icon';
 import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { AMENITIES } from '../../../utils/normalize';
+import { SHARING_TYPES } from '../../../features/repositories/propertiesSlice';
+import AmenityPicker from '../components/AmenityPicker';
+import PropertyPhotos from '../components/PropertyPhotos';
 
-const AMENITY_OPTIONS = Object.values(AMENITIES).map((a) => a.label);
 
 // Properties: Displays property listings with search, filter, view, edit, and delete
 export default function Properties({
@@ -14,6 +15,8 @@ export default function Properties({
   onDeleteProperty,
   onUploadDocument,
   onDeleteDocument,
+  onAddPhotos,
+  onRemovePhoto,
 }) {
   const [params, setParams] = useSearchParams();
   const search = params.get('q') || '';
@@ -87,26 +90,22 @@ export default function Properties({
       return 0;
     });
 
-  const handleToggleAmenity = (amenity) => {
-    if (!editingProperty) return;
-    const currentAmenities = editingProperty.amenities || [];
-    const isSelected = currentAmenities.includes(amenity);
-
-    const updatedAmenities = isSelected
-      ? currentAmenities.filter((a) => a !== amenity)
-      : currentAmenities.concat(amenity);
-
-    setEditingProperty(
-      Object.assign({}, editingProperty, { amenities: updatedAmenities })
-    );
-  };
-
   const handleSaveEdit = async (e) => {
     e.preventDefault();
     if (!editingProperty) return;
 
     if (!editingProperty.name.trim() || !editingProperty.city.trim()) {
       setEditError('Please fill in all required fields.');
+      return;
+    }
+
+    const rents = SHARING_TYPES.map(({ key }) => editingProperty.sharingRents?.[key]).filter((v) => v !== '' && v !== null && v !== undefined);
+    if (!rents.length) {
+      setEditError('Enter the rent for at least one room size.');
+      return;
+    }
+    if (rents.some((v) => !(Number(v) > 0))) {
+      setEditError('Rents must be positive amounts.');
       return;
     }
 
@@ -247,7 +246,11 @@ export default function Properties({
                     </div>
                     <div className="property-meta-item">
                       <Icon className="material-icons icon-14 icon-middle">payments</Icon>{' '}
-                      <span>{priceText(p)}</span>
+                      <span>
+                        {SHARING_TYPES.filter(({ key }) => p.rentBySharing?.[key])
+                          .map(({ key, short }) => `${short} ${formatCurrency(p.rentBySharing[key])}`)
+                          .join(' · ') || priceText(p)}
+                      </span>
                     </div>
                   </div>
 
@@ -358,13 +361,9 @@ export default function Properties({
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted">Type</div>
-                  <div className="font-bold text-sm">{viewingProperty.type}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted">Gender Policy</div>
-                  <div className="font-bold text-sm" style={{ textTransform: 'capitalize' }}>
-                    {viewingProperty.gender === 'girls' ? '👩 Girls Only' : viewingProperty.gender === 'boys' ? '👨 Boys Only' : '👫 Co-ed'}
+                  <div className="text-xs text-muted">Who can book</div>
+                  <div className="font-bold text-sm">
+                    {viewingProperty.gender === 'girls' ? '👩 Girls only' : viewingProperty.gender === 'boys' ? '👨 Boys only' : '👫 Everyone (mixed)'}
                   </div>
                 </div>
                 <div>
@@ -386,11 +385,11 @@ export default function Properties({
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted">Monthly Rent</div>
+                  <div className="text-xs text-muted">Rent per bed</div>
                   <div className="font-bold text-sm text-primary-cost">
-                    {viewingProperty.rentMax > viewingProperty.price
-                      ? `${formatCurrency(viewingProperty.price)} – ${formatCurrency(viewingProperty.rentMax)}`
-                      : formatCurrency(viewingProperty.price)}
+                    {SHARING_TYPES.filter(({ key }) => viewingProperty.rentBySharing?.[key])
+                      .map(({ key, short }) => `${short} ${formatCurrency(viewingProperty.rentBySharing[key])}`)
+                      .join(' · ') || 'Not set'}
                   </div>
                 </div>
                 <div>
@@ -427,6 +426,12 @@ export default function Properties({
                 </div>
               </div>
             </div>
+
+            {liveViewing && (
+              <div style={{ marginTop: 16 }}>
+                <PropertyPhotos property={liveViewing} onAdd={onAddPhotos} onRemove={onRemovePhoto} />
+              </div>
+            )}
 
             {liveViewing?.docs && (
               <div style={{ marginTop: 16 }}>
@@ -510,25 +515,9 @@ export default function Properties({
                         setEditingProperty((prev) => Object.assign({}, prev, update));
                       }}
                     >
-                      <option value="Mixed">Mixed</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Gender Policy</label>
-                    <select
-                      className="form-input"
-                      value={editingProperty.gender || 'unisex'}
-                      onChange={(e) => {
-                        const update = { gender: e.target.value };
-                        setEditingProperty((prev) => Object.assign({}, prev, update));
-                      }}
-                    >
-                      <option value="unisex">Co-ed (All Welcome)</option>
-                      <option value="boys">Boys Only</option>
-                      <option value="girls">Girls Only</option>
+                      <option value="Mixed">Mixed (everyone can book)</option>
+                      <option value="Male">Male only (boys PG)</option>
+                      <option value="Female">Female only (girls PG)</option>
                     </select>
                   </div>
 
@@ -541,21 +530,6 @@ export default function Properties({
                         const update = { city: e.target.value };
                         setEditingProperty((prev) => Object.assign({}, prev, update));
                       }}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Monthly Rent (₹)</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={editingProperty.monthlyRent}
-                      onChange={(e) => {
-                        const update = { monthlyRent: Number(e.target.value) };
-                        setEditingProperty((prev) => Object.assign({}, prev, update));
-                      }}
-                      min="0"
                       required
                     />
                   </div>
@@ -575,27 +549,12 @@ export default function Properties({
                     />
                   </div>
 
-                  {editingProperty.roomsFromDb ? (
-                    <div className="form-group">
-                      <span className="form-label">Occupancy</span>
-                      <p className="text-muted">{editingProperty.occupiedBeds}/{editingProperty.totalBeds} beds filled (from room records)</p>
-                    </div>
-                  ) : (
-                    <div className="form-group">
-                      <label className="form-label">Occupied Rooms</label>
-                      <input
-                        type="number"
-                        className="form-input"
-                        value={editingProperty.occupiedRooms}
-                        onChange={(e) => {
-                          const update = { occupiedRooms: Number(e.target.value) };
-                          setEditingProperty((prev) => Object.assign({}, prev, update));
-                        }}
-                        min="0"
-                        required
-                      />
-                    </div>
-                  )}
+                  <div className="form-group">
+                    <span className="form-label">Occupancy</span>
+                    <p className="text-muted">
+                      {editingProperty.hasRooms ? `${editingProperty.occupiedBeds}/${editingProperty.totalBeds} beds filled (from bookings)` : 'Add rooms on the Rooms page to track occupancy'}
+                    </p>
+                  </div>
 
                   <div className="form-group">
                     <span className="form-label">Status</span>
@@ -603,24 +562,38 @@ export default function Properties({
                   </div>
                 </div>
 
+                <fieldset style={{ border: 0, padding: 0, margin: '12px 0' }}>
+                  <legend className="form-label mb-8">Monthly rent per bed, by room size</legend>
+                  <div className="form-grid-3">
+                    {SHARING_TYPES.map(({ key, label }) => (
+                      <div className="form-group" key={key}>
+                        <label className="form-label" htmlFor={`edit_rent_${key}`}>
+                          {label} (₹)
+                        </label>
+                        <input
+                          id={`edit_rent_${key}`}
+                          type="number"
+                          min="1"
+                          className="form-input"
+                          placeholder="Not offered"
+                          value={editingProperty.sharingRents?.[key] ?? ''}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setEditingProperty((prev) => ({ ...prev, sharingRents: { ...(prev.sharingRents || {}), [key]: value } }));
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </fieldset>
+
                 <div>
                   <div className="form-label mb-8">Amenities</div>
-                  <div className="amenities-grid">
-                    {AMENITY_OPTIONS.map((a) => {
-                      const isSelected = (editingProperty.amenities || []).includes(a);
-                      return (
-                        <div
-                          key={a}
-                          className={`amenity-toggle ${isSelected ? 'selected' : ''}`}
-                          onClick={() => handleToggleAmenity(a)}
-                        >
-                          {a}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <AmenityPicker value={editingProperty.amenities || []} onChange={(amenities) => setEditingProperty((prev) => ({ ...prev, amenities }))} />
                 </div>
               </div>
+
+              <div className="modal-footer">              </div>
 
               <div className="modal-footer">
                 <button

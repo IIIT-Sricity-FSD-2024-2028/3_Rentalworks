@@ -45,6 +45,8 @@ import {
   submitOwnerProperty,
   uploadOwnerDocument,
   deleteOwnerDocument,
+  addOwnerPhotos,
+  removeOwnerPhoto,
 } from '../../features/owner/ownerSlices';
 import { logout } from '../../features/auth/authSlice';
 
@@ -125,6 +127,8 @@ export function OwnerPropertiesRoute() {
       onDeleteProperty={useAction(deleteOwnerProperty)}
       onUploadDocument={useAction(uploadOwnerDocument)}
       onDeleteDocument={useAction(deleteOwnerDocument)}
+      onAddPhotos={useAction(addOwnerPhotos)}
+      onRemovePhoto={useAction(removeOwnerPhoto)}
     />
   );
 }

@@ -1,60 +1,47 @@
 import Icon from '../components/Icon';
 import FileDropZone from '../components/FileDropZone';
+import AmenityPicker from '../components/AmenityPicker';
+import PhotoUploader from '../components/PhotoUploader';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AMENITIES } from '../../../utils/normalize';
 import { REQUIRED_DOCUMENTS, OPTIONAL_DOCUMENTS, DOCUMENT_ACCEPT, DOCUMENT_MAX_MB, documentFileError } from '../../../features/repositories/propertyDocumentsSlice';
+import { SHARING_TYPES } from '../../../features/repositories/propertiesSlice';
 
-// Built from the shared amenity table so saved labels match what listings display.
-const AMENITY_LIST = Object.values(AMENITIES).map(({ label, icon }) => ({ label, icon }));
+const TEXT_FIELDS = [
+  { id: 'name', label: 'Property Name', placeholder: 'e.g. Sunrise PG' },
+  { id: 'address', label: 'Address', placeholder: 'Street address' },
+  { id: 'city', label: 'City', placeholder: 'Chennai' },
+  { id: 'state', label: 'State', placeholder: 'Tamil Nadu' },
+  { id: 'pincode', label: 'Pincode', placeholder: '600001', inputMode: 'numeric', maxLength: 6 },
+];
 
-// AddProperty: Controlled form with validation to add a new property
+// Who may book is decided by the property type (Male → boys only,
+// Female → girls only, Mixed → everyone); the server enforces it at checkout.
+const TYPES = [
+  { value: 'Mixed', label: 'Mixed (Male & Female)' },
+  { value: 'Male', label: 'Male only (boys PG)' },
+  { value: 'Female', label: 'Female only (girls PG)' },
+];
+
+// AddProperty: listing details, rent per room size, amenities (incl. custom),
+// photos (at least one) and verification documents.
 export default function AddProperty({ onSubmitProperty }) {
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
-    name: '',
-    address: '',
-    city: '',
-    state: '',
-    pincode: '',
-    type: '',
-    gender: 'unisex',
-    capacity: '',
-    rooms: '',
-    rent: '',
-    occupied: 0,
-    status: 'Active',
-    description: '',
-    imageUrl: '',
-  });
-
-  const [selectedAmenities, setSelectedAmenities] = useState([]);
+  const [formData, setFormData] = useState({ name: '', address: '', city: '', state: '', pincode: '', type: '', capacity: '', rooms: '', description: '' });
+  const [rents, setRents] = useState({ single: '', double: '', triple: '' });
+  const [amenities, setAmenities] = useState([]);
+  const [photos, setPhotos] = useState([]);
   // Verification documents, kept as File objects until the property is created.
   const [documents, setDocuments] = useState({});
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const clearError = (key) => errors[key] && setErrors((prev) => ({ ...prev, [key]: '' }));
   const handleChange = (e) => {
-    const id = e.target.id;
-    const value = e.target.value;
-    const update = {};
-    update[id] = value;
-    setFormData((prev) => Object.assign({}, prev, update));
-    if (errors[id]) {
-      const errUpdate = {};
-      errUpdate[id] = '';
-      setErrors((prev) => Object.assign({}, prev, errUpdate));
-    }
-  };
-
-  const toggleAmenity = (label) => {
-    setSelectedAmenities((prev) => {
-      if (prev.includes(label)) {
-        return prev.filter((item) => item !== label);
-      }
-      return prev.concat(label);
-    });
+    const { id, value } = e.target;
+    setFormData((prev) => ({ ...prev, [id]: value }));
+    clearError(id);
   };
 
   // The same file uploaded as two different documents is almost always a mistake.
@@ -67,70 +54,74 @@ export default function AddProperty({ onSubmitProperty }) {
   };
 
   const validate = () => {
-    const newErrors = {};
-    if (!formData.name.trim()) newErrors.name = 'Property name is required';
-    if (!formData.address.trim()) newErrors.address = 'Address is required';
-    if (!formData.city.trim()) newErrors.city = 'City is required';
-    if (!formData.state.trim()) newErrors.state = 'State is required';
+    const e = {};
+    if (!formData.name.trim()) e.name = 'Property name is required';
+    if (!formData.address.trim()) e.address = 'Address is required';
+    if (!formData.city.trim()) e.city = 'City is required';
+    if (!formData.state.trim()) e.state = 'State is required';
+    if (!/^\d{6}$/.test(formData.pincode.trim())) e.pincode = 'Valid 6-digit pincode required';
+    if (!formData.type) e.type = 'Choose who the PG is for';
+    if (!(Number(formData.capacity) >= 1)) e.capacity = 'Total beds is required';
+    if (!(Number(formData.rooms) >= 1)) e.rooms = 'Total rooms is required';
+    if (Number(formData.rooms) > Number(formData.capacity)) e.rooms = 'Rooms cannot be more than total beds';
 
-    if (!/^\d{6}$/.test(formData.pincode.trim())) {
-      newErrors.pincode = 'Valid 6-digit pincode required';
-    }
+    const offered = SHARING_TYPES.filter(({ key }) => String(rents[key]).trim() !== '');
+    SHARING_TYPES.forEach(({ key, short }) => {
+      const v = String(rents[key]).trim();
+      if (v !== '' && !(Number(v) > 0)) e[`rent_${key}`] = `Enter a valid ${short.toLowerCase()} rent`;
+    });
+    if (!offered.length) e.rents = 'Enter the rent for at least one room size';
 
-    if (!formData.type) newErrors.type = 'Please select a type';
-    if (!formData.capacity || Number(formData.capacity) < 1) {
-      newErrors.capacity = 'Capacity is required';
-    }
-    if (!formData.rooms || Number(formData.rooms) < 1) {
-      newErrors.rooms = 'Total rooms is required';
-    }
-    if (!formData.rent || Number(formData.rent) < 0) {
-      newErrors.rent = 'Rent is required';
-    }
-    if (Number(formData.occupied) > Number(formData.rooms)) {
-      newErrors.occupied = 'Occupied rooms cannot exceed total rooms';
-    }
+    if (!photos.length) e.photos = 'Add at least one photo of the property';
+
     REQUIRED_DOCUMENTS.forEach(({ type, label }) => {
       const err = documents[type] ? documentFileError(documents[type]) || duplicateError(type, documents[type]) : `${label} is required`;
-      if (err) newErrors[`doc_${type}`] = err;
+      if (err) e[`doc_${type}`] = err;
     });
     OPTIONAL_DOCUMENTS.forEach(({ type }) => {
       const err = documents[type] ? documentFileError(documents[type]) || duplicateError(type, documents[type]) : '';
-      if (err) newErrors[`doc_${type}`] = err;
+      if (err) e[`doc_${type}`] = err;
     });
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors(e);
+    const first = Object.keys(e).find((k) => e[k]);
+    if (first) document.getElementById(first.startsWith('doc_') ? first : first.startsWith('rent') ? 'rent_single' : first === 'photos' ? 'propertyPhotos-zone' : first)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return !first;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
-
+  const handleSubmit = async (ev) => {
+    ev.preventDefault();
+    if (!validate() || isSubmitting) return;
     setIsSubmitting(true);
-
-    const newProperty = {
+    const property = {
       name: formData.name.trim(),
       address: formData.address.trim(),
       city: formData.city.trim(),
       state: formData.state.trim(),
       pincode: formData.pincode.trim(),
       type: formData.type,
-      gender: formData.gender || (formData.type === 'Female' ? 'girls' : formData.type === 'Male' ? 'boys' : 'unisex'),
       totalCapacity: Number(formData.capacity),
       totalRooms: Number(formData.rooms),
-      occupiedRooms: Number(formData.occupied) || 0,
-      monthlyRent: Number(formData.rent),
-      amenities: selectedAmenities,
-      images: formData.imageUrl.trim() ? [formData.imageUrl.trim()] : [],
+      occupiedRooms: 0,
+      sharingRents: rents,
+      amenities,
+      images: [],
       description: formData.description.trim(),
     };
-
-    const result = await onSubmitProperty({ property: newProperty, documents });
+    const result = await onSubmitProperty({ property, documents, photos });
     setIsSubmitting(false);
-    if (!result) return;
-    navigate('/dashboard/owner/properties');
+    if (result) navigate('/dashboard/owner/properties');
   };
+
+  const field = (f) => (
+    <div key={f.id} className={errors[f.id] ? 'form-group has-error' : 'form-group'}>
+      <label className="form-label" htmlFor={f.id}>
+        {f.label} <span className="req">*</span>
+      </label>
+      <input type="text" className="form-input" id={f.id} placeholder={f.placeholder} inputMode={f.inputMode} maxLength={f.maxLength} value={formData[f.id]} onChange={handleChange} />
+      {errors[f.id] && <span className="form-error">{errors[f.id]}</span>}
+    </div>
+  );
 
   return (
     <div>
@@ -142,213 +133,94 @@ export default function AddProperty({ onSubmitProperty }) {
         <p>Submit property details for system verification</p>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} noValidate>
         {/* Section 01: Basic Information */}
         <div className="form-section">
           <div className="form-section-header">
             <div className="num-badge">01</div>
             <div className="form-section-title">Basic Information</div>
           </div>
-
           <div className="form-grid">
-            <div className={errors.name ? 'form-group has-error' : 'form-group'}>
-              <label className="form-label">
-                Property Name <span className="req">*</span>
-              </label>
-              <input
-                type="text"
-                className="form-input"
-                id="name"
-                placeholder="e.g. Sunrise PG"
-                value={formData.name}
-                onChange={handleChange}
-              />
-              {errors.name && <span className="form-error">{errors.name}</span>}
-            </div>
-
-            <div className={errors.address ? 'form-group has-error' : 'form-group'}>
-              <label className="form-label">
-                Address <span className="req">*</span>
-              </label>
-              <input
-                type="text"
-                className="form-input"
-                id="address"
-                placeholder="Street address"
-                value={formData.address}
-                onChange={handleChange}
-              />
-              {errors.address && <span className="form-error">{errors.address}</span>}
-            </div>
-
-            <div className={errors.city ? 'form-group has-error' : 'form-group'}>
-              <label className="form-label">
-                City <span className="req">*</span>
-              </label>
-              <input
-                type="text"
-                className="form-input"
-                id="city"
-                placeholder="Chennai"
-                value={formData.city}
-                onChange={handleChange}
-              />
-              {errors.city && <span className="form-error">{errors.city}</span>}
-            </div>
-
-            <div className={errors.state ? 'form-group has-error' : 'form-group'}>
-              <label className="form-label">
-                State <span className="req">*</span>
-              </label>
-              <input
-                type="text"
-                className="form-input"
-                id="state"
-                placeholder="Tamil Nadu"
-                value={formData.state}
-                onChange={handleChange}
-              />
-              {errors.state && <span className="form-error">{errors.state}</span>}
-            </div>
-
-            <div className={errors.pincode ? 'form-group has-error' : 'form-group'}>
-              <label className="form-label">
-                Pincode <span className="req">*</span>
-              </label>
-              <input
-                type="text"
-                className="form-input"
-                id="pincode"
-                placeholder="600001"
-                maxLength="6"
-                value={formData.pincode}
-                onChange={handleChange}
-              />
-              {errors.pincode && <span className="form-error">{errors.pincode}</span>}
-            </div>
-
+            {TEXT_FIELDS.map(field)}
             <div className={errors.type ? 'form-group has-error' : 'form-group'}>
-              <label className="form-label">
+              <label className="form-label" htmlFor="type">
                 Property Type <span className="req">*</span>
               </label>
-              <select
-                className="form-input"
-                id="type"
-                value={formData.type}
-                onChange={handleChange}
-              >
+              <select className="form-input" id="type" value={formData.type} onChange={handleChange} aria-describedby="type-hint">
                 <option value="">Select type</option>
-                <option value="Mixed">Mixed (Male &amp; Female)</option>
-                <option value="Male">Male Only</option>
-                <option value="Female">Female Only</option>
+                {TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
               </select>
-              {errors.type && <span className="form-error">{errors.type}</span>}
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                Gender Policy <span className="req">*</span>
-              </label>
-              <select
-                className="form-input"
-                id="gender"
-                value={formData.gender}
-                onChange={handleChange}
-              >
-                <option value="unisex">Co-ed (All Genders Eligible)</option>
-                <option value="boys">Boys Only (Male Tenants Only)</option>
-                <option value="girls">Girls Only (Female Tenants Only)</option>
-              </select>
-              <span className="text-xs text-muted" style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', display: 'block' }}>
-                Enforced by backend booking verification
+              <span id="type-hint" className="prop-sub-row">
+                Decides who can book: boys only, girls only, or everyone.
               </span>
+              {errors.type && <span className="form-error">{errors.type}</span>}
             </div>
           </div>
         </div>
 
-        {/* Section 02: Details */}
+        {/* Section 02: Rooms and rent */}
         <div className="form-section">
           <div className="form-section-header">
             <div className="num-badge">02</div>
-            <div className="form-section-title">Property Details</div>
+            <div className="form-section-title">Rooms &amp; Rent</div>
           </div>
-
-          <div className="form-grid-3">
+          <div className="form-grid">
             <div className={errors.capacity ? 'form-group has-error' : 'form-group'}>
-              <label className="form-label">
-                Total Capacity <span className="req">*</span>
+              <label className="form-label" htmlFor="capacity">
+                Total Beds <span className="req">*</span>
               </label>
-              <input
-                type="number"
-                className="form-input"
-                id="capacity"
-                placeholder="20"
-                min="1"
-                value={formData.capacity}
-                onChange={handleChange}
-              />
+              <input type="number" className="form-input" id="capacity" placeholder="20" min="1" value={formData.capacity} onChange={handleChange} />
               {errors.capacity && <span className="form-error">{errors.capacity}</span>}
             </div>
-
             <div className={errors.rooms ? 'form-group has-error' : 'form-group'}>
-              <label className="form-label">
+              <label className="form-label" htmlFor="rooms">
                 Total Rooms <span className="req">*</span>
               </label>
-              <input
-                type="number"
-                className="form-input"
-                id="rooms"
-                placeholder="10"
-                min="1"
-                value={formData.rooms}
-                onChange={handleChange}
-              />
+              <input type="number" className="form-input" id="rooms" placeholder="10" min="1" value={formData.rooms} onChange={handleChange} />
               {errors.rooms && <span className="form-error">{errors.rooms}</span>}
             </div>
-
-            <div className={errors.rent ? 'form-group has-error' : 'form-group'}>
-              <label className="form-label">
-                Monthly Rent (₹) <span className="req">*</span>
-              </label>
-              <input
-                type="number"
-                className="form-input"
-                id="rent"
-                placeholder="8000"
-                min="0"
-                value={formData.rent}
-                onChange={handleChange}
-              />
-              {errors.rent && <span className="form-error">{errors.rent}</span>}
-            </div>
-
-            <div className={errors.occupied ? 'form-group has-error' : 'form-group'}>
-              <label className="form-label">Currently Occupied</label>
-              <input
-                type="number"
-                className="form-input"
-                id="occupied"
-                placeholder="0"
-                min="0"
-                value={formData.occupied}
-                onChange={handleChange}
-              />
-              {errors.occupied && <span className="form-error">{errors.occupied}</span>}
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Status</label>
-              <select
-                className="form-input"
-                id="status"
-                value={formData.status}
-                onChange={handleChange}
-              >
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-              </select>
-            </div>
           </div>
+
+          <fieldset style={{ border: 0, padding: 0, margin: '8px 0 0' }}>
+            <legend className="form-label" style={{ marginBottom: 4 }}>
+              Monthly rent per bed, by room size <span className="req">*</span>
+            </legend>
+            <p className="prop-sub-row" style={{ marginTop: 0 }}>
+              Fill only the room sizes you offer. You can set each room's exact rent later on the Rooms page.
+            </p>
+            <div className="form-grid-3">
+              {SHARING_TYPES.map(({ key, label }) => (
+                <div key={key} className={errors[`rent_${key}`] ? 'form-group has-error' : 'form-group'}>
+                  <label className="form-label" htmlFor={`rent_${key}`}>
+                    {label} (₹)
+                  </label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    id={`rent_${key}`}
+                    min="1"
+                    placeholder="Not offered"
+                    value={rents[key]}
+                    onChange={(e) => {
+                      setRents((prev) => ({ ...prev, [key]: e.target.value }));
+                      clearError(`rent_${key}`);
+                      clearError('rents');
+                    }}
+                  />
+                  {errors[`rent_${key}`] && <span className="form-error">{errors[`rent_${key}`]}</span>}
+                </div>
+              ))}
+            </div>
+            {errors.rents && (
+              <span className="form-error" role="alert">
+                {errors.rents}
+              </span>
+            )}
+          </fieldset>
         </div>
 
         {/* Section 03: Amenities */}
@@ -357,41 +229,48 @@ export default function AddProperty({ onSubmitProperty }) {
             <div className="num-badge">03</div>
             <div className="form-section-title">Amenities</div>
           </div>
-
-          <div className="amenities-grid" id="amenitiesGrid">
-            {AMENITY_LIST.map((a) => {
-              const isSelected = selectedAmenities.includes(a.label);
-              return (
-                <div
-                  key={a.label}
-                  className={`amenity-toggle ${isSelected ? 'selected' : ''}`}
-                  onClick={() => toggleAmenity(a.label)}
-                >
-                  <Icon className="material-icons icon-16">{a.icon}</Icon>{' '}
-                  {a.label}
-                </div>
-              );
-            })}
-          </div>
+          <AmenityPicker value={amenities} onChange={setAmenities} />
         </div>
 
-        {/* Section 04: Description */}
+        {/* Section 04: Photos (required) */}
         <div className="form-section">
           <div className="form-section-header">
             <div className="num-badge">04</div>
             <div className="form-section-title">
-              Additional Notes <span className="prop-sub-row">(Optional)</span>
+              Property Photos <span className="req">*</span>
             </div>
           </div>
+          <p className="prop-sub-row" style={{ marginTop: 0 }}>
+            At least one photo. The first one is the cover tenants see on the listing.
+          </p>
+          <div id="propertyPhotos-zone">
+            <PhotoUploader
+              files={photos}
+              error={errors.photos}
+              onChange={(next) => {
+                setPhotos(next);
+                if (next.length) clearError('photos');
+              }}
+            />
+          </div>
+        </div>
 
+        {/* Section 05: Description */}
+        <div className="form-section">
+          <div className="form-section-header">
+            <div className="num-badge">05</div>
+            <div className="form-section-title">
+              Description <span className="prop-sub-row">(Optional)</span>
+            </div>
+          </div>
           <div className="form-group">
-            <label className="form-label" htmlFor="imageUrl">Property photo URL (optional)</label>
-            <input className="form-input" type="url" id="imageUrl" value={formData.imageUrl} onChange={handleChange} placeholder="https://…" />
-            <label className="form-label">Property Description</label>
+            <label className="form-label" htmlFor="description">
+              About the property
+            </label>
             <textarea
               className="form-input"
               id="description"
-              placeholder="Enter any additional details about the property, rules, nearby landmarks"
+              placeholder="Nearby landmarks, transport, what makes your PG special"
               rows="4"
               value={formData.description}
               onChange={handleChange}
@@ -399,10 +278,10 @@ export default function AddProperty({ onSubmitProperty }) {
           </div>
         </div>
 
-        {/* Section 05: Verification Documents */}
+        {/* Section 06: Verification Documents */}
         <div className="form-section">
           <div className="form-section-header">
-            <div className="num-badge">05</div>
+            <div className="num-badge">06</div>
             <div className="form-section-title">
               Verification Documents <span className="prop-sub-row">(an admin reviews these before your PG goes live)</span>
             </div>
@@ -431,7 +310,11 @@ export default function AddProperty({ onSubmitProperty }) {
                     setErrors((prev) => ({ ...prev, [`doc_${type}`]: '' }));
                   }}
                 />
-                {errors[`doc_${type}`] && <div className="form-error" role="alert">{errors[`doc_${type}`]}</div>}
+                {errors[`doc_${type}`] && (
+                  <div className="form-error" role="alert">
+                    {errors[`doc_${type}`]}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -442,18 +325,12 @@ export default function AddProperty({ onSubmitProperty }) {
           <Link to="/dashboard/owner/properties" className="btn btn-secondary btn-lg">
             Cancel
           </Link>
-          <button
-            type="submit"
-            className="btn btn-primary btn-lg"
-            id="submitBtn"
-            disabled={isSubmitting}
-          >
+          <button type="submit" className="btn btn-primary btn-lg" id="submitBtn" disabled={isSubmitting}>
             {isSubmitting ? (
-              'Submitting...'
+              'Uploading photos and documents…'
             ) : (
               <>
-                <Icon className="material-icons icon-18 icon-middle">check</Icon>{' '}
-                Submit for Verification
+                <Icon className="material-icons icon-18 icon-middle">check</Icon> Submit for Verification
               </>
             )}
           </button>

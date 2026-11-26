@@ -1,9 +1,31 @@
+import { createAsyncThunk } from '@reduxjs/toolkit';
+import { http } from '../../services/apiClient';
 import { createRepositorySlice, pick } from './createRepositorySlice';
 
-const num = (v) => (v === undefined || v === '' ? undefined : Number(v));
+const num = (v) => (v === undefined || v === null || v === '' ? undefined : Number(v));
+
+/** Room sizes an owner prices separately. `capacity` = beds in the room. */
+export const SHARING_TYPES = [
+  { key: 'single', capacity: 1, label: 'Single room', short: 'Single' },
+  { key: 'double', capacity: 2, label: 'Double sharing', short: 'Double' },
+  { key: 'triple', capacity: 3, label: 'Triple sharing', short: 'Triple' },
+];
+export const sharingKeyForCapacity = (capacity) => SHARING_TYPES.find((s) => s.capacity === Number(capacity))?.key || null;
+
+/** Property type decides who may book: Male → boys, Female → girls, Mixed → everyone. */
+export const genderFromType = (type) => (type === 'Male' ? 'boys' : type === 'Female' ? 'girls' : 'unisex');
+
+/** { single, double, triple } with empty / zero values as null. */
+export function cleanSharingRents(r = {}) {
+  return Object.fromEntries(SHARING_TYPES.map(({ key }) => [key, Number(r?.[key]) > 0 ? Math.round(Number(r[key])) : null]));
+}
 
 /** Body an owner sends from the Add / Edit property forms. */
 export function ownerPropertyBody(p) {
+  const sharingRents = cleanSharingRents(p.sharingRents);
+  const offered = Object.values(sharingRents).filter(Boolean);
+  const low = offered.length ? Math.min(...offered) : 0;
+  const high = offered.length ? Math.max(...offered) : 0;
   return {
     name: p.name,
     address: p.address,
@@ -12,17 +34,20 @@ export function ownerPropertyBody(p) {
     pincode: p.pincode,
     location: `${p.city}, ${p.state}`,
     type: p.type,
-    gender: p.gender,
+    gender: genderFromType(p.type),
     totalCapacity: num(p.totalCapacity),
     totalRooms: num(p.totalRooms),
     occupiedRooms: num(p.occupiedRooms) || 0,
-    monthlyRent: num(p.monthlyRent),
-    rentMin: num(p.monthlyRent),
-    rentMax: num(p.monthlyRent),
+    // The server recomputes these from sharingRents; sent because the create DTO requires them.
+    sharingRents,
+    monthlyRent: low,
+    rentMin: low,
+    rentMax: high,
     rooms: `${num(p.occupiedRooms) || 0}/${p.totalRooms}`,
     amenities: p.amenities,
     description: p.description,
-    images: p.images || [],
+    // Stored paths ("uploads/properties/…" or https URLs), never display URLs.
+    images: p.rawImages || p.images || [],
   };
 }
 
@@ -36,6 +61,17 @@ function adminPropertyBody(p) {
   if (p.rooms !== undefined) body.rooms = String(p.rooms);
   return body;
 }
+
+/** Upload one photo for a property (workflow action on top of the 4 CRUD thunks). */
+export const uploadPropertyPhoto = createAsyncThunk('properties/uploadPhoto', async ({ propertyId, file }, { rejectWithValue }) => {
+  try {
+    const form = new FormData();
+    form.append('file', file);
+    return await http.post(`/properties/${propertyId}/upload-image`, form);
+  } catch (err) {
+    return rejectWithValue(err.message);
+  }
+});
 
 // Repository: properties (PG listings). Every role lists /properties: the
 // server returns approved ones, plus an owner's own pending ones (admins: all).

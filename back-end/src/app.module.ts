@@ -1,3 +1,4 @@
+import { PropertySharingRents1950000000000 } from './migrations/1950000000000-PropertySharingRents';
 import { PaymentGatewayModule } from './payments/payment-gateway.module';
 import { PropertyDocument } from './property-documents/property-document.entity';
 import { PropertyDocumentsModule } from './property-documents/property-documents.module';
@@ -111,6 +112,7 @@ import { WardenActionsModule } from './warden-actions/warden-actions.module';
             DropLegacyAuthenticatorColumns1910000000000,
             RentDuesAndAllotment1930000000000,
             PropertyDocuments1940000000000,
+            PropertySharingRents1950000000000,
           ],
           migrationsRun: true,
         }) as any,

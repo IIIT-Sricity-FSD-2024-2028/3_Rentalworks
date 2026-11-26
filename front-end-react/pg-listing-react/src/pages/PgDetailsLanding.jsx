@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { buildFaqs } from '../data/faqs';
 import { fetchListingById, selectListingDetail } from '../features/listings/listingsSlice';
 import HouseRules from '../components/HouseRules';
+import SharingRents from '../components/SharingRents';
 import { startBooking, checkGenderEligibility, isSingleRoom } from '../features/booking/bookingSlice';
 import { selectCurrentUser, updateMyProfile, MANAGEMENT_ROLES } from '../features/auth/authSlice';
 import { toastError } from '../features/ui/uiSlice';
@@ -232,6 +233,14 @@ export default function PgDetailsLanding() {
             ))}
           </div>
         </section>
+
+        {/* RENT BY ROOM SIZE */}
+        {Object.values(pg.rentBySharing || {}).some(Boolean) && (
+          <section className="detail-section" id="RentBySize" style={{ marginTop: '50px' }}>
+            <h2 className="section-title">Rent by room size</h2>
+            <SharingRents rents={pg.rentBySharing} />
+          </section>
+        )}
 
         {/* HOUSE RULES (from the owner's Policy page) */}
         <section className="detail-section" id="HouseRules" style={{ marginTop: '50px' }}>

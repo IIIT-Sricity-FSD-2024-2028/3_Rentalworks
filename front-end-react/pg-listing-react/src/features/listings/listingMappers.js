@@ -108,6 +108,17 @@ export function mapProperty(prop, rooms = [], idx = 0) {
     || toNumber(prop.rentMin) || toNumber(prop.monthlyRent);
   const rentMax = rents.length ? Math.max(...rents) : Math.max(toNumber(prop.rentMax), price);
 
+  // Rent per bed by room size. Real rooms win; otherwise the owner's listed
+  // price for that size (properties.sharingRents). null = size not offered.
+  const listed = prop.sharingRents || {};
+  const rentBySharing = Object.fromEntries(
+    [['single', 1], ['double', 2], ['triple', 3]].map(([key, cap]) => {
+      const roomRents = propRooms.filter((r) => r.capacity === cap).map((r) => r.rent).filter((n) => n > 0);
+      const value = roomRents.length ? Math.min(...roomRents) : toNumber(listed[key]) || null;
+      return [key, value];
+    }),
+  );
+
   const totalBeds = propRooms.reduce((n, r) => n + r.capacity, 0);
   const occupiedBeds = propRooms.reduce((n, r) => n + r.currentOccupancy, 0);
   const freeBeds = propRooms.reduce((n, r) => n + r.bedsLeft, 0);
@@ -144,6 +155,8 @@ export function mapProperty(prop, rooms = [], idx = 0) {
     city: titleCaseWords(prop.city) || cityFromLocation(location),
     price,
     rentMax,
+    rentBySharing,
+    sharingRents: prop.sharingRents || null,
     image: images[0] || DEFAULT_IMAGES[(Number(prop.id) || idx) % DEFAULT_IMAGES.length],
     images,
     hasPhotos: images.length > 0,

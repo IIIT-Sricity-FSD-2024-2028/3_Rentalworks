@@ -113,14 +113,30 @@ export class PaymentGatewayService {
     if (this.mode === 'razorpay') {
       const expected = createHmac('sha256', this.keySecret).update(`${orderId}|${paymentId}`).digest('hex');
       if (!safeEqual(expected, signature)) throw new BadRequestException('Payment could not be verified');
-      const res = await fetch(`https://api.razorpay.com/v1/orders/${encodeURIComponent(orderId)}`, {
-        headers: { Authorization: 'Basic ' + Buffer.from(`${this.keyId}:${this.keySecret}`).toString('base64') },
-      }).catch(() => null);
-      if (!res || !res.ok) throw new ServiceUnavailableException('Could not confirm the payment with the gateway. If money was deducted it will be refunded.');
-      const order = (await res.json()) as { amount: number; status: string; notes?: { receipt?: string } };
+      const auth = { Authorization: 'Basic ' + Buffer.from(`${this.keyId}:${this.keySecret}`).toString('base64') };
+      const unreachable = () => new ServiceUnavailableException('Could not confirm the payment with the gateway. If money was deducted it will be refunded.');
+      const orderRes = await fetch(`https://api.razorpay.com/v1/orders/${encodeURIComponent(orderId)}`, { headers: auth }).catch(() => null);
+      if (!orderRes || !orderRes.ok) throw unreachable();
+      const order = (await orderRes.json()) as { amount: number; notes?: { receipt?: string } };
       if (order.amount !== rupees * 100) throw new BadRequestException('Payment amount does not match the price');
       if ((order.notes?.receipt || '') !== receipt) throw new BadRequestException('Payment was made for a different item');
-      if (order.status !== 'paid') throw new BadRequestException('Payment is not complete yet');
+
+      // Check the payment itself. Accounts without auto-capture leave it
+      // "authorized": capture it here so the money is actually collected.
+      const payRes = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(paymentId)}`, { headers: auth }).catch(() => null);
+      if (!payRes || !payRes.ok) throw unreachable();
+      let payment = (await payRes.json()) as { status: string; amount: number; order_id: string; currency: string };
+      if (payment.order_id !== orderId || payment.amount !== rupees * 100) throw new BadRequestException('Payment does not match this order');
+      if (payment.status === 'authorized') {
+        const capRes = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(paymentId)}/capture`, {
+          method: 'POST',
+          headers: { ...auth, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: payment.amount, currency: payment.currency || 'INR' }),
+        }).catch(() => null);
+        if (!capRes || !capRes.ok) throw unreachable();
+        payment = (await capRes.json()) as typeof payment;
+      }
+      if (payment.status !== 'captured') throw new BadRequestException('Payment is not complete yet');
     } else {
       if (!safeEqual(this.testSign(`${orderId}|${paymentId}`), signature)) throw new BadRequestException('Payment could not be verified');
       const order = this.readTestOrder(orderId);

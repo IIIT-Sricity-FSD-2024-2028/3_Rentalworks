@@ -3,6 +3,7 @@ import {
   IsNumber,
   IsOptional,
   IsArray,
+  IsObject,
   IsBoolean,
   IsInt,
   Min,
@@ -10,6 +11,11 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 
 class PropertyDetailsDto {
+  @ApiProperty({ required: false, description: 'Monthly rent per bed by room size: { single, double, triple }' })
+  @IsObject()
+  @IsOptional()
+  sharingRents?: { single?: number | null; double?: number | null; triple?: number | null };
+
   @IsOptional()
   @IsString()
   address?: string;

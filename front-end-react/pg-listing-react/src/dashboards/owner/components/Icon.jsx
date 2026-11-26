@@ -1,4 +1,12 @@
 const paths = {
+  "videocam": "M3 7h12v10H3zM15 10l6-3v10l-6-3",
+  "battery_charging_full": "M8 4h8v18H8zM10 2h4v2M13 8l-3 5h4l-3 5",
+  "water_drop": "M12 2s7 7.5 7 13a7 7 0 1 1-14 0c0-5.5 7-13 7-13",
+  "hot_tub": "M3 12h18v3a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5zM7 12V5a2 2 0 0 1 4 0M14 4c1 1-1 2 0 3m3-3c1 1-1 2 0 3",
+  "bathtub": "M3 12h18v2a6 6 0 0 1-6 6H9a6 6 0 0 1-6-6zM6 12V5a2 2 0 0 1 4 0v1M7 20l-1 2m11-2 1 2",
+  "add_photo_alternate": "M14 3H4v17h16V10M4 16l5-5 4 4 3-3 4 4M18 2v6m-3-3h6",
+  "photo_library": "M6 6h15v12H6zM3 9v12h15M6 15l4-4 3 3 2-2 4 4",
+  "star": "M12 2l3 7 7 .5-5.5 4.5 2 7.5L12 17l-6.5 4.5 2-7.5L2 9.5 9 9z",
   "upload_file": "M6 2h9l5 5v15H6zM14 2v6h6M12 18v-7m-3 3 3-3 3 3",
   "meeting_room": "M4 22h16M6 22V3h9v19M15 5h3v17M12 12h.01",
   "groups": "M9 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0M21 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0M15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0M1 20v-2a4 4 0 0 1 5-4M23 20v-2a4 4 0 0 0-5-4M6 21v-2a6 6 0 0 1 12 0v2",

@@ -177,7 +177,7 @@ export default function LandingPage() {
                   <h3 className="card-h3">{pg.title}</h3>
                   <p className="card-p">{pg.location}</p>
                   <p className="card-p">{pg.availabilityText}</p>
-                  {pg.price > 0 && <strong>{formatINR(pg.price)} / month</strong>}
+                  {pg.price > 0 && <strong>{pg.rentMax > pg.price ? 'From ' : ''}{formatINR(pg.price)} / month</strong>}
                 </div>
               ))}
         </div>
@@ -204,7 +204,7 @@ export default function LandingPage() {
                     {pg.location}
                   </p>
                   <div className="price-row">
-                    <span className="price">{pg.price > 0 ? `${formatINR(pg.price)}/mo` : 'Rent not listed'}</span>
+                    <span className="price">{pg.price > 0 ? `${pg.rentMax > pg.price ? 'From ' : ''}${formatINR(pg.price)}/mo` : 'Rent not listed'}</span>
                     <button className="btn-view-pg">View</button>
                   </div>
                 </div>
