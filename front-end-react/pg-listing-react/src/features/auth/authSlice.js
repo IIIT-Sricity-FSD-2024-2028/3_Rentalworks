@@ -16,6 +16,14 @@ export const ROLE_HOME = {
 
 const toError = (err) => err?.message || 'Something went wrong';
 
+// The server matches username / email / phone exactly, and every stored email
+// is lowercase. Trim, and lowercase anything that looks like an email, so
+// 'Ravi@Mail.com ' signs in the same as 'ravi@mail.com'.
+const toIdentifier = (value) => {
+  const v = String(value || '').trim();
+  return v.includes('@') ? v.toLowerCase() : v;
+};
+
 function splitToken(payload) {
   const { token, password: _pw, ...user } = payload || {};
   return { user, token: token || null };
@@ -25,7 +33,7 @@ function splitToken(payload) {
 
 export const login = createAsyncThunk('auth/login', async ({ username, password }, { rejectWithValue }) => {
   try {
-    const data = await http.post('/users/login', { username: username.trim(), password }, { auth: false });
+    const data = await http.post('/users/login', { username: toIdentifier(username), password }, { auth: false });
     if (data?.role === 'owner' && data?.status === 'pending') {
       return rejectWithValue('Your property registration is pending admin verification. You will be notified once approved.');
     }
@@ -37,7 +45,7 @@ export const login = createAsyncThunk('auth/login', async ({ username, password 
 
 export const guestLogin = createAsyncThunk('auth/guestLogin', async ({ username, password }, { rejectWithValue }) => {
   try {
-    const data = await http.post('/users/guest-login', { username: username.trim(), password }, { auth: false });
+    const data = await http.post('/users/guest-login', { username: toIdentifier(username), password }, { auth: false });
     return splitToken(data);
   } catch (err) {
     return rejectWithValue(toError(err));

@@ -160,13 +160,19 @@ export class BookingsService {
         );
       }
 
-      // 3b. Tenant credentials. If the user already has an account (guest or tenant),
-      //     we PRESERVE their existing password and username.
-      //     Only a brand-new user without an account gets a generated TENANT-###### id and a temporary password.
+      // 3b. Tenant credentials.
+      //     A guest login only exists to browse and book. When a guest books, the
+      //     account becomes a tenant and gets a NEW Tenant ID (TENANT-######) and a
+      //     temporary password, shown once on the booking receipt; the old guest
+      //     username / password stop working.
+      //     Someone who is already a tenant keeps their current login.
+      //     A brand-new person (no account) also gets a Tenant ID + temporary password.
       const isExistingAccount = !!user;
+      const keepsLogin = !!user && user.role === 'tenant';
+      const upgradedFromGuest = !!user && !keepsLogin;
       let tenantUsername: string;
       let issuedPassword: string | null = null;
-      if (isExistingAccount && user) {
+      if (keepsLogin && user) {
         tenantUsername = user.username;
       } else {
         tenantUsername = await this.generateTenantUsername(userRepo);
@@ -181,8 +187,13 @@ export class BookingsService {
         user.name = dto.name.trim() || user.name;
         user.phone = dto.phone.trim() || user.phone;
         user.gender = normalizedGender;
-        // Do NOT overwrite password or username if user already exists
-        user.joinDate = isExistingAccount ? user.joinDate : dto.checkIn || user.joinDate || todayIST();
+        if (upgradedFromGuest && passwordHash) {
+          // Guest → tenant: replace the guest login with the issued tenant login.
+          user.username = tenantUsername;
+          user.password = passwordHash;
+        }
+        // A tenant's join date is when they first moved in, not when they made a guest account.
+        user.joinDate = keepsLogin ? user.joinDate : dto.checkIn || todayIST();
         user = await userRepo.save(user);
       } else {
         user = userRepo.create({
@@ -353,9 +364,10 @@ export class BookingsService {
         credentials: {
           username: user.username,
           email: user.email,
-          // null when the person already had an account (their existing password still works)
+          // null only when the person was already a tenant (their existing password still works)
           password: issuedPassword,
           existingAccount: isExistingAccount,
+          upgradedFromGuest,
         },
         booking: {
           id: savedBooking.id,

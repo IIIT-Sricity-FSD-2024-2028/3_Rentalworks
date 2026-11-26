@@ -81,9 +81,9 @@ export default function Complaints() {
                 <td style={{fontSize:12}}>{formatDate(c.reportedAt || c.createdAt, '-')}</td>
                 <td>
                   <div className="act-icons">
-                    <button className="ico-btn" onClick={() => handleView(c)} title="View"><span className="material-icons-outlined" style={{fontSize:14}}>visibility</span></button>
-                    {c.status === 'open' && <button className="ico-btn" onClick={() => handleInProgress(c)} title="Mark In Progress"><span className="material-icons-outlined" style={{fontSize:14}}>autorenew</span></button>}
-                    {c.status !== 'resolved' && <button className="ico-btn" onClick={() => handleResolve(c)} title="Resolve"><span className="material-icons-outlined" style={{fontSize:14}}>check_circle</span></button>}
+                    <button className="ico-btn view" onClick={() => handleView(c)} title="View"><span className="material-icons-outlined" style={{fontSize:14}}>visibility</span></button>
+                    {c.status === 'open' && <button className="ico-btn key" onClick={() => handleInProgress(c)} title="Mark In Progress"><span className="material-icons-outlined" style={{fontSize:14}}>autorenew</span></button>}
+                    {c.status !== 'resolved' && <button className="ico-btn ok" onClick={() => handleResolve(c)} title="Resolve"><span className="material-icons-outlined" style={{fontSize:14}}>check_circle</span></button>}
                     <button className="ico-btn danger" onClick={() => handleDelete(c)} title="Delete"><span className="material-icons-outlined" style={{fontSize:14}}>delete</span></button>
                   </div>
                 </td>

@@ -10,14 +10,13 @@ import {
   fetchTenantLedger,
   markRentPaidOffline,
   notifyTenant,
-  selectOccupancyReport,
+  selectBookedTenants,
   selectWardenLedger,
   selectWardenTenantLedger,
   updateTenant,
   waiveRent,
 } from '../../../features/warden/wardenSlices';
 import Modal from '../components/Modal';
-import BedSyncPanel from '../components/BedSyncPanel';
 
 const STATUS_TAGS = {
   paid: { label: '✓ Paid', bg: '#dcfce7', fg: '#15803d' },
@@ -27,7 +26,7 @@ const STATUS_TAGS = {
   waived: { label: 'Waived', bg: '#f1f5f9', fg: '#475569' },
   not_billed: { label: 'Not billed yet', bg: '#f1f5f9', fg: '#475569' },
   no_cycle: { label: 'No cycle', bg: '#f1f5f9', fg: '#475569' },
-  evicted: { label: 'Evicted', bg: '#fee2e2', fg: '#7f1d1d' },
+  evicted: { label: 'Removed', bg: '#fee2e2', fg: '#7f1d1d' },
 };
 
 const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
@@ -56,7 +55,7 @@ const REMINDER_TEMPLATES = [
 ];
 
 export default function TenantRecords() {
-  const { data, refreshData, loading } = useWardenData();
+  const { refreshData, loading } = useWardenData();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const months = monthOptions();
@@ -87,7 +86,8 @@ export default function TenantRecords() {
 
   const showToast = useWardenToast();
 
-  const tenants = data.tenants || [];
+  // Only people who have booked a PG appear here.
+  const tenants = useSelector(selectBookedTenants);
 
   const loadLedger = useCallback(async () => {
     const result = await dispatch(fetchRentLedger({ month }));
@@ -100,15 +100,12 @@ export default function TenantRecords() {
 
   const ledgerByTenant = new Map(ledgerRows.map(r => [Number(r.tenantId), r]));
 
-  // One row per tenant: month status comes from the ledger; evicted tenants show their final state.
-  const report = useSelector(selectOccupancyReport);
+  // One row per tenant: month status comes from the ledger; removed tenants show their final state.
   const rows = tenants.map(t => {
     const led = ledgerByTenant.get(Number(t.id));
     const evicted = t.status === 'evicted' || t.stayStatus === 'evicted';
     const status = evicted ? 'evicted' : (led?.status || 'no_cycle');
-    // Every bed this tenant actually holds (one account can hold several).
-    const beds = report.bedsByTenant.get(String(t.id)) || [];
-    return { ...t, monthStatus: status, due: led?.due || null, beds };
+    return { ...t, monthStatus: status, due: led?.due || null };
   });
 
   const filteredTenants = rows.filter(t => {
@@ -116,6 +113,7 @@ export default function TenantRecords() {
     const matchSearch = !search ||
       (t.name || '').toLowerCase().includes(q) ||
       String(t.room || '').toLowerCase().includes(q) ||
+      (t.pgName || '').toLowerCase().includes(q) ||
       (t.username || '').toLowerCase().includes(q) ||
       (t.phone || '').includes(search);
     const matchStatus = statusFilter === 'all' || t.monthStatus === statusFilter;
@@ -322,18 +320,11 @@ export default function TenantRecords() {
         <p>View and manage all tenant records</p>
       </div>
 
-      <BedSyncPanel compact />
 
       <div className="summary-cards">
         <div className="summary-card">
-          <div className="s-label">Residents (beds taken)</div>
-          <div className="s-value">{report.staysLoaded ? report.residents : tenants.length}</div>
-          {report.staysLoaded && (
-            <div style={{ fontSize: 12, color: '#64748b' }}>
-              {tenants.length} tenant accounts
-              {report.tenantsWithoutBed.length ? ` · ${report.tenantsWithoutBed.length} without a bed` : ''}
-            </div>
-          )}
+          <div className="s-label">Tenants</div>
+          <div className="s-value">{tenants.length}</div>
         </div>
         <div className="summary-card">
           <div className="s-label">Paid ({months.find(m => m.value === month)?.label})</div>
@@ -357,7 +348,7 @@ export default function TenantRecords() {
             </span>
             <input 
               type="text" 
-              placeholder="Search by name, room, or contact..." 
+              placeholder="Search by name, PG, room, or contact..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -381,7 +372,7 @@ export default function TenantRecords() {
               <option value="due_soon">Due Soon</option>
               <option value="overdue">Overdue</option>
               <option value="upcoming">Upcoming</option>
-              <option value="evicted">Evicted</option>
+              <option value="evicted">Removed</option>
             </select>
             <button 
               className="btn-login" 
@@ -397,7 +388,7 @@ export default function TenantRecords() {
           <thead>
             <tr>
               <th>Tenant</th>
-              <th>Room &amp; Bed</th>
+              <th>PG &amp; Room</th>
               <th>Contact Number</th>
               <th>Check-in Date</th>
               <th>Monthly Rent</th>
@@ -420,15 +411,10 @@ export default function TenantRecords() {
                       {t.username && <div style={{ fontSize: 11, color: '#6b7280' }}>{t.username}</div>}
                     </td>
                     <td>
-                      {t.beds.length > 0 ? (
-                        t.beds.map((b) => (
-                          <span key={b.id} className="room-badge" style={{ marginRight: 4 }} title={b.propertyName}>
-                            {b.roomNumber || '—'}{b.bedNumber ? ` • ${b.bedNumber}` : ''}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="room-badge" style={{ opacity: 0.6 }}>{report.staysLoaded ? 'No bed' : t.room}</span>
-                      )}
+                      {t.pgName && <div style={{ fontSize: 13 }}>{t.pgName}</div>}
+                      <div style={{ fontSize: 11, color: '#6b7280' }}>
+                        Room {[...new Set((t.stays || []).map((st) => st.roomNumber).filter(Boolean))].join(', ') || t.room || '—'}
+                      </div>
                     </td>
                     <td>{t.phone}</td>
                     <td>{fmtD(t.checkIn)}</td>
@@ -563,86 +549,96 @@ export default function TenantRecords() {
 
       {/* Tenant details drawer */}
       {drawer && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 9000 }} onClick={() => setDrawer(null)}>
-          <aside
-            onClick={(e) => e.stopPropagation()}
-            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 'min(520px, 100%)', background: '#fff', overflowY: 'auto', padding: 24, boxShadow: '-8px 0 30px rgba(0,0,0,.15)' }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <h3 style={{ margin: 0 }}>{drawer.name}</h3>
-                <div style={{ fontSize: 12, color: '#6b7280' }}>{drawer.username} • {drawer.email}</div>
+        <div className="tr-drawer-backdrop" onClick={() => setDrawer(null)}>
+          <aside className="tr-drawer" onClick={(e) => e.stopPropagation()}>
+            <header className="tr-drawer-head">
+              <div className="tr-avatar">{String(drawer.name || '?').charAt(0).toUpperCase()}</div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <h3>{drawer.name}</h3>
+                <div className="tr-sub">{drawer.username}{drawer.email ? ` · ${drawer.email}` : ''}</div>
               </div>
-              <button className="icon-btn" onClick={() => setDrawer(null)} aria-label="Close">✕</button>
-            </div>
+              <button className="tr-close" onClick={() => setDrawer(null)} aria-label="Close">
+                <span className="material-icons-outlined">close</span>
+              </button>
+            </header>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 13, marginTop: 16 }}>
-              <div><strong>Room &amp; Bed:</strong> {drawer.room}{drawer.bedNumber ? ` / Bed ${drawer.bedNumber}` : ''}</div>
-              <div><strong>Phone:</strong> {drawer.phone || '—'}</div>
-              <div><strong>Check-in:</strong> {fmtD(drawer.checkIn)}</div>
-              <div><strong>Monthly rent:</strong> {inr(drawer.rent)}</div>
-              <div><strong>Status:</strong> {drawer.status}</div>
-              {drawer.endedAt && <div><strong>Left on:</strong> {fmtD(drawer.endedAt)}</div>}
+            <div className="tr-facts">
+              <div><span>PG</span><strong>{drawer.pgName || '—'}</strong></div>
+              <div><span>Room</span><strong>{[...new Set((drawer.stays || []).map((st) => st.roomNumber).filter(Boolean))].join(', ') || drawer.room || '—'}</strong></div>
+              <div><span>Phone</span><strong>{drawer.phone || '—'}</strong></div>
+              <div><span>Check-in</span><strong>{fmtD(drawer.checkIn)}</strong></div>
+              <div><span>Monthly rent</span><strong>{inr(drawer.rent)}</strong></div>
+              <div><span>Status</span><strong style={{ textTransform: 'capitalize' }}>{drawer.status === 'evicted' ? 'Removed' : drawer.status}</strong></div>
+              {drawer.endedAt && <div><span>Left on</span><strong>{fmtD(drawer.endedAt)}</strong></div>}
             </div>
-            {drawer.endReason && <div style={{ fontSize: 13, marginTop: 8 }}><strong>Reason:</strong> {drawer.endReason}</div>}
+            {drawer.endReason && <div className="tr-note"><strong>Reason:</strong> {drawer.endReason}</div>}
 
             {drawer.bookingPayment && (
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 12, marginTop: 16, fontSize: 13 }}>
-                <div style={{ fontWeight: 700, marginBottom: 6 }}>Paid at booking</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Total paid</span><strong>{inr(drawer.bookingPayment.amount)}</strong></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Base rent</span><span>{inr(drawer.bookingPayment.rentAmount)}</span></div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Deposit &amp; maintenance</span><span>{inr(Number(drawer.bookingPayment.amount) - Number(drawer.bookingPayment.rentAmount || 0))}</span></div>
-                <div style={{ color: '#6b7280', fontSize: 11, marginTop: 4 }}>Txn {drawer.bookingPayment.transactionId} • {String(drawer.bookingPayment.method || '').toUpperCase()}</div>
-              </div>
+              <section className="tr-card">
+                <h4>Paid at booking</h4>
+                <div className="tr-row"><span>Total paid</span><strong>{inr(drawer.bookingPayment.amount)}</strong></div>
+                <div className="tr-row"><span>Base rent</span><span>{inr(drawer.bookingPayment.rentAmount)}</span></div>
+                <div className="tr-row"><span>Deposit &amp; maintenance</span><span>{inr(Number(drawer.bookingPayment.amount) - Number(drawer.bookingPayment.rentAmount || 0))}</span></div>
+                <div className="tr-muted">Txn {drawer.bookingPayment.transactionId} · {String(drawer.bookingPayment.method || '').toUpperCase()}</div>
+              </section>
             )}
 
-            <h4 style={{ margin: '20px 0 8px' }}>Rent ledger</h4>
-            <table className="data-table" style={{ fontSize: 12 }}>
-              <thead><tr><th>Period</th><th>Due</th><th>Amount</th><th>Status</th><th></th></tr></thead>
-              <tbody>
-                {tenantDues.length === 0 ? (
-                  <tr><td colSpan="5" style={{ textAlign: 'center', color: '#6b7280' }}>No cycles yet</td></tr>
-                ) : tenantDues.map(d => {
+            <h4 className="tr-title">Rent ledger</h4>
+            {tenantDues.length === 0 ? (
+              <div className="tr-muted">No rent cycles yet.</div>
+            ) : (
+              <div className="tr-ledger">
+                {tenantDues.map((d) => {
                   const st = d.effectiveStatus || d.status;
                   const tag = STATUS_TAGS[st] || STATUS_TAGS.upcoming;
                   const open = ['upcoming', 'due_soon', 'overdue'].includes(st);
                   return (
-                    <tr key={d.id}>
-                      <td>{fmtD(d.periodStart)} – {fmtD(d.periodEnd)}</td>
-                      <td>{fmtD(d.dueDate)}</td>
-                      <td>{inr(d.amount)}</td>
-                      <td><span style={{ background: tag.bg, color: tag.fg, padding: '2px 8px', borderRadius: 99, fontWeight: 700 }}>{tag.label}</span></td>
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        {open && drawer.status !== 'evicted' && (
-                          <>
-                            <button className="btn-confirm" style={{ padding: '3px 8px', fontSize: 11, marginRight: 4 }} onClick={() => openAction('offline', d)}>[ Mark Cash / Offline Paid ]</button>
-                            <button className="btn-cancel" style={{ padding: '3px 8px', fontSize: 11 }} onClick={() => openAction('waive', d)}>[ Waive / Excuse Fee ]</button>
-                          </>
-                        )}
-                      </td>
-                    </tr>
+                    <div className="tr-due" key={d.id}>
+                      <div className="tr-due-top">
+                        <div>
+                          <div className="tr-due-period">{fmtD(d.periodStart)} – {fmtD(d.periodEnd)}</div>
+                          <div className="tr-muted">Due {fmtD(d.dueDate)}</div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div className="tr-due-amt">{inr(d.amount)}</div>
+                          <span className="tr-tag" style={{ background: tag.bg, color: tag.fg }}>{tag.label}</span>
+                        </div>
+                      </div>
+                      {open && drawer.status !== 'evicted' && (
+                        <div className="tr-due-actions">
+                          <button className="btn-confirm" onClick={() => openAction('offline', d)}>Mark paid (cash)</button>
+                          <button className="btn-cancel" onClick={() => openAction('waive', d)}>Waive fee</button>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
-              </tbody>
-            </table>
-
-            {drawer.status !== 'evicted' && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 18 }}>
-                <button className="btn-confirm" onClick={() => openAction('notify', tenantDues.find(d => ['due_soon', 'overdue'].includes(d.effectiveStatus || d.status)) || null)}>Send notification / reminder</button>
-                <button className="btn-cancel" onClick={() => openAction('escalate')}>Escalate to Owner</button>
-                <button className="btn-cancel" style={{ color: '#b91c1c', borderColor: '#b91c1c' }} onClick={() => openAction('evict')}>[ Evict / Remove Tenant ]</button>
               </div>
             )}
 
-            <h4 style={{ margin: '22px 0 8px' }}>Audit history</h4>
+            {drawer.status !== 'evicted' && (
+              <div className="tr-actions">
+                <button className="btn-confirm" onClick={() => openAction('notify', tenantDues.find(d => ['due_soon', 'overdue'].includes(d.effectiveStatus || d.status)) || null)}>
+                  <span className="material-icons-outlined">notifications</span> Send reminder
+                </button>
+                <button className="btn-cancel" onClick={() => openAction('escalate')}>
+                  <span className="material-icons-outlined">outgoing_mail</span> Escalate to owner
+                </button>
+                <button className="btn-cancel tr-danger" onClick={() => openAction('evict')}>
+                  <span className="material-icons-outlined">person_remove</span> Remove tenant
+                </button>
+              </div>
+            )}
+
+            <h4 className="tr-title">Audit history</h4>
             {auditLogs.length === 0 ? (
-              <div style={{ fontSize: 12, color: '#6b7280' }}>No actions logged yet.</div>
+              <div className="tr-muted">No actions logged yet.</div>
             ) : (
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: 12 }}>
+              <ul className="tr-audit">
                 {auditLogs.map(l => (
-                  <li key={l.id} style={{ borderLeft: '3px solid #cbd5e1', padding: '4px 10px', marginBottom: 8 }}>
-                    <strong>{String(l.action).replace(/_/g, ' ')}</strong>
-                    <span style={{ color: '#6b7280' }}> • {l.actorName || l.actorRole || 'system'} • {fmtD(l.createdAt)}</span>
+                  <li key={l.id}>
+                    <strong>{String(l.action).replace(/evict/gi, 'remove').replace(/_/g, ' ')}</strong>
+                    <span className="tr-muted"> · {l.actorName || l.actorRole || 'system'} · {fmtD(l.createdAt)}</span>
                     {l.reason && <div>{l.reason}</div>}
                   </li>
                 ))}
@@ -658,12 +654,12 @@ export default function TenantRecords() {
         title={
           action?.type === 'notify' ? `Notify ${drawer?.name || ''}` :
           action?.type === 'escalate' ? 'Escalate to Property Owner' :
-          action?.type === 'evict' ? 'Evict / Remove Tenant' :
-          action?.type === 'waive' ? 'Waive / Excuse Fee' : 'Mark Cash / Offline Paid'
+          action?.type === 'evict' ? 'Remove Tenant' :
+          action?.type === 'waive' ? 'Waive Fee' : 'Mark Paid (Cash)'
         }
         onCancel={() => setAction(null)}
         onConfirm={runAction}
-        confirmText={submitting ? 'Working...' : action?.type === 'evict' ? 'Confirm removal' : 'Confirm'}
+        confirmText={submitting ? 'Working...' : action?.type === 'evict' ? 'Remove tenant' : 'Confirm'}
       >
         {action?.type === 'notify' && (
           <div className="form-group">

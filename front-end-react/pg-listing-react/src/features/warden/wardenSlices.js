@@ -41,7 +41,7 @@ export const fetchWardenData = createAsyncThunk('warden/fetchAll', async () => {
     ],
     notifications: ok(notifications).map(mapWardenNotificationFromDb),
     violations: ok(violations).map(mapRuleViolationFromDb),
-    stays: ok(stays).map(mapStayFromDb).filter((s) => s.status === 'active'),
+    stays: ok(stays).map(mapStayFromDb),
     staysLoaded: stays.status === 'fulfilled',
     error: failures.length ? msg(failures[0].reason) : null,
   };
@@ -137,32 +137,6 @@ export const notifyTenant = thunk('notifyTenant', ({ tenantId, payload }) => api
 export const escalateTenant = thunk('escalateTenant', ({ tenantId, payload }) => api.escalateTenantApi(tenantId, payload));
 export const evictTenant = occupancyThunk('evictTenant', ({ tenantId, reason }) => api.evictTenantApi(tenantId, reason));
 
-/**
- * Sets each room's stored bed count (rooms.currentOccupancy) to the number of
- * active stays in it. The listing, booking and owner pages all read that
- * stored count, so this is what brings them back in line with real residents.
- * The server then marks each room full / available itself.
- */
-export const syncBedCounts = createAsyncThunk('warden/syncBedCounts', async (_, { getState, dispatch, rejectWithValue }) => {
-  const fixes = selectOccupancyReport(getState()).rooms.filter((r) => r.outOfSync);
-  let done = 0;
-  try {
-    for (const r of fixes) {
-      const changes = { currentOccupancy: r.actual };
-      // Don't let the recount take a room out of maintenance.
-      if (r.status === 'maintenance') changes.status = 'maintenance';
-      await api.updateRoomApi(r.id, changes);
-      done += 1;
-    }
-    return done;
-  } catch (err) {
-    return rejectWithValue(`${msg(err)} (${done} of ${fixes.length} rooms updated)`);
-  } finally {
-    dispatch(fetchWardenData());
-    dispatch(fetchListings());
-  }
-});
-
 // ====================================================================
 //  Slice
 // ====================================================================
@@ -177,7 +151,6 @@ const wardenSlice = createSlice({
     violations: [],
     stays: [],
     staysLoaded: false,
-    syncing: false,
     loaded: false,
     status: 'idle',
     error: null,
@@ -206,15 +179,6 @@ const wardenSlice = createSlice({
         s.status = 'failed';
         s.error = error.message;
         s.loaded = true;
-      })
-      .addCase(syncBedCounts.pending, (s) => {
-        s.syncing = true;
-      })
-      .addCase(syncBedCounts.fulfilled, (s) => {
-        s.syncing = false;
-      })
-      .addCase(syncBedCounts.rejected, (s) => {
-        s.syncing = false;
       })
       // rooms
       .addCase(createRoom.fulfilled, (s, { payload }) => {
@@ -299,75 +263,27 @@ export const selectWardenLedger = (s) => s.warden.ledger;
 export const selectWardenTenantLedger = (s) => s.warden.tenantLedger;
 
 /**
- * Beds as they really are (active stays) next to what each room has stored.
- *  - rooms[].actual      people actually staying in the room
- *  - rooms[].stored      rooms.currentOccupancy, what the listing and booking use
- *  - rooms[].outOfSync   the two differ, fixed by syncBedCounts
- *  - rooms[].overbooked  more people than beds, someone has to move
+ * Tenant Records lists only people who have booked a PG (they have a stay).
+ * Each row gets the PG and room of their current stay, or of their last stay
+ * when they have left / been removed.
  */
-export const selectOccupancyReport = createSelector(
-  [(s) => s.warden.rooms, (s) => s.warden.stays, (s) => s.warden.tenants, (s) => s.warden.staysLoaded],
-  (rooms, stays, tenants, staysLoaded) => {
-    const byRoom = new Map();
+export const selectBookedTenants = createSelector(
+  [(s) => s.warden.tenants, (s) => s.warden.stays, (s) => s.warden.staysLoaded],
+  (tenants, stays, staysLoaded) => {
+    if (!staysLoaded) return tenants;
+    const byTenant = new Map();
     stays.forEach((st) => {
-      const key = String(st.roomId);
-      if (!byRoom.has(key)) byRoom.set(key, []);
-      byRoom.get(key).push(st);
+      const key = String(st.tenantId);
+      if (!byTenant.has(key)) byTenant.set(key, []);
+      byTenant.get(key).push(st);
     });
-
-    const roomRows = rooms.map((r) => {
-      const occupants = byRoom.get(String(r.id)) || [];
-      const capacity = Number(r.capacity) || 0;
-      const actual = occupants.length;
-      const stored = Number(r.currentOccupancy) || 0;
-      return {
-        id: r.id,
-        roomNumber: r.roomNumber,
-        propertyId: r.propertyId,
-        propertyName: r.property,
-        capacity,
-        status: r.status,
-        actual,
-        stored,
-        free: Math.max(0, capacity - actual),
-        occupants,
-        outOfSync: staysLoaded && actual !== stored,
-        overbooked: actual > capacity,
-      };
-    });
-
-    const props = new Map();
-    roomRows.forEach((r) => {
-      const key = String(r.propertyId);
-      if (!props.has(key)) props.set(key, { propertyId: r.propertyId, name: r.propertyName || `PG #${r.propertyId}`, rooms: 0, beds: 0, residents: 0, free: 0 });
-      const p = props.get(key);
-      p.rooms += 1;
-      p.beds += r.capacity;
-      p.residents += r.actual;
-      p.free += r.free;
-    });
-
-    const bedsByTenant = new Map();
-    stays.forEach((st) => bedsByTenant.set(String(st.tenantId), [...(bedsByTenant.get(String(st.tenantId)) || []), st]));
-    const activeTenants = tenants.filter((t) => t.status !== 'evicted' && t.stayStatus !== 'evicted');
-
-    return {
-      staysLoaded,
-      rooms: roomRows,
-      properties: [...props.values()].sort((a, b) => b.residents - a.residents),
-      residents: stays.length,
-      totalBeds: roomRows.reduce((n, r) => n + r.capacity, 0),
-      freeBeds: roomRows.reduce((n, r) => n + r.free, 0),
-      fullRooms: roomRows.filter((r) => r.capacity > 0 && r.actual >= r.capacity).length,
-      outOfSync: roomRows.filter((r) => r.outOfSync),
-      overbooked: roomRows.filter((r) => r.overbooked),
-      staysWithoutRoom: stays.filter((st) => !st.roomId),
-      bedsByTenant,
-      tenantsWithBed: activeTenants.filter((t) => bedsByTenant.has(String(t.id))).length,
-      tenantsWithoutBed: activeTenants.filter((t) => !bedsByTenant.has(String(t.id))),
-      multiBedTenants: activeTenants
-        .filter((t) => (bedsByTenant.get(String(t.id)) || []).length > 1)
-        .map((t) => ({ ...t, beds: bedsByTenant.get(String(t.id)) })),
-    };
+    return tenants
+      .filter((t) => byTenant.has(String(t.id)))
+      .map((t) => {
+        const list = byTenant.get(String(t.id));
+        const current = list.filter((st) => st.status === 'active');
+        const shown = current.length ? current : list;
+        return { ...t, stays: shown, pgName: shown[0]?.propertyName || '' };
+      });
   },
 );

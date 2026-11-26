@@ -221,7 +221,12 @@ export default function BookingConfirmed() {
           <h1>Congratulations, Your Booking is Confirmed!</h1>
           <p>
             {forFriend ? 'The' : 'Your'} bed at <strong>{receipt.propertyName}</strong> is reserved for <strong>{receipt.tenantName}</strong>.
-            {credentials.existingAccount ? 'The account is now an active tenant.' : 'A new tenant account has been created.'}
+            {' '}
+            {credentials.upgradedFromGuest
+              ? 'Your guest account is now a tenant account with a new Tenant ID and password (below).'
+              : credentials.existingAccount
+                ? 'Your tenant account has been updated with this booking.'
+                : 'A new tenant account has been created.'}
           </p>
         </div>
 
@@ -287,7 +292,7 @@ export default function BookingConfirmed() {
                   </button>
                 </div>
               ) : (
-                <code className="cred-code">Use your existing account password</code>
+                <code className="cred-code">Your current tenant password</code>
               )}
             </div>
           </div>
@@ -308,9 +313,11 @@ export default function BookingConfirmed() {
           <div className="cred-notice-footer">
             <span className="material-icons-outlined" style={{ fontSize: '18px', color: '#16a34a' }}>check</span>
             <span>
-              {hasPassword
-                ? 'Save these now — the password is shown only on this page. You can change it later from your Profile.'
-                : 'This account already existed, so its current sign-in details still work.'}{' '}
+              {credentials.upgradedFromGuest
+                ? 'Your guest login no longer works. Sign in with this Tenant ID and password from now on. Save them now: the password is shown only on this page, and you can change it later from your Profile.'
+                : hasPassword
+                  ? 'Save these now: the password is shown only on this page. You can change it later from your Profile.'
+                  : 'You were already a tenant, so your current sign-in details still work.'}{' '}
               Your warden has been notified of your room and bed.
             </span>
           </div>

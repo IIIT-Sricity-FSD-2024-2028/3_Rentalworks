@@ -255,9 +255,9 @@ export default function Payments() {
                         >
                           {refundDisabled ? '🔒 Refund' : '↩️ Refund'}
                         </button>
-                        <button className="ico-btn" onClick={() => handleView(p)} title="View">👁️</button>
+                        <button className="ico-btn view" onClick={() => handleView(p)} title="View"><span className="material-icons-outlined">visibility</span></button>
                         {!['Approved', 'Cleared', 'Refunded'].includes(clearance) && (
-                          <button className="ico-btn" onClick={() => handleApproveClearance(p)} title="Approve Clearance">✅</button>
+                          <button className="ico-btn ok" onClick={() => handleApproveClearance(p)} title="Approve Clearance"><span className="material-icons-outlined">check</span></button>
                         )}
                       </div>
                     </td>

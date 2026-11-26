@@ -166,18 +166,18 @@ export default function Bookings() {
                     <div className="act-icons">
                       {b.status === 'pending' && (
                         <>
-                          <button className="ico-btn" onClick={() => handleApprove(b)} title="Approve">✅</button>
-                          <button className="ico-btn danger" onClick={() => handleReject(b)} title="Reject">❌</button>
+                          <button className="ico-btn ok" onClick={() => handleApprove(b)} title="Approve"><span className="material-icons-outlined">check</span></button>
+                          <button className="ico-btn danger" onClick={() => handleReject(b)} title="Reject"><span className="material-icons-outlined">close</span></button>
                         </>
                       )}
                       {(LIVE.includes(b.status) || b.status === 'overdue') && (
                         <>
-                          <button className="ico-btn" onClick={() => handleView(b)} title="View Details">👁️</button>
-                          <button className="ico-btn danger" onClick={() => handleTerminate(b)} title="Force Terminate">🔴</button>
+                          <button className="ico-btn view" onClick={() => handleView(b)} title="View Details"><span className="material-icons-outlined">visibility</span></button>
+                          <button className="ico-btn danger" onClick={() => handleTerminate(b)} title="Force Terminate"><span className="material-icons-outlined">cancel</span></button>
                         </>
                       )}
                       {!LIVE.includes(b.status) && b.status !== 'overdue' && (
-                        <button className="ico-btn" onClick={() => handleView(b)} title="View Details">👁️</button>
+                        <button className="ico-btn view" onClick={() => handleView(b)} title="View Details"><span className="material-icons-outlined">visibility</span></button>
                       )}
                     </div>
                   </td>

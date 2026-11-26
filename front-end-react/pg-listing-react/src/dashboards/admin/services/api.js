@@ -7,6 +7,13 @@ import { http, asArray } from '../../../services/apiClient';
 import { findPlan } from '../../../data/catalog';
 import { normalizeStatus, toNumber, toISODate } from '../../../utils/normalize';
 
+// POST/PUT /users echo the saved row, including the bcrypt hash; never keep it in the store.
+const withoutPassword = (row) => {
+  if (!row || typeof row !== 'object') return row;
+  const { password: _pw, ...rest } = row;
+  return rest;
+};
+
 const pick = (obj, keys) =>
   Object.fromEntries(keys.filter((k) => obj[k] !== undefined && obj[k] !== '').map((k) => [k, obj[k]]));
 
@@ -22,8 +29,8 @@ export const api = {
       username: u.username || u.email,
       ...(u.password ? { password: u.password } : {}),
       ...(u.region ? { region: u.region } : {}),
-    }),
-  updateUser: (id, u) => http.put(`/users/${id}`, pick(u, ['name', 'status', 'email', 'phone', 'role', 'region'])),
+    }).then(withoutPassword),
+  updateUser: (id, u) => http.put(`/users/${id}`, pick(u, ['name', 'status', 'email', 'phone', 'role', 'region'])).then(withoutPassword),
   deleteUser: (id) =>
     http.delete(`/users/${id}`).catch((err) => {
       // The database refuses to delete accounts that bookings, payments etc. point to.
