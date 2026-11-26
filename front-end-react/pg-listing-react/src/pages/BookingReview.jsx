@@ -140,16 +140,15 @@ export default function BookingReview() {
                 </span>
                 <div>
                   <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#14532d' }}>
-                    Private Single Room (Single Occupancy)
+                    Single room
                   </h4>
                   <p style={{ margin: 0, fontSize: '13px', color: '#166534' }}>
-                    Max Capacity: 1 Person • No Roommate • 100% Private Living Space
+                    One bed, no roommate
                   </p>
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px', color: '#15803d', paddingLeft: '38px' }}>
-                <span>✓ Direct solo reservation — only you will occupy and hold the key to this room.</span>
-                <span>✓ No roommate matching required; you will be registered as the sole tenant upon checkout.</span>
+                <span>You'll be the only tenant in this room, so there's no roommate step.</span>
               </div>
             </div>
           ) : (
@@ -347,20 +346,25 @@ export default function BookingReview() {
                 <strong>₹{deposit.toLocaleString()}</strong>
               </div>
               <div className="cost-row">
-                <span>One-time Onboarding &amp; Verification Fee</span>
+                <span>Booking fee (one-time)</span>
                 <strong>₹{fee.toLocaleString()}</strong>
               </div>
               <hr />
               <div className="cost-row total-row">
-                <span>Total Payable Today</span>
+                <span>Pay now</span>
                 <span className="total-highlight">₹{total.toLocaleString()}</span>
               </div>
             </div>
 
             <div className="security-assurances">
               <div className="assurance-item">
+<<<<<<< HEAD
                 <span className="material-icons-outlined">verified_user</span>
                 <span>Instant booking confirmation</span>
+=======
+                <span className="material-icons-outlined">bed</span>
+                <span>A bed is assigned as soon as payment goes through</span>
+>>>>>>> redux-migration
               </div>
               <div className="assurance-item">
                 <span className="material-icons-outlined">lock</span>

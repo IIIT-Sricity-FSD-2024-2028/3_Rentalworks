@@ -1,6 +1,10 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import { http, qs, asArray } from '../../services/apiClient';
 import { setSession } from '../auth/authSlice';
+<<<<<<< HEAD
+=======
+import { fetchListings, fetchListingById } from '../listings/listingsSlice';
+>>>>>>> redux-migration
 
 export const PLATFORM_FEE = 500;
 export const DURATIONS = [
@@ -147,6 +151,12 @@ export const submitCheckout = createAsyncThunk(
       }
       // Checkout creates the confirmed booking, so drop the unpaid request it replaces.
       if (booking.pendingBookingId) await http.delete(`/bookings/${booking.pendingBookingId}`).catch(() => null);
+<<<<<<< HEAD
+=======
+      // The server just took a bed: reload availability so every page shows the new counts.
+      dispatch(fetchListings());
+      dispatch(fetchListingById(pg.id));
+>>>>>>> redux-migration
       return result;
     } catch (err) {
       return rejectWithValue(err.message);

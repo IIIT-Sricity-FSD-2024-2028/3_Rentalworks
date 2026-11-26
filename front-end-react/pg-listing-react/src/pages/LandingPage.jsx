@@ -4,6 +4,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import { logout, selectCurrentUser, ROLE_HOME } from '../features/auth/authSlice';
 import { fetchListings, selectAllListings, selectListingsError, selectListingsStatus } from '../features/listings/listingsSlice';
 import { toastSuccess } from '../features/ui/uiSlice';
+<<<<<<< HEAD
+=======
+import { formatINR } from '../utils/normalize';
+import useAutoRefresh from '../hooks/useAutoRefresh';
+>>>>>>> redux-migration
 import '../styles/landing.css';
 
 const SUPPORT_EMAIL = 'support@rentbro.com';
@@ -20,9 +25,21 @@ export default function LandingPage() {
   useEffect(() => {
     dispatch(fetchListings());
   }, [dispatch]);
+<<<<<<< HEAD
 
   const explore = listings.slice(0, 5);
   const newest = [...listings].sort((a, b) => b.id - a.id).slice(0, 4);
+=======
+  useAutoRefresh(() => dispatch(fetchListings()));
+
+  // "Available now": PGs with free beds first, cheapest first.
+  const explore = [...listings]
+    .sort((a, b) => Number(b.hasAvailableRooms) - Number(a.hasAvailableRooms) || a.price - b.price)
+    .slice(0, 5);
+  const newest = [...listings].sort((a, b) => b.id - a.id).slice(0, 4);
+  const freeBeds = listings.reduce((n, l) => n + l.freeBeds, 0);
+  const cities = [...new Set(listings.map((l) => l.city).filter(Boolean))];
+>>>>>>> redux-migration
   const listingsMessage =
     listingsStatus === 'failed'
       ? listingsError || 'Could not load properties right now.'
@@ -70,10 +87,10 @@ export default function LandingPage() {
             <span className="material-icons-outlined">home</span>Home
           </a>
           <a href="#about">
-            <span className="material-icons-outlined">info</span>About
+            <span className="material-icons-outlined">holiday_village</span>PGs
           </a>
           <a href="#feature">
-            <span className="material-icons-outlined">flare</span>Feature
+            <span className="material-icons-outlined">flare</span>Features
           </a>
           <a href="#contact">
             <span className="material-icons-outlined">mail</span>Contact
@@ -100,8 +117,7 @@ export default function LandingPage() {
                 <span className="material-icons-outlined" style={{ fontSize: '20px' }}>
                   account_circle
                 </span>
-                {currentUser.name ? currentUser.name.split(' ')[0] : 'Dashboard'} (
-                {currentUser.role?.toUpperCase() || 'GUEST'})
+                {currentUser.name ? currentUser.name.split(' ')[0] : 'My account'}
               </button>
               <button
                 onClick={handleLogout}
@@ -126,7 +142,7 @@ export default function LandingPage() {
               <span className="material-icons-outlined" style={{ fontSize: '20px' }}>
                 person
               </span>
-              Log-in / Register
+              Log in / Sign up
             </button>
           )}
         </div>
@@ -135,6 +151,7 @@ export default function LandingPage() {
       {/* 2. HERO SECTION */}
       <section id="home" className="hero">
         <div className="hero-text">
+<<<<<<< HEAD
           <h1>Discover Your Next Home</h1>
           <p>Browse safe, affordable, and comfortable PG accommodation</p>
           <ul>
@@ -142,12 +159,23 @@ export default function LandingPage() {
             <li>{listings.length > 0 ? `${listings.length} verified properties listed` : 'Verified properties'}</li>
             <li>Fully secured</li>
           </ul>
+=======
+          <h1>Find a PG that has a bed for you</h1>
+          <p>See rent, room types and free beds before you book.</p>
+          {listings.length > 0 && (
+            <ul>
+              <li>{listings.length} PG{listings.length === 1 ? '' : 's'} listed{cities.length ? ` in ${cities.join(', ')}` : ''}</li>
+              <li>{freeBeds > 0 ? `${freeBeds} bed${freeBeds === 1 ? '' : 's'} free right now` : 'All beds are taken right now'}</li>
+              <li>Book and pay online</li>
+            </ul>
+          )}
+>>>>>>> redux-migration
           <button
             id="exploreBtn"
             className="neumorphic-btn"
             onClick={() => navigate('/listings')}
           >
-            Explore Properties
+            Browse PGs
           </button>
         </div>
 
@@ -158,7 +186,7 @@ export default function LandingPage() {
 
       {/* 3. EXPLORE SECTION */}
       <section id="about" className="explore">
-        <h2 className="section-heading">Explore:</h2>
+        <h2 className="section-heading">Available now</h2>
         <div className="explore-cards-grid">
           {explore.length === 0
             ? emptyState
@@ -166,8 +194,14 @@ export default function LandingPage() {
                 <div key={pg.id} className="explore-card" onClick={() => navigate(`/pg/${pg.id}`)}>
                   <img src={pg.image} alt={pg.title} />
                   <h3 className="card-h3">{pg.title}</h3>
+<<<<<<< HEAD
                   <p className="card-p">{pg.features[0].text}</p>
                   <strong>Rs. {pg.price.toLocaleString('en-IN')}</strong>
+=======
+                  <p className="card-p">{pg.location}</p>
+                  <p className="card-p">{pg.availabilityText}</p>
+                  {pg.price > 0 && <strong>{formatINR(pg.price)} / month</strong>}
+>>>>>>> redux-migration
                 </div>
               ))}
         </div>
@@ -175,7 +209,7 @@ export default function LandingPage() {
 
       {/* 4. NEW LISTINGS */}
       <section className="listings">
-        <h2 className="section-heading">New Listings:</h2>
+        <h2 className="section-heading">Recently added</h2>
         <div className="new-listings-grid">
           {newest.length === 0
             ? emptyState
@@ -184,18 +218,30 @@ export default function LandingPage() {
                   <img src={pg.image} alt={pg.title} />
                   <h3 className="title">{pg.title}</h3>
                   <div className="details-badges">
+<<<<<<< HEAD
                     {pg.amenities.slice(0, 4).map((a) => (
                       <span key={a}>{a.toUpperCase()}</span>
                     ))}
                     {pg.safetyScore && <span>Safety: {pg.safetyScore}/10</span>}
+=======
+                    <span>{pg.genderLabel}</span>
+                    {pg.amenityLabels.slice(0, 3).map((a) => (
+                      <span key={a}>{a}</span>
+                    ))}
+>>>>>>> redux-migration
                   </div>
                   <p className="location">
                     <span className="material-icons-outlined">location_on</span>
                     {pg.location}
                   </p>
                   <div className="price-row">
+<<<<<<< HEAD
                     <span className="price">₹{pg.price.toLocaleString('en-IN')}/mo</span>
                     <button className="btn-view-pg">View Details</button>
+=======
+                    <span className="price">{pg.price > 0 ? `${formatINR(pg.price)}/mo` : 'Rent not listed'}</span>
+                    <button className="btn-view-pg">View</button>
+>>>>>>> redux-migration
                   </div>
                 </div>
               ))}
@@ -204,74 +250,24 @@ export default function LandingPage() {
 
       {/* 5. OUR KEY FEATURES */}
       <section id="feature" className="features-section">
-        <h2 className="section-heading">Our Key Features</h2>
+        <h2 className="section-heading">What you can do here</h2>
         <div className="feature-grid">
-          <div className="feature-box">
-            <div className="icon-box">
-              <span className="material-icons-outlined">verified</span>
+          {[
+            ['event_available', 'See free beds', 'Each PG shows how many beds are free in every room. The count changes as soon as a bed is booked.'],
+            ['manage_search', 'Filter by what matters', 'Narrow the list by area, rent, room type, girls/boys/co-living, food and amenities.'],
+            ['people', 'Pick a roommate', 'For shared rooms, fill in your habits and choose from the people already staying there.'],
+            ['payments', 'Book and pay online', "Pay the first month's rent and deposit online. Your bed is assigned right away."],
+            ['receipt_long', 'Track rent and requests', 'Once you move in, see rent dues, raise complaints and request services from your dashboard.'],
+            ['add_home', 'List your PG', 'Owners can add their PG and rooms, and wardens manage residents from their own dashboard.'],
+          ].map(([icon, title, text]) => (
+            <div key={title} className="feature-box">
+              <div className="icon-box">
+                <span className="material-icons-outlined">{icon}</span>
+              </div>
+              <h3>{title}</h3>
+              <p>{text}</p>
             </div>
-            <h3>Verified PG Listings</h3>
-            <p>
-              Browse a wide range of verified PG accommodations listed by trusted property owners.
-              Our platform ensures every listing is reliable, helping users find safe and comfortable
-              living spaces.
-            </p>
-          </div>
-
-          <div className="feature-box">
-            <div className="icon-box">
-              <span className="material-icons-outlined">manage_search</span>
-            </div>
-            <h3>Smart Search &amp; Filters</h3>
-            <p>
-              Quickly discover PG accommodations using smart search and filtering options. Refine
-              results based on location, price, amenities, and preferences.
-            </p>
-          </div>
-
-          <div className="feature-box">
-            <div className="icon-box">
-              <span className="material-icons-outlined">feed</span>
-            </div>
-            <h3>Detailed Property Info</h3>
-            <p>
-              Access complete property details including rent, facilities, room types, images, and
-              location for better decision-making.
-            </p>
-          </div>
-
-          <div className="feature-box">
-            <div className="icon-box">
-              <span className="material-icons-outlined">star_rate</span>
-            </div>
-            <h3>Reviews &amp; Ratings</h3>
-            <p>
-              View real user reviews and ratings to understand quality, safety, and comfort before
-              choosing a PG.
-            </p>
-          </div>
-
-          <div className="feature-box">
-            <div className="icon-box">
-              <span className="material-icons-outlined">chat</span>
-            </div>
-            <h3>Direct Owner Communication</h3>
-            <p>
-              Connect directly with property owners to ask questions, clarify details, and schedule
-              visits easily.
-            </p>
-          </div>
-
-          <div className="feature-box">
-            <div className="icon-box">
-              <span className="material-icons-outlined">add_home</span>
-            </div>
-            <h3>Easy Property Listing</h3>
-            <p>
-              Owners can list properties easily with details, images, and pricing to reach more
-              potential tenants.
-            </p>
-          </div>
+          ))}
         </div>
       </section>
 
@@ -280,10 +276,17 @@ export default function LandingPage() {
         <div className="footer-container">
           {/* LEFT */}
           <div className="footer-left">
+<<<<<<< HEAD
             <h4>Support</h4>
             {[
               ['Browse PGs', () => navigate('/listings')],
               ['About', () => scrollTo('about')],
+=======
+            <h4>RentBro</h4>
+            {[
+              ['Browse PGs', () => navigate('/listings')],
+              ['Available now', () => scrollTo('about')],
+>>>>>>> redux-migration
               ['Features', () => scrollTo('feature')],
               ['List Your PG', () => navigate('/register', { state: { mode: 'owner' } })],
               ['Contact', () => { window.location.href = `mailto:${SUPPORT_EMAIL}`; }],
@@ -296,6 +299,7 @@ export default function LandingPage() {
 
           {/* CENTER */}
           <div className="footer-center">
+<<<<<<< HEAD
             <h4>24/7 Customer Support</h4>
             <p>support@rentbro.com</p>
             <p>+91 92345 67810</p>
@@ -310,27 +314,37 @@ export default function LandingPage() {
                 </a>
               ))}
             </div>
+=======
+            <h4>Contact</h4>
+            <p>
+              <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
+            </p>
+>>>>>>> redux-migration
           </div>
 
           {/* RIGHT */}
           <div className="footer-right">
-            <h4>Need help?</h4>
+            <h4>Ask us something</h4>
             <form onSubmit={handleHelpSubmit}>
               <textarea
                 id="helpMsg"
-                placeholder="Type your message here..."
+                placeholder="Your question"
                 value={helpMsg}
                 onChange={(e) => setHelpMsg(e.target.value)}
               />
               <br />
               <button id="helpSubmitBtn" type="submit" className="neumorphic-btn">
+<<<<<<< HEAD
                 Email Support
+=======
+                Send by email
+>>>>>>> redux-migration
               </button>
             </form>
           </div>
         </div>
 
-        <p className="copyright">@2026 RentBro. All Rights Reserved</p>
+        <p className="copyright">© {new Date().getFullYear()} RentBro</p>
       </footer>
     </div>
   );

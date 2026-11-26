@@ -10,12 +10,17 @@ import {
   fetchTenantLedger,
   markRentPaidOffline,
   notifyTenant,
+<<<<<<< HEAD
+=======
+  selectOccupancyReport,
+>>>>>>> redux-migration
   selectWardenLedger,
   selectWardenTenantLedger,
   updateTenant,
   waiveRent,
 } from '../../../features/warden/wardenSlices';
 import Modal from '../components/Modal';
+import BedSyncPanel from '../components/BedSyncPanel';
 
 const STATUS_TAGS = {
   paid: { label: '✓ Paid', bg: '#dcfce7', fg: '#15803d' },
@@ -99,11 +104,18 @@ export default function TenantRecords() {
   const ledgerByTenant = new Map(ledgerRows.map(r => [Number(r.tenantId), r]));
 
   // One row per tenant: month status comes from the ledger; evicted tenants show their final state.
+  const report = useSelector(selectOccupancyReport);
   const rows = tenants.map(t => {
     const led = ledgerByTenant.get(Number(t.id));
     const evicted = t.status === 'evicted' || t.stayStatus === 'evicted';
     const status = evicted ? 'evicted' : (led?.status || 'no_cycle');
+<<<<<<< HEAD
     return { ...t, monthStatus: status, due: led?.due || null };
+=======
+    // Every bed this tenant actually holds (one account can hold several).
+    const beds = report.bedsByTenant.get(String(t.id)) || [];
+    return { ...t, monthStatus: status, due: led?.due || null, beds };
+>>>>>>> redux-migration
   });
 
   const filteredTenants = rows.filter(t => {
@@ -317,10 +329,18 @@ export default function TenantRecords() {
         <p>View and manage all tenant records</p>
       </div>
 
+      <BedSyncPanel compact />
+
       <div className="summary-cards">
         <div className="summary-card">
-          <div className="s-label">Total Tenants</div>
-          <div className="s-value">{tenants.length}</div>
+          <div className="s-label">Residents (beds taken)</div>
+          <div className="s-value">{report.staysLoaded ? report.residents : tenants.length}</div>
+          {report.staysLoaded && (
+            <div style={{ fontSize: 12, color: '#64748b' }}>
+              {tenants.length} tenant accounts
+              {report.tenantsWithoutBed.length ? ` · ${report.tenantsWithoutBed.length} without a bed` : ''}
+            </div>
+          )}
         </div>
         <div className="summary-card">
           <div className="s-label">Paid ({months.find(m => m.value === month)?.label})</div>
@@ -406,7 +426,17 @@ export default function TenantRecords() {
                       {t.name}
                       {t.username && <div style={{ fontSize: 11, color: '#6b7280' }}>{t.username}</div>}
                     </td>
-                    <td><span className="room-badge">{t.room}{t.bedNumber ? ` • ${t.bedNumber}` : ''}</span></td>
+                    <td>
+                      {t.beds.length > 0 ? (
+                        t.beds.map((b) => (
+                          <span key={b.id} className="room-badge" style={{ marginRight: 4 }} title={b.propertyName}>
+                            {b.roomNumber || '—'}{b.bedNumber ? ` • ${b.bedNumber}` : ''}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="room-badge" style={{ opacity: 0.6 }}>{report.staysLoaded ? 'No bed' : t.room}</span>
+                      )}
+                    </td>
                     <td>{t.phone}</td>
                     <td>{fmtD(t.checkIn)}</td>
                     <td>

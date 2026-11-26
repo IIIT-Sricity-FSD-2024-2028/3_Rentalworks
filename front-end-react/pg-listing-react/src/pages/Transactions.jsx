@@ -71,7 +71,11 @@ export default function Transactions() {
                     <td style={{ ...td, fontWeight: 700, color: '#ca8a04' }}>₹{Number(t.amount || 0).toLocaleString('en-IN')}</td>
                     <td style={td}>
                       <span style={{ background: paid ? '#dcfce7' : '#fef9c3', color: paid ? '#15803d' : '#854d0e', padding: '3px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 700 }}>
+<<<<<<< HEAD
                         {paid ? '✓ Verified' : t.status}
+=======
+                        {paid ? 'Paid' : t.status}
+>>>>>>> redux-migration
                       </span>
                     </td>
                     <td style={{ ...td, color: '#64748b', fontSize: '13px' }}>{fmtDate(t.paidDate || t.createdAt)}</td>

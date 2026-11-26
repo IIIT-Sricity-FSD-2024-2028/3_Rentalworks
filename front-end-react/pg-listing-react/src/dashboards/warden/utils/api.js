@@ -10,6 +10,11 @@ export const deleteRoomApi = (id) => http.delete(`/rooms/${id}`);
 
 // --- TENANTS
 export const getTenantsApi = () => http.get('/tenants');
+<<<<<<< HEAD
+=======
+/** Every stay (one row per bed a tenant holds). Active ones are the source of truth for occupancy. */
+export const getStaysApi = () => http.get('/tenant-stays');
+>>>>>>> redux-migration
 export const createTenantApi = (tenantData) => http.post('/tenants', tenantData);
 export const updateTenantApi = (id, tenantData) => http.put(`/tenants/${id}`, tenantData);
 export const deleteTenantApi = (id) => http.delete(`/tenants/${id}`);

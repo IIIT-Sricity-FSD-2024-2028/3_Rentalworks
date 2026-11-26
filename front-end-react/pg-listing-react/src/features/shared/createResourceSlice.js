@@ -1,5 +1,9 @@
 import { createSlice, createAsyncThunk, isFulfilled, isPending, isRejected } from '@reduxjs/toolkit';
 import { asArray } from '../../services/apiClient';
+<<<<<<< HEAD
+=======
+import { withNormalizedStatus } from '../../utils/normalize';
+>>>>>>> redux-migration
 
 /**
  * Factory for the common "list + create + update + delete" REST resource.
@@ -7,14 +11,25 @@ import { asArray } from '../../services/apiClient';
  *   const issues = createResourceSlice({
  *     name: 'tenantIssues',
  *     api: { list, create, update, remove },   // functions returning promises
+<<<<<<< HEAD
  *     mapItem: (raw) => ({ ...raw }),          // optional normaliser
+=======
+ *     mapItem: (raw) => ({ ...raw }),          // optional normaliser (status is already normalised)
+>>>>>>> redux-migration
  *   });
  *
  * The reducer must be mounted in the store under the same key as `name`.
  * Exposes `thunks` (fetchAll, createItem, updateItem, removeItem),
  * `actions` (setItems, upsertItem, removeLocal, clear) and `selectors`.
  */
+<<<<<<< HEAD
 export function createResourceSlice({ name, api, mapItem = (x) => x, idKey = 'id', reducers = {}, extraReducers }) {
+=======
+export function createResourceSlice({ name, api, mapItem: customMap = (x) => x, idKey = 'id', reducers = {}, extraReducers }) {
+  // Every row gets one status spelling ('in-progress' / 'ACTIVE' → 'in_progress' / 'active')
+  // before the slice-specific mapper sees it.
+  const mapItem = (raw) => customMap(withNormalizedStatus(raw));
+>>>>>>> redux-migration
   const idOf = (item) => item?.[idKey];
   const sameId = (a, b) => String(a) === String(b);
   const fail = (err) => err?.message || 'Request failed';

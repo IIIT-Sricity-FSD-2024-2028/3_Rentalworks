@@ -7,6 +7,10 @@ import {
   resetFilters,
   setFilterPanelOpen,
 } from '../features/listings/listingsSlice';
+<<<<<<< HEAD
+=======
+import { AMENITIES } from '../utils/normalize';
+>>>>>>> redux-migration
 
 /** Slide-in filter panel. All filter state lives in the `listings` slice. */
 export default function FilterPanel() {
@@ -56,7 +60,7 @@ export default function FilterPanel() {
       <aside id="filterPanel" className={`filter-panel ${isOpen ? 'active' : ''}`} role="dialog" aria-label="Filters">
         <div className="filter-box">
           <div className="filter-header">
-            <h3>Filters &amp; Sort</h3>
+            <h3>Filters</h3>
             <button id="closeFilter" aria-label="Close filters" onClick={onClose}>
               <span className="material-icons-outlined" style={{ fontSize: '24px' }}>close</span>
             </button>
@@ -65,9 +69,9 @@ export default function FilterPanel() {
           {/* SORT BY */}
           <div className="filter-section">
             <h4>Sort By</h4>
-            <label><input type="radio" name="sort" value="low" checked={filters.sort === 'low'} onChange={handleRadioChange} /> Price Low → High</label>
-            <label><input type="radio" name="sort" value="high" checked={filters.sort === 'high'} onChange={handleRadioChange} /> Price High → Low</label>
-            <label><input type="radio" name="sort" value="rating" checked={filters.sort === 'rating'} onChange={handleRadioChange} /> Highest Rated</label>
+            <label><input type="radio" name="sort" value="low" checked={filters.sort === 'low'} onChange={handleRadioChange} /> Rent: low to high</label>
+            <label><input type="radio" name="sort" value="high" checked={filters.sort === 'high'} onChange={handleRadioChange} /> Rent: high to low</label>
+            <label><input type="radio" name="sort" value="beds" checked={filters.sort === 'beds'} onChange={handleRadioChange} /> Most beds free</label>
           </div>
 
           {/* PRICE RANGE */}
@@ -104,29 +108,34 @@ export default function FilterPanel() {
           {/* AMENITIES */}
           <div className="filter-section">
             <h4>Amenities</h4>
-            <label><input type="checkbox" name="amenity" value="wifi" checked={filters.amenity.includes('wifi')} onChange={handleCheckboxChange} /> WiFi</label>
-            <label><input type="checkbox" name="amenity" value="ac" checked={filters.amenity.includes('ac')} onChange={handleCheckboxChange} /> AC</label>
-            <label><input type="checkbox" name="amenity" value="parking" checked={filters.amenity.includes('parking')} onChange={handleCheckboxChange} /> Parking</label>
-            <label><input type="checkbox" name="amenity" value="attached-bathroom" checked={filters.amenity.includes('attached-bathroom')} onChange={handleCheckboxChange} /> Attached Bathroom</label>
-            <label><input type="checkbox" name="amenity" value="laundry" checked={filters.amenity.includes('laundry')} onChange={handleCheckboxChange} /> Laundry</label>
-            <label><input type="checkbox" name="amenity" value="housekeeping" checked={filters.amenity.includes('housekeeping')} onChange={handleCheckboxChange} /> Housekeeping</label>
-            <label><input type="checkbox" name="amenity" value="gym" checked={filters.amenity.includes('gym')} onChange={handleCheckboxChange} /> Gym</label>
-            <label><input type="checkbox" name="amenity" value="cctv" checked={filters.amenity.includes('cctv')} onChange={handleCheckboxChange} /> CCTV Security</label>
-            <label><input type="checkbox" name="amenity" value="geyser" checked={filters.amenity.includes('geyser')} onChange={handleCheckboxChange} /> Geyser</label>
+            {Object.entries(AMENITIES).map(([key, { label }]) => (
+              <label key={key}>
+                <input type="checkbox" name="amenity" value={key} checked={filters.amenity.includes(key)} onChange={handleCheckboxChange} /> {label}
+              </label>
+            ))}
           </div>
 
+<<<<<<< HEAD
           {/* RATINGS */}
           <div className="filter-section">
             <h4>Ratings</h4>
             <label><input type="radio" name="rating" value="4.5" checked={filters.rating === '4.5'} onChange={handleRadioChange} /> 4.5 &amp; above</label>
             <label><input type="radio" name="rating" value="4" checked={filters.rating === '4'} onChange={handleRadioChange} /> 4 &amp; above</label>
             <label><input type="radio" name="rating" value="3" checked={filters.rating === '3'} onChange={handleRadioChange} /> 3 &amp; above</label>
+=======
+          {/* AVAILABILITY */}
+          <div className="filter-section">
+            <h4>Availability</h4>
+            <label>
+              <input type="checkbox" checked={filters.availableOnly} onChange={(e) => onFilterChange('availableOnly', e.target.checked)} /> Only PGs with a free bed
+            </label>
+>>>>>>> redux-migration
           </div>
 
           {/* ACTION BUTTONS */}
           <div className="filter-actions">
-            <button id="applyFilter" onClick={onClose}>Apply Filters</button>
-            <button id="clearFilter" onClick={onClear}>Clear Filters</button>
+            <button id="applyFilter" onClick={onClose}>Show results</button>
+            <button id="clearFilter" onClick={onClear}>Clear all</button>
           </div>
         </div>
       </aside>

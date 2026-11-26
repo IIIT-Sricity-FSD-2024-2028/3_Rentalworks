@@ -4,7 +4,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import ListingCard from '../components/ListingCard';
 import FilterPanel from '../components/FilterPanel';
 import {
+<<<<<<< HEAD
   CITIES,
+=======
+  selectCities,
+>>>>>>> redux-migration
   fetchListings,
   resetFilters,
   setCity,
@@ -19,6 +23,14 @@ import {
   selectListingsStatus,
   selectSearch,
 } from '../features/listings/listingsSlice';
+<<<<<<< HEAD
+=======
+import { amenityLabel } from '../utils/normalize';
+import { GENDER_LABEL } from '../features/listings/listingMappers';
+import useAutoRefresh from '../hooks/useAutoRefresh';
+
+const PRICE_LABEL = { '0-5000': 'Under ₹5,000', '5000-8000': '₹5,000 – ₹8,000', '8000-99999': '₹8,000+' };
+>>>>>>> redux-migration
 
 export default function ListingsPage() {
   const dispatch = useDispatch();
@@ -32,7 +44,11 @@ export default function ListingsPage() {
   const status = useSelector(selectListingsStatus);
   const error = useSelector(selectListingsError);
   const isLoading = status === 'idle' || status === 'loading';
+<<<<<<< HEAD
   const cities = CITIES;
+=======
+  const cities = useSelector(selectCities);
+>>>>>>> redux-migration
 
   // URL → store (once, so links like /listings?city=Chennai work)
   useEffect(() => {
@@ -49,10 +65,18 @@ export default function ListingsPage() {
     setSearchParams(params, { replace: true });
   }, [activeCity, searchQuery, setSearchParams]);
 
+<<<<<<< HEAD
   // Always load fresh availability when the page opens.
   useEffect(() => {
     dispatch(fetchListings());
   }, [dispatch]);
+=======
+  // Always load fresh availability when the page opens, then keep it current.
+  useEffect(() => {
+    dispatch(fetchListings());
+  }, [dispatch]);
+  useAutoRefresh(() => dispatch(fetchListings()));
+>>>>>>> redux-migration
 
   const setSearchQuery = (v) => dispatch(setSearch(v));
   const setActiveCity = (v) => dispatch(setCity(v));
@@ -66,7 +90,7 @@ export default function ListingsPage() {
         <div className="header-inner">
           <h1 className="header-title">Find Your <span>Perfect PG</span></h1>
           <p style={{ color: '#4b5563', fontSize: '15px', marginBottom: '16px' }}>
-            Verified student & professional paying guest accommodations with live availability
+            Compare rent, room types and free beds across PGs
           </p>
 
           <div className="search-container">
@@ -74,7 +98,7 @@ export default function ListingsPage() {
             <input
               type="text"
               id="searchInput"
-              placeholder="Search PGs by location or name... e.g. 'Anna Nagar' or 'Sunrise PG'"
+              placeholder="Search by area or PG name"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -112,10 +136,14 @@ export default function ListingsPage() {
       <main className="main-content">
         <div className="content-header">
           <div>
-            <h2>Available PGs</h2>
+            <h2>PGs</h2>
             <p className="result-count">
               {isLoading ? (
+<<<<<<< HEAD
                 'Loading live availability...'
+=======
+                'Loading…'
+>>>>>>> redux-migration
               ) : filteredListings.length === 1 ? (
                 '1 property found'
               ) : (
@@ -135,27 +163,27 @@ export default function ListingsPage() {
             <span style={{ fontSize: '13px', fontWeight: 600, color: '#6b7280' }}>Active filters:</span>
             {filters.price !== 'all' && (
               <span className="tag" style={{ background: '#fef3c7', color: '#92400e', cursor: 'pointer' }} onClick={() => handleFilterChange('price', 'all')}>
-                Price: ₹{filters.price} ✕
+                {PRICE_LABEL[filters.price] || filters.price} ✕
               </span>
             )}
             {filters.gender.map(g => (
               <span key={g} className="tag" style={{ background: '#fef3c7', color: '#92400e', cursor: 'pointer' }} onClick={() => handleFilterChange('gender', filters.gender.filter(x => x !== g))}>
-                Gender: {g} ✕
+                {GENDER_LABEL[g]} ✕
               </span>
             ))}
             {filters.room.map(r => (
               <span key={r} className="tag" style={{ background: '#fef3c7', color: '#92400e', cursor: 'pointer' }} onClick={() => handleFilterChange('room', filters.room.filter(x => x !== r))}>
-                Room: {r} ✕
+                {r.charAt(0).toUpperCase() + r.slice(1)} room ✕
               </span>
             ))}
             {filters.amenity.map(a => (
               <span key={a} className="tag" style={{ background: '#fef3c7', color: '#92400e', cursor: 'pointer' }} onClick={() => handleFilterChange('amenity', filters.amenity.filter(x => x !== a))}>
-                {a} ✕
+                {amenityLabel(a)} ✕
               </span>
             ))}
-            {filters.rating !== 'all' && (
-              <span className="tag" style={{ background: '#fef3c7', color: '#92400e', cursor: 'pointer' }} onClick={() => handleFilterChange('rating', 'all')}>
-                Rating: {filters.rating}+ ✕
+            {filters.availableOnly && (
+              <span className="tag" style={{ background: '#fef3c7', color: '#92400e', cursor: 'pointer' }} onClick={() => handleFilterChange('availableOnly', false)}>
+                Free beds only ✕
               </span>
             )}
             <button
@@ -171,7 +199,11 @@ export default function ListingsPage() {
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>
             <div className="spinner" style={{ margin: '0 auto 16px', width: '36px', height: '36px', border: '3px solid #e5e7eb', borderTopColor: '#f59e0b', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+<<<<<<< HEAD
             <p style={{ color: '#6b7280', fontSize: '15px' }}>Fetching properties and rooms...</p>
+=======
+            <p style={{ color: '#6b7280', fontSize: '15px' }}>Loading PGs…</p>
+>>>>>>> redux-migration
           </div>
         ) : status === 'failed' ? (
           <div className="empty-state">
@@ -183,11 +215,7 @@ export default function ListingsPage() {
         ) : filteredListings.length > 0 ? (
           <div className="listings-grid">
             {filteredListings.map(listing => (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                isDisabled={listing.isDisabled}
-              />
+              <ListingCard key={listing.id} listing={listing} />
             ))}
           </div>
         ) : (

@@ -1,17 +1,10 @@
 import Icon from '../components/Icon';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { AMENITIES } from '../../../utils/normalize';
 
-const AMENITY_LIST = [
-  { label: 'WiFi', icon: 'wifi' },
-  { label: 'AC', icon: 'ac_unit' },
-  { label: 'Laundry', icon: 'local_laundry_service' },
-  { label: 'Parking', icon: 'local_parking' },
-  { label: 'Gym', icon: 'fitness_center' },
-  { label: 'Mess', icon: 'restaurant' },
-  { label: 'Power Backup', icon: 'power' },
-  { label: 'Security', icon: 'lock' },
-];
+// Built from the shared amenity table so saved labels match what listings display.
+const AMENITY_LIST = Object.values(AMENITIES).map(({ label, icon }) => ({ label, icon }));
 
 // AddProperty: Controlled form with validation to add a new property
 export default function AddProperty({ onAddProperty }) {

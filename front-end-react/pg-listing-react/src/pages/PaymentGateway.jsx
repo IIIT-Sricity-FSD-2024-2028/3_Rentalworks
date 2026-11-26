@@ -92,7 +92,11 @@ export default function PaymentGateway() {
     if (problem) return;
     const result = await dispatch(submitCheckout({ paymentMethod, upiId: upiId.trim() }));
     if (submitCheckout.fulfilled.match(result)) {
+<<<<<<< HEAD
       dispatch(toastSuccess('Payment verified. Your room is booked!'));
+=======
+      dispatch(toastSuccess('Payment received. Your bed is booked.'));
+>>>>>>> redux-migration
       navigate(`/book/${pg.id}/confirmed`, { replace: true });
     }
   };
@@ -194,7 +198,7 @@ export default function PaymentGateway() {
                       onChange={(e) => setUpiId(e.target.value)}
                     />
                   </div>
-                  <span className="input-helper">A collect request will be verified instantly in test mode.</span>
+                  <span className="input-helper">Test mode: no real payment request is sent.</span>
                 </div>
               </div>
             )}
@@ -274,8 +278,8 @@ export default function PaymentGateway() {
                   </div>
                 </div>
                 <div className="bank-security-notice">
-                  <span className="material-icons-outlined">verified</span>
-                  You will be securely authenticated with your selected net banking portal.
+                  <span className="material-icons-outlined">info</span>
+                  Test mode: you won't be sent to a real bank.
                 </div>
               </div>
             )}
@@ -341,12 +345,19 @@ export default function PaymentGateway() {
             </div>
 
             <div className="workflow-guarantee-box">
-              <h4>🚀 What Happens Next:</h4>
+              <h4>After you pay</h4>
               <ul>
+<<<<<<< HEAD
                 <li>Your guest profile is automatically upgraded to <strong>Tenant</strong></li>
                 <li>Your tenant sign-in details appear on the confirmation page</li>
                 <li>Your bed is locked for you</li>
                 <li>Warden receives immediate move-in notification</li>
+=======
+                <li>Your account becomes a <strong>tenant</strong> account</li>
+                <li>A bed is assigned and the room's free-bed count goes down</li>
+                <li>The warden is told you're moving in</li>
+                <li>Your receipt and sign-in details are on the next page</li>
+>>>>>>> redux-migration
               </ul>
             </div>
           </div>

@@ -217,7 +217,7 @@ export default function BookingConfirmed() {
         </div>
 
         <div className="confirmed-title-wrap">
-          <span className="pill-confirmed">Payment Verified &amp; Room Booked</span>
+          <span className="pill-confirmed">Paid · Bed booked</span>
           <h1>Congratulations, Your Booking is Confirmed!</h1>
           <p>
             {forFriend ? 'The' : 'Your'} bed at <strong>{receipt.propertyName}</strong> is reserved for <strong>{receipt.tenantName}</strong>.
