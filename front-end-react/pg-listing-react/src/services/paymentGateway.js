@@ -14,6 +14,13 @@ const RAZORPAY_SCRIPT = 'https://checkout.razorpay.com/v1/checkout.js';
 
 export const fetchGatewayConfig = () => http.get('/payment-gateway/config', { auth: false });
 
+/** '+91 98765 43210' / '09876543210' / '9876543210' → '+919876543210'; anything else → ''. */
+export function indianMobile(phone) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  const local = digits.length === 12 && digits.startsWith('91') ? digits.slice(2) : digits.length === 11 && digits.startsWith('0') ? digits.slice(1) : digits;
+  return /^[6-9]\d{9}$/.test(local) ? `+91${local}` : '';
+}
+
 let scriptPromise = null;
 function loadRazorpay() {
   if (window.Razorpay) return Promise.resolve();
@@ -55,8 +62,14 @@ export async function payOnline(purpose, details = {}) {
       currency: order.currency,
       name: 'RentBro',
       description: details.description || 'PG payment',
-      prefill: { name: details.name || '', email: details.email || '', contact: details.phone || '' },
+      // Pre-fill only a valid Indian mobile; otherwise Razorpay asks for one.
+      // (A wrong number makes Razorpay's OTP login fail with "Login Failed".)
+      prefill: { name: details.name || '', email: details.email || '', contact: indianMobile(details.phone) },
+      // No Razorpay saved-card / customer login: it needs extra account setup
+      // and an OTP to the customer's phone, and is not needed to pay rent.
+      remember_customer: false,
       theme: { color: '#4f46e5' },
+      // Success: Razorpay closes its window and hands us the signed proof.
       handler: (res) =>
         resolve({
           gatewayOrderId: res.razorpay_order_id,
@@ -65,9 +78,16 @@ export async function payOnline(purpose, details = {}) {
           mode: 'razorpay',
           amount: order.amount,
         }),
-      modal: { ondismiss: () => reject(new Error('Payment cancelled. You have not been charged.')) },
+      // Closed without paying: report the last failure reason, if there was one.
+      modal: { ondismiss: () => reject(new Error(lastFailure ? `${lastFailure} You have not been charged.` : 'Payment cancelled. You have not been charged.')) },
     });
-    rzp.on('payment.failed', (resp) => reject(new Error(resp?.error?.description || 'Payment failed. You have not been charged.')));
+    // A failed attempt is NOT the end: Razorpay keeps its window open and lets
+    // the tenant retry with another method (e.g. card declined → netbanking).
+    // Only remember the reason; the promise settles on success or on close.
+    let lastFailure = '';
+    rzp.on('payment.failed', (resp) => {
+      lastFailure = resp?.error?.description || 'The last payment attempt failed.';
+    });
     rzp.open();
   });
 }

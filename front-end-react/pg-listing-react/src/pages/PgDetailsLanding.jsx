@@ -223,12 +223,12 @@ export default function PgDetailsLanding() {
           <h2 className="section-title">Amenities</h2>
           <div className="amenities-grid">
             {pg.amenities.length === 0 && <p style={{ color: '#64748b' }}>The owner hasn't listed any amenities yet.</p>}
-            {pg.amenities.map((key) => (
+            {pg.amenities.map((key, i) => (
               <div key={key} className="amenity-card">
                 <div className="amenity-icon">
                   <span className="material-icons-outlined">{amenityIcon(key)}</span>
                 </div>
-                <strong>{amenityLabel(key)}</strong>
+                <strong>{pg.amenityLabels[i] || amenityLabel(key)}</strong>
               </div>
             ))}
           </div>

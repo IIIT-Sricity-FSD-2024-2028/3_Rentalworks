@@ -1,4 +1,4 @@
-import { normalizeStatus, toNumber, normalizeAmenities, amenityLabel, parseList, titleCaseWords, cityFromLocation } from '../../utils/normalize';
+import { normalizeStatus, toNumber, normalizeAmenities, amenityLabel, amenityKey, AMENITIES, parseList, titleCaseWords, cityFromLocation } from '../../utils/normalize';
 
 // Pure functions that turn backend Property / Room rows into the shapes the
 // public pages render. Listings, the details page and the booking flow all
@@ -163,7 +163,8 @@ export function mapProperty(prop, rooms = [], idx = 0) {
     gender,
     genderLabel: GENDER_LABEL[gender],
     amenities,
-    amenityLabels: amenities.map(amenityLabel),
+    // Standard amenities get their canonical label; custom ones keep the owner's spelling ("PS5 Lounge").
+    amenityLabels: amenities.map((key) => (AMENITIES[key] ? amenityLabel(key) : parseList(prop.amenities).find((raw) => amenityKey(raw) === key)?.trim() || amenityLabel(key))),
     roomTypes,
     food: amenities.includes('meals') ? 'food' : 'nofood',
     features: [
