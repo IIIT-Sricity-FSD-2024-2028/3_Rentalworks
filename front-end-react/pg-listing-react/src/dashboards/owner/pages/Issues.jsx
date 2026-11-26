@@ -1,5 +1,6 @@
 import Icon from '../components/Icon';
 import React, { useState } from 'react';
+import { normalizeStatus } from '../../../utils/normalize';
 
 // Issues: Track, filter, resolve, report, and delete complaints
 export default function Issues({
@@ -28,15 +29,14 @@ export default function Issues({
   const [addError, setAddError] = useState('');
 
   const openCount = issues.filter(
-    (i) => (i.status || '').toLowerCase() === 'open'
+    (i) => normalizeStatus(i.status) === 'open'
   ).length;
   const inProgressCount = issues.filter(
     (i) =>
-      (i.status || '').toLowerCase() === 'in progress' ||
-      (i.status || '').toLowerCase() === 'in-progress'
+      normalizeStatus(i.status) === 'in_progress'
   ).length;
   const resolvedCount = issues.filter(
-    (i) => (i.status || '').toLowerCase() === 'resolved'
+    (i) => normalizeStatus(i.status) === 'resolved'
   ).length;
 
   const getCategoryIcon = (category) => {
@@ -69,13 +69,7 @@ export default function Issues({
       (i.propertyName && i.propertyName.toLowerCase().includes(q)) ||
       (i.reportedBy && i.reportedBy.toLowerCase().includes(q));
 
-    const iStatus = (i.status || '').toLowerCase();
-    const fStatus = filterStatus.toLowerCase();
-    const matchStatus =
-      !filterStatus ||
-      iStatus === fStatus ||
-      (fStatus === 'in progress' && iStatus === 'in-progress') ||
-      (fStatus === 'in-progress' && iStatus === 'in progress');
+    const matchStatus = !filterStatus || normalizeStatus(i.status) === normalizeStatus(filterStatus);
 
     const iPriority = (i.priority || '').toLowerCase();
     const fPriority = filterPriority.toLowerCase();

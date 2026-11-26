@@ -1,27 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { RAW_FAQS } from '../data/faqs';
+import { buildFaqs } from '../data/faqs';
 import { fetchListingById, selectListingDetail } from '../features/listings/listingsSlice';
 import { startBooking, checkGenderEligibility, isSingleRoom } from '../features/booking/bookingSlice';
 import { selectCurrentUser, updateMyProfile, MANAGEMENT_ROLES } from '../features/auth/authSlice';
 import { toastError } from '../features/ui/uiSlice';
-
-const AMENITY_META = {
-  wifi: { label: 'High-Speed WiFi', desc: '100 Mbps fiber broadband', icon: 'wifi' },
-  ac: { label: 'Air Conditioning', desc: 'Individual climate control', icon: 'ac_unit' },
-  cctv: { label: '24/7 Security', desc: 'Guard & CCTV monitoring', icon: 'shield' },
-  security: { label: '24/7 Security Guard', desc: 'Guard & CCTV monitoring', icon: 'shield' },
-  parking: { label: 'Parking Space', desc: 'Secure parking space', icon: 'local_parking' },
-  laundry: { label: 'Laundry Service', desc: 'Automated washing machines', icon: 'local_laundry_service' },
-  meals: { label: '3 Healthy Meals', desc: 'Breakfast, lunch & dinner', icon: 'restaurant' },
-  food: { label: 'Healthy Meals', desc: 'Nutritious daily meals', icon: 'restaurant' },
-  geyser: { label: 'Hot Water Geyser', desc: '24/7 hot water supply', icon: 'hot_tub' },
-  backup: { label: 'Power Backup', desc: '100% generator backup', icon: 'bolt' },
-  water: { label: '24/7 Water Supply', desc: 'RO purified drinking water', icon: 'water_drop' },
-  gym: { label: 'Gym Facility', desc: 'Fitness equipment for residents', icon: 'fitness_center' },
-  mess: { label: 'Dining Hall', desc: 'Hygienic communal mess', icon: 'lunch_dining' },
-};
+import { amenityLabel, amenityIcon, formatINR } from '../utils/normalize';
+import useAutoRefresh from '../hooks/useAutoRefresh';
 
 export default function PgDetailsLanding() {
   const { id } = useParams();
@@ -42,20 +28,13 @@ export default function PgDetailsLanding() {
   useEffect(() => {
     dispatch(fetchListingById(id));
   }, [dispatch, id]);
+  // Keep bed counts current if someone else books while this page is open.
+  useAutoRefresh(() => dispatch(fetchListingById(id)));
 
   const loading = status === 'idle' || status === 'loading' || String(listing?.id ?? '') !== String(id) && status !== 'failed';
-  const pg = listing
-    ? {
-        ...listing,
-        safetyLabel: listing.gender === 'girls' ? 'Female Safety Score' : 'Safety Score',
-        stats: {
-          residents: listing.totalRooms ? `${listing.rooms.reduce((n, r) => n + r.currentOccupancy, 0)}` : '0',
-          security: listing.gender === 'girls' ? '24/7 CCTV & Biometric' : '24/7 CCTV & Security',
-          backup: listing.amenities.includes('backup') ? '100%' : '—',
-        },
-      }
-    : null;
+  const pg = listing;
   const displayRooms = pg?.rooms || [];
+  const faqs = buildFaqs(pg);
 
   // After signing in, the login page sends the user back here with the room they picked.
   useEffect(() => {
@@ -123,8 +102,8 @@ export default function PgDetailsLanding() {
     return (
       <div style={{ textAlign: 'center', padding: '100px 20px', minHeight: '60vh' }}>
         <span className="material-icons-outlined" style={{ fontSize: 48, color: '#94a3b8' }}>home_work</span>
-        <h2 style={{ margin: '12px 0 6px' }}>Property unavailable</h2>
-        <p style={{ color: '#64748b', marginBottom: 20 }}>{error || 'This PG could not be loaded.'}</p>
+        <h2 style={{ margin: '12px 0 6px' }}>This PG couldn't be loaded</h2>
+        <p style={{ color: '#64748b', marginBottom: 20 }}>{error || 'Please try again.'}</p>
         <button className="btn-save" onClick={() => dispatch(fetchListingById(id))} style={{ marginRight: 8 }}>Retry</button>
         <button className="btn-save" onClick={() => navigate('/listings')}>Browse all PGs</button>
       </div>
@@ -135,7 +114,7 @@ export default function PgDetailsLanding() {
     return (
       <div style={{ textAlign: 'center', padding: '100px 20px', minHeight: '60vh' }}>
         <div className="spinner" style={{ margin: '0 auto 16px', width: '40px', height: '40px', border: '3px solid #e5e7eb', borderTopColor: '#f59e0b', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-        <p style={{ color: '#4b5563', fontSize: '16px' }}>Loading accommodation details...</p>
+        <p style={{ color: '#4b5563', fontSize: '16px' }}>Loading…</p>
       </div>
     );
   }
@@ -156,26 +135,11 @@ export default function PgDetailsLanding() {
       >
         <div className="container" style={{ width: '100%', maxWidth: '1140px', margin: '0 auto', padding: '0 24px', color: '#fff' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(202,138,4,0.9)', padding: '5px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>
-              ✓ {pg.compliance === 'Verified' ? 'Verified' : 'Listed'} Accommodation
-            </div>
-            {pg.gender === 'girls' && (
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: '#be185d',
-                padding: '5px 14px',
-                borderRadius: '20px',
-                fontSize: '12px',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.8px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
-              }}>
-                👩 Girls Only
-              </div>
-            )}
+            {pg.verified && <span className="hero-chip hero-chip-verified">Verified</span>}
+            <span className="hero-chip">{pg.genderLabel}</span>
+            <span className={`hero-chip ${pg.availability === 'available' ? 'hero-chip-open' : 'hero-chip-full'}`}>
+              {pg.availabilityText}
+            </span>
           </div>
           <h1 style={{ fontSize: '38px', fontWeight: 800, marginBottom: '8px', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
             {pg.title}
@@ -185,13 +149,15 @@ export default function PgDetailsLanding() {
               <span className="material-icons-outlined" style={{ fontSize: '18px', color: '#facc15' }}>location_on</span>
               {pg.location}
             </span>
-            <span>•</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <span className="material-icons-outlined" style={{ fontSize: '18px', color: '#facc15' }}>star</span>
-              {pg.safetyScore ? `Safety ${pg.safetyScore}/10` : 'Newly listed'}
-            </span>
-            <span>•</span>
-            <span style={{ color: '#86efac', fontWeight: 600 }}>₹{Number(pg.price).toLocaleString('en-IN')}/mo onwards</span>
+            {pg.price > 0 && (
+              <>
+                <span>•</span>
+                <span style={{ fontWeight: 600 }}>
+                  {formatINR(pg.price)}
+                  {pg.rentMax > pg.price ? ` – ${formatINR(pg.rentMax)}` : ''} / month
+                </span>
+              </>
+            )}
           </p>
         </div>
       </div>
@@ -201,7 +167,7 @@ export default function PgDetailsLanding() {
         <div className="container" style={{ maxWidth: '1140px', margin: '0 auto', padding: '0 24px', display: 'flex', gap: '24px', overflowX: 'auto' }}>
           <a href="#About" className="subnav-link">About</a>
           <a href="#Amenities" className="subnav-link">Amenities</a>
-          <a href="#Rooms" className="subnav-link highlight">Available Rooms</a>
+          <a href="#Rooms" className="subnav-link highlight">Rooms</a>
           <a href="#FAQs" className="subnav-link">FAQs</a>
           <a href="#Contact" className="subnav-link">Contact</a>
         </div>
@@ -210,53 +176,59 @@ export default function PgDetailsLanding() {
       <div className="container page-content" style={{ maxWidth: '1140px', margin: '40px auto', padding: '0 24px' }}>
         {/* ABOUT SECTION */}
         <section className="detail-section" id="About">
-          <h2 className="section-title">About This Property</h2>
+          <h2 className="section-title">About</h2>
           <p className="section-text" style={{ lineHeight: 1.8, color: '#475569', fontSize: '16px', marginBottom: '24px' }}>
-            {pg.about || `${pg.title} is a paying-guest accommodation in ${pg.location}. Browse the available rooms below and reserve your bed online.`}
+            {pg.about || `${pg.genderLabel} PG in ${pg.location}. The owner hasn't added a description yet.`}
           </p>
-          <div className="stats-grid">
-            <div className="stat-box">
-              <span className="stat-number">{pg.stats.residents}</span>
-              <span className="stat-desc">Current Residents</span>
+          {pg.hasRooms && (
+            <div className="stats-grid">
+              <div className="stat-box">
+                <span className="stat-number">{pg.freeBeds}</span>
+                <span className="stat-desc">Beds available</span>
+              </div>
+              <div className="stat-box">
+                <span className="stat-number">{pg.occupiedBeds} / {pg.totalBeds}</span>
+                <span className="stat-desc">Beds taken</span>
+              </div>
+              <div className="stat-box">
+                <span className="stat-number">{pg.roomCount}</span>
+                <span className="stat-desc">Rooms</span>
+              </div>
+              <div className="stat-box">
+                <span className="stat-number">{pg.price ? formatINR(pg.price) : '—'}</span>
+                <span className="stat-desc">Lowest rent / month</span>
+              </div>
             </div>
-            <div className="stat-box">
-              <span className="stat-number">{pg.stats.security}</span>
-              <span className="stat-desc">Security &amp; Monitoring</span>
-            </div>
-            <div className="stat-box">
-              <span className="stat-number">{pg.stats.backup}</span>
-              <span className="stat-desc">Power Backup</span>
-            </div>
-            <div className="stat-box">
-              <span className="stat-number">{pg.safetyScore ? `${pg.safetyScore}/10` : '—'}</span>
-              <span className="stat-desc">{pg.safetyLabel}</span>
-            </div>
-          </div>
+          )}
+          <ul className="verification-list">
+            <li className={pg.verification.docsVerified ? 'ok' : ''}>
+              <span className="material-icons-outlined">{pg.verification.docsVerified ? 'check_circle' : 'schedule'}</span>
+              Documents {pg.verification.docsVerified ? 'verified' : 'not verified yet'}
+            </li>
+            <li className={pg.verification.inspectionPassed ? 'ok' : ''}>
+              <span className="material-icons-outlined">{pg.verification.inspectionPassed ? 'check_circle' : 'schedule'}</span>
+              {pg.verification.inspectionPassed ? 'Inspection passed' : 'Inspection pending'}
+            </li>
+            <li className={pg.verification.fireSafety ? 'ok' : ''}>
+              <span className="material-icons-outlined">{pg.verification.fireSafety ? 'check_circle' : 'schedule'}</span>
+              Fire safety {pg.verification.fireSafety ? 'certified' : 'not confirmed'}
+            </li>
+          </ul>
         </section>
 
         {/* AMENITIES SECTION */}
         <section className="detail-section" id="Amenities" style={{ marginTop: '50px' }}>
-          <h2 className="section-title">Included Amenities</h2>
+          <h2 className="section-title">Amenities</h2>
           <div className="amenities-grid">
-            {pg.amenities.length === 0 && <p style={{ color: '#64748b' }}>Amenity details have not been added yet.</p>}
-            {pg.amenities.map((key, idx) => {
-              const meta = AMENITY_META[key.toLowerCase()] || {
-                label: key.charAt(0).toUpperCase() + key.slice(1),
-                desc: 'Verified facility for all residents',
-                icon: 'check_circle'
-              };
-              return (
-                <div key={idx} className="amenity-card">
-                  <div className="amenity-icon">
-                    <span className="material-icons-outlined">{meta.icon}</span>
-                  </div>
-                  <div>
-                    <strong>{meta.label}</strong>
-                    <p>{meta.desc}</p>
-                  </div>
+            {pg.amenities.length === 0 && <p style={{ color: '#64748b' }}>The owner hasn't listed any amenities yet.</p>}
+            {pg.amenities.map((key) => (
+              <div key={key} className="amenity-card">
+                <div className="amenity-icon">
+                  <span className="material-icons-outlined">{amenityIcon(key)}</span>
                 </div>
-              );
-            })}
+                <strong>{amenityLabel(key)}</strong>
+              </div>
+            ))}
           </div>
         </section>
 
@@ -281,7 +253,7 @@ export default function PgDetailsLanding() {
                 </span>
                 <div>
                   <strong style={{ display: 'block', color: '#991b1b', fontSize: '15px', marginBottom: '2px' }}>
-                    Gender Policy Eligibility Notice
+                    You can't book this PG
                   </strong>
                   <span style={{ color: '#b91c1c', fontSize: '14px', lineHeight: 1.5 }}>
                     {eligibilityError}
@@ -324,7 +296,7 @@ export default function PgDetailsLanding() {
                 </span>
                 <div>
                   <strong style={{ display: 'block', color: '#92400e', fontSize: '15px', marginBottom: '2px' }}>
-                    Unauthorized Booking Role
+                    Use a tenant account to book
                   </strong>
                   <span style={{ color: '#b45309', fontSize: '14px', lineHeight: 1.5 }}>
                     {roleError}
@@ -350,20 +322,22 @@ export default function PgDetailsLanding() {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
             <div>
-              <h2 className="section-title" style={{ margin: 0 }}>Available Rooms &amp; Rates</h2>
+              <h2 className="section-title" style={{ margin: 0 }}>Rooms &amp; rent</h2>
               <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px' }}>
-                Select a room to begin reservation. Real-time room availability is verified.
+                {pg.freeBeds > 0
+                  ? 'Choose a room with a free bed to book. Counts update as beds are taken.'
+                  : pg.hasRooms
+                    ? 'Every bed here is taken right now. This page updates when one frees up.'
+                    : ''}
               </p>
             </div>
           </div>
 
           {displayRooms.length === 0 && (
-            <p style={{ color: '#64748b', padding: '16px 0' }}>No rooms have been listed for this property yet. Please check back soon.</p>
+            <p style={{ color: '#64748b', padding: '16px 0' }}>The owner hasn't added rooms for this PG yet, so it can't be booked online.</p>
           )}
           <div className="rooms-grid">
             {displayRooms.map((room, idx) => {
-              const vacancyLeft = Math.max(0, room.capacity - room.currentOccupancy);
-
               return (
                 <div
                   key={room.id || idx}
@@ -391,25 +365,24 @@ export default function PgDetailsLanding() {
                         letterSpacing: '0.5px',
                       }}
                     >
-                      {room.available ? `${vacancyLeft} Bed${vacancyLeft > 1 ? 's' : ''} Left` : 'Fully Occupied'}
+                      {room.underMaintenance ? 'Under maintenance' : room.available ? `${room.bedsLeft} bed${room.bedsLeft > 1 ? 's' : ''} free` : 'Full'}
                     </span>
                   </div>
 
                   <div style={{ padding: '20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                       <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b' }}>
-                        {room.type} {room.roomNumber ? `(Room #${room.roomNumber})` : ''}
+                        {room.type}{room.roomNumber ? ` · Room ${room.roomNumber}` : ''}
                       </h3>
                     </div>
                     <div style={{ fontSize: '22px', fontWeight: 800, color: room.available ? '#ca8a04' : '#64748b', marginBottom: '8px' }}>
-                      ₹{room.rent.toLocaleString('en-IN')}<span style={{ fontSize: '13px', fontWeight: 500, color: '#64748b' }}>/month</span>
+                      {formatINR(room.rent)}<span style={{ fontSize: '13px', fontWeight: 500, color: '#64748b' }}>/month</span>
                     </div>
                     <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '14px' }}>
-                      Security Deposit: ₹{room.deposit.toLocaleString('en-IN')} (Refundable)
+                      Deposit {formatINR(room.deposit)}
                     </p>
-                    <p style={{ fontSize: '13px', color: '#475569', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span className="material-icons-outlined" style={{ fontSize: '18px', color: '#ca8a04' }}>done</span>
-                      {room.feature}
+                    <p style={{ fontSize: '13px', color: '#475569', marginBottom: '16px' }}>
+                      {room.currentOccupancy} of {room.capacity} bed{room.capacity > 1 ? 's' : ''} taken
                     </p>
 
                     <button
@@ -428,7 +401,7 @@ export default function PgDetailsLanding() {
                         transition: 'background 0.2s',
                       }}
                     >
-                      {room.available ? 'Book This Room' : 'Sold Out'}
+                      {room.available ? 'Book a bed' : 'Not available'}
                     </button>
                   </div>
                 </div>
@@ -439,9 +412,9 @@ export default function PgDetailsLanding() {
 
         {/* FAQS SECTION */}
         <section className="detail-section" id="FAQs" style={{ marginTop: '60px' }}>
-          <h2 className="section-title">Frequently Asked Questions</h2>
+          <h2 className="section-title">Questions</h2>
           <div className="faqs-list">
-            {(RAW_FAQS || []).map((faq, index) => (
+            {faqs.map((faq, index) => (
               <div
                 key={index}
                 className="faq-item"
@@ -473,11 +446,11 @@ export default function PgDetailsLanding() {
 
         {/* CONTACT OWNER SECTION */}
         <section className="detail-section" id="Contact" style={{ marginTop: '60px', marginBottom: '40px' }}>
-          <h2 className="section-title">Property Manager &amp; Contact</h2>
+          <h2 className="section-title">Contact</h2>
           <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
             <div>
               <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '6px' }}>
-                Managed by: {pg.owner?.name || 'RentBro Property Partner'}
+                {pg.owner?.name ? `Owner: ${pg.owner.name}` : 'Owner details not available'}
               </h3>
               <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '4px' }}>
                 {pg.owner ? (
@@ -485,10 +458,7 @@ export default function PgDetailsLanding() {
                     Email: <a href={`mailto:${pg.owner.email}`}>{pg.owner.email}</a>
                     {pg.owner.phone ? <> • Phone: <a href={`tel:${pg.owner.phone}`}>{pg.owner.phone}</a></> : null}
                   </>
-                ) : 'Contact details are shared after booking.'}
-              </p>
-              <p style={{ color: '#16a34a', fontSize: '13px', fontWeight: 600 }}>
-                ✓ Official Registered Property on RentBro
+                ) : "The owner hasn't shared contact details for this listing."}
               </p>
             </div>
             <button
@@ -507,7 +477,7 @@ export default function PgDetailsLanding() {
                 cursor: 'pointer',
               }}
             >
-              {displayRooms.some(r => r.available) ? 'Reserve A Bed Now' : 'View Rooms'}
+              {displayRooms.some(r => r.available) ? 'Book a bed' : 'See rooms'}
             </button>
           </div>
         </section>
@@ -560,12 +530,10 @@ export default function PgDetailsLanding() {
                 <span className="material-icons-outlined" style={{ fontSize: '32px' }}>wc</span>
               </div>
               <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#1e293b', marginBottom: '6px' }}>
-                Select Your Gender
+                Your gender
               </h3>
               <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.5 }}>
-                {pg.gender === 'girls'
-                  ? `${pg.title} is strictly a Girls Only accommodation. Please confirm your gender to verify booking eligibility.`
-                  : 'Please confirm your gender to proceed with reservation.'}
+                {`${pg.title} is a ${pg.genderLabel.toLowerCase()} PG. Add your gender to your profile so we can check you can book here.`}
               </p>
             </div>
 
@@ -637,7 +605,7 @@ export default function PgDetailsLanding() {
                   boxShadow: '0 4px 12px rgba(212, 175, 55, 0.3)'
                 }}
               >
-                {genderSaving ? 'Saving...' : 'Confirm & Continue'}
+                {genderSaving ? 'Saving…' : 'Save and continue'}
               </button>
             </div>
           </div>

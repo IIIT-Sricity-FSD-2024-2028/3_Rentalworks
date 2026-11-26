@@ -4,6 +4,7 @@ import { runThunk } from '../../../app/hooks';
 import { adminProperties, adminUsers } from '../../../features/admin/adminSlices';
 import { useToast } from '../components/useToast';
 import Modal from '../components/Modal';
+import { mapRoom } from '../../../features/listings/listingMappers';
 
 const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 const getName = (val) => typeof val === 'object' ? (val?.name || 'Unknown') : (val || 'Unknown');
@@ -269,15 +270,26 @@ export default function Properties() {
                     <div className="pd-val">₹{(p.rentMin || 0).toLocaleString()} – ₹{(p.rentMax || 0).toLocaleString()}</div>
                   </div>
                   <div className="prop-detail">
-                    <div className="pd-lbl">Safety Score</div>
-                    <div className="pd-val">{p.safetyScore || 8.0}/10</div>
-                    <div className="safety-bar">
-                      <div className="safety-fill" style={{ width: `${((p.safetyScore || 8.0) / 10) * 100}%` }} />
+                    <div className="pd-lbl">Verification</div>
+                    <div className="pd-val">
+                      {p.docsVerified && p.inspectionPassed
+                        ? 'Docs + inspection done'
+                        : p.docsVerified
+                          ? 'Inspection pending'
+                          : 'Docs not verified'}
                     </div>
                   </div>
                   <div className="prop-detail">
-                    <div className="pd-lbl">Rooms</div>
-                    <div className="pd-val">{p.rooms || '1/10'} occupied</div>
+                    <div className="pd-lbl">Beds taken</div>
+                    <div className="pd-val">
+                      {(() => {
+                        const rooms = (p.roomEntities || []).map(mapRoom);
+                        if (!rooms.length) return 'No rooms added';
+                        const total = rooms.reduce((n, r) => n + r.capacity, 0);
+                        const taken = rooms.reduce((n, r) => n + r.currentOccupancy, 0);
+                        return `${taken} / ${total} in ${rooms.length} room${rooms.length === 1 ? '' : 's'}`;
+                      })()}
+                    </div>
                   </div>
                   <div className="prop-detail">
                     <div className="pd-lbl">Occupancy</div>

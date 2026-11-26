@@ -41,10 +41,7 @@ export default function Profile({
 
 
   const totalProps = properties.length;
-  const totalRevenue = properties.reduce(
-    (sum, p) => sum + (p.occupiedRooms || 0) * (p.monthlyRent || 0),
-    0
-  );
+  const totalRevenue = properties.reduce((sum, p) => sum + (p.monthlyIncome || 0), 0);
 
   const formatCurrency = (amount) => {
     return '₹' + Number(amount || 0).toLocaleString('en-IN');

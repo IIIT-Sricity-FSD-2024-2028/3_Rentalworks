@@ -1,32 +1,56 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import * as api from '../../dashboards/owner/services/api';
 import { showToast } from '../ui/uiSlice';
+import { mapRoom } from '../listings/listingMappers';
+import { normalizeStatus, statusLabel, toNumber, toISODate, parseList, amenityLabel, cityFromLocation } from '../../utils/normalize';
 
 // ------------------------------------------------------------------ mappers
 
-export const mapOwnerProperty = (p) => ({
-  id: p.id,
-  images: p.images || [],
-  description: p.description || '',
-  name: p.name,
-  address: p.address || p.location || '',
-  city: p.city || '',
-  state: p.state || '',
-  pincode: p.pincode || '',
-  type: p.type || 'Mixed',
-  totalCapacity: p.totalCapacity ?? 0,
-  totalRooms: p.totalRooms ?? 0,
-  occupiedRooms: p.occupiedRooms ?? 0,
-  monthlyRent: Number(p.monthlyRent ?? p.rentMin ?? 0),
-  amenities: p.amenities || [],
-  gender: p.gender || (p.type === 'Female' ? 'girls' : p.type === 'Male' ? 'boys' : 'unisex'),
-  status: p.status === 'approved' ? 'Active' : p.status ? p.status.charAt(0).toUpperCase() + p.status.slice(1) : 'Pending',
-  addedDate: p.createdAt ? String(p.createdAt).split('T')[0] : '',
-  owner: p.owner ? p.owner.name : '',
-  ownerEmail: p.owner ? p.owner.email : '',
-});
+// When the property has rooms in the database, occupancy and income come from
+// those rooms (they change as tenants book). The hand-typed totalRooms /
+// occupiedRooms fields are only a fallback for properties with no rooms yet.
+function roomStats(p) {
+  const rooms = (p.roomEntities || []).map(mapRoom);
+  if (!rooms.length) return null;
+  return {
+    totalRooms: rooms.length,
+    occupiedRooms: rooms.filter((r) => r.bedsLeft === 0).length,
+    totalBeds: rooms.reduce((n, r) => n + r.capacity, 0),
+    occupiedBeds: rooms.reduce((n, r) => n + r.currentOccupancy, 0),
+    monthlyIncome: rooms.reduce((n, r) => n + r.currentOccupancy * r.rent, 0),
+  };
+}
 
-const ISSUE_STATUS = { open: 'Open', 'in-progress': 'In Progress', 'in progress': 'In Progress', in_progress: 'In Progress', resolved: 'Resolved', closed: 'Closed' };
+export const mapOwnerProperty = (p) => {
+  const stats = roomStats(p);
+  return {
+    id: p.id,
+    images: p.images || [],
+    description: p.description || '',
+    name: p.name,
+    address: p.address || p.location || '',
+    city: p.city || cityFromLocation(p.location),
+    state: p.state || '',
+    pincode: p.pincode || '',
+    type: p.type || 'Mixed',
+    totalCapacity: stats ? stats.totalBeds : p.totalCapacity ?? 0,
+    totalRooms: stats ? stats.totalRooms : p.totalRooms ?? 0,
+    occupiedRooms: stats ? stats.occupiedRooms : Math.min(p.occupiedRooms ?? 0, p.totalRooms ?? 0),
+    totalBeds: stats ? stats.totalBeds : null,
+    occupiedBeds: stats ? stats.occupiedBeds : null,
+    roomsFromDb: Boolean(stats),
+    monthlyIncome: stats ? stats.monthlyIncome : Math.min(p.occupiedRooms ?? 0, p.totalRooms ?? 0) * toNumber(p.monthlyRent ?? p.rentMin),
+    monthlyRent: toNumber(p.monthlyRent) || toNumber(p.rentMin),
+    amenities: parseList(p.amenities).map(amenityLabel),
+    gender: p.gender || (p.type === 'Female' ? 'girls' : p.type === 'Male' ? 'boys' : 'unisex'),
+    status: normalizeStatus(p.status) === 'approved' ? 'Active' : statusLabel(p.status, 'Pending'),
+    addedDate: toISODate(p.createdAt),
+    owner: p.owner ? p.owner.name : '',
+    ownerEmail: p.owner ? p.owner.email : '',
+  };
+};
+
+const ISSUE_STATUS = { open: 'Open', in_progress: 'In Progress', resolved: 'Resolved', closed: 'Closed' };
 
 export const mapOwnerIssue = (i) => ({
   id: i.id,
@@ -36,9 +60,9 @@ export const mapOwnerIssue = (i) => ({
   description: i.description || '',
   category: i.category || 'Maintenance',
   priority: i.priority ? i.priority.charAt(0).toUpperCase() + i.priority.slice(1) : 'Medium',
-  status: ISSUE_STATUS[String(i.status || '').toLowerCase()] || i.status || 'Open',
+  status: ISSUE_STATUS[normalizeStatus(i.status)] || statusLabel(i.status, 'Open'),
   reportedBy: i.reportedBy || (i.tenant ? i.tenant.name : 'Tenant'),
-  reportedDate: i.reportedAt || (i.createdAt ? String(i.createdAt).split('T')[0] : ''),
+  reportedDate: toISODate(i.reportedAt || i.createdAt),
 });
 
 export const mapOwnerNotification = (n) => ({
@@ -47,7 +71,7 @@ export const mapOwnerNotification = (n) => ({
   message: n.message,
   type: n.type || 'reminder',
   read: Boolean(n.read || n.isRead),
-  date: n.sentAt ? String(n.sentAt).split('T')[0] : n.createdAt ? String(n.createdAt).split('T')[0] : '',
+  date: toISODate(n.sentAt || n.createdAt),
 });
 
 export function ownerPropertyPayload(p) {
@@ -126,7 +150,9 @@ export const addOwnerIssue = ownerMutation(
 );
 export const updateOwnerIssueStatus = ownerMutation(
   'updateIssueStatus',
-  ({ id, status }) => api.updateIssueStatus(id, String(status).toLowerCase().replace(' ', '-')),
+  // The owner endpoint only accepts 'open' | 'in-progress' | 'resolved' (hyphen),
+  // unlike /issues and /complaints which use 'in_progress'. Reads are normalised.
+  ({ id, status }) => api.updateIssueStatus(id, normalizeStatus(status).replace(/_/g, '-')),
   'Issue updated',
 );
 export const deleteOwnerIssue = ownerMutation('deleteIssue', (id) => api.deleteIssue(id), 'Issue deleted');

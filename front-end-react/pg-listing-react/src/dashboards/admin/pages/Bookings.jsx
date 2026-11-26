@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
 import { adminBookings } from '../../../features/admin/adminSlices';
 import Modal from '../components/Modal';
+import { formatDuration, formatDate, formatINR } from '../../../utils/normalize';
 
 const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 const statusLabel = (s) => ({ active: 'Active', confirmed: 'Confirmed', paid: 'Paid', pending: 'Pending', cancelled: 'Cancelled', overdue: 'Overdue', completed: 'Completed' })[s] || cap(s);
@@ -157,9 +158,9 @@ export default function Bookings() {
                   </td>
                   <td style={{ fontSize: 12 }}>{getName(b.property)}</td>
                   <td><span className="room-chip">{b.room}</span></td>
-                  <td style={{ fontSize: 12 }}>📅 {b.checkIn}</td>
-                  <td style={{ fontSize: 12 }}>⏱ {b.duration}</td>
-                  <td style={{ fontSize: 12 }}>₹{(Number(b.rent) || 0).toLocaleString('en-IN')}</td>
+                  <td style={{ fontSize: 12 }}>📅 {formatDate(b.checkIn)}</td>
+                  <td style={{ fontSize: 12 }}>⏱ {formatDuration(b.duration)}</td>
+                  <td style={{ fontSize: 12 }}>{formatINR(b.rent)}</td>
                   <td><span className={`badge badge-${b.status}`}>{statusLabel(b.status)}</span></td>
                   <td>
                     <div className="act-icons">
@@ -217,7 +218,7 @@ export default function Bookings() {
             <div><strong>Property:</strong> {getName(modal.booking.property)}</div>
             <div><strong>Room:</strong> {modal.booking.room}</div>
             <div><strong>Check-in:</strong> {modal.booking.checkIn}</div>
-            <div><strong>Duration:</strong> {modal.booking.duration}</div>
+            <div><strong>Duration:</strong> {formatDuration(modal.booking.duration)}</div>
             <div><strong>Monthly Rent:</strong> ₹{(Number(modal.booking.rent) || 0).toLocaleString('en-IN')}</div>
             <div><strong>Status:</strong> <span className={`badge badge-${modal.booking.status}`}>{statusLabel(modal.booking.status)}</span></div>
           </div>

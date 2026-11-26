@@ -3,16 +3,16 @@ import { useDispatch, useSelector } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
 import { adminComplaints } from '../../../features/admin/adminSlices';
 import Modal from '../components/Modal';
+import { statusLabel, formatDate } from '../../../utils/normalize';
 
-const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 const getName = (val) => typeof val === 'object' ? (val?.name || 'Unknown') : (val || 'Unknown');
 
 export default function Complaints() {
   const dispatch = useDispatch();
   const items = useSelector(adminComplaints.selectors.selectItems);
   const loading = useSelector(adminComplaints.selectors.selectIsLoading) && items.length === 0;
-  // Rows may be stored as "in_progress" or "in-progress" depending on who updated them.
-  const complaints = items.map((c) => ({ ...c, status: String(c.status || 'open').replace('_', '-') }));
+  // Status is normalised to 'open' | 'in_progress' | 'resolved' by the resource slice.
+  const complaints = items.map((c) => ({ ...c, status: c.status || 'open' }));
   const [search, setSearch] = useState('');
   const [statusF, setStatusF] = useState('all');
   const [modal, setModal] = useState(null);
@@ -29,7 +29,7 @@ export default function Complaints() {
     return ms && mst;
   });
 
-  const counts = { total: complaints.length, open: complaints.filter(c => c.status === 'open').length, inProgress: complaints.filter(c => c.status === 'in-progress').length, resolved: complaints.filter(c => c.status === 'resolved').length };
+  const counts = { total: complaints.length, open: complaints.filter(c => c.status === 'open').length, inProgress: complaints.filter(c => c.status === 'in_progress').length, resolved: complaints.filter(c => c.status === 'resolved').length };
 
   const setStatus = (c, status, label) =>
     runThunk(dispatch, adminComplaints.thunks.updateItem({ id: c.id, changes: { status } }), { success: `Complaint #${c.id} marked as ${label}` });
@@ -63,7 +63,7 @@ export default function Complaints() {
         <div className="tbl-hdr">
           <div className="search-wrap"><span className="s-ico material-icons-outlined">search</span><input placeholder="Search complaints..." value={search} onChange={e => setSearch(e.target.value)} /></div>
           <select className="sel" value={statusF} onChange={e => setStatusF(e.target.value)}>
-            <option value="all">All Status</option><option value="open">Open</option><option value="in-progress">In Progress</option><option value="resolved">Resolved</option>
+            <option value="all">All Status</option><option value="open">Open</option><option value="in_progress">In Progress</option><option value="resolved">Resolved</option>
           </select>
         </div>
         <table className="data-tbl">
@@ -77,8 +77,8 @@ export default function Complaints() {
                 <td><strong>{getName(c.tenant)}</strong></td>
                 <td style={{fontSize:12}}>{getName(c.property)}</td>
                 <td style={{fontSize:12,maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.description}</td>
-                <td><span className={`badge badge-${c.status === 'open' ? 'pending' : c.status === 'in-progress' ? 'pending' : 'completed'}`}>{cap(c.status)}</span></td>
-                <td style={{fontSize:12}}>{c.reportedAt || '-'}</td>
+                <td><span className={`badge badge-${c.status === 'resolved' ? 'completed' : 'pending'}`}>{statusLabel(c.status)}</span></td>
+                <td style={{fontSize:12}}>{formatDate(c.reportedAt || c.createdAt, '-')}</td>
                 <td>
                   <div className="act-icons">
                     <button className="ico-btn" onClick={() => handleView(c)} title="View"><span className="material-icons-outlined" style={{fontSize:14}}>visibility</span></button>
@@ -104,8 +104,8 @@ export default function Complaints() {
             <div><strong>Tenant:</strong> {getName(modal.complaint.tenant)}</div>
             <div><strong>Property:</strong> {getName(modal.complaint.property)}</div>
             <div><strong>Description:</strong> {modal.complaint.description}</div>
-            <div><strong>Status:</strong> <span className={`badge badge-${modal.complaint.status === 'open' ? 'pending' : modal.complaint.status === 'in-progress' ? 'pending' : 'completed'}`}>{cap(modal.complaint.status)}</span></div>
-            <div><strong>Reported:</strong> {modal.complaint.reportedAt || '-'}</div>
+            <div><strong>Status:</strong> <span className={`badge badge-${modal.complaint.status === 'resolved' ? 'completed' : 'pending'}`}>{statusLabel(modal.complaint.status)}</span></div>
+            <div><strong>Reported:</strong> {formatDate(modal.complaint.reportedAt || modal.complaint.createdAt, '-')}</div>
           </div>
         )}
       </Modal>

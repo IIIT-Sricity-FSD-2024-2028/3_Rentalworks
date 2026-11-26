@@ -9,7 +9,7 @@ export const INITIAL_FILTERS = {
   gender: [],
   food: [],
   amenity: [],
-  rating: 'all',
+  availableOnly: false,
 };
 
 export const CITIES = ['All', 'Chennai', 'Bangalore', 'Mumbai', 'Pune', 'Hyderabad'];
@@ -62,6 +62,8 @@ const listingsSlice = createSlice({
     search: '',
     city: 'All',
     filterPanelOpen: false,
+    refreshing: false,
+    lastUpdated: null,
   },
   reducers: {
     setFilter(state, { payload: { key, value } }) {
@@ -88,21 +90,31 @@ const listingsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // A background refresh (data already on screen) keeps showing the old data
+      // instead of flashing a spinner; `refreshing` tells the UI a refresh is running.
       .addCase(fetchListings.pending, (state) => {
-        state.status = 'loading';
+        if (state.status === 'succeeded') state.refreshing = true;
+        else state.status = 'loading';
         state.error = null;
       })
       .addCase(fetchListings.fulfilled, (state, { payload }) => {
         state.status = 'succeeded';
+        state.refreshing = false;
         state.properties = payload.properties;
         state.rooms = payload.rooms;
+        state.lastUpdated = Date.now();
       })
       .addCase(fetchListings.rejected, (state, { payload }) => {
-        state.status = 'failed';
-        state.error = payload;
+        state.refreshing = false;
+        // Keep showing the last good data if a background refresh fails.
+        if (state.status !== 'succeeded') {
+          state.status = 'failed';
+          state.error = payload;
+        }
       })
       .addCase(fetchListingById.pending, (state, { meta }) => {
-        state.detail = { ...state.detail, id: meta.arg, status: 'loading', error: null };
+        const sameProperty = String(state.detail.id) === String(meta.arg) && state.detail.property;
+        state.detail = { ...state.detail, id: meta.arg, status: sameProperty ? 'succeeded' : 'loading', error: null };
       })
       .addCase(fetchListingById.fulfilled, (state, { payload, meta }) => {
         state.detail = {
@@ -113,7 +125,8 @@ const listingsSlice = createSlice({
           error: null,
         };
       })
-      .addCase(fetchListingById.rejected, (state, { payload }) => {
+      .addCase(fetchListingById.rejected, (state, { payload, meta }) => {
+        if (String(state.detail.id) === String(meta.arg) && state.detail.property) return;
         state.detail.status = 'failed';
         state.detail.error = payload;
       });
@@ -128,6 +141,8 @@ export default listingsSlice.reducer;
 const selectListingsState = (state) => state.listings;
 export const selectListingsStatus = (state) => state.listings.status;
 export const selectListingsError = (state) => state.listings.error;
+export const selectListingsRefreshing = (state) => state.listings.refreshing;
+export const selectListingsUpdatedAt = (state) => state.listings.lastUpdated;
 export const selectFilters = (state) => state.listings.filters;
 export const selectSearch = (state) => state.listings.search;
 export const selectCity = (state) => state.listings.city;
@@ -145,12 +160,19 @@ export const selectAllListings = createSelector([selectListingsState], ({ proper
     ),
 );
 
+/** Cities that actually have listings, plus the defaults so the picker never looks empty. */
+export const selectCities = createSelector([selectAllListings], (listings) => {
+  const fromData = listings.map((l) => l.city).filter(Boolean);
+  return ['All', ...new Set([...CITIES.slice(1), ...fromData])];
+});
+
 export const selectFilteredListings = createSelector(
   [selectAllListings, selectFilters, selectSearch, selectCity],
   (listings, filters, search, city) => {
     const q = search.trim().toLowerCase();
     const result = listings.filter((item) => {
-      if (city !== 'All' && !item.location.toLowerCase().includes(city.toLowerCase())) return false;
+      if (city !== 'All' && item.city.toLowerCase() !== city.toLowerCase() && !item.location.toLowerCase().includes(city.toLowerCase()))
+        return false;
       if (q && !item.title.toLowerCase().includes(q) && !item.location.toLowerCase().includes(q)) return false;
       if (filters.price !== 'all') {
         const [min, max] = filters.price.split('-').map(Number);
@@ -160,14 +182,15 @@ export const selectFilteredListings = createSelector(
       if (filters.gender.length && !filters.gender.some((g) => g === item.gender || item.gender === 'unisex')) return false;
       if (filters.room.length && !filters.room.some((r) => item.roomTypes.includes(r.toLowerCase()))) return false;
       if (filters.food.length && !filters.food.some((f) => item.food === f || (f === 'vegonly' && item.food === 'food'))) return false;
-      if (filters.amenity.length && !filters.amenity.every((a) => item.amenities.some((x) => x.includes(a)))) return false;
-      if (filters.rating !== 'all' && item.rating < parseFloat(filters.rating)) return false;
+      // Amenities are canonical keys (see utils/normalize), so match exactly: 'ac' must not match 'backup'.
+      if (filters.amenity.length && !filters.amenity.every((a) => item.amenities.includes(a))) return false;
+      if (filters.availableOnly && !item.hasAvailableRooms) return false;
       return true;
     });
     const sorted = [...result];
     if (filters.sort === 'low') sorted.sort((a, b) => a.price - b.price);
     else if (filters.sort === 'high') sorted.sort((a, b) => b.price - a.price);
-    else if (filters.sort === 'rating') sorted.sort((a, b) => b.rating - a.rating);
+    else if (filters.sort === 'beds') sorted.sort((a, b) => b.freeBeds - a.freeBeds || a.price - b.price);
     return sorted;
   },
 );
@@ -175,7 +198,7 @@ export const selectFilteredListings = createSelector(
 export const selectActiveFilterCount = createSelector([selectFilters], (f) => {
   let count = 0;
   if (f.price !== 'all') count++;
-  if (f.rating !== 'all') count++;
+  if (f.availableOnly) count++;
   return count + f.gender.length + f.room.length + f.food.length + f.amenity.length;
 });
 

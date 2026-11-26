@@ -1271,6 +1271,37 @@ input[type="checkbox"] {
   color: var(--text-muted);
 }
 
+/* PG details: hero chips + verification checklist */
+.hero-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+}
+.hero-chip-verified { background: #15803d; border-color: #15803d; }
+.hero-chip-open { background: rgba(22, 163, 74, 0.25); border-color: #86efac; }
+.hero-chip-full { background: rgba(220, 38, 38, 0.25); border-color: #fca5a5; }
+
+.verification-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 16px 0 0;
+  padding: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.verification-list li { display: inline-flex; align-items: center; gap: 6px; }
+.verification-list .material-icons-outlined { font-size: 18px; color: #94a3b8; }
+.verification-list li.ok { color: var(--text); }
+.verification-list li.ok .material-icons-outlined { color: #16a34a; }
+
 .badge-live-available {
   background: #dcfce7;
   color: #15803d;

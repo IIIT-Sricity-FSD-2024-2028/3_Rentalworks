@@ -1,6 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWardenData } from '../utils/dataStore';
+import { useSelector } from 'react-redux';
+import { selectOccupancyReport } from '../../../features/warden/wardenSlices';
+import BedSyncPanel from '../components/BedSyncPanel';
 
 function StatCard({ color, label, value, sub, materialIcon }) {
   return (
@@ -177,9 +180,10 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { tenants, rooms, complaints, violations } = data;
 
+  // Counts come from active stays (who is actually living here), not the stored room counters.
+  const report = useSelector(selectOccupancyReport);
   const totalRooms = rooms.length;
-  const occupiedRooms = rooms.filter(r => r.occupancy && r.occupancy.includes('Occupied')).length;
-  const vacantRooms = rooms.filter(r => r.occupancy === 'Vacant').length;
+  const occupiedRooms = report.staysLoaded ? report.fullRooms : rooms.filter(r => r.occupancy && r.occupancy.includes('Occupied')).length;
   const activeComplaints = complaints.filter(c => c.status === 'open' || c.status === 'in_progress').length;
   const ruleViolations = violations.length;
 
@@ -191,12 +195,20 @@ export default function Dashboard() {
       </div>
 
       <div className="stats-grid">
-        <StatCard color="blue" materialIcon="group" label="Total Tenants" value={tenants.length} sub="At your properties" />
-        <StatCard color="green" materialIcon="home" label="Occupied Rooms" value={occupiedRooms} sub={`of ${totalRooms} rooms`} />
-        <StatCard color="yellow" materialIcon="home" label="Vacant Rooms" value={vacantRooms} sub="Available" />
+        <StatCard
+          color="blue"
+          materialIcon="group"
+          label="Residents"
+          value={report.staysLoaded ? report.residents : tenants.length}
+          sub={report.staysLoaded ? `${report.tenantsWithBed} tenant accounts · ${report.properties.length} PGs` : 'Tenant accounts'}
+        />
+        <StatCard color="green" materialIcon="home" label="Full Rooms" value={occupiedRooms} sub={`of ${totalRooms} rooms`} />
+        <StatCard color="yellow" materialIcon="bed" label="Free Beds" value={report.staysLoaded ? report.freeBeds : '—'} sub={report.staysLoaded ? `of ${report.totalBeds} beds` : ''} />
         <StatCard color="red" materialIcon="schedule" label="Active Complaints" value={activeComplaints} sub={`${complaints.filter(c => c.priority === 'high' && c.status !== 'resolved').length} urgent`} />
         <StatCard color="orange" materialIcon="warning" label="Rule Violations" value={ruleViolations} sub={`${violations.filter(v => v.severity === 'high').length} high severity`} />
       </div>
+
+      <BedSyncPanel />
 
       <div className="charts-row">
         <ComplaintsChart complaints={complaints} />

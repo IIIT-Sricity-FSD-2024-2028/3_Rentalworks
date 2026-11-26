@@ -180,12 +180,11 @@ export default function BookingRoommate() {
       </div>
 
       <div className="booking-step-card">
-        {/* HEADER: Clean, without any 'Optional AI Match' tag */}
         <div className="step-intro-head">
-          <h2>Smart Roommate Matching &amp; Lifestyle Preferences</h2>
+          <h2>Choose a roommate</h2>
           <p>
             You selected <strong>{selectedRoom?.type || 'Double Sharing'}</strong> at <strong>{pg.title}</strong>.
-            Configure your living habits and compatibility preferences before proceeding to payment.
+            Tell us your habits to see how well you'd match with people already staying here, or let the warden assign a bed.
           </p>
         </div>
 
@@ -199,9 +198,9 @@ export default function BookingRoommate() {
               {optInChoice === 'yes' && <div className="decision-radio-dot" />}
             </div>
             <div>
-              <div className="decision-title">✨ Yes, Match Me with a Compatible Roommate</div>
+              <div className="decision-title">Show me possible roommates</div>
               <div className="decision-desc">
-                Select your lifestyle habits to calculate compatibility % against active residents in this PG and choose your preferred roommate.
+                Fill in your habits below. We compare them with current residents and show a match percentage for each.
               </div>
             </div>
           </div>
@@ -214,9 +213,9 @@ export default function BookingRoommate() {
               {optInChoice === 'no' && <div className="decision-radio-dot" />}
             </div>
             <div>
-              <div className="decision-title">⚡ No, Auto-Assign Roommate</div>
+              <div className="decision-title">Skip, assign me any free bed</div>
               <div className="decision-desc">
-                Prefer warden auto-allocation. Save your living habits for PG records and skip tenant browsing directly to payment.
+                Your habits are still saved for the warden. You go straight to payment.
               </div>
             </div>
           </div>
@@ -227,9 +226,9 @@ export default function BookingRoommate() {
           <div className="smart-form-header">
             <h3>
               <span className="material-icons-outlined" style={{ color: '#ca8a04', fontSize: '20px' }}>tune</span>
-              Your Lifestyle &amp; Compatibility Criteria
+              Your habits
             </h3>
-            <span style={{ fontSize: '12px', color: '#64748b' }}>Used to calculate real-time compatibility %</span>
+            <span style={{ fontSize: '12px', color: '#64748b' }}>Used to work out the match percentage</span>
           </div>
 
           <div className="smart-form-grid">
@@ -493,7 +492,7 @@ export default function BookingRoommate() {
                         className={`btn-select-rm ${isSelected ? 'btn-selected' : ''}`}
                         onClick={() => handleSelectRoommate(rm)}
                       >
-                        {isSelected ? '✓ Selected Roommate' : 'Choose as Roommate →'}
+                        {isSelected ? 'Selected' : 'Choose'}
                       </button>
                     </div>
                   );
