@@ -1,5 +1,6 @@
 import Icon from '../components/Icon';
-import React, { useState } from 'react';
+import React from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { Link, useNavigate } from 'react-router-dom';
 import { AMENITIES } from '../../../utils/normalize';
 
@@ -10,7 +11,7 @@ const AMENITY_LIST = Object.values(AMENITIES).map(({ label, icon }) => ({ label,
 export default function AddProperty({ onAddProperty }) {
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useScreenState({
     name: '',
     address: '',
     city: '',
@@ -27,9 +28,9 @@ export default function AddProperty({ onAddProperty }) {
     imageUrl: '',
   });
 
-  const [selectedAmenities, setSelectedAmenities] = useState([]);
-  const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedAmenities, setSelectedAmenities] = useScreenState([]);
+  const [errors, setErrors] = useScreenState({});
+  const [isSubmitting, setIsSubmitting] = useScreenState(false);
 
   const handleChange = (e) => {
     const id = e.target.id;

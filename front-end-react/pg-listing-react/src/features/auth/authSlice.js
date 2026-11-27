@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { http } from '../../services/apiClient';
-import { loadSession } from './authStorage';
 
 export const MANAGEMENT_ROLES = ['admin', 'owner', 'warden', 'super_admin'];
 
@@ -15,6 +14,8 @@ export const ROLE_HOME = {
 };
 
 const toError = (err) => err?.message || 'Something went wrong';
+const sessionPath = '/users/session';
+const sessionOptions = { auth: false, credentials: 'include' };
 
 // The server matches username / email / phone exactly, and every stored email
 // is lowercase. Trim, and lowercase anything that looks like an email, so
@@ -33,7 +34,7 @@ function splitToken(payload) {
 
 export const login = createAsyncThunk('auth/login', async ({ username, password }, { rejectWithValue }) => {
   try {
-    const data = await http.post('/users/login', { username: toIdentifier(username), password }, { auth: false });
+    const data = await http.post(sessionPath, { username: toIdentifier(username), password }, sessionOptions);
     if (data?.role === 'owner' && data?.status === 'pending') {
       return rejectWithValue('Your property registration is pending admin verification. You will be notified once approved.');
     }
@@ -45,7 +46,7 @@ export const login = createAsyncThunk('auth/login', async ({ username, password 
 
 export const guestLogin = createAsyncThunk('auth/guestLogin', async ({ username, password }, { rejectWithValue }) => {
   try {
-    const data = await http.post('/users/guest-login', { username: toIdentifier(username), password }, { auth: false });
+    const data = await http.post(`${sessionPath}?guestOnly=true`, { username: toIdentifier(username), password }, sessionOptions);
     return splitToken(data);
   } catch (err) {
     return rejectWithValue(toError(err));
@@ -57,7 +58,7 @@ export const registerGuest = createAsyncThunk('auth/registerGuest', async (detai
     await http.post('/users/guest-register', details, { auth: false });
     // The register endpoint returns an existing account without checking its
     // password, so the session always comes from a real sign-in.
-    const data = await http.post('/users/login', { username: details.email, password: details.password }, { auth: false }).catch((err) => {
+    const data = await http.post(sessionPath, { username: toIdentifier(details.email), password: details.password }, sessionOptions).catch((err) => {
       if (err.status === 401) throw new Error('An account with this email or phone already exists. Please sign in instead.');
       throw err;
     });
@@ -67,10 +68,42 @@ export const registerGuest = createAsyncThunk('auth/registerGuest', async (detai
   }
 });
 
+export const restoreSession = createAsyncThunk(
+  'auth/restoreSession',
+  async (_, { rejectWithValue }) => {
+    try {
+      const user = await http.get(sessionPath, sessionOptions);
+      return user?.id ? splitToken(user) : { user: null, token: null };
+    } catch (err) {
+      return rejectWithValue(toError(err));
+    }
+  },
+  {
+    condition: (_, { getState }) => ['idle', 'failed'].includes(getState().auth.sessionStatus),
+  },
+);
+
+export const logout = createAsyncThunk(
+  'auth/logout',
+  async (_, { rejectWithValue }) => {
+    try {
+      await http.delete(sessionPath, sessionOptions);
+    } catch (err) {
+      return rejectWithValue(toError(err));
+    }
+  },
+  { condition: (_, { getState }) => !getState().auth.signingOut },
+);
+
 /** Owner application: creates a *pending* account, does not sign in. */
-export const registerOwner = createAsyncThunk('auth/registerOwner', async (details, { rejectWithValue }) => {
+export const registerOwner = createAsyncThunk('auth/registerOwner', async ({ details, document }, { rejectWithValue }) => {
   try {
-    return await http.post('/users/owner-register', details, { auth: false });
+    // Send the File directly to the API. Redux keeps the serializable result.
+    const form = new FormData();
+    form.append('details', JSON.stringify(details));
+    form.append('document', document);
+    const result = await http.post('/users/owner-register', form, { auth: false });
+    return { ...result, applicantName: details.name, propertyName: details.propertyName };
   } catch (err) {
     return rejectWithValue(toError(err));
   }
@@ -120,17 +153,19 @@ export const changeMyPassword = createAsyncThunk('auth/changeMyPassword', async 
 
 // ---------------------------------------------------------------- slice
 
-const initial = loadSession();
-
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
-    user: initial.user,
-    token: initial.token,
+    user: null,
+    token: null,
     status: 'idle', // idle | loading | succeeded | failed
     error: null,
+    requestId: null,
     profileStatus: 'idle',
+    sessionStatus: 'idle',
     sessionExpired: false,
+    signingOut: false,
+    ownerApplication: null,
   },
   reducers: {
     /** Replace the session (e.g. after checkout promotes a guest to tenant). */
@@ -144,38 +179,33 @@ const authSlice = createSlice({
     patchUser(state, { payload }) {
       if (state.user) state.user = { ...state.user, ...payload };
     },
-    logout(state) {
-      state.user = null;
-      state.token = null;
-      state.status = 'idle';
-      state.error = null;
-    },
     sessionExpired(state) {
       state.user = null;
       state.token = null;
+      state.sessionStatus = 'ready';
       state.sessionExpired = true;
     },
     clearAuthError(state) {
       state.error = null;
     },
-    /** Sync from another tab's storage event. */
-    syncFromStorage(state, { payload }) {
-      state.user = payload.user;
-      state.token = payload.token;
-    },
   },
   extraReducers: (builder) => {
-    const pending = (state) => {
+    const pending = (state, { meta }) => {
+      state.requestId = meta.requestId;
       state.status = 'loading';
       state.error = null;
     };
-    const signedIn = (state, { payload }) => {
+    const signedIn = (state, { payload, meta }) => {
+      if (state.requestId !== meta.requestId) return;
+      state.requestId = null;
       state.status = 'succeeded';
       state.user = payload.user;
       state.token = payload.token;
       state.sessionExpired = false;
     };
-    const failed = (state, { payload, error }) => {
+    const failed = (state, { payload, error, meta }) => {
+      if (state.requestId !== meta.requestId) return;
+      state.requestId = null;
       state.status = 'failed';
       state.error = payload || error?.message || 'Request failed';
     };
@@ -185,9 +215,33 @@ const authSlice = createSlice({
     });
 
     builder
+      .addCase(restoreSession.pending, (state) => {
+        state.sessionStatus = 'loading';
+      })
+      .addCase(restoreSession.fulfilled, (state, { payload }) => {
+        if (state.sessionStatus !== 'loading') return;
+        state.user = payload.user;
+        state.token = payload.token;
+        state.sessionStatus = 'ready';
+      })
+      .addCase(restoreSession.rejected, (state) => {
+        if (state.sessionStatus === 'loading') state.sessionStatus = 'failed';
+      })
+      .addCase(logout.pending, (state) => {
+        state.signingOut = true;
+      })
+      .addCase(logout.fulfilled, (state) => {
+        state.sessionStatus = 'ready';
+      })
+      .addCase(logout.rejected, (state) => {
+        state.signingOut = false;
+      })
       .addCase(registerOwner.pending, pending)
-      .addCase(registerOwner.fulfilled, (state) => {
+      .addCase(registerOwner.fulfilled, (state, { payload, meta }) => {
+        if (state.requestId !== meta.requestId) return;
+        state.requestId = null;
         state.status = 'succeeded';
+        state.ownerApplication = payload;
       })
       .addCase(registerOwner.rejected, failed)
       .addCase(refreshProfile.pending, (state) => {
@@ -212,12 +266,13 @@ const authSlice = createSlice({
   },
 });
 
-export const { setSession, patchUser, logout, sessionExpired, clearAuthError, syncFromStorage } = authSlice.actions;
+export const { setSession, patchUser, sessionExpired, clearAuthError } = authSlice.actions;
 export default authSlice.reducer;
 
 // ---------------------------------------------------------------- selectors
 export const selectAuth = (state) => state.auth;
 export const selectCurrentUser = (state) => state.auth.user;
+export const selectSessionStatus = (state) => state.auth.sessionStatus;
 export const selectToken = (state) => state.auth.token;
 export const selectIsAuthenticated = (state) => Boolean(state.auth.user?.id);
 export const selectUserRole = (state) => state.auth.user?.role || null;

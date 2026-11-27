@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
-import { http, qs, asArray } from '../../services/apiClient';
+import { http, qs, asArray, browserSessionOptions } from '../../services/apiClient';
 import { createResourceSlice } from '../shared/createResourceSlice';
 
 // Tenant endpoints such as /issues/my derive identity from the x-user-id header.
@@ -30,17 +30,10 @@ export const tenantComplaints = createResourceSlice({
 export const tenantServiceRequests = createResourceSlice({
   name: 'tenantServiceRequests',
   api: {
-    list: () => http.get('/service-requests/my'),
-    create: (data) => http.post('/service-requests', data),
-    update: (id, changes) => http.patch(`/service-requests/${id}`, changes),
-    remove: (id) => http.delete(`/service-requests/${id}`),
+    list: () => http.get('/users/session/service-requests/my', browserSessionOptions),
+    create: (data) => http.post('/users/session/service-requests', data, browserSessionOptions),
+    remove: (id) => http.delete(`/users/session/service-requests/${id}`, browserSessionOptions),
   },
-});
-
-/** Catalogue of services offered at the tenant's property. */
-export const tenantServicesCatalog = createResourceSlice({
-  name: 'tenantServicesCatalog',
-  api: { list: (propertyId) => http.get(`/services${qs({ propertyId })}`) },
 });
 
 export const tenantPayments = createResourceSlice({
@@ -82,50 +75,67 @@ export const markAllTenantNotificationsRead = createAsyncThunk('tenantNotificati
 
 export const fetchMyRentDues = createAsyncThunk('tenantRent/fetchMyRentDues', async (_, { rejectWithValue }) => {
   try {
-    return asArray(await http.get('/rent-dues/my'));
+    const billing = await http.get('/users/session/rent-dues/my', browserSessionOptions);
+    return { dues: asArray(billing?.dues), pendingCharges: asArray(billing?.pendingCharges) };
   } catch (err) {
     return rejectWithValue(err.message);
   }
 });
 
-export const payRentDue = createAsyncThunk('tenantRent/payRentDue', async ({ dueId, method, transactionId }, { rejectWithValue }) => {
+export const payRentDue = createAsyncThunk('tenantRent/payRentDue', async ({ dueId, method, transactionId, expectedAmount }, { dispatch, getState, requestId, rejectWithValue }) => {
   try {
-    const result = await http.post(`/rent-dues/${dueId}/pay`, { method, transactionId });
+    const result = await http.post(`/users/session/rent-dues/${dueId}/pay`, { method, transactionId, expectedAmount }, browserSessionOptions);
+    // The receipt reads the server-confirmed payment from the same Redux collection as the ledger.
+    if (result?.payment?.id != null && getState().tenantRent.paymentRequestId === requestId) {
+      dispatch(tenantPayments.actions.upsertItem(result.payment));
+    }
     return { dueId, result };
   } catch (err) {
     return rejectWithValue(err.message);
   }
-});
+}, { condition: (_, { getState }) => !getState().tenantRent.paying });
 
 const tenantRentSlice = createSlice({
   name: 'tenantRent',
-  initialState: { dues: [], status: 'idle', error: null, paying: false, payError: null },
+  initialState: { dues: [], pendingCharges: [], status: 'idle', error: null, fetchRequestId: null, paying: false, payError: null, paymentRequestId: null },
   reducers: {},
   extraReducers: (b) => {
-    b.addCase(fetchMyRentDues.pending, (s) => {
+    b.addCase(fetchMyRentDues.pending, (s, { meta }) => {
+      s.fetchRequestId = meta.requestId;
       s.status = 'loading';
       s.error = null;
     })
-      .addCase(fetchMyRentDues.fulfilled, (s, { payload }) => {
+      .addCase(fetchMyRentDues.fulfilled, (s, { payload, meta }) => {
+        if (s.fetchRequestId !== meta.requestId) return;
+        s.fetchRequestId = null;
         s.status = 'succeeded';
-        s.dues = payload;
+        s.dues = payload.dues;
+        s.pendingCharges = payload.pendingCharges;
       })
-      .addCase(fetchMyRentDues.rejected, (s, { payload }) => {
+      .addCase(fetchMyRentDues.rejected, (s, { payload, meta }) => {
+        if (s.fetchRequestId !== meta.requestId) return;
+        s.fetchRequestId = null;
         s.status = 'failed';
         s.error = payload;
       })
-      .addCase(payRentDue.pending, (s) => {
+      .addCase(payRentDue.pending, (s, { meta }) => {
         s.paying = true;
+        s.paymentRequestId = meta.requestId;
         s.payError = null;
       })
-      .addCase(payRentDue.fulfilled, (s, { payload }) => {
+      .addCase(payRentDue.fulfilled, (s, { payload, meta }) => {
+        if (s.paymentRequestId !== meta.requestId) return;
         s.paying = false;
+        s.paymentRequestId = null;
+        s.fetchRequestId = null;
         const due = s.dues.find((d) => String(d.id) === String(payload.dueId));
         const updated = payload.result?.due || payload.result;
-        if (due) Object.assign(due, updated && updated.id === due.id ? updated : {}, { status: 'paid', effectiveStatus: 'paid', paidAt: new Date().toISOString() });
+        if (due && String(updated?.id) === String(due.id)) Object.assign(due, updated);
       })
-      .addCase(payRentDue.rejected, (s, { payload }) => {
+      .addCase(payRentDue.rejected, (s, { payload, meta }) => {
+        if (s.paymentRequestId !== meta.requestId) return;
         s.paying = false;
+        s.paymentRequestId = null;
         s.payError = payload;
       });
   },
@@ -190,7 +200,6 @@ export const tenantReducers = {
   tenantIssues: tenantIssues.reducer,
   tenantComplaints: tenantComplaints.reducer,
   tenantServiceRequests: tenantServiceRequests.reducer,
-  tenantServicesCatalog: tenantServicesCatalog.reducer,
   tenantPayments: tenantPayments.reducer,
   tenantNotifications: notificationsReducer,
   tenantRent: tenantRentSlice.reducer,

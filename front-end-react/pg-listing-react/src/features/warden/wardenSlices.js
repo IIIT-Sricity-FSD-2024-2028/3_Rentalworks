@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
-import { asArray } from '../../services/apiClient';
+import { createResourceSlice } from '../shared/createResourceSlice';
+import { http, asArray, browserSessionOptions } from '../../services/apiClient';
 import * as api from '../../dashboards/warden/utils/api';
 import {
   mapRoomFromDb,
@@ -8,18 +9,18 @@ import {
   mapIssueFromDb,
   mapWardenNotificationFromDb,
   mapRuleViolationFromDb,
-  mapStayFromDb,
 } from './wardenMappers';
 import { fetchListings } from '../listings/listingsSlice';
+import { tenantStays } from '../tenantStays/tenantStaysSlice';
 
-const msg = (err) => err?.message || 'Request failed';
+const msg = (err) => typeof err === 'string' ? err : err?.message || 'Request failed';
 const sameId = (a, b) => String(a) === String(b);
 
 // ====================================================================
-//  Load everything the warden portal needs in one round trip
+//  Load the warden dashboard collections in parallel
 // ====================================================================
 
-export const fetchWardenData = createAsyncThunk('warden/fetchAll', async () => {
+export const fetchWardenData = createAsyncThunk('warden/fetchAll', async (_, { dispatch }) => {
   const [rooms, tenants, complaints, issues, notifications, violations, stays] = await Promise.allSettled([
     api.getRoomsApi(),
     api.getTenantsApi(),
@@ -27,7 +28,7 @@ export const fetchWardenData = createAsyncThunk('warden/fetchAll', async () => {
     api.getIssuesApi(),
     api.getWardenNotificationsApi(),
     api.getRuleViolationsApi(),
-    api.getStaysApi(),
+    dispatch(tenantStays.thunks.fetchAll()).unwrap(),
   ]);
   const ok = (r) => (r.status === 'fulfilled' ? asArray(r.value) : []);
   const mappedTenants = ok(tenants).map(mapTenantFromDb);
@@ -41,8 +42,6 @@ export const fetchWardenData = createAsyncThunk('warden/fetchAll', async () => {
     ],
     notifications: ok(notifications).map(mapWardenNotificationFromDb),
     violations: ok(violations).map(mapRuleViolationFromDb),
-    stays: ok(stays).map(mapStayFromDb),
-    staysLoaded: stays.status === 'fulfilled',
     error: failures.length ? msg(failures[0].reason) : null,
   };
 });
@@ -149,11 +148,10 @@ const wardenSlice = createSlice({
     complaints: [],
     notifications: [],
     violations: [],
-    stays: [],
-    staysLoaded: false,
     loaded: false,
     status: 'idle',
     error: null,
+    loadRequestId: null,
     ledger: { month: null, data: null, status: 'idle', error: null },
     tenantLedger: { tenantId: null, ledger: null, audit: [], status: 'idle', error: null },
   },
@@ -165,17 +163,22 @@ const wardenSlice = createSlice({
     },
   },
   extraReducers: (b) => {
-    b.addCase(fetchWardenData.pending, (s) => {
+    b.addCase(fetchWardenData.pending, (s, { meta }) => {
+      s.loadRequestId = meta.requestId;
       s.status = 'loading';
     })
-      .addCase(fetchWardenData.fulfilled, (s, { payload }) => {
+      .addCase(fetchWardenData.fulfilled, (s, { payload, meta }) => {
+        if (s.loadRequestId !== meta.requestId) return;
         const { error, ...data } = payload;
         Object.assign(s, data);
+        s.loadRequestId = null;
         s.loaded = true;
         s.status = 'succeeded';
         s.error = error;
       })
-      .addCase(fetchWardenData.rejected, (s, { error }) => {
+      .addCase(fetchWardenData.rejected, (s, { error, meta }) => {
+        if (s.loadRequestId !== meta.requestId) return;
+        s.loadRequestId = null;
         s.status = 'failed';
         s.error = error.message;
         s.loaded = true;
@@ -254,7 +257,19 @@ const wardenSlice = createSlice({
 
 export const { addComplaintEvent } = wardenSlice.actions;
 
-export const wardenReducers = { warden: wardenSlice.reducer };
+// The tenant and warden views use the same service-request records and status values.
+export const wardenServiceRequests = createResourceSlice({
+  name: 'wardenServiceRequests',
+  api: {
+    list: () => http.get('/users/session/service-requests', browserSessionOptions),
+    update: (id, changes) => http.patch(`/users/session/service-requests/${id}`, changes, browserSessionOptions),
+  },
+});
+
+export const wardenReducers = {
+  warden: wardenSlice.reducer,
+  wardenServiceRequests: wardenServiceRequests.reducer,
+};
 
 // ---- selectors
 export const selectWarden = (s) => s.warden;
@@ -268,7 +283,7 @@ export const selectWardenTenantLedger = (s) => s.warden.tenantLedger;
  * when they have left / been removed.
  */
 export const selectBookedTenants = createSelector(
-  [(s) => s.warden.tenants, (s) => s.warden.stays, (s) => s.warden.staysLoaded],
+  [(s) => s.warden.tenants, tenantStays.selectors.selectItems, (s) => tenantStays.selectors.selectSlice(s).lastFetched !== null],
   (tenants, stays, staysLoaded) => {
     if (!staysLoaded) return tenants;
     const byTenant = new Map();

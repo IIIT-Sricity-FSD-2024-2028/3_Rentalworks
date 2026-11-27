@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import useScreenState from '../app/useScreenState';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectCurrentUser } from '../features/auth/authSlice';
@@ -32,8 +33,8 @@ export default function PaymentGateway() {
 
   const [upiId, setUpiId] = useState('');
   const [cardData, setCardData] = useState({ number: '', exp: '', cvv: '', name: '' });
-  const [selectedBank, setSelectedBank] = useState('HDFC Bank');
-  const [formError, setFormError] = useState('');
+  const [selectedBank, setSelectedBank] = useScreenState('HDFC Bank');
+  const [formError, setFormError] = useScreenState('');
   const error = formError || checkout.error;
 
   // Guard: needs a PG + room and a signed-in user. `/payment` links without a

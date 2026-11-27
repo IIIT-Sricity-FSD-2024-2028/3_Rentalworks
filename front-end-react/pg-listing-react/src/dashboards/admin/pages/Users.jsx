@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { useDispatch, useSelector } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
 import { adminUsers } from '../../../features/admin/adminSlices';
@@ -57,8 +58,8 @@ function passwordStrength(p) {
   return { score, level, label: cap(level) };
 }
 
-function PasswordFields({ fields, onChange }) {
-  const [show, setShow] = useState(false);
+function PasswordFields({ fields, onChange, disabled }) {
+  const [show, setShow] = useScreenState(false);
   const fill = () => {
     const p = generatePassword();
     onChange({ password: p, confirm: p });
@@ -76,6 +77,7 @@ function PasswordFields({ fields, onChange }) {
             type={show ? 'text' : 'password'}
             autoComplete="new-password"
             value={fields.password}
+            disabled={disabled}
             onChange={(e) => onChange({ password: e.target.value })}
             placeholder={`At least ${MIN_PASSWORD} characters`}
           />
@@ -88,7 +90,7 @@ function PasswordFields({ fields, onChange }) {
             <span style={{ width: `${(strength.score / 5) * 100}%` }} />
           </div>
           <span className="pw-meter-label">{strength.label || 'Letters and numbers'}</span>
-          <button type="button" className="pw-generate" onClick={fill}>
+          <button type="button" className="pw-generate" onClick={fill} disabled={disabled}>
             <span className="material-icons-outlined">auto_fix_high</span> Generate
           </button>
         </div>
@@ -102,6 +104,7 @@ function PasswordFields({ fields, onChange }) {
             type={show ? 'text' : 'password'}
             autoComplete="new-password"
             value={fields.confirm}
+            disabled={disabled}
             onChange={(e) => onChange({ confirm: e.target.value })}
             placeholder="Type it again"
           />
@@ -117,10 +120,13 @@ export default function Users() {
   const users = useSelector(adminUsers.selectors.selectItems);
   const loading = useSelector(adminUsers.selectors.selectIsLoading) && users.length === 0;
   const saving = useSelector(adminUsers.selectors.selectMutating);
-  const [search, setSearch] = useState('');
-  const [roleF, setRoleF] = useState('all');
-  const [statusF, setStatusF] = useState('all');
-  const [modal, setModal] = useState(null);
+  const [search, setSearch] = useScreenState('');
+  const [roleF, setRoleF] = useScreenState('all');
+  const [statusF, setStatusF] = useScreenState('all');
+  const [modal, setModal] = useScreenState(null);
+  // The generated or entered password is only needed while this dialog is open.
+  const [passwordFields, setPasswordFields] = useState({ password: '', confirm: '' });
+  const modalUser = useSelector((state) => adminUsers.selectors.selectById(state, modal?.userId));
   const toast = useToast();
 
   useEffect(() => {
@@ -148,14 +154,22 @@ export default function Users() {
     canSignIn: users.filter(canSignIn).length,
   };
 
-  const setFields = (patch) => setModal((m) => ({ ...m, fields: { ...m.fields, ...patch } }));
+  const setFields = (patch) => setModal((current) =>
+    current?.fields ? { ...current, fields: { ...current.fields, ...patch } } : current,
+  );
+  const closeModal = () => {
+    setPasswordFields({ password: '', confirm: '' });
+    setModal(null);
+  };
 
   const handleAdd = (role = 'tenant') => {
+    if (saving) return;
+    setPasswordFields({ password: '', confirm: '' });
     setModal({
       type: 'add',
       title: 'Create Login',
       subtitle: 'The user signs in on the login page with their email and this password, and lands on their dashboard.',
-      fields: { name: '', email: '', phone: '', role, password: '', confirm: '' },
+      fields: { name: '', email: '', phone: '', role },
     });
   };
 
@@ -169,7 +183,7 @@ export default function Users() {
     });
   };
 
-  const handleView = (u) => setModal({ type: 'view', title: 'User Details', subtitle: u.email, user: u });
+  const handleView = (u) => setModal({ type: 'view', title: 'User Details', userId: u.id });
 
   const handleDelete = (u) => {
     setModal({
@@ -189,8 +203,10 @@ export default function Users() {
   };
 
   /** After creating a login: show the sign-in details once so the admin can hand them over. */
-  const showLoginDetails = (user, password) => {
-    setModal({ type: 'credentials', title: 'Login Ready', subtitle: 'Send these to the user now. The password is not shown again after you close this.', user, password });
+  const showLoginDetails = (userId) => {
+    setModal((current) => current?.type === 'add' ? {
+      type: 'credentials', title: 'Login Ready', subtitle: 'Send these to the user now. The password is not shown again after you close this.', userId,
+    } : current);
   };
 
   const handleSave = async () => {
@@ -205,29 +221,30 @@ export default function Users() {
     if (taken) { toast('error', 'Validation', `${details.email} is already used by ${taken.name}`); return; }
 
     if (modal.type === 'add') {
-      const problem = passwordProblem(f.password, f.confirm);
+      const { password, confirm } = passwordFields;
+      const problem = passwordProblem(password, confirm);
       if (problem) { toast('error', 'Validation', problem); return; }
-      const { ok } = await runThunk(
+      const { ok, data } = await runThunk(
         dispatch,
-        adminUsers.thunks.createItem({ ...details, username: details.email, password: f.password }),
+        adminUsers.thunks.createItem({ ...details, username: details.email, password }),
         { success: `Login created for ${details.name}` },
       );
-      if (ok) showLoginDetails({ ...details, username: details.email }, f.password);
+      if (ok && data?.id != null) showLoginDetails(data.id);
       return;
     }
 
     const { ok } = await runThunk(dispatch, adminUsers.thunks.updateItem({ id: modal.userId, changes: details }), { success: 'Changes saved' });
-    if (ok) setModal(null);
+    if (ok) closeModal();
   };
 
   const handleConfirmDelete = async () => {
     if (!modal || saving) return;
     const { ok } = await runThunk(dispatch, adminUsers.thunks.removeItem(modal.userId), { success: `${modal.userName} removed` });
-    if (ok) setModal(null);
+    if (ok) closeModal();
   };
 
   /** The message handed to the user. Same text for copy, email and WhatsApp. */
-  const loginMessage = ({ user, password }) => [
+  const loginMessage = (user, password) => [
     `Hi ${user.name || ''},`.trim(),
     '',
     `Your RentBro account is ready.`,
@@ -241,7 +258,7 @@ export default function Users() {
 
   const copyLoginDetails = async () => {
     try {
-      await navigator.clipboard.writeText(loginMessage(modal));
+      await navigator.clipboard.writeText(loginMessage(modalUser, passwordFields.password));
       toast('success', 'Copied', 'Login details copied to clipboard');
     } catch {
       toast('error', 'Copy failed', 'Select the details and copy them manually');
@@ -250,15 +267,15 @@ export default function Users() {
 
   // Opens the admin's own mail app / WhatsApp with the message filled in.
   const emailLoginDetails = () => {
-    const { user } = modal;
+    const user = modalUser;
     const subject = encodeURIComponent('Your RentBro login details');
-    window.location.href = `mailto:${encodeURIComponent(user.email || '')}?subject=${subject}&body=${encodeURIComponent(loginMessage(modal))}`;
+    window.location.href = `mailto:${encodeURIComponent(user.email || '')}?subject=${subject}&body=${encodeURIComponent(loginMessage(modalUser, passwordFields.password))}`;
   };
 
   const whatsappLoginDetails = () => {
-    let digits = String(modal.user.phone || '').replace(/\D/g, '');
+    let digits = String(modalUser?.phone || '').replace(/\D/g, '');
     if (digits.length === 10) digits = `91${digits}`; // Indian mobile without country code
-    window.open(`https://wa.me/${digits}?text=${encodeURIComponent(loginMessage(modal))}`, '_blank', 'noopener');
+    window.open(`https://wa.me/${digits}?text=${encodeURIComponent(loginMessage(modalUser, passwordFields.password))}`, '_blank', 'noopener');
   };
 
   const footer = (() => {
@@ -266,29 +283,29 @@ export default function Users() {
       case 'confirm':
         return (
           <>
-            <button className="btn-cancel" onClick={() => setModal(null)}>Cancel</button>
+            <button className="btn-cancel" onClick={closeModal}>Cancel</button>
             <button className="btn-confirm-red" onClick={handleConfirmDelete}>Delete User</button>
           </>
         );
       case 'view':
         return (
           <>
-            <button className="btn-cancel" onClick={() => setModal(null)}>Close</button>
+            <button className="btn-cancel" onClick={closeModal}>Close</button>
           </>
         );
       case 'credentials':
         return (
           <>
             <button className="btn-cancel" onClick={copyLoginDetails}>Copy</button>
-            {modal.user.email && <button className="btn-cancel" onClick={emailLoginDetails}>Email</button>}
-            {modal.user.phone && <button className="btn-cancel" onClick={whatsappLoginDetails}>WhatsApp</button>}
-            <button className="btn-confirm-blue" onClick={() => setModal(null)}>Done</button>
+            {modalUser?.email && <button className="btn-cancel" onClick={emailLoginDetails}>Email</button>}
+            {modalUser?.phone && <button className="btn-cancel" onClick={whatsappLoginDetails}>WhatsApp</button>}
+            <button className="btn-confirm-blue" onClick={closeModal}>Done</button>
           </>
         );
       default:
         return (
           <>
-            <button className="btn-cancel" onClick={() => setModal(null)}>Cancel</button>
+            <button className="btn-cancel" onClick={closeModal}>Cancel</button>
             <button className="btn-confirm-blue" onClick={handleSave} disabled={saving}>
               {modal?.type === 'add' ? 'Create Login' : 'Save Changes'}
             </button>
@@ -446,28 +463,28 @@ export default function Users() {
         </div>
       </div>
 
-      <Modal show={!!modal} onClose={() => setModal(null)} title={modal?.title || ''} subtitle={modal?.subtitle || ''} footer={footer}>
-        {modal?.type === 'view' && modal.user && (
+      <Modal show={!!modal} onClose={closeModal} title={modal?.title || ''} subtitle={modal?.subtitle || (modal?.type === 'view' ? modalUser?.email : '')} footer={footer}>
+        {modal?.type === 'view' && modalUser && (
           <div style={{ display: 'grid', gap: 10, fontSize: 13 }}>
-            <div><strong>Name:</strong> {modal.user.name}</div>
-            <div><strong>Email:</strong> {modal.user.email}</div>
-            <div><strong>Sign-in ID:</strong> {modal.user.username || modal.user.email}</div>
-            <div><strong>Phone:</strong> {modal.user.phone || '-'}</div>
-            <div><strong>Role:</strong> <span className={`badge badge-${modal.user.role}`}>{cap(modal.user.role)}</span></div>
-            <div><strong>Dashboard:</strong> {DASHBOARD_NAME[modal.user.role] || '-'} ({ROLE_HOME[modal.user.role] || '-'})</div>
-            <div><strong>Status:</strong> <span className={`badge badge-${modal.user.status}`}>{cap(modal.user.status)}</span>{' '}
-              {canSignIn(modal.user) ? 'Can sign in' : 'Login blocked until the account is active'}
+            <div><strong>Name:</strong> {modalUser.name}</div>
+            <div><strong>Email:</strong> {modalUser.email}</div>
+            <div><strong>Sign-in ID:</strong> {modalUser.username || modalUser.email}</div>
+            <div><strong>Phone:</strong> {modalUser.phone || '-'}</div>
+            <div><strong>Role:</strong> <span className={`badge badge-${modalUser.role}`}>{cap(modalUser.role)}</span></div>
+            <div><strong>Dashboard:</strong> {DASHBOARD_NAME[modalUser.role] || '-'} ({ROLE_HOME[modalUser.role] || '-'})</div>
+            <div><strong>Status:</strong> <span className={`badge badge-${modalUser.status}`}>{cap(modalUser.status)}</span>{' '}
+              {canSignIn(modalUser) ? 'Can sign in' : 'Login blocked until the account is active'}
             </div>
-            <div><strong>Joined:</strong> {modal.user.joinDate || '-'}</div>
+            <div><strong>Joined:</strong> {modalUser.joinDate || '-'}</div>
           </div>
         )}
 
-        {modal?.type === 'credentials' && (
+        {modal?.type === 'credentials' && modalUser && (
           <div style={{ display: 'grid', gap: 10, fontSize: 13 }}>
             <div><strong>Login page:</strong> {window.location.origin}/login</div>
-            <div><strong>Email / username:</strong> {modal.user.username || modal.user.email}</div>
-            <div><strong>Password:</strong> <code style={{ userSelect: 'all' }}>{modal.password}</code></div>
-            <div><strong>Opens:</strong> {DASHBOARD_NAME[modal.user.role] || cap(modal.user.role)} ({ROLE_HOME[modal.user.role] || '-'})</div>
+            <div><strong>Email / username:</strong> {modalUser.username || modalUser.email}</div>
+            <div><strong>Password:</strong> <code style={{ userSelect: 'all' }}>{passwordFields.password}</code></div>
+            <div><strong>Opens:</strong> {DASHBOARD_NAME[modalUser.role] || cap(modalUser.role)} ({ROLE_HOME[modalUser.role] || '-'})</div>
           </div>
         )}
 
@@ -499,7 +516,7 @@ export default function Users() {
             </div>
             {modal.type === 'add' && (
               <div className="f-field full">
-                <PasswordFields fields={modal.fields} onChange={setFields} />
+                <PasswordFields fields={passwordFields} disabled={saving} onChange={(patch) => setPasswordFields((fields) => ({ ...fields, ...patch }))} />
               </div>
             )}
           </div>

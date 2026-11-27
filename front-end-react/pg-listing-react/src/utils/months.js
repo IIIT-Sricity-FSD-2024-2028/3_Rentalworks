@@ -2,6 +2,10 @@ const NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'O
 
 /** Date-ish value → "YYYY-M" bucket, or null when it is not a date. */
 export function monthKey(value) {
+  // SQL dates are calendar days. Preserve the month in every browser time zone.
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return `${value.slice(0, 4)}-${Number(value.slice(5, 7)) - 1}`;
+  }
   const d = value ? new Date(value) : null;
   return d && !Number.isNaN(d.getTime()) ? `${d.getFullYear()}-${d.getMonth()}` : null;
 }

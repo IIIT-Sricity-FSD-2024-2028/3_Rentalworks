@@ -56,6 +56,18 @@ export class ServiceRequest {
   @Column('numeric', { precision: 10, scale: 2, default: 0 })
   amount: number;
 
+  @Column('numeric', { precision: 6, scale: 2, default: 1 })
+  quantity: number;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  pricingModel?: string | null;
+
+  @Column({ type: 'date', nullable: true })
+  billableFrom?: string | null;
+
+  @Column({ type: 'int', nullable: true })
+  rentDueId?: number | null;
+
   @Column('text', { nullable: true })
   description?: string;
 

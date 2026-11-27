@@ -1,8 +1,10 @@
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { useDispatch, useSelector } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
-import { changeMyPassword, logout, selectCurrentUser } from '../../../features/auth/authSlice';
+import { changeMyPassword, selectCurrentUser } from '../../../features/auth/authSlice';
+import { useSignOut } from '../../../app/hooks';
 import { useToast } from './useToast';
 
 const NAV_ITEMS = [
@@ -18,14 +20,14 @@ const NAV_ITEMS = [
 
 export default function Layout() {
   const location = useLocation();
-  const navigate = useNavigate();
+  const handleLogout = useSignOut();
   const toast = useToast();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useScreenState(false);
+  const [profileOpen, setProfileOpen] = useScreenState(false);
 
   const dispatch = useDispatch();
   const user = useSelector(selectCurrentUser);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useScreenState(false);
 
   // Password fields
   const [currPass, setCurrPass] = useState('');
@@ -34,12 +36,7 @@ export default function Layout() {
 
   useEffect(() => {
     setSidebarOpen(false);
-  }, [location.pathname]);
-
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login', { replace: true });
-  };
+  }, [location.pathname, setSidebarOpen]);
 
   if (!user) {
     return null;

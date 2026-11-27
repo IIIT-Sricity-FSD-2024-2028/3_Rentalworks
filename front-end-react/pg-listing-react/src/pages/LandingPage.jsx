@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
+import useScreenState from '../app/useScreenState';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { logout, selectCurrentUser, ROLE_HOME } from '../features/auth/authSlice';
+import { selectCurrentUser, ROLE_HOME } from '../features/auth/authSlice';
 import { fetchListings, selectAllListings, selectListingsError, selectListingsStatus } from '../features/listings/listingsSlice';
-import { toastSuccess } from '../features/ui/uiSlice';
+import { useSignOut } from '../app/hooks';
 import { formatINR } from '../utils/normalize';
 import useAutoRefresh from '../hooks/useAutoRefresh';
 import '../styles/landing.css';
@@ -13,11 +14,12 @@ const SUPPORT_EMAIL = 'support@rentbro.com';
 export default function LandingPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const handleLogout = useSignOut(null);
   const currentUser = useSelector(selectCurrentUser);
   const listings = useSelector(selectAllListings);
   const listingsStatus = useSelector(selectListingsStatus);
   const listingsError = useSelector(selectListingsError);
-  const [helpMsg, setHelpMsg] = useState('');
+  const [helpMsg, setHelpMsg] = useScreenState('');
 
   useEffect(() => {
     dispatch(fetchListings());
@@ -37,11 +39,6 @@ export default function LandingPage() {
       : listingsStatus === 'succeeded'
         ? 'No properties are listed yet. Please check back soon.'
         : 'Loading properties…';
-
-  const handleLogout = () => {
-    dispatch(logout());
-    dispatch(toastSuccess('You have been signed out'));
-  };
 
   // There is no public support-ticket endpoint, so open the visitor's mail app.
   const handleHelpSubmit = (e) => {

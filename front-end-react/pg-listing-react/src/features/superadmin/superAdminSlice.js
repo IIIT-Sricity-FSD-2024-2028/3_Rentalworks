@@ -89,3 +89,4 @@ export default superAdminSlice.reducer;
 
 export const selectSuperAdmin = (s) => s.superAdmin;
 export const selectSuperAdminOverview = (s) => s.superAdmin.overview;
+export const selectSuperAdminProfile = (s) => s.superAdmin.profile;

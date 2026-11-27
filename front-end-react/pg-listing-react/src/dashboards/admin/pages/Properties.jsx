@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { useDispatch, useSelector } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
 import { adminProperties, adminUsers } from '../../../features/admin/adminSlices';
+import { downloadPropertyDocument, fetchPropertyDocument, selectPropertyDocument } from '../../../features/admin/propertyDocumentsSlice';
 import { useToast } from '../components/useToast';
 import Modal from '../components/Modal';
 import { mapRoom } from '../../../features/listings/listingMappers';
@@ -15,8 +17,10 @@ export default function Properties() {
   const loading = useSelector(adminProperties.selectors.selectIsLoading) && properties.length === 0;
   const saving = useSelector(adminProperties.selectors.selectMutating);
   const owners = useSelector(adminUsers.selectors.selectItems).filter(u => u.role === 'owner');
-  const [search, setSearch] = useState('');
-  const [modal, setModal] = useState(null);
+  const [search, setSearch] = useScreenState('');
+  const [modal, setModal] = useScreenState(null);
+  const modalProperty = useSelector((state) => adminProperties.selectors.selectById(state, modal?.propertyId));
+  const propertyDocument = useSelector((state) => selectPropertyDocument(state, modal?.propertyId));
   const toast = useToast();
 
   useEffect(() => {
@@ -61,9 +65,8 @@ export default function Properties() {
       message: `Are you sure you want to reject "${p.name}"? The owner will be notified.`,
       btnClass: 'btn-confirm-red',
       btnText: 'Reject',
-      action: async () => {
-        if (await updatePropState(p.id, { status: 'rejected' }, 'Property Rejected', `${p.name} has been rejected`)) setModal(null);
-      }
+      propertyId: p.id,
+      nextStatus: 'rejected',
     });
   };
 
@@ -74,9 +77,8 @@ export default function Properties() {
       message: `This will begin the offboarding process for "${p.name}". The property will enter a notice period before removal. Tenants will be notified.`,
       btnClass: 'btn-confirm-red',
       btnText: 'Initiate Notice Period',
-      action: async () => {
-        if (await updatePropState(p.id, { status: 'offboarding' }, 'Notice Period Initiated', `${p.name} has entered the offboarding notice period`)) setModal(null);
-      }
+      propertyId: p.id,
+      nextStatus: 'offboarding',
     });
   };
 
@@ -87,26 +89,39 @@ export default function Properties() {
       message: `This will permanently remove "${p.name}" from the platform. This cannot be undone.`,
       btnClass: 'btn-confirm-red',
       btnText: 'Remove Property',
-      action: async () => {
-        const { ok } = await runThunk(dispatch, adminProperties.thunks.removeItem(p.id), { success: `${p.name} has been removed` });
-        if (ok) setModal(null);
-      }
+      propertyId: p.id,
     });
   };
 
+  async function confirmPropertyAction() {
+    if (!modalProperty || saving) return;
+    const { id, name } = modalProperty;
+    if (!modal.nextStatus) {
+      const { ok } = await runThunk(dispatch, adminProperties.thunks.removeItem(id), { success: `${name} has been removed` });
+      if (ok) setModal(null);
+      return;
+    }
+    const rejected = modal.nextStatus === 'rejected';
+    if (await updatePropState(id, { status: modal.nextStatus }, rejected ? 'Property Rejected' : 'Notice Period Initiated',
+      rejected ? `${name} has been rejected` : `${name} has entered the offboarding notice period`)) {
+      setModal(null);
+    }
+  }
+
   const handleViewDocs = (p) => {
+    dispatch(fetchPropertyDocument(p.id));
     setModal({
       type: 'verify-docs',
-      prop: p,
+      propertyId: p.id,
       title: `Verify Docs: ${p.name}`,
-      subtitle: `Please verify the submitted legal & safety documentation for ${p.name}`
+      subtitle: 'Review the uploaded property details document',
     });
   };
 
   const handleOpenInspection = (p) => {
     setModal({
       type: 'inspection',
-      prop: p,
+      propertyId: p.id,
       title: `Live Inspection: ${p.name}`,
       subtitle: `Field audit verification for ${p.name}`
     });
@@ -131,7 +146,7 @@ export default function Properties() {
   const handleEdit = (p) => {
     setModal({
       type: 'edit',
-      prop: p,
+      propertyId: p.id,
       title: 'Edit Property',
       subtitle: p.name,
       fields: {
@@ -163,7 +178,7 @@ export default function Properties() {
     const data = { name: f.name.trim(), location: f.location.trim(), ownerId: Number(f.ownerId), rentMin: Number(f.rentMin), rentMax: Number(f.rentMax) };
     const { ok } = modal.type === 'add'
       ? await runThunk(dispatch, adminProperties.thunks.createItem({ ...data, rooms: f.rooms || '0/20', amenities: ['WiFi'] }), { success: `${data.name} added and pending review` })
-      : await runThunk(dispatch, adminProperties.thunks.updateItem({ id: modal.prop.id, changes: data }), { success: 'Changes saved' });
+      : await runThunk(dispatch, adminProperties.thunks.updateItem({ id: modal.propertyId, changes: data }), { success: 'Changes saved' });
     if (!ok) return;
     setModal(null);
     dispatch(adminProperties.thunks.fetchAll()); // reload the owner relation
@@ -370,7 +385,7 @@ export default function Properties() {
           modal?.type === 'confirm' ? (
             <>
               <button className="btn-cancel" onClick={() => setModal(null)}>Cancel</button>
-              <button className={modal.btnClass || 'btn-confirm-red'} onClick={modal.action}>
+              <button className={modal.btnClass || 'btn-confirm-red'} onClick={confirmPropertyAction} disabled={saving || !modalProperty}>
                 {modal.btnText || 'Confirm'}
               </button>
             </>
@@ -379,11 +394,12 @@ export default function Properties() {
               <button className="btn-cancel" onClick={() => setModal(null)}>Cancel</button>
               <button
                 className="btn-confirm-blue"
+                disabled={saving || !modalProperty || propertyDocument?.status !== 'ready'}
                 onClick={async () => {
-                  if (await updatePropState(modal.prop.id, { docsVerified: true }, 'Docs Verified', `Documentation for ${modal.prop.name} marked as verified`)) setModal(null);
+                  if (await updatePropState(modal.propertyId, { docsVerified: true }, 'Docs Verified', `Documentation for ${modalProperty.name} marked as verified`)) setModal(null);
                 }}
               >
-                Approve All Documents
+                Verify Document
               </button>
             </>
           ) : modal?.type === 'inspection' ? (
@@ -391,9 +407,9 @@ export default function Properties() {
               <button className="btn-cancel" onClick={() => setModal(null)}>Cancel</button>
               <button
                 className="btn-confirm-blue"
-                disabled={saving || ![0, 1, 2].every(i => modal.checks?.[i])}
+                disabled={saving || !modalProperty || ![0, 1, 2].every(i => modal.checks?.[i])}
                 onClick={async () => {
-                  if (await updatePropState(modal.prop.id, { inspectionPassed: true }, 'Inspection Passed', `${modal.prop.name} passed live inspection audit`)) setModal(null);
+                  if (await updatePropState(modal.propertyId, { inspectionPassed: true }, 'Inspection Passed', `${modalProperty.name} passed live inspection audit`)) setModal(null);
                 }}
               >
                 Submit Inspection Report
@@ -417,18 +433,22 @@ export default function Properties() {
         {/* Document Viewer Modal Content */}
         {modal?.type === 'verify-docs' && (
           <div style={{ marginTop: 10, borderTop: '1px solid #eee', paddingTop: 10 }}>
-            <p style={{ fontSize: 13, color: '#666', marginBottom: 10 }}>
-              Documents are checked offline with the owner. Confirm only after you have seen each of these:
-            </p>
-            <ul style={{ fontSize: 14, display: 'grid', gap: 8, paddingLeft: 18 }}>
-              <li>Ownership deed or lease agreement</li>
-              <li>Fire safety NOC</li>
-              <li>Owner ID proof</li>
-            </ul>
+            {propertyDocument?.status === 'loading' && <p role="status">Loading property document…</p>}
+            {propertyDocument?.status === 'error' && (
+              <p role="alert">{propertyDocument.error} <button type="button" onClick={() => dispatch(fetchPropertyDocument(modal.propertyId))}>Retry</button></p>
+            )}
+            {propertyDocument?.status === 'ready' && (propertyDocument.metadata ? (
+              <button type="button" className="btn-cancel" onClick={() => runThunk(dispatch, downloadPropertyDocument({
+                id: modal.propertyId,
+                name: propertyDocument.metadata.name,
+              }))}>
+                Download {propertyDocument.metadata.name}
+              </button>
+            ) : <p>No document was uploaded. Confirm only after checking the document with the owner.</p>)}
             <p style={{ fontSize: 13, marginTop: 12 }}>
-              Owner: <strong>{getName(modal.prop.owner)}</strong>
-              {modal.prop.owner?.phone ? ` • ${modal.prop.owner.phone}` : ''}
-              {modal.prop.owner?.email ? ` • ${modal.prop.owner.email}` : ''}
+              Owner: <strong>{getName(modalProperty?.owner)}</strong>
+              {modalProperty?.owner?.phone ? ` • ${modalProperty.owner.phone}` : ''}
+              {modalProperty?.owner?.email ? ` • ${modalProperty.owner.email}` : ''}
             </p>
           </div>
         )}
@@ -438,7 +458,7 @@ export default function Properties() {
           <div style={{ marginTop: 10, borderTop: '1px solid #e2e8f0', paddingTop: 10 }}>
             <div style={{ background: '#fffbeb', padding: 10, borderRadius: 8, marginBottom: 15, borderLeft: '4px solid #f59e0b' }}>
               <small style={{ color: '#92400e', display: 'block' }}>Field Audit for:</small>
-              <strong style={{ color: '#92400e' }}>{modal.prop.name}</strong>
+              <strong style={{ color: '#92400e' }}>{modalProperty?.name}</strong>
             </div>
             <div style={{ display: 'grid', gap: 12 }}>
               <label style={{ display: 'flex', gap: 10, fontSize: 13, cursor: 'pointer', alignItems: 'center' }}>

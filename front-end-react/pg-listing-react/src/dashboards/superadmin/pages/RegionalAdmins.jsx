@@ -1,21 +1,24 @@
 import { useState } from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { useDispatch } from 'react-redux';
 import { createRegionalAdmin, updateRegionalAdmin } from '../../../features/superadmin/superAdminSlice';
 import StatCard from '../components/StatCard';
 
 export default function RegionalAdmins({ users, showToast }) {
   const dispatch = useDispatch();
-  const [search, setSearch] = useState('');
-  const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: '', email: '', region: '', phone: '', password: '' });
-  const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useScreenState('');
+  const [editing, setEditing] = useScreenState(null);
+  const [form, setForm] = useScreenState({ name: '', email: '', region: '', phone: '' });
+  const [password, setPassword] = useState('');
+  const [saving, setSaving] = useScreenState(false);
   const admins = users.filter(user => user.role === 'admin');
   const filtered = admins.filter(admin => [admin.name, admin.email, admin.region].some(value =>
     String(value || '').toLowerCase().includes(search.toLowerCase())
   ));
 
-  function openAdd() { setForm({ name: '', email: '', region: '', phone: '', password: '' }); setEditing('new'); }
-  function openEdit(admin) { setForm({ name: admin.name, email: admin.email, region: admin.region || '', phone: admin.phone || '', password: '' }); setEditing(admin); }
+  function openAdd() { setForm({ name: '', email: '', region: '', phone: '' }); setPassword(''); setEditing('new'); }
+  function openEdit(admin) { setForm({ name: admin.name, email: admin.email, region: admin.region || '', phone: admin.phone || '' }); setEditing(admin.id); }
+  function closeEditor() { setPassword(''); setEditing(null); }
 
   async function save() {
     if (form.region.trim().length < 2) {
@@ -31,18 +34,18 @@ export default function RegionalAdmins({ users, showToast }) {
       if (!/^\+?[\d\s-]{9,}$/.test(form.phone.trim())) {
         showToast('error', 'Validation', 'Enter a valid phone number.'); return;
       }
-      if (form.password.length < 6) {
+      if (password.length < 6) {
         showToast('error', 'Validation', 'Password must have at least 6 characters.'); return;
       }
     }
     setSaving(true);
     try {
       if (editing === 'new') {
-        await dispatch(createRegionalAdmin({ name: form.name.trim(), email: form.email.trim(), region: form.region.trim(), phone: form.phone.trim(), password: form.password })).unwrap();
+        await dispatch(createRegionalAdmin({ name: form.name.trim(), email: form.email.trim(), region: form.region.trim(), phone: form.phone.trim(), password })).unwrap();
       } else {
-        await dispatch(updateRegionalAdmin({ id: editing.id, changes: { region: form.region.trim() } })).unwrap();
+        await dispatch(updateRegionalAdmin({ id: editing, changes: { region: form.region.trim() } })).unwrap();
       }
-      setEditing(null);
+      closeEditor();
       showToast('success', editing === 'new' ? 'Admin Added' : 'Admin Updated', editing === 'new' ? 'Admin signs in with their email and chosen password.' : 'Regional admin saved successfully.');
     } catch (error) { showToast('error', 'Error', error?.message || error); }
     finally { setSaving(false); }
@@ -67,18 +70,18 @@ export default function RegionalAdmins({ users, showToast }) {
         </tr>) : <tr><td colSpan="5" className="ta-center" style={{ padding: 40, color: '#94a3b8' }}>No regional admins found.</td></tr>}</tbody>
       </table>
     </div>
-    {editing && <div className="modal-overlay show" onClick={() => setEditing(null)}><div className="modal" onClick={event => event.stopPropagation()}>
-      <div className="modal-hdr"><h3>{editing === 'new' ? 'New Admin' : 'Edit Admin'}</h3><span className="modal-close" onClick={() => setEditing(null)}>×</span></div>
+    {editing && <div className="modal-overlay show" onClick={closeEditor}><div className="modal" onClick={event => event.stopPropagation()}>
+      <div className="modal-hdr"><h3>{editing === 'new' ? 'New Admin' : 'Edit Admin'}</h3><span className="modal-close" onClick={closeEditor}>×</span></div>
       <div>{editing === 'new' && <>
         <input className="form-input" style={{ width: '100%', marginBottom: 10, padding: 8 }} placeholder="Name" value={form.name} onChange={event => setForm(Object.assign({}, form, { name: event.target.value }))} />
-        <input className="form-input" style={{ width: '100%', marginBottom: 10, padding: 8 }} placeholder="Email (also the login username)" type="email" value={form.email} onChange={event => setForm({ name: form.name, email: event.target.value, region: form.region, phone: form.phone, password: form.password })} />
-        <input className="form-input" style={{ width: '100%', marginBottom: 10, padding: 8 }} placeholder="Phone" value={form.phone} onChange={event => setForm({ name: form.name, email: form.email, region: form.region, phone: event.target.value, password: form.password })} />
-        <input className="form-input" style={{ width: '100%', marginBottom: 10, padding: 8 }} placeholder="Password (at least 6 characters)" type="password" value={form.password} onChange={event => setForm({ name: form.name, email: form.email, region: form.region, phone: form.phone, password: event.target.value })} />
+        <input className="form-input" style={{ width: '100%', marginBottom: 10, padding: 8 }} placeholder="Email (also the login username)" type="email" value={form.email} onChange={event => setForm({ ...form, email: event.target.value })} />
+        <input className="form-input" style={{ width: '100%', marginBottom: 10, padding: 8 }} placeholder="Phone" value={form.phone} onChange={event => setForm({ ...form, phone: event.target.value })} />
+        <input className="form-input" style={{ width: '100%', marginBottom: 10, padding: 8 }} placeholder="Password (at least 6 characters)" type="password" value={password} onChange={event => setPassword(event.target.value)} />
       </>}
         {editing !== 'new' && <label style={{ display: 'block', marginBottom: 5, fontSize: 12, color: '#64748b' }}>Assigned Region</label>}
         <input className="form-input" style={{ width: '100%', padding: 8 }} placeholder="Region (e.g. Bangalore)" value={form.region} onChange={event => setForm(Object.assign({}, form, { region: event.target.value }))} />
       </div>
-      <div className="modal-foot"><button className="btn-cancel" onClick={() => setEditing(null)}>Cancel</button><button className="btn-confirm-blue" disabled={saving} onClick={save}>{saving ? 'Saving...' : editing === 'new' ? 'Save' : 'Save Changes'}</button></div>
+      <div className="modal-foot"><button className="btn-cancel" onClick={closeEditor}>Cancel</button><button className="btn-confirm-blue" disabled={saving} onClick={save}>{saving ? 'Saving...' : editing === 'new' ? 'Save' : 'Save Changes'}</button></div>
     </div></div>}
   </section>;
 }

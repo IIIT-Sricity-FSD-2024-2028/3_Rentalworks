@@ -1,5 +1,6 @@
 .neon
 .agents/
+/dist-dev/
 
 # Environment files
 .env

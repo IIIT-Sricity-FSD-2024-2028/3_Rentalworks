@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback } from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { useDispatch, useSelector } from 'react-redux';
 import { useWardenData, useWardenRun, useWardenToast } from '../utils/dataStore';
 import {
@@ -56,10 +57,10 @@ const REMINDER_TEMPLATES = [
 
 export default function TenantRecords() {
   const { refreshData, loading } = useWardenData();
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [search, setSearch] = useScreenState('');
+  const [statusFilter, setStatusFilter] = useScreenState('all');
   const months = monthOptions();
-  const [month, setMonth] = useState(months[2].value);
+  const [month, setMonth] = useScreenState(months[2].value);
   const dispatch = useDispatch();
   const run = useWardenRun();
   const ledger = useSelector(selectWardenLedger);
@@ -68,20 +69,21 @@ export default function TenantRecords() {
   const ledgerLoading = ledger.status === 'loading';
 
   // Details drawer
-  const [drawer, setDrawer] = useState(null); // tenant
-  const tenantDues = drawer && Array.isArray(tenantLedger.ledger) ? tenantLedger.ledger : [];
-  const auditLogs = drawer ? tenantLedger.audit : [];
-  const [action, setAction] = useState(null); // { type, due? }
-  const [actionText, setActionText] = useState('');
-  const [actionTitle, setActionTitle] = useState('');
-  const [template, setTemplate] = useState('rent_reminder');
+  const [drawerId, setDrawer] = useScreenState(null);
+  const matchingLedger = drawerId != null && Number(tenantLedger.tenantId) === Number(drawerId);
+  const tenantDues = matchingLedger && Array.isArray(tenantLedger.ledger) ? tenantLedger.ledger : [];
+  const auditLogs = matchingLedger ? tenantLedger.audit : [];
+  const [action, setAction] = useScreenState(null); // { type, due? }
+  const [actionText, setActionText] = useScreenState('');
+  const [actionTitle, setActionTitle] = useScreenState('');
+  const [template, setTemplate] = useScreenState('rent_reminder');
   
   // Modal states
-  const [activeModal, setActiveModal] = useState(null); // 'add', 'view', 'edit', 'delete'
-  const [selectedTenant, setSelectedTenant] = useState(null);
-  const [formData, setFormData] = useState({});
-  const [errors, setErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
+  const [activeModal, setActiveModal] = useScreenState(null); // 'add', 'view', 'edit', 'delete'
+  const [selectedTenantId, setSelectedTenant] = useScreenState(null);
+  const [formData, setFormData] = useScreenState({});
+  const [errors, setErrors] = useScreenState({});
+  const [submitting, setSubmitting] = useScreenState(false);
   
 
   const showToast = useWardenToast();
@@ -107,6 +109,10 @@ export default function TenantRecords() {
     const status = evicted ? 'evicted' : (led?.status || 'no_cycle');
     return { ...t, monthStatus: status, due: led?.due || null };
   });
+  // Keep selected IDs in the UI and resolve records from the current Redux data.
+  const drawer = rows.find((tenant) => tenant.id === drawerId);
+  const selectedTenant = rows.find((tenant) => tenant.id === selectedTenantId);
+  const selectedDue = tenantDues.find((due) => due.id === action?.dueId);
 
   const filteredTenants = rows.filter(t => {
     const q = search.toLowerCase();
@@ -126,7 +132,7 @@ export default function TenantRecords() {
   const overdue = count('overdue');
 
   const openDrawer = async (tenant) => {
-    setDrawer(tenant);
+    setDrawer(tenant.id);
     try {
       await run(fetchTenantLedger(tenant.id));
     } catch (err) {
@@ -140,7 +146,7 @@ export default function TenantRecords() {
   };
 
   const openAction = (type, due = null) => {
-    setAction({ type, due });
+    setAction({ type, dueId: due?.id });
     setActionText('');
     setActionTitle('');
     if (type === 'notify') {
@@ -169,17 +175,17 @@ export default function TenantRecords() {
     setSubmitting(true);
     try {
       if (action.type === 'offline') {
-        await run(markRentPaidOffline({ dueId: action.due.id, note: text }));
+        await run(markRentPaidOffline({ dueId: action.dueId, note: text }));
         showToast('success', 'Recorded', 'Marked as paid (cash / offline)');
       } else if (action.type === 'waive') {
-        await run(waiveRent({ dueId: action.due.id, reason: text }));
+        await run(waiveRent({ dueId: action.dueId, reason: text }));
         showToast('success', 'Fee waived', 'The rent for this cycle was waived');
       } else if (action.type === 'notify') {
         await run(notifyTenant({ tenantId: drawer.id, payload: {
           title: actionTitle.trim() || undefined,
           message: text,
           kind: template,
-          dueId: action.due?.id,
+          dueId: action.dueId,
         } }));
         showToast('success', 'Notification sent', `Sent to ${drawer.name}`);
       } else if (action.type === 'escalate') {
@@ -299,7 +305,7 @@ export default function TenantRecords() {
   };
 
   const openModal = (type, tenant = null) => {
-    setSelectedTenant(tenant);
+    setSelectedTenant(tenant.id);
     setErrors({});
     if (type === 'add') {
       setFormData({
@@ -676,8 +682,8 @@ export default function TenantRecords() {
             This releases the bed of <strong>{drawer?.name}</strong> (Room {drawer?.room}{drawer?.bedNumber ? `, Bed ${drawer.bedNumber}` : ''}), blocks their login, waives unpaid future rent and notifies the owner. It is recorded in the audit history.
           </p>
         )}
-        {action?.type === 'offline' && action.due && (
-          <p style={{ fontSize: 13 }}>Record {inr(action.due.amount)} received in cash for {fmtD(action.due.periodStart)} – {fmtD(action.due.periodEnd)}. Add an optional note:</p>
+        {action?.type === 'offline' && selectedDue && (
+          <p style={{ fontSize: 13 }}>Record {inr(selectedDue.amount)} received in cash for {fmtD(selectedDue.periodStart)} – {fmtD(selectedDue.periodEnd)}. Add an optional note:</p>
         )}
         <div className="form-group">
           <label>

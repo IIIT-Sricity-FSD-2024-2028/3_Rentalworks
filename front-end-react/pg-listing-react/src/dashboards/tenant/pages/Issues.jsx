@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { useDispatch, useSelector } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
 import { tenantIssues } from '../../../features/tenant/tenantSlices';
@@ -35,17 +36,17 @@ const Issues = () => {
   const loading = isLoading && issues.length === 0;
 
   // Filter & Search & View Mode
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
+  const [statusFilter, setStatusFilter] = useScreenState('all');
+  const [searchQuery, setSearchQuery] = useScreenState('');
+  const [viewMode, setViewMode] = useScreenState('grid'); // 'grid' | 'table'
 
   // Reporting Form State
-  const [isReporting, setIsReporting] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('Plumbing');
-  const [selectedPriority, setSelectedPriority] = useState('medium');
-  const [title, setTitle] = useState('');
-  const [location, setLocation] = useState('');
-  const [description, setDescription] = useState('');
+  const [isReporting, setIsReporting] = useScreenState(false);
+  const [selectedCategory, setSelectedCategory] = useScreenState('Plumbing');
+  const [selectedPriority, setSelectedPriority] = useScreenState('medium');
+  const [title, setTitle] = useScreenState('');
+  const [location, setLocation] = useScreenState('');
+  const [description, setDescription] = useScreenState('');
 
   useEffect(() => {
     dispatch(tenantIssues.thunks.fetchAll());

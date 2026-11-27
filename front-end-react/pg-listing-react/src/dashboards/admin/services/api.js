@@ -4,8 +4,6 @@
 //  hard-coded admin id; errors now surface to the UI instead.
 // ===================================================================
 import { http, asArray } from '../../../services/apiClient';
-import { findPlan } from '../../../data/catalog';
-import { normalizeStatus, toNumber, toISODate } from '../../../utils/normalize';
 
 // POST/PUT /users echo the saved row, including the bcrypt hash; never keep it in the store.
 const withoutPassword = (row) => {
@@ -65,14 +63,19 @@ export const api = {
 
   // --- BOOKINGS
   getBookings: async () => asArray(await http.get('/bookings')),
+  createBooking: (data) => http.post('/bookings', data),
   updateBooking: (id, b) => http.put(`/bookings/${id}`, pick(b, ['status', 'room', 'roomId', 'checkOut'])),
+  deleteBooking: (id) => http.delete(`/bookings/${id}`),
 
   // --- PAYMENTS
   getPayments: async () => asArray(await http.get('/payments')),
+  createPayment: (data) => http.post('/payments', data),
   updatePayment: (id, p) => http.put(`/payments/${id}`, pick(p, ['status', 'clearance'])),
+  deletePayment: (id) => http.delete(`/payments/${id}`),
 
   // --- COMPLAINTS
   getComplaints: async () => asArray(await http.get('/complaints')),
+  createComplaint: (data) => http.post('/complaints', data),
   updateComplaint: (id, c) => http.put(`/complaints/${id}`, pick(c, ['status', 'priority', 'category', 'resolution', 'resolvedAt'])),
   deleteComplaint: (id) => http.delete(`/complaints/${id}`),
 
@@ -89,44 +92,6 @@ export const api = {
       ...(n.userId ? { userId: Number(n.userId) } : {}),
       ...(byUserId ? { byUserId: Number(byUserId) } : {}),
     }),
+  updateNotification: (id, changes) => http.put(`/notifications/${id}`, changes),
   deleteNotification: (id) => http.delete(`/notifications/${id}`),
 };
-
-/**
- * Subscriptions are derived from owner accounts (plan + fee are stored on the
- * user row). There is no separate admin subscriptions endpoint.
- */
-export function deriveSubscriptions(users = []) {
-  return users
-    .filter((u) => u.role === 'owner')
-    .map((o) => {
-      // users.subscriptionPlan holds 'Monthly' / 'Yearly' / legacy 'Premium'.
-      const plan = findPlan(o.subscriptionPlan);
-      const planType = plan ? plan.name : String(o.subscriptionPlan || '').trim().toUpperCase() || 'NONE';
-      const amount = toNumber(o.subscriptionFee) || plan?.price || 0;
-      const status = planType === 'NONE' ? 'INACTIVE' : normalizeStatus(o.status) === 'active' ? 'ACTIVE' : normalizeStatus(o.status).toUpperCase();
-      return {
-        id: o.id,
-        ownerId: o.id,
-        owner: { name: o.name, email: o.email },
-        planType,
-        plan: { displayName: planType === 'NONE' ? 'No plan' : `${plan?.displayName || planType.charAt(0) + planType.slice(1).toLowerCase()} Plan` },
-        amount,
-        startDate: toISODate(o.joinDate || o.createdAt) || null,
-        endDate: null,
-        status,
-        evaluatedStatus: status,
-        receiptNumber: planType === 'NONE' ? null : `SUB-${String(o.id).padStart(5, '0')}`,
-        paymentId: o.id,
-      };
-    });
-}
-
-export function subscriptionStats(subs = []) {
-  const active = subs.filter((s) => s.status === 'ACTIVE');
-  const count = (p) => active.filter((s) => s.planType === p).length;
-  return {
-    subscriptions: { totalActive: active.length, monthly: count('MONTHLY'), yearly: count('YEARLY'), lifetime: count('LIFETIME') },
-    payments: { totalRevenue: active.reduce((sum, s) => sum + s.amount, 0) },
-  };
-}

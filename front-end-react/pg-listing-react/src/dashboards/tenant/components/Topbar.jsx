@@ -1,19 +1,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { logout, selectCurrentUser } from '../../../features/auth/authSlice';
+import { useSelector } from 'react-redux';
+import { selectCurrentUser } from '../../../features/auth/authSlice';
+import { useSignOut } from '../../../app/hooks';
 import { selectUnreadTenantNotifications } from '../../../features/tenant/tenantSlices';
 
 const Topbar = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const handleLogout = useSignOut();
   const tenant = useSelector(selectCurrentUser);
   const unreadCount = useSelector(selectUnreadTenantNotifications);
-
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login', { replace: true });
-  };
 
   const displayName = tenant?.name || 'Tenant';
   const displayEmail = tenant?.email || '';

@@ -1916,3 +1916,11 @@ select:focus {
 .modal-overlay.show { z-index: 2000; }
 .modal-close { border: none; background: transparent; padding: 4px; display: flex; border-radius: 50%; color: var(--text-muted); cursor: pointer; }
 .modal-close:hover { background: var(--border-light); color: var(--text-primary); }
+.booking-requests {
+  margin-top: 24px;
+}
+
+#booking-request-form select,
+#booking-request-form textarea {
+  width: 100%;
+}

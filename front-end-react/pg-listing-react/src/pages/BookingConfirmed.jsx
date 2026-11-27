@@ -1,8 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
+import useScreenState from '../app/useScreenState';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { login, selectCurrentUser } from '../features/auth/authSlice';
-import { forgetIssuedPassword, selectLastConfirmed } from '../features/booking/bookingSlice';
+import { selectLastConfirmed } from '../features/booking/bookingSlice';
+import { clearIssuedPassword, readIssuedPassword } from '../features/booking/issuedPassword';
 import { toastError } from '../features/ui/uiSlice';
 import './BookingConfirmed.css';
 
@@ -119,10 +121,10 @@ export default function BookingConfirmed() {
   const currentUser = useSelector(selectCurrentUser);
   const confirmed = useSelector(selectLastConfirmed);
 
-  const [copied, setCopied] = useState(false);
-  const [showPassword, setShowPassword] = useState(true);
-  const [showReceipt, setShowReceipt] = useState(false);
-  const [loggingIn, setLoggingIn] = useState(false);
+  const [copied, setCopied] = useScreenState(false);
+  const [showPassword, setShowPassword] = useScreenState(true);
+  const [showReceipt, setShowReceipt] = useScreenState(false);
+  const [loggingIn, setLoggingIn] = useScreenState(false);
 
   const record = useMemo(
     () =>
@@ -158,12 +160,13 @@ export default function BookingConfirmed() {
     );
   }
 
-  const hasPassword = Boolean(credentials.password);
+  const password = readIssuedPassword(record.id);
+  const hasPassword = Boolean(password);
   const allotment = `Room #${receipt.room}${receipt.bed ? ` • Bed ${receipt.bed}` : ''}`;
 
   const handleCopyCredentials = async () => {
     const lines = [`Tenant ID: ${credentials.username || tenant.username || ''}`];
-    if (hasPassword) lines.push(`Temporary password: ${credentials.password}`);
+    if (hasPassword) lines.push(`Temporary password: ${password}`);
     lines.push(`Login: ${window.location.origin}/login`);
     const ok = await copyText(lines.join('\n'));
     setCopied(ok ? 'ok' : 'fail');
@@ -178,15 +181,14 @@ export default function BookingConfirmed() {
         return;
       }
       setLoggingIn(true);
-      const result = await dispatch(login({ username: credentials.username, password: credentials.password }));
+      const result = await dispatch(login({ username: credentials.username, password }));
       setLoggingIn(false);
       if (login.rejected.match(result)) {
         dispatch(toastError(result.payload || 'Could not sign you in. Please use the login page.'));
         return;
       }
     }
-    // The one-time password has done its job: drop it from this tab's storage.
-    dispatch(forgetIssuedPassword());
+    clearIssuedPassword();
     navigate('/dashboard/tenant/dashboard');
   };
 
@@ -282,7 +284,7 @@ export default function BookingConfirmed() {
               {hasPassword ? (
                 <div className="password-display-box">
                   <code className="cred-code password-val" data-testid="tenant-password">
-                    {showPassword ? credentials.password : '•'.repeat(credentials.password.length)}
+                    {showPassword ? password : '•'.repeat(password.length)}
                   </code>
                   <button type="button" className="btn-copy-cred" onClick={() => setShowPassword((v) => !v)}>
                     <span className="material-icons-outlined" style={{ fontSize: '16px' }}>

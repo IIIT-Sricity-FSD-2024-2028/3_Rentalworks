@@ -1,6 +1,7 @@
 import PropertyImage from '../components/PropertyImage';
 import Icon from '../components/Icon';
-import React, { useState } from 'react';
+import React from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AMENITIES } from '../../../utils/normalize';
 
@@ -15,14 +16,17 @@ export default function Properties({
   const [params, setParams] = useSearchParams();
   const search = params.get('q') || '';
   const setSearch = value => setParams({ q: value }, { replace: true });
-  const [filterType, setFilterType] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
-  const [filterSort, setFilterSort] = useState('');
+  const [filterType, setFilterType] = useScreenState('');
+  const [filterStatus, setFilterStatus] = useScreenState('');
+  const [filterSort, setFilterSort] = useScreenState('');
 
-  const [viewingProperty, setViewingProperty] = useState(null);
-  const [editingProperty, setEditingProperty] = useState(null);
-  const [deletingProperty, setDeletingProperty] = useState(null);
-  const [editError, setEditError] = useState('');
+  const [viewingPropertyId, setViewingProperty] = useScreenState(null);
+  const [editingProperty, setEditingProperty] = useScreenState(null);
+  const [deletingPropertyId, setDeletingProperty] = useScreenState(null);
+  // Read the current Redux-backed record after a dashboard refresh.
+  const viewingProperty = properties.find((property) => property.id === viewingPropertyId);
+  const deletingProperty = properties.find((property) => property.id === deletingPropertyId);
+  const [editError, setEditError] = useScreenState('');
 
   const formatCurrency = (amount) => {
     return '₹' + Number(amount || 0).toLocaleString('en-IN');
@@ -267,7 +271,7 @@ export default function Properties({
                   <div className="property-card-actions">
                     <button
                       className="btn btn-secondary btn-sm flex-1"
-                      onClick={() => setViewingProperty(p)}
+                      onClick={() => setViewingProperty(p.id)}
                     >
                       <Icon className="material-icons icon-16 icon-middle">visibility</Icon>{' '}
                       View
@@ -284,7 +288,7 @@ export default function Properties({
                     </button>
                     <button
                       className="btn btn-danger btn-sm"
-                      onClick={() => setDeletingProperty(p)}
+                      onClick={() => setDeletingProperty(p.id)}
                     >
                       <Icon className="material-icons icon-16 icon-middle">delete</Icon>
                     </button>

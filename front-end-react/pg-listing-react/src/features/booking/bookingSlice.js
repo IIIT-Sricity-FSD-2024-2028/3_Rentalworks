@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit'
 import { http, qs, asArray } from '../../services/apiClient';
 import { setSession } from '../auth/authSlice';
 import { fetchListings, fetchListingById } from '../listings/listingsSlice';
+import { rememberIssuedPassword } from './issuedPassword';
 
 export const PLATFORM_FEE = 500;
 export const DURATIONS = [
@@ -16,30 +17,6 @@ const defaultMoveIn = () => {
   d.setDate(d.getDate() + 5);
   return d.toISOString().split('T')[0];
 };
-
-// The in-progress booking survives a refresh within the tab (sessionStorage).
-const DRAFT_KEY = 'rentbro_booking_draft';
-const DRAFT_FIELDS = ['selectedPG', 'selectedRoom', 'selectedRoommate', 'lifestyleProfile', 'moveInDate', 'duration', 'bookingFor', 'friendDetails', 'paymentMethod', 'lastConfirmed', 'pendingBookingId'];
-
-function loadDraft() {
-  try {
-    return JSON.parse(sessionStorage.getItem(DRAFT_KEY) || '{}') || {};
-  } catch {
-    return {};
-  }
-}
-
-export function saveDraft(bookingState) {
-  try {
-    const draft = {};
-    DRAFT_FIELDS.forEach((k) => {
-      draft[k] = bookingState[k];
-    });
-    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-  } catch {
-    // ignore
-  }
-}
 
 export const isSingleRoom = (room) => room?.sharing === 'single' || Number(room?.capacity) === 1;
 
@@ -69,9 +46,9 @@ export const calculateRoommateMatches = createAsyncThunk(
   'booking/calculateRoommateMatches',
   async (profile, { rejectWithValue }) => {
     try {
-      await http.post('/roommates/profile', profile, { auth: false }).catch(() => null);
+      const saved = await http.post('/roommates/profile', profile, { auth: false });
       const data = await http.post('/roommates/calculate-matches', profile, { auth: false });
-      return asArray(data)
+      const matches = asArray(data)
         .map((item) => ({
           id: item.id,
           name: item.name,
@@ -89,15 +66,20 @@ export const calculateRoommateMatches = createAsyncThunk(
           matchPercentage: Number(item.matchPercentage || item.compatibility) || 0,
         }))
         .sort((a, b) => b.matchPercentage - a.matchPercentage);
+      return { profile: { ...profile, ...saved }, matches };
     } catch (err) {
       return rejectWithValue(err.message);
     }
   },
 );
 
-export const saveLifestyleProfile = createAsyncThunk('booking/saveLifestyleProfile', async (profile) => {
-  await http.post('/roommates/profile', profile, { auth: false }).catch(() => null);
-  return profile;
+export const saveLifestyleProfile = createAsyncThunk('booking/saveLifestyleProfile', async (profile, { rejectWithValue }) => {
+  try {
+    const saved = await http.post('/roommates/profile', profile, { auth: false });
+    return { ...profile, ...saved };
+  } catch (error) {
+    return rejectWithValue(error.message);
+  }
 });
 
 /**
@@ -106,7 +88,7 @@ export const saveLifestyleProfile = createAsyncThunk('booking/saveLifestyleProfi
  */
 export const submitCheckout = createAsyncThunk(
   'booking/submitCheckout',
-  async ({ paymentMethod, upiId }, { getState, dispatch, rejectWithValue }) => {
+  async ({ paymentMethod, upiId }, { getState, dispatch, rejectWithValue, requestId }) => {
     const { booking, auth } = getState();
     const user = auth.user;
     const { selectedPG: pg, selectedRoom: room, selectedRoommate, lifestyleProfile, bookingFor, friendDetails } = booking;
@@ -139,8 +121,13 @@ export const submitCheckout = createAsyncThunk(
       upiId: paymentMethod === 'upi' ? upiId : undefined,
     };
 
+    const isCurrentCheckout = () => getState().booking.checkout.requestId === requestId;
+    const ended = () => rejectWithValue('Your booking session ended. Sign in to view your bookings.');
     try {
       const result = await http.post('/bookings/checkout', payload);
+      // Availability changed even if the user signed out while checkout was running.
+      dispatch(fetchListings());
+      if (!isCurrentCheckout()) return ended();
       // Booking for yourself promotes your account to tenant. Booking for a
       // friend creates *their* account, so your session stays as it is.
       if (!forFriend && result?.tenant) {
@@ -148,10 +135,11 @@ export const submitCheckout = createAsyncThunk(
       }
       // Checkout creates the confirmed booking, so drop the unpaid request it replaces.
       if (booking.pendingBookingId) await http.delete(`/bookings/${booking.pendingBookingId}`).catch(() => null);
-      // The server just took a bed: reload availability so every page shows the new counts.
-      dispatch(fetchListings());
+      if (!isCurrentCheckout()) return ended();
       dispatch(fetchListingById(pg.id));
-      return result;
+      const { password, ...credentials } = result.credentials ?? {};
+      rememberIssuedPassword(result.booking?.id, password);
+      return { ...result, credentials };
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -193,30 +181,29 @@ export const fetchMyTransactions = createAsyncThunk('booking/fetchMyTransactions
 
 // ------------------------------------------------------------------ slice
 
-const draft = loadDraft();
-
-const initialState = {
-  selectedPG: draft.selectedPG || null,
-  selectedRoom: draft.selectedRoom || null,
-  selectedRoommate: draft.selectedRoommate || null,
-  lifestyleProfile: draft.lifestyleProfile || null,
-  moveInDate: draft.moveInDate || defaultMoveIn(),
-  duration: draft.duration || '6 Months',
-  bookingFor: draft.bookingFor || 'self',
-  friendDetails: draft.friendDetails || { name: '', phone: '', email: '', gender: '' },
-  paymentMethod: draft.paymentMethod || 'upi',
-  lastConfirmed: draft.lastConfirmed || null,
-  pendingBookingId: draft.pendingBookingId || null,
+const createInitialState = () => ({
+  selectedPG: null,
+  selectedRoom: null,
+  selectedRoommate: null,
+  lifestyleProfile: null,
+  moveInDate: defaultMoveIn(),
+  duration: '6 Months',
+  bookingFor: 'self',
+  friendDetails: { name: '', phone: '', email: '', gender: '' },
+  paymentMethod: 'upi',
+  lastConfirmed: null,
+  pendingBookingId: null,
 
   matches: { items: [], status: 'idle', error: null },
+  profileSaveRequestId: null,
   checkout: { status: 'idle', error: null },
   myBookings: { items: [], status: 'idle', error: null },
   myTransactions: { items: [], status: 'idle', error: null },
-};
+});
 
 const bookingSlice = createSlice({
   name: 'booking',
-  initialState,
+  initialState: createInitialState,
   reducers: {
     startBooking(state, { payload: { pg, room, pendingBookingId = null } }) {
       state.pendingBookingId = pendingBookingId;
@@ -226,6 +213,7 @@ const bookingSlice = createSlice({
       if (roomChanged || isSingleRoom(room)) {
         state.selectedRoommate = null;
         state.matches = { items: [], status: 'idle', error: null };
+        state.profileSaveRequestId = null;
       }
       state.checkout = { status: 'idle', error: null };
     },
@@ -254,32 +242,45 @@ const bookingSlice = createSlice({
       state.checkout.error = null;
     },
     resetBookingFlow(state) {
-      return { ...initialState, lastConfirmed: state.lastConfirmed, myBookings: state.myBookings, myTransactions: state.myTransactions, selectedPG: null, selectedRoom: null, selectedRoommate: null, lifestyleProfile: null, moveInDate: defaultMoveIn() };
-    },
-    /** Drop the one-time password once the user has seen it. */
-    forgetIssuedPassword(state) {
-      if (state.lastConfirmed?.credentials) state.lastConfirmed.credentials.password = null;
+      return {
+        ...createInitialState(),
+        lastConfirmed: state.lastConfirmed,
+        myBookings: state.myBookings,
+        myTransactions: state.myTransactions,
+      };
     },
   },
   extraReducers: (builder) => {
     builder
       .addCase(calculateRoommateMatches.pending, (state, { meta }) => {
-        state.matches = { items: [], status: 'loading', error: null };
-        state.lifestyleProfile = meta.arg;
+        state.matches = { items: [], status: 'loading', error: null, requestId: meta.requestId };
       })
-      .addCase(calculateRoommateMatches.fulfilled, (state, { payload }) => {
-        state.matches = { items: payload, status: 'succeeded', error: null };
+      .addCase(calculateRoommateMatches.fulfilled, (state, { payload, meta }) => {
+        if (state.matches.requestId !== meta.requestId) return;
+        state.lifestyleProfile = payload.profile;
+        state.matches = { items: payload.matches, status: 'succeeded', error: null };
       })
-      .addCase(calculateRoommateMatches.rejected, (state, { payload }) => {
+      .addCase(calculateRoommateMatches.rejected, (state, { payload, meta }) => {
+        if (state.matches.requestId !== meta.requestId) return;
         state.matches = { items: [], status: 'failed', error: payload || 'Could not calculate matches' };
       })
       .addCase(saveLifestyleProfile.pending, (state, { meta }) => {
-        state.lifestyleProfile = meta.arg;
+        state.profileSaveRequestId = meta.requestId;
       })
-      .addCase(submitCheckout.pending, (state) => {
-        state.checkout = { status: 'loading', error: null };
+      .addCase(saveLifestyleProfile.fulfilled, (state, { payload, meta }) => {
+        // Only server-confirmed preferences go into the active booking draft.
+        if (state.profileSaveRequestId !== meta.requestId) return;
+        state.profileSaveRequestId = null;
+        state.lifestyleProfile = payload;
       })
-      .addCase(submitCheckout.fulfilled, (state, { payload }) => {
+      .addCase(saveLifestyleProfile.rejected, (state, { meta }) => {
+        if (state.profileSaveRequestId === meta.requestId) state.profileSaveRequestId = null;
+      })
+      .addCase(submitCheckout.pending, (state, { meta }) => {
+        state.checkout = { status: 'loading', error: null, requestId: meta.requestId };
+      })
+      .addCase(submitCheckout.fulfilled, (state, { payload, meta }) => {
+        if (state.checkout.requestId !== meta.requestId) return;
         state.checkout = { status: 'succeeded', error: null };
         state.pendingBookingId = null;
         state.lastConfirmed = {
@@ -294,31 +295,40 @@ const bookingSlice = createSlice({
           confirmedAt: new Date().toISOString(),
         };
       })
-      .addCase(submitCheckout.rejected, (state, { payload }) => {
+      .addCase(submitCheckout.rejected, (state, { payload, meta }) => {
+        if (state.checkout.requestId !== meta.requestId) return;
         state.checkout = { status: 'failed', error: payload || 'Payment failed. Please retry.' };
       })
-      .addCase(fetchMyBookings.pending, (state) => {
+      .addCase(fetchMyBookings.pending, (state, { meta }) => {
+        state.myBookings.requestId = meta.requestId;
         state.myBookings.status = 'loading';
         state.myBookings.error = null;
       })
-      .addCase(fetchMyBookings.fulfilled, (state, { payload }) => {
+      .addCase(fetchMyBookings.fulfilled, (state, { payload, meta }) => {
+        if (state.myBookings.requestId !== meta.requestId) return;
         state.myBookings = { items: payload, status: 'succeeded', error: null };
       })
-      .addCase(fetchMyBookings.rejected, (state, { payload }) => {
+      .addCase(fetchMyBookings.rejected, (state, { payload, meta }) => {
+        if (state.myBookings.requestId !== meta.requestId) return;
+        delete state.myBookings.requestId;
         state.myBookings.status = 'failed';
         state.myBookings.error = payload;
       })
       .addCase(cancelMyBooking.fulfilled, (state, { payload: id }) => {
         state.myBookings.items = state.myBookings.items.filter((x) => String(x.id) !== String(id));
       })
-      .addCase(fetchMyTransactions.pending, (state) => {
+      .addCase(fetchMyTransactions.pending, (state, { meta }) => {
+        state.myTransactions.requestId = meta.requestId;
         state.myTransactions.status = 'loading';
         state.myTransactions.error = null;
       })
-      .addCase(fetchMyTransactions.fulfilled, (state, { payload }) => {
+      .addCase(fetchMyTransactions.fulfilled, (state, { payload, meta }) => {
+        if (state.myTransactions.requestId !== meta.requestId) return;
         state.myTransactions = { items: payload, status: 'succeeded', error: null };
       })
-      .addCase(fetchMyTransactions.rejected, (state, { payload }) => {
+      .addCase(fetchMyTransactions.rejected, (state, { payload, meta }) => {
+        if (state.myTransactions.requestId !== meta.requestId) return;
+        delete state.myTransactions.requestId;
         state.myTransactions.status = 'failed';
         state.myTransactions.error = payload;
       });
@@ -336,7 +346,6 @@ export const {
   setPaymentMethod,
   clearCheckoutError,
   resetBookingFlow,
-  forgetIssuedPassword,
 } = bookingSlice.actions;
 export default bookingSlice.reducer;
 

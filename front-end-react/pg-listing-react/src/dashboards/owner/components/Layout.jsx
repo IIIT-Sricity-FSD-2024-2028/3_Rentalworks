@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
@@ -12,7 +13,7 @@ export default function Layout({
   onLogout
 }) {
   // Mobile drawer state: controls whether the sidebar is open on smaller screens
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useScreenState(false);
 
   return (
     <div className="app-layout">

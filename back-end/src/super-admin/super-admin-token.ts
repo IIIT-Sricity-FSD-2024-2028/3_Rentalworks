@@ -15,8 +15,8 @@ function signature(payload: string): string {
   return createHmac('sha256', secret()).update(payload).digest('base64url');
 }
 
-export function issueSuperAdminToken(id: number): string {
-  const data: TokenData = { id, expires: Date.now() + 8 * 60 * 60 * 1000 };
+export function issueSuperAdminToken(id: number, expires = Date.now() + 8 * 60 * 60 * 1000): string {
+  const data: TokenData = { id, expires };
   const payload = Buffer.from(JSON.stringify(data)).toString('base64url');
   return `${payload}.${signature(payload)}`;
 }

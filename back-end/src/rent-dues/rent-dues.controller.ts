@@ -9,15 +9,24 @@ import {
   ParseIntPipe,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import type { Request } from 'express';
+import { DataSource } from 'typeorm';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RentDuesService } from './rent-dues.service';
+import { requireBrowserActor } from '../users/browser-actor';
 
 class PayDueDto {
+  @ApiProperty()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  expectedAmount: number;
+
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
@@ -53,18 +62,16 @@ const toId = (v?: string) => {
 };
 
 @ApiTags('rent-dues')
-@Controller('rent-dues')
+@Controller(['rent-dues', 'users/session/rent-dues'])
 @UseGuards(RolesGuard)
 export class RentDuesController {
-  constructor(private readonly service: RentDuesService) {}
+  constructor(private readonly service: RentDuesService, private readonly dataSource: DataSource) {}
 
   @Get('my')
-  @Roles('tenant', 'admin', 'warden')
   @ApiOperation({ summary: "Logged-in tenant's rent ledger" })
-  my(@Headers('x-user-id') userId?: string) {
-    const id = toId(userId);
-    if (!id) throw new BadRequestException('x-user-id header is required');
-    return this.service.findMine(id);
+  async my(@Req() request: Request) {
+    const actor = await requireBrowserActor(request, this.dataSource, ['tenant']);
+    return this.service.findBillingMine(actor.id);
   }
 
   @Get('ledger')
@@ -95,38 +102,35 @@ export class RentDuesController {
   }
 
   @Post(':id/pay')
-  @Roles('tenant', 'admin')
   @ApiOperation({ summary: 'Tenant pays a rent due (amount is taken from the ledger)' })
-  pay(
+  async pay(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: PayDueDto,
-    @Headers('x-role') role?: string,
-    @Headers('x-user-id') userId?: string,
+    @Req() request: Request,
   ) {
-    return this.service.pay(id, { id: toId(userId), role }, body);
+    const actor = await requireBrowserActor(request, this.dataSource, ['tenant', 'admin']);
+    return this.service.pay(id, actor, body);
   }
 
   @Post(':id/mark-paid')
-  @Roles('warden', 'admin')
   @ApiOperation({ summary: 'Warden records a cash / offline payment' })
-  markPaid(
+  async markPaid(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: MarkPaidDto,
-    @Headers('x-role') role?: string,
-    @Headers('x-user-id') userId?: string,
+    @Req() request: Request,
   ) {
-    return this.service.markPaidOffline(id, { id: toId(userId), role }, body.note);
+    const actor = await requireBrowserActor(request, this.dataSource, ['warden', 'admin']);
+    return this.service.markPaidOffline(id, actor, body.note);
   }
 
   @Post(':id/waive')
-  @Roles('warden', 'admin')
   @ApiOperation({ summary: 'Warden waives / excuses a rent due (reason required)' })
-  waive(
+  async waive(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: WaiveDto,
-    @Headers('x-role') role?: string,
-    @Headers('x-user-id') userId?: string,
+    @Req() request: Request,
   ) {
-    return this.service.waive(id, { id: toId(userId), role }, body.reason);
+    const actor = await requireBrowserActor(request, this.dataSource, ['warden', 'admin']);
+    return this.service.waive(id, actor, body.reason);
   }
 }

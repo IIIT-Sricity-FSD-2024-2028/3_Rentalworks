@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import Shell from './components/Shell';
 import Dashboard from './pages/Dashboard';
@@ -8,7 +8,8 @@ import GlobalReports from './pages/GlobalReports';
 import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
 import { fetchSuperAdminOverview, selectSuperAdmin } from '../../features/superadmin/superAdminSlice';
-import { logout, selectCurrentUser } from '../../features/auth/authSlice';
+import { selectCurrentUser } from '../../features/auth/authSlice';
+import { useSignOut } from '../../app/hooks';
 import { showToast } from '../../features/ui/uiSlice';
 import './styles_admin.css';
 import './morphism-effects.css';
@@ -26,18 +27,13 @@ function useRefresh() {
 
 export default function SuperAdminLayout() {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const handleLogout = useSignOut();
   const user = useSelector(selectCurrentUser);
   const { overview, status, error } = useSelector(selectSuperAdmin);
 
   useEffect(() => {
     dispatch(fetchSuperAdminOverview());
   }, [dispatch]);
-
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login', { replace: true });
-  };
 
   return (
     <div className="portal-super-admin-scope">

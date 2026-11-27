@@ -1,5 +1,6 @@
 import Icon from '../components/Icon';
 import React, { useState } from 'react';
+import useScreenState from '../../../app/useScreenState';
 
 // Profile: Manage owner credentials, personal info, location, password, 2FA, data export, and logout
 export default function Profile({
@@ -10,7 +11,7 @@ export default function Profile({
   onLogout,
   allData,
 }) {
-  const [formData, setFormData] = useState(
+  const [formData, setFormData] = useScreenState(
     Object.assign(
       {
         name: '',
@@ -26,8 +27,8 @@ export default function Profile({
     )
   );
 
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useScreenState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useScreenState(false);
 
   const [passForm, setPassForm] = useState({
     currPass: '',
@@ -35,9 +36,9 @@ export default function Profile({
     confPass: '',
   });
 
-  const [profileError, setProfileError] = useState('');
-  const [passError, setPassError] = useState('');
-  const [passSuccess, setPassSuccess] = useState('');
+  const [profileError, setProfileError] = useScreenState('');
+  const [passError, setPassError] = useScreenState('');
+  const [passSuccess, setPassSuccess] = useScreenState('');
 
 
   const totalProps = properties.length;

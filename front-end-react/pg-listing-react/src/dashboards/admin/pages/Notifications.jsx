@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { useDispatch, useSelector } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
 import { adminNotifications, adminUsers } from '../../../features/admin/adminSlices';
@@ -14,12 +15,12 @@ export default function Notifications() {
   const loading = useSelector(adminNotifications.selectors.selectIsLoading) && notifHistory.length === 0;
   const sending = useSelector(adminNotifications.selectors.selectMutating);
 
-  const [notifType, setNotifType] = useState('announcement');
-  const [priority, setPriority] = useState('routine');
-  const [title, setTitle] = useState('');
-  const [message, setMessage] = useState('');
-  const [targetRole, setTargetRole] = useState('all');
-  const [targetUser, setTargetUser] = useState('all');
+  const [notifType, setNotifType] = useScreenState('announcement');
+  const [priority, setPriority] = useScreenState('routine');
+  const [title, setTitle] = useScreenState('');
+  const [message, setMessage] = useScreenState('');
+  const [targetRole, setTargetRole] = useScreenState('all');
+  const [targetUser, setTargetUser] = useScreenState('all');
 
   useEffect(() => {
     dispatch(adminUsers.thunks.fetchAll());

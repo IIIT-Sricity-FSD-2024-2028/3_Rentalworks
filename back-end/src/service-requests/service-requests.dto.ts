@@ -3,6 +3,8 @@ import {
   IsOptional,
   IsNumber,
   IsEnum,
+  Min,
+  Max,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { ServiceRequestStatus } from './service-request.entity';
@@ -38,6 +40,13 @@ export class CreateServiceRequestDto {
   @IsOptional()
   amount?: number;
 
+  @ApiProperty({ required: false, default: 1 })
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  @Max(1000)
+  @IsOptional()
+  quantity?: number;
+
   @ApiProperty({ description: 'Target property ID', required: false })
   @IsNumber()
   @IsOptional()
@@ -60,7 +69,7 @@ export class CreateServiceRequestDto {
 
 export class UpdateServiceRequestDto {
   @ApiProperty({ description: 'Current status of the service request', enum: ServiceRequestStatus, required: false })
-  @IsString()
+  @IsEnum(ServiceRequestStatus)
   @IsOptional()
   status?: string;
 

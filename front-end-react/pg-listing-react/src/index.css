@@ -38,6 +38,23 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+.session-status {
+  max-width: 36rem;
+  margin: 4rem auto;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.session-status button {
+  margin-top: 1rem;
+  padding: 0.5rem 1.25rem;
+  border: 1px solid var(--primary-dark);
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  color: var(--text);
+  cursor: pointer;
+}
+
 /* ======= HEADER ======= */
 .header {
   background: var(--header-bg);

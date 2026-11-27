@@ -1,6 +1,6 @@
-import { createSelector } from '@reduxjs/toolkit';
 import { createResourceSlice } from '../shared/createResourceSlice';
-import { api, deriveSubscriptions, subscriptionStats } from '../../dashboards/admin/services/api';
+import { api } from '../../dashboards/admin/services/api';
+import propertyDocumentsReducer from './propertyDocumentsSlice';
 
 // One resource slice per admin collection. Pages dispatch
 // `adminUsers.thunks.fetchAll()` etc. and read with the matching selectors.
@@ -17,17 +17,17 @@ export const adminProperties = createResourceSlice({
 
 export const adminBookings = createResourceSlice({
   name: 'adminBookings',
-  api: { list: api.getBookings, update: api.updateBooking },
+  api: { list: api.getBookings, create: api.createBooking, update: api.updateBooking, remove: api.deleteBooking },
 });
 
 export const adminPayments = createResourceSlice({
   name: 'adminPayments',
-  api: { list: api.getPayments, update: api.updatePayment },
+  api: { list: api.getPayments, create: api.createPayment, update: api.updatePayment, remove: api.deletePayment },
 });
 
 export const adminComplaints = createResourceSlice({
   name: 'adminComplaints',
-  api: { list: api.getComplaints, update: api.updateComplaint, remove: api.deleteComplaint },
+  api: { list: api.getComplaints, create: api.createComplaint, update: api.updateComplaint, remove: api.deleteComplaint },
 });
 
 export const adminNotifications = createResourceSlice({
@@ -35,11 +35,13 @@ export const adminNotifications = createResourceSlice({
   api: {
     list: api.getNotifications,
     create: ({ data, byUserId }) => api.createNotification(data, byUserId),
+    update: api.updateNotification,
     remove: api.deleteNotification,
   },
 });
 
 export const adminReducers = {
+  propertyDocuments: propertyDocumentsReducer,
   adminUsers: adminUsers.reducer,
   adminProperties: adminProperties.reducer,
   adminBookings: adminBookings.reducer,
@@ -47,7 +49,3 @@ export const adminReducers = {
   adminComplaints: adminComplaints.reducer,
   adminNotifications: adminNotifications.reducer,
 };
-
-// Subscriptions are derived from owner accounts held in adminUsers.
-export const selectAdminSubscriptions = createSelector([adminUsers.selectors.selectItems], deriveSubscriptions);
-export const selectAdminSubscriptionStats = createSelector([selectAdminSubscriptions], subscriptionStats);

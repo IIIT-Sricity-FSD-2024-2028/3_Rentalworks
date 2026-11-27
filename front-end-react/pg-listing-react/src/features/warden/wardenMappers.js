@@ -194,19 +194,3 @@ export function mapIssueFromDb(i) {
     propertyId: i.propertyId ?? null,
   };
 }
-
-/** tenant_stays row → one occupied bed. */
-export function mapStayFromDb(s) {
-  return {
-    id: s.id,
-    tenantId: s.tenantId ?? s.tenant?.id ?? null,
-    tenantName: s.tenant?.name || `Tenant #${s.tenantId}`,
-    propertyId: s.propertyId ?? s.property?.id ?? null,
-    propertyName: s.property?.name || '',
-    roomId: s.roomId ?? s.roomEntity?.id ?? null,
-    roomNumber: s.roomEntity?.roomNumber || '',
-    bedNumber: s.bedNumber || '',
-    moveInDate: s.moveInDate || null,
-    status: normalizeStatus(s.status),
-  };
-}

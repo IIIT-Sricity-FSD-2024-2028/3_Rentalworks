@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import useScreenState from '../app/useScreenState';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectCurrentUser, updateMyProfile } from '../features/auth/authSlice';
@@ -26,8 +27,8 @@ export default function BookingReview() {
   const { rent, deposit, fee, total } = useSelector(selectTotals);
   const currentUser = useSelector(selectCurrentUser);
 
-  const [agreeTerms, setAgreeTerms] = useState(false);
-  const [error, setError] = useState('');
+  const [agreeTerms, setAgreeTerms] = useScreenState(false);
+  const [error, setError] = useScreenState('');
 
   // Guard: the flow needs a PG + room (deep links / new tabs) and a signed-in user.
   const invalid = !pg || !selectedRoom || String(pg.id) !== String(id);

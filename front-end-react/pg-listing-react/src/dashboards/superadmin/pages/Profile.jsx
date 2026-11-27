@@ -1,35 +1,32 @@
 import { useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { fetchSuperAdminProfile, updateSuperAdminProfile, changeSuperAdminPassword } from '../../../features/superadmin/superAdminSlice';
+import useScreenState from '../../../app/useScreenState';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchSuperAdminProfile, updateSuperAdminProfile, changeSuperAdminPassword, selectSuperAdminProfile } from '../../../features/superadmin/superAdminSlice';
 
 const fieldStyle = { width: '100%', padding: 10, borderRadius: 6, border: '1px solid #cbd5e1' };
 const labelStyle = { display: 'block', fontSize: 13, fontWeight: 500, marginBottom: 6 };
 
 export default function Profile({ user, showToast }) {
   const dispatch = useDispatch();
-  const [admin, setAdmin] = useState(user || {});
-  const [details, setDetails] = useState({ name: user?.name || '', email: user?.email || '', phone: user?.phone || '' });
+  const admin = useSelector(selectSuperAdminProfile) || user || {};
+  const [edits, setEdits] = useScreenState({});
+  const details = { name: admin.name || '', email: admin.email || '', phone: admin.phone || '', ...edits };
   const [password, setPassword] = useState({ current: '', next: '', confirm: '' });
-  const [saving, setSaving] = useState(false);
+  const saving = useSelector((state) => state.superAdmin.saving);
 
   useEffect(() => {
-    dispatch(fetchSuperAdminProfile()).unwrap().then(profile => {
-      setAdmin(profile);
-      setDetails({ name: profile.name || '', email: profile.email || '', phone: profile.phone || '' });
-    }).catch(error => showToast('error', 'Profile', error?.message || error));
+    dispatch(fetchSuperAdminProfile()).unwrap().catch(error => showToast('error', 'Profile', error?.message || error));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch]);
 
   async function updateDetails() {
     if (!details.name.trim() || !details.email.trim()) { showToast('error', 'Required', 'Name and email cannot be empty.'); return; }
     if (details.phone.trim() && !/^\+?[\d\s-]{9,}$/.test(details.phone.trim())) { showToast('error', 'Invalid Phone', 'Please enter a valid phone number.'); return; }
-    setSaving(true);
     try {
-      const profile = await dispatch(updateSuperAdminProfile({ name: details.name.trim(), email: details.email.trim(), phone: details.phone.trim() })).unwrap();
-      setAdmin(profile);
+      await dispatch(updateSuperAdminProfile({ name: details.name.trim(), email: details.email.trim(), phone: details.phone.trim() })).unwrap();
+      setEdits({});
       showToast('success', 'Profile Updated', 'Your personal details have been saved.');
     } catch (error) { showToast('error', 'Error', error?.message || error); }
-    finally { setSaving(false); }
   }
 
   async function updatePassword() {
@@ -37,13 +34,11 @@ export default function Profile({ user, showToast }) {
       showToast('error', 'Password', 'Enter your current password and a matching new password of at least 6 characters.');
       return;
     }
-    setSaving(true);
     try {
       await dispatch(changeSuperAdminPassword({ currentPassword: password.current, newPassword: password.next })).unwrap();
       setPassword({ current: '', next: '', confirm: '' });
       showToast('success', 'Password Updated', 'Your password has been changed.');
     } catch (error) { showToast('error', 'Password', error?.message || error); }
-    finally { setSaving(false); }
   }
 
   return <section id="profile-sec" className="section active">
@@ -60,7 +55,7 @@ export default function Profile({ user, showToast }) {
       </div>
       <h4 style={{ fontSize: 16, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><span className="material-icons-outlined">manage_accounts</span> Personal Information</h4>
       <div style={{ display: 'grid', gap: 16, maxWidth: 400, marginBottom: 32, paddingBottom: 24, borderBottom: '1px solid #e2e8f0' }}>
-        {[['name', 'Full Name', 'text'], ['email', 'Email Address', 'email'], ['phone', 'Phone Number', 'text']].map(([key, label, type]) => <div key={key}><label style={labelStyle}>{label}</label><input style={fieldStyle} type={type} value={details[key]} onChange={event => setDetails(Object.assign({}, details, { [key]: event.target.value }))} /></div>)}
+        {[['name', 'Full Name', 'text'], ['email', 'Email Address', 'email'], ['phone', 'Phone Number', 'text']].map(([key, label, type]) => <div key={key}><label style={labelStyle}>{label}</label><input style={fieldStyle} type={type} value={details[key]} onChange={event => setEdits((previous) => ({ ...previous, [key]: event.target.value }))} /></div>)}
         <button className="btn-confirm-blue" style={{ padding: '10px 16px', marginTop: 8 }} disabled={saving} onClick={updateDetails}>{saving ? 'Saving...' : 'Update Details'}</button>
       </div>
       <h4 style={{ fontSize: 16, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><span className="material-icons-outlined">notifications</span> Notifications &amp; Platform Alerts</h4>

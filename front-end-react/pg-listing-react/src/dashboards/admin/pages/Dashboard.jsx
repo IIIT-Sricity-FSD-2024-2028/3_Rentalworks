@@ -7,14 +7,15 @@ import {
   adminPayments,
   adminProperties,
   adminUsers,
-  selectAdminSubscriptionStats,
 } from '../../../features/admin/adminSlices';
-import { lastMonths, monthKey } from '../utils/months';
+import { selectSubscriptionSummary } from '../../../features/subscriptions/subscriptionReportSlice';
+import useSubscriptionReport from '../../../features/subscriptions/useSubscriptionReport';
+import { lastMonths, monthKey } from '../../../utils/months';
+import { monthlyPlatformRevenue, recordedCommissions, sumMoney } from '../../../utils/revenue';
+import { formatINR } from '../../../utils/normalize';
 
 const LIVE = ['active', 'confirmed', 'paid'];
-const PAID = ['verified', 'completed', 'success'];
 const nameOf = (v) => (typeof v === 'object' ? v?.name : v) || 'Unknown';
-const sum = (list) => list.reduce((t, p) => t + (Number(p.amount) || 0), 0);
 
 function timeAgo(value) {
   const mins = Math.max(0, Math.round((Date.now() - new Date(value).getTime()) / 60000));
@@ -31,23 +32,26 @@ export default function Dashboard() {
   const bookings = useSelector(adminBookings.selectors.selectItems);
   const payments = useSelector(adminPayments.selectors.selectItems);
   const complaints = useSelector(adminComplaints.selectors.selectItems);
-  const subs = useSelector(selectAdminSubscriptionStats);
+  const { data: subscriptionReport, error: subscriptionError } = useSubscriptionReport();
+  const { totalRevenue: subscriptionRevenue, payments: subscriptionPayments } = useSelector(selectSubscriptionSummary);
   const lastSync = useSelector((s) => s.adminPayments.lastFetched);
+  const paymentsReady = lastSync != null;
   const loadError = useSelector((s) => [s.adminUsers, s.adminProperties, s.adminBookings, s.adminPayments].find((x) => x.error)?.error);
 
   useEffect(() => {
     [adminUsers, adminProperties, adminBookings, adminPayments, adminComplaints].forEach((r) => dispatch(r.thunks.fetchAll()));
   }, [dispatch]);
 
-  const paidPayments = payments.filter((p) => PAID.includes(p.status));
-  const gtv = sum(paidPayments);
+  const paidPayments = recordedCommissions(payments);
+  const gtv = sumMoney(paidPayments, (payment) => payment.amount);
+  const commissionRevenue = sumMoney(paidPayments, (payment) => payment.platformFee);
+  const revenueReady = paymentsReady && subscriptionRevenue !== null;
   const stats = {
     users: users.length,
     properties: properties.length,
     activeBookings: bookings.filter((b) => LIVE.includes(b.status)).length,
     pendingBookings: bookings.filter((b) => b.status === 'pending').length,
     gtv,
-    platformRev: Math.round(gtv * 0.1) + subs.payments.totalRevenue,
   };
   const health = {
     pendingProps: properties.filter((p) => p.status === 'pending').length,
@@ -57,9 +61,8 @@ export default function Dashboard() {
 
   const fmtK = (n) => (n >= 1000 ? '₹' + (n / 1000).toFixed(1) + 'K' : '₹' + n.toLocaleString('en-IN'));
 
-  // Last six months, from real payments and bookings.
   const months = lastMonths(6);
-  const revenueData = months.map((m) => Math.round(0.1 * sum(paidPayments.filter((p) => monthKey(p.paidDate || p.createdAt) === m.key))));
+  const revenueData = monthlyPlatformRevenue(months, paidPayments, subscriptionPayments);
   const bookingData = months.map((m) => bookings.filter((b) => monthKey(b.createdAt || b.checkIn) === m.key).length);
   const revenueMax = Math.max(...revenueData, 1);
   const bookingMax = Math.max(...bookingData, 1);
@@ -141,18 +144,22 @@ export default function Dashboard() {
             <div className="stat-icon bg-purple">
               <span className="material-icons-outlined" style={{ fontSize: 32, color: '#7c3aed' }}>payments</span>
             </div>
-            <span className="stat-trend up">10%</span>
           </div>
-          <div className="stat-val">{fmtK(stats.platformRev)}</div>
+          <div className="stat-val">{revenueReady ? formatINR(commissionRevenue + subscriptionRevenue) : '—'}</div>
           <div className="stat-lbl">Platform Revenue</div>
+          <div className="stat-lbl">
+            Subscriptions {subscriptionRevenue === null ? '—' : formatINR(subscriptionRevenue)}
+          </div>
         </div>
       </div>
+      {subscriptionError && <p role="alert">Could not load subscription revenue. {subscriptionError}</p>}
+      {subscriptionReport?.ledgerAvailable === false && <p>Subscription payment ledger unavailable.</p>}
 
       {/* Charts Row */}
       <div className="charts-row">
         <div className="chart-card">
           <h3>Revenue Overview</h3>
-          <p>Monthly revenue trends</p>
+          <p>{subscriptionRevenue === null ? 'Monthly recorded platform fees' : 'Monthly subscription payments and platform fees'}</p>
           <div className="line-chart-wrap">
             <svg viewBox={`0 0 ${w} ${h}`} xmlns="http://www.w3.org/2000/svg">
               <defs>

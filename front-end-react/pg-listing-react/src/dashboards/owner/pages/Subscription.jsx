@@ -1,4 +1,6 @@
-import { SUBSCRIPTION_PLANS, findPlan } from '../../../data/catalog';
+import { useSelector } from 'react-redux';
+import { findPlan } from '../../../data/catalog';
+import { selectSubscriptionPlans } from '../../../features/shared/catalogSlice';
 import { formatDate, formatINR, normalizeStatus, statusLabel, toNumber } from '../../../utils/normalize';
 
 const cardStyle = {
@@ -56,9 +58,10 @@ function PlanCard({ plan, isCurrent }) {
 }
 
 export default function Subscription({ user }) {
+  const plans = useSelector(selectSubscriptionPlans);
   const sub = user?.subscription || null;
   const currentName = user?.subscriptionPlan || sub?.currentPlan || null;
-  const currentPlan = findPlan(currentName);
+  const currentPlan = findPlan(currentName, plans);
   const status = normalizeStatus(sub?.status, currentName ? 'active' : 'inactive');
   const fee = toNumber(user?.subscriptionFee ?? sub?.monthlyFee) || currentPlan?.price || 0;
 
@@ -102,7 +105,7 @@ export default function Subscription({ user }) {
       </div>
 
       <div style={{ display: 'grid', gap: 20, gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', paddingTop: 8 }}>
-        {SUBSCRIPTION_PLANS.map((plan) => (
+        {plans.map((plan) => (
           <PlanCard key={plan.name} plan={plan} isCurrent={currentPlan?.name === plan.name} />
         ))}
       </div>

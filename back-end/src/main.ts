@@ -5,7 +5,9 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as fs from 'fs';
 import * as path from 'path';
 import helmet from 'helmet';
+import type { Request } from 'express';
 import { HttpErrorFilter } from './middleware/http-error.filter';
+import { sessionCorsOptions } from './users/browser-session';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -17,12 +19,7 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpErrorFilter());
 
   // Enable CORS for frontend integration
-  app.enableCors({
-    origin: '*', // For development
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
-  });
+  app.enableCors((request: Request, callback) => callback(null, sessionCorsOptions(request)));
 
   // Enable validation globally
   app.useGlobalPipes(
