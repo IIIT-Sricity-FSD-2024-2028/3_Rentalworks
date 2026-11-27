@@ -8,15 +8,17 @@ const BASE = 'http://localhost:3000';
 function getHeaders() {
   const userStr = sessionStorage.getItem('pg_user') || localStorage.getItem('pg_user');
   let token = '';
+  let userId = '';
   try {
     const user = userStr ? JSON.parse(userStr) : null;
     if (user && user.token) token = user.token;
+    if (user?.role === 'admin' && Number.isInteger(Number(user.id)) && Number(user.id) > 0) userId = String(user.id);
   } catch {}
 
   const headers = {
     'Content-Type': 'application/json',
     'x-role': 'admin',
-    'x-user-id': '1',
+    'x-user-id': userId,
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   return headers;
@@ -539,34 +541,14 @@ export const api = {
 
   // --- NOTIFICATIONS ---
   getNotifications: async () => {
-    const local = JSON.parse(localStorage.getItem('admin_notifs') || '[]');
-    const backendData = await safeFetch('/notifications', { method: 'GET' }, local);
-    const notifs = Array.isArray(backendData) && backendData.length ? backendData : local;
-
-    // Merge cross notifications
-    const crossNotifs = JSON.parse(localStorage.getItem('cross_notifications') || '[]');
-    const merged = [...local];
-    notifs.forEach(n => {
-      if (!merged.find(m => m.id === n.id)) merged.push(n);
-    });
-    crossNotifs.forEach(cn => {
-      if (!merged.find(m => m.id === cn.id)) {
-        merged.unshift({
-          id: cn.id,
-          title: cn.title || 'System Notification',
-          message: cn.message,
-          type: cn.type || 'announcement',
-          priority: cn.priority || 'routine',
-          recipients: 1,
-          sentAt: cn.sentAt || new Date().toISOString()
-        });
-      }
-    });
-
-    localStorage.setItem('admin_notifs', JSON.stringify(merged));
-    return merged;
+    // Use the scoped server inbox. Shared browser caches can contain another user's audience.
+    const userId = getHeaders()['x-user-id'];
+    if (!userId) throw new Error('Please sign in again.');
+    const response = await fetch(`${BASE}/notifications`, { headers: getHeaders() });
+    if (!response.ok) throw new Error('Unable to load announcements');
+    const notifications = await response.json();
+    return Array.isArray(notifications) ? notifications : [];
   },
-
   createNotification: async (notifData) => {
     const cleanPayload = {
       title: notifData.title,

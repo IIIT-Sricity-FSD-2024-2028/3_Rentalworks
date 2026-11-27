@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { Notification } from './notification.entity';
+import { isNotificationRecipient } from './notification-audience';
 import {
   CreateNotificationDto,
   UpdateNotificationDto,
@@ -14,7 +15,7 @@ export class NotificationsService {
     private notificationsRepository: Repository<Notification>,
   ) { }
 
-  async findAll(userId?: number) {
+  async findAll(userId?: number, role?: string) {
     const validUserId =
       typeof userId === 'number' &&
       Number.isInteger(userId) &&
@@ -32,15 +33,10 @@ export class NotificationsService {
         });
 
         // Filter for announcements targeting specific recipient IDs if present
-        return notifications.filter((n) => {
-          return !n.recipientUserIds?.length || n.recipientUserIds.includes(validUserId);
-        });
+        return notifications.filter(n => isNotificationRecipient(n, validUserId, role));
       }
 
-      return await this.notificationsRepository.find({
-        relations: { byUser: true, user: true },
-        order: { id: 'DESC' },
-      });
+      return [];
     } catch (err) {
       // Gracefully fall back to empty list on unexpected database errors
       return [];
@@ -62,11 +58,7 @@ export class NotificationsService {
 
       return notifications.filter((notification) => {
         if (notification.byUserId === ownerId) return true;
-        if (notification.userId === ownerId) return true;
-        if (notification.recipientUserIds && notification.recipientUserIds.length > 0) {
-          return notification.recipientUserIds.includes(ownerId);
-        }
-        return true;
+        return isNotificationRecipient(notification, ownerId, 'owner');
       });
     } catch (err) {
       console.warn('findForOwner fallback:', err);

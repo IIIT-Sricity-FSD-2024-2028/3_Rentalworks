@@ -60,12 +60,12 @@ export default function Notifications({ data, refresh, showToast }) {
         </div>
         <div className="notif-field"><label>Priority Level</label><div className="priority-btns">
           {[['routine', '🟢 Routine'], ['important', '🟡 Important'], ['urgent', 'Urgent']].map(([value, label]) =>
-            <button key={value} className={`priority-btn ${priority === value ? 'active' : ''}`} onClick={() => setPriority(value)}>{value === 'urgent' && <span className="material-icons-outlined" style={{ fontSize: 24 }}>error</span>} {label}</button>
+            <button type="button" key={value} data-priority={value} aria-pressed={priority === value} className={`priority-btn ${priority === value ? 'active' : ''}`} onClick={() => setPriority(value)}>{value === 'urgent' && <span className="material-icons-outlined" style={{ fontSize: 24 }}>error</span>} {label}</button>
           )}
         </div></div>
         <div className="notif-field"><label>Target Audience *</label><div className="cascading-targeting" style={{ display: 'flex', gap: 10 }}>
           <select style={selectStyle} value={role} onChange={event => { setRole(event.target.value); setProperty('all'); setTargetUser('all'); }}>
-            <option value="all">Broadcast to All Users</option><option value="tenant">Tenants Only</option><option value="warden">Wardens Only</option><option value="owner">Owners Only</option>
+            <option value="all">Broadcast to All Users</option><option value="tenant">Tenants Only</option><option value="warden">Wardens Only</option><option value="owner">Owners Only</option><option value="admin">Admins Only</option>
           </select>
           {canSelectProperty && <select style={selectStyle} value={property} onChange={event => { setProperty(event.target.value); setTargetUser('all'); }}>
             <option value="all">All Properties</option>{properties.map(pg => <option key={pg.id} value={pg.id}>{pg.name}</option>)}
@@ -82,9 +82,9 @@ export default function Notifications({ data, refresh, showToast }) {
         </div>
       </div>
       <div><div className="recipients-card"><h4>Recipient Counts</h4>
-        {[['all', 'group', 'All Users', activeUsers.length], ['tenants', 'person', 'All Tenants', activeUsers.filter(user => user.role === 'tenant').length], ['owners', 'apartment', 'Property Owners', activeUsers.filter(user => user.role === 'owner').length], ['wardens', null, 'Wardens', activeUsers.filter(user => user.role === 'warden').length]].map(([key, icon, label, count]) =>
-          <div key={key} className={`recipient-item ${role === key || (role === 'tenant' && key === 'tenants') || (role === 'owner' && key === 'owners') || (role === 'warden' && key === 'wardens') ? 'selected' : ''}`}>
-            <div className="rec-left">{icon ? <span className="material-icons-outlined" style={{ fontSize: 24 }}>{icon}</span> : '👮'} {label}</div><span className="rec-count" style={{ color: key === 'owners' ? '#7c3aed' : key === 'all' ? undefined : '#16a34a' }}>{count}</span>
+        {[['all', 'group', 'All Users', activeUsers.length], ['tenants', 'person', 'All Tenants', activeUsers.filter(user => user.role === 'tenant').length], ['owners', 'apartment', 'Property Owners', activeUsers.filter(user => user.role === 'owner').length], ['wardens', null, 'Wardens', activeUsers.filter(user => user.role === 'warden').length], ['admins', 'admin_panel_settings', 'Regional Admins', activeUsers.filter(user => user.role === 'admin').length]].map(([key, icon, label, count]) =>
+          <div key={key} className={`recipient-item ${role === key || (role === 'tenant' && key === 'tenants') || (role === 'owner' && key === 'owners') || (role === 'warden' && key === 'wardens') || (role === 'admin' && key === 'admins') ? 'selected' : ''}`}>
+            <div className="rec-left">{icon ? <span className="material-icons-outlined" style={{ fontSize: 24 }}>{icon}</span> : '👮'} {label}</div><span className="rec-count" style={{ color: key === 'owners' ? '#7c3aed' : key === 'admins' ? '#2563eb' : key === 'all' ? undefined : '#16a34a' }}>{count}</span>
           </div>
         )}
       </div><div className="notif-stats-card"><h4>Announcement Stats</h4><div className="ns-row"><span>Total Sent</span><strong>{notifications.filter(item => item.deliveryStatus !== 'scheduled').length}</strong></div><div className="ns-row"><span>Total Reach</span><strong>{notifications.filter(item => item.deliveryStatus !== 'scheduled').reduce((sum, item) => sum + Number(item.recipients || 0), 0).toLocaleString()}</strong></div></div></div>

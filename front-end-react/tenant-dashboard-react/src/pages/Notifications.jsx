@@ -25,6 +25,9 @@ const Notifications = () => {
 
   useEffect(() => {
     fetchNotifications();
+    const timer = setInterval(fetchNotifications, 30000);
+    window.addEventListener('focus', fetchNotifications);
+    return () => { clearInterval(timer); window.removeEventListener('focus', fetchNotifications); };
   }, [tenant]);
 
   const isItemRead = (n) => Boolean(n.isRead ?? n.read);

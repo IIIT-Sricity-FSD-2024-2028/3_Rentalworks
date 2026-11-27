@@ -7,7 +7,6 @@ import {
   Put,
   Patch,
   Delete,
-  Query,
   UseGuards,
   Headers,
 } from '@nestjs/common';
@@ -18,7 +17,7 @@ import {
 } from './notifications.dto';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
-import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('notifications')
 @Controller('notifications')
@@ -29,18 +28,17 @@ export class NotificationsController {
   @Get()
   @Roles('admin', 'warden', 'tenant', 'owner', 'super_admin')
   @ApiOperation({ summary: 'Get all notifications' })
-  @ApiQuery({ name: 'userId', required: false })
   findAll(
-    @Query('userId') userId?: string,
     @Headers('x-user-id') headerUserId?: string,
+    @Headers('x-role') role?: string,
   ) {
-    const rawId = userId || headerUserId;
+    const rawId = headerUserId;
     const num = rawId ? Number(rawId) : NaN;
     const parsedId =
       !isNaN(num) && Number.isInteger(num) && num > 0 && num <= 2147483647
         ? num
         : undefined;
-    return this.notificationsService.findAll(parsedId);
+    return this.notificationsService.findAll(parsedId, role);
   }
 
   @Put('read-all')

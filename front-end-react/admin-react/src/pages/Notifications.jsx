@@ -38,6 +38,9 @@ export default function Notifications() {
 
   useEffect(() => {
     load();
+    const timer = setInterval(load, 30000);
+    window.addEventListener('focus', load);
+    return () => { clearInterval(timer); window.removeEventListener('focus', load); };
   }, [load]);
 
   const counts = {
@@ -351,14 +354,14 @@ export default function Notifications() {
                   <strong>{n.title}</strong>
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                     <span className={`nh-type-badge ${n.type || 'announcement'}`}>{n.type || 'announcement'}</span>
-                    <button
+                    {n.byUser?.role !== 'super_admin' && <button
                       className="ico-btn danger"
                       onClick={() => handleDeleteNotif(n.id)}
                       title="Delete"
                       style={{ width: 22, height: 22 }}
                     >
                       <span className="material-icons-outlined" style={{ fontSize: 13 }}>close</span>
-                    </button>
+                    </button>}
                   </div>
                 </div>
                 <p>{n.message}</p>

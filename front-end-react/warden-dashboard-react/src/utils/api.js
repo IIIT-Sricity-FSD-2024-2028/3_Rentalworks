@@ -7,7 +7,7 @@ const getHeaders = () => {
   return {
     'Content-Type': 'application/json',
     'x-role': sessionUser.role || 'warden',
-    'x-user-id': String(sessionUser.id || 9),
+    'x-user-id': sessionUser.role === 'warden' && sessionUser.id ? String(sessionUser.id) : '',
   };
 };
 
@@ -160,15 +160,16 @@ export async function getNotificationsApi() {
 
 // --- WARDEN DEDICATED NOTIFICATIONS API ---
 export async function getWardenNotificationsApi() {
-  try {
-    const res = await fetch(`${API_BASE}/warden-notifications`, {
-      headers: getHeaders(),
-    });
-    if (res.ok) return await res.json();
-  } catch (_) {}
-  return [];
+  const [dedicated, announcements] = await Promise.all([
+    fetch(`${API_BASE}/warden-notifications`, { headers: getHeaders() })
+      .then(handleResponse).catch(() => []),
+    getNotificationsApi(),
+  ]);
+  return [...dedicated, ...announcements.filter(n => n.byUser?.role === 'super_admin').map(n => ({
+    ...n, id: `platform-${n.id}`, senderRole: 'super_admin',
+    senderName: n.byUser?.name || 'Super Admin', propertyName: 'Platform Announcement',
+  }))];
 }
-
 export async function createWardenNotificationApi(data) {
   const res = await fetch(`${API_BASE}/warden-notifications`, {
     method: 'POST',
@@ -179,7 +180,9 @@ export async function createWardenNotificationApi(data) {
 }
 
 export async function markWardenNotificationReadApi(id) {
-  const res = await fetch(`${API_BASE}/warden-notifications/${id}/read`, {
+  const path = String(id).startsWith('platform-')
+    ? `/notifications/${String(id).slice(9)}/read` : `/warden-notifications/${id}/read`;
+  const res = await fetch(`${API_BASE}${path}`, {
     method: 'PUT',
     headers: getHeaders(),
   });
@@ -187,6 +190,9 @@ export async function markWardenNotificationReadApi(id) {
 }
 
 export async function markAllWardenNotificationsReadApi() {
+  const announcements = await getNotificationsApi();
+  await Promise.all(announcements.filter(n => n.byUser?.role === 'super_admin' && !n.read)
+    .map(n => markWardenNotificationReadApi(`platform-${n.id}`)));
   const res = await fetch(`${API_BASE}/warden-notifications/mark-all-read`, {
     method: 'PUT',
     headers: getHeaders(),

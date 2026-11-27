@@ -23,7 +23,7 @@ function getActiveTenant() {
  */
 export const apiFetch = async (endpoint, options = {}) => {
   const activeUser = getActiveTenant();
-  const tenantId = activeUser?.id ? String(activeUser.id) : '1';
+  const tenantId = activeUser?.role === 'tenant' && activeUser?.id ? String(activeUser.id) : '';
   const role = activeUser?.role || 'tenant';
 
   const headers = {

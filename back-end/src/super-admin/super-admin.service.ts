@@ -91,16 +91,24 @@ export class SuperAdminService implements OnModuleInit, OnModuleDestroy {
     const user = await this.users.findOneBy({ id, role: 'super_admin' });
     if (!user) throw new NotFoundException('Super admin not found');
     const email = dto.email.trim().toLowerCase();
-    const duplicate = await this.users.findOneBy({ email });
+    const duplicate = await this.users.createQueryBuilder('user')
+      .where('LOWER(user.email) = :email AND user.id <> :id', { email, id }).getOne();
     if (duplicate && duplicate.id !== id) throw new ConflictException('Email is already in use');
     user.name = dto.name.trim();
     user.email = email;
     user.phone = dto.phone.trim();
-    await this.users.save(user);
+    try {
+      await this.users.save(user);
+    } catch (error) {
+      if (error?.code === '23505') throw new ConflictException('Email is already in use');
+      throw error;
+    }
     return this.profile(id);
   }
 
   async changePassword(id: number, dto: ChangePasswordDto) {
+    if (dto.newPassword !== dto.confirmPassword) throw new BadRequestException('New passwords do not match');
+    if (dto.newPassword === dto.currentPassword) throw new BadRequestException('New password must differ from the current password');
     const user = await this.users.createQueryBuilder('user').addSelect('user.password').where('user.id = :id AND user.role = :role', { id, role: 'super_admin' }).getOne();
     if (!user || !await bcrypt.compare(dto.currentPassword, user.password || '')) throw new UnauthorizedException('Current password is incorrect');
     user.password = await bcrypt.hash(dto.newPassword, 10);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useWardenData } from '../utils/dataStore';
 import {
   markWardenNotificationReadApi,
@@ -9,6 +9,11 @@ import {
 export default function Notifications() {
   const { data, refreshData } = useWardenData();
   const [toast, setToast] = useState(null);
+  useEffect(() => {
+    const timer = setInterval(refreshData, 30000);
+    window.addEventListener('focus', refreshData);
+    return () => { clearInterval(timer); window.removeEventListener('focus', refreshData); };
+  }, [refreshData]);
 
   const notifications = data.notifications || [];
 
@@ -129,14 +134,14 @@ export default function Notifications() {
                       </span>
                     </>
                   )}
-                  <span 
+                  {n.senderRole !== 'super_admin' && <span
                     className="delete-notif" 
                     onClick={() => handleDelete(n.id)} 
                     title="Delete"
                     style={{ cursor: 'pointer' }}
                   >
                     🗑️
-                  </span>
+                  </span>}
                 </div>
               </div>
             ))

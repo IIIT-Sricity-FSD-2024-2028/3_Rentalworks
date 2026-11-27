@@ -299,6 +299,13 @@ export function OwnerPortal() {
     }
   };
 
+  useEffect(() => {
+    const refresh = () => { void refreshNotifications().catch(error => console.warn('Notification refresh failed:', error)); };
+    const timer = setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    return () => { clearInterval(timer); window.removeEventListener('focus', refresh); };
+  }, [user?.id]);
+
   // Property Handlers
   const handleAddProperty = async (newProperty) => {
     try {
