@@ -140,6 +140,21 @@ export class CheckoutBookingDto {
   @IsOptional()
   transactionId?: string;
 
+  @ApiProperty({ required: false, description: 'Payment gateway order id' })
+  @IsString()
+  @IsOptional()
+  gatewayOrderId?: string;
+
+  @ApiProperty({ required: false, description: 'Payment gateway payment id' })
+  @IsString()
+  @IsOptional()
+  gatewayPaymentId?: string;
+
+  @ApiProperty({ required: false, description: 'Payment gateway signature' })
+  @IsString()
+  @IsOptional()
+  gatewaySignature?: string;
+
   @ApiProperty({ required: false })
   @IsOptional()
   roommate?: any;

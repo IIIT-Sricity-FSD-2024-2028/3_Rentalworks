@@ -1,3 +1,4 @@
+import { AuditLogsController } from './audit-logs.controller';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuditLog } from './audit-log.entity';
@@ -6,7 +7,7 @@ import { WardenActionsService } from './warden-actions.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([AuditLog])],
-  controllers: [WardenActionsController],
+  controllers: [WardenActionsController, AuditLogsController],
   providers: [WardenActionsService],
 })
 export class WardenActionsModule {}

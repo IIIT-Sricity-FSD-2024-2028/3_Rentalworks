@@ -1,7 +1,7 @@
 import Icon from '../components/Icon';
 import React, { useState } from 'react';
 
-// Profile: Manage owner credentials, personal info, location, password, 2FA, data export, and logout
+// Profile: Manage owner credentials, personal info, location, password, data export, and logout
 export default function Profile({
   profile = {},
   properties = [],
@@ -289,14 +289,6 @@ export default function Profile({
               >
                 <Icon className="material-icons icon-18">lock</Icon>{' '}
                 Change Password
-              </button>
-
-              <button
-                className="btn btn-secondary btn-start"
-                disabled title="Two-factor authentication is not configured"
-              >
-                <Icon className="material-icons icon-18">security</Icon>{' '}
-                Enable Two-Factor Auth
               </button>
 
               <button

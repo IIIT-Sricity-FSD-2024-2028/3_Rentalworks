@@ -2655,6 +2655,8 @@ select:focus {
 .portal-owner-scope .owner-icon { width: 1em; height: 1em; min-width: 1em; display: inline-block; vertical-align: middle; flex-shrink: 0; }
 .portal-owner-scope .property-card-img { position: relative; }
 .portal-owner-scope .property-card-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+/* Keep the Active / Co-ed badges above the photo. */
+.portal-owner-scope .property-card-status { z-index: 2; }
 .portal-owner-scope .sidebar { transform: none; left: 0; width: 240px; }
 .portal-owner-scope .main-content { margin-left: 240px; width: calc(100% - 240px); }
 .portal-owner-scope .topbar-search { position: relative; }
@@ -2761,3 +2763,10 @@ select:focus {
   font-weight: 600 !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25) !important;
 }
+
+/* Long dialogs (property details + documents) scroll inside the viewport. */
+.portal-owner-scope .modal { max-height: 90vh; overflow-y: auto; }
+
+/* Amenity tiles are <button>s: keep the tile look, not the browser button look. */
+button.amenity-toggle { font: inherit; background: var(--bg-card, #fff); color: inherit; cursor: pointer; }
+button.amenity-toggle.selected { background: var(--primary-light); color: var(--primary); }

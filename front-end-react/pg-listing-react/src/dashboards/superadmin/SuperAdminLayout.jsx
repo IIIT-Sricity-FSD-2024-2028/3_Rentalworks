@@ -7,7 +7,7 @@ import RegionalAdmins from './pages/RegionalAdmins';
 import GlobalReports from './pages/GlobalReports';
 import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
-import { fetchSuperAdminOverview, selectSuperAdmin } from '../../features/superadmin/superAdminSlice';
+import { fetchSuperAdminOverview, selectSuperAdmin, selectSuperAdminOverview } from '../../features/superadmin/superAdminSlice';
 import { logout, selectCurrentUser } from '../../features/auth/authSlice';
 import { showToast } from '../../features/ui/uiSlice';
 import './styles_admin.css';
@@ -61,24 +61,24 @@ export default function SuperAdminLayout() {
 
 // Route components: read the overview from Redux and hand it to the pages.
 export function SuperAdminDashboardRoute() {
-  const overview = useSelector((s) => s.superAdmin.overview);
+  const overview = useSelector(selectSuperAdminOverview);
   return overview ? <Dashboard data={overview} /> : null;
 }
 
 export function SuperAdminRegionalAdminsRoute() {
-  const overview = useSelector((s) => s.superAdmin.overview);
+  const overview = useSelector(selectSuperAdminOverview);
   const refresh = useRefresh();
   const toast = useSuperAdminToast();
   return overview ? <RegionalAdmins users={overview.users || []} refresh={refresh} showToast={toast} /> : null;
 }
 
 export function SuperAdminGlobalReportsRoute() {
-  const overview = useSelector((s) => s.superAdmin.overview);
+  const overview = useSelector(selectSuperAdminOverview);
   return overview ? <GlobalReports data={overview} /> : null;
 }
 
 export function SuperAdminNotificationsRoute() {
-  const overview = useSelector((s) => s.superAdmin.overview);
+  const overview = useSelector(selectSuperAdminOverview);
   const refresh = useRefresh();
   const toast = useSuperAdminToast();
   return overview ? <Notifications data={overview} refresh={refresh} showToast={toast} /> : null;

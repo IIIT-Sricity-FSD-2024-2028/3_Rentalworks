@@ -1,3 +1,4 @@
+import { RoommateProfilesController } from './roommate-profiles.controller';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RoommateProfile } from './roommate-profile.entity';
@@ -7,7 +8,7 @@ import { RoommatesController } from './roommates.controller';
 
 @Module({
   imports: [TypeOrmModule.forFeature([RoommateProfile, Room])],
-  controllers: [RoommatesController],
+  controllers: [RoommatesController, RoommateProfilesController],
   providers: [RoommatesService],
   exports: [RoommatesService],
 })

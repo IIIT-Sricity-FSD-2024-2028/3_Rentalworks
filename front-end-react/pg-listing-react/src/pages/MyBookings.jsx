@@ -11,7 +11,7 @@ import {
   setMoveInDate,
   startBooking,
 } from '../features/booking/bookingSlice';
-import { mapRoom, normaliseGender, DEFAULT_IMAGES } from '../features/listings/listingMappers';
+import { mapRoom, normaliseGender, DEFAULT_IMAGES, resolveImageUrl } from '../features/listings/listingMappers';
 
 const codeOf = (b) => `BK-${String(b.id).padStart(5, '0')}`;
 const roomOf = (b) => b.room || b.roomEntity?.roomNumber || 'To be assigned';
@@ -42,7 +42,7 @@ export default function MyBookings() {
           id: propertyId,
           title: b.property?.name || 'PG',
           location: b.property?.location || '',
-          image: b.property?.images?.[0] || DEFAULT_IMAGES[0],
+          image: resolveImageUrl(b.property?.images?.[0]) || DEFAULT_IMAGES[0],
           gender: normaliseGender(b.property?.gender),
           price: room.rent,
         },

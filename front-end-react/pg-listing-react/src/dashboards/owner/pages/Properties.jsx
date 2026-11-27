@@ -1,16 +1,22 @@
 import PropertyImage from '../components/PropertyImage';
+import PropertyDocuments, { DocumentStatusLine } from '../components/PropertyDocuments';
 import Icon from '../components/Icon';
 import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { AMENITIES } from '../../../utils/normalize';
+import { SHARING_TYPES } from '../../../features/repositories/propertiesSlice';
+import AmenityPicker from '../components/AmenityPicker';
+import PropertyPhotos from '../components/PropertyPhotos';
 
-const AMENITY_OPTIONS = Object.values(AMENITIES).map((a) => a.label);
 
 // Properties: Displays property listings with search, filter, view, edit, and delete
 export default function Properties({
   properties = [],
   onUpdateProperty,
   onDeleteProperty,
+  onUploadDocument,
+  onDeleteDocument,
+  onAddPhotos,
+  onRemovePhoto,
 }) {
   const [params, setParams] = useSearchParams();
   const search = params.get('q') || '';
@@ -20,6 +26,8 @@ export default function Properties({
   const [filterSort, setFilterSort] = useState('');
 
   const [viewingProperty, setViewingProperty] = useState(null);
+  // The dialog reads the live store copy so document uploads show immediately.
+  const liveViewing = viewingProperty && (properties.find((x) => x.id === viewingProperty.id) || viewingProperty);
   const [editingProperty, setEditingProperty] = useState(null);
   const [deletingProperty, setDeletingProperty] = useState(null);
   const [editError, setEditError] = useState('');
@@ -34,6 +42,12 @@ export default function Properties({
     return isNaN(d.getTime())
       ? dateStr
       : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  // Same price wording as the public listing card (ListingCard): "₹X – ₹Y/mo" when rents vary.
+  const priceText = (p) => {
+    if (!p.price) return 'Rent not listed';
+    return `${formatCurrency(p.price)}${p.rentMax > p.price ? ` – ${formatCurrency(p.rentMax)}` : ''}/mo`;
   };
 
   const getOccupancyPercent = (occupied = 0, total = 0) => {
@@ -52,7 +66,7 @@ export default function Properties({
       const q = search.toLowerCase().trim();
       const nameStr = (p.name || '').toLowerCase();
       const cityStr = (p.city || p.location || '').toLowerCase();
-      const addrStr = (p.address || '').toLowerCase();
+      const addrStr = `${p.address || ''} ${p.location || ''}`.toLowerCase();
       const matchSearch =
         !q ||
         nameStr.includes(q) ||
@@ -61,38 +75,20 @@ export default function Properties({
       const matchType = !filterType || p.type === filterType;
       const pStatus = (p.status || '').toLowerCase();
       const fStatus = filterStatus.toLowerCase();
-      const matchStatus =
-        !filterStatus ||
-        pStatus === fStatus ||
-        (fStatus === 'active' && (pStatus === 'approved' || pStatus === 'active')) ||
-        (fStatus === 'inactive' && (pStatus === 'pending' || pStatus === 'inactive'));
+      const matchStatus = !filterStatus || pStatus === fStatus;
       return matchSearch && matchType && matchStatus;
     })
     .sort((a, b) => {
       if (filterSort === 'name') return a.name.localeCompare(b.name);
-      if (filterSort === 'rent_asc') return a.monthlyRent - b.monthlyRent;
-      if (filterSort === 'rent_desc') return b.monthlyRent - a.monthlyRent;
+      if (filterSort === 'rent_asc') return a.price - b.price;
+      if (filterSort === 'rent_desc') return b.price - a.price;
       if (filterSort === 'occupancy') {
-        const pctA = getOccupancyPercent(a.occupiedRooms, a.totalRooms);
-        const pctB = getOccupancyPercent(b.occupiedRooms, b.totalRooms);
+        const pctA = getOccupancyPercent(a.occupiedBeds, a.totalBeds);
+        const pctB = getOccupancyPercent(b.occupiedBeds, b.totalBeds);
         return pctB - pctA;
       }
       return 0;
     });
-
-  const handleToggleAmenity = (amenity) => {
-    if (!editingProperty) return;
-    const currentAmenities = editingProperty.amenities || [];
-    const isSelected = currentAmenities.includes(amenity);
-
-    const updatedAmenities = isSelected
-      ? currentAmenities.filter((a) => a !== amenity)
-      : currentAmenities.concat(amenity);
-
-    setEditingProperty(
-      Object.assign({}, editingProperty, { amenities: updatedAmenities })
-    );
-  };
 
   const handleSaveEdit = async (e) => {
     e.preventDefault();
@@ -100,6 +96,16 @@ export default function Properties({
 
     if (!editingProperty.name.trim() || !editingProperty.city.trim()) {
       setEditError('Please fill in all required fields.');
+      return;
+    }
+
+    const rents = SHARING_TYPES.map(({ key }) => editingProperty.sharingRents?.[key]).filter((v) => v !== '' && v !== null && v !== undefined);
+    if (!rents.length) {
+      setEditError('Enter the rent for at least one room size.');
+      return;
+    }
+    if (rents.some((v) => !(Number(v) > 0))) {
+      setEditError('Rents must be positive amounts.');
       return;
     }
 
@@ -161,7 +167,8 @@ export default function Properties({
         >
           <option value="">All Status</option>
           <option value="Active">Active</option>
-          <option value="Inactive">Inactive</option>
+          <option value="Pending">Pending review</option>
+          <option value="Rejected">Rejected</option>
         </select>
 
         <select
@@ -194,7 +201,7 @@ export default function Properties({
           </div>
         ) : (
           filteredProperties.map((p) => {
-            const pct = getOccupancyPercent(p.occupiedRooms, p.totalRooms);
+            const pct = getOccupancyPercent(p.occupiedBeds, p.totalBeds);
             const cls = getOccupancyClass(pct);
             const amenitiesShown = (p.amenities || []).slice(0, 4);
             const extraAmenities = (p.amenities || []).length - 4;
@@ -202,7 +209,7 @@ export default function Properties({
             return (
               <div key={p.id} className="property-card" id={`card-${p.id}`}>
                 <div className="property-card-img">
-                  <PropertyImage key={p.images?.[0]} src={p.images?.[0]} name={p.name} />
+                  <PropertyImage key={p.image} src={p.image} name={p.name} />
                   <div className="property-card-status" style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                     <span className={`badge badge-${(p.status || 'active').toLowerCase()}`}>
                       {p.status}
@@ -225,7 +232,7 @@ export default function Properties({
                   <div className="property-card-title">{p.name}</div>
                   <div className="property-card-addr">
                     <Icon className="material-icons icon-14 icon-middle">location_on</Icon>{' '}
-                    {p.address}, {p.city}, {p.state}
+                    {p.location}
                   </div>
 
                   <div className="property-meta">
@@ -235,23 +242,42 @@ export default function Properties({
                     </div>
                     <div className="property-meta-item">
                       <Icon className="material-icons icon-14 icon-middle">bed</Icon>{' '}
-                      <span>{p.totalRooms} rooms</span>
+                      <span>{p.hasRooms ? `${p.roomCount} room${p.roomCount === 1 ? '' : 's'}` : 'No rooms added yet'}</span>
                     </div>
                     <div className="property-meta-item">
                       <Icon className="material-icons icon-14 icon-middle">payments</Icon>{' '}
-                      <span>{formatCurrency(p.monthlyRent)}/mo</span>
+                      <span>
+                        {SHARING_TYPES.filter(({ key }) => p.rentBySharing?.[key])
+                          .map(({ key, short }) => `${short} ${formatCurrency(p.rentBySharing[key])}`)
+                          .join(' · ') || priceText(p)}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="occupancy-bar-wrap">
-                    <div className="occupancy-bar-label">
-                      <span>Occupancy</span>
-                      <span>{p.occupiedRooms}/{p.totalRooms} ({pct}%)</span>
+                  {p.hasRooms ? (
+                    <div className="occupancy-bar-wrap">
+                      <div className="occupancy-bar-label">
+                        <span>Occupancy</span>
+                        <span>{p.occupiedBeds}/{p.totalBeds} beds ({pct}%)</span>
+                      </div>
+                      <div className="occupancy-bar">
+                        <div className={`occupancy-fill ${cls}`} style={{ width: `${pct}%` }}></div>
+                      </div>
                     </div>
-                    <div className="occupancy-bar">
-                      <div className={`occupancy-fill ${cls} pct-${pct}`}></div>
+                  ) : (
+                    <div className="occupancy-bar-wrap">
+                      <div className="occupancy-bar-label">
+                        <span>Occupancy</span>
+                        <span>Rooms not listed yet</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {p.status !== 'Active' && p.docs && (
+                    <div style={{ marginBottom: 10 }}>
+                      <DocumentStatusLine property={p} />
+                    </div>
+                  )}
 
                   <div className="property-amenities">
                     {amenitiesShown.map((a, i) => (
@@ -325,23 +351,19 @@ export default function Properties({
                 <div>
                   <div className="text-xs text-muted">Address</div>
                   <div className="font-bold text-sm">
-                    {viewingProperty.address}, {viewingProperty.city}
+                    {[viewingProperty.address, viewingProperty.location].filter(Boolean).join(', ')}
                   </div>
                 </div>
                 <div>
                   <div className="text-xs text-muted">State / PIN</div>
                   <div className="font-bold text-sm">
-                    {viewingProperty.state} — {viewingProperty.pincode}
+                    {[viewingProperty.state, viewingProperty.pincode].filter(Boolean).join(' — ') || '—'}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted">Type</div>
-                  <div className="font-bold text-sm">{viewingProperty.type}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted">Gender Policy</div>
-                  <div className="font-bold text-sm" style={{ textTransform: 'capitalize' }}>
-                    {viewingProperty.gender === 'girls' ? '👩 Girls Only' : viewingProperty.gender === 'boys' ? '👨 Boys Only' : '👫 Co-ed'}
+                  <div className="text-xs text-muted">Who can book</div>
+                  <div className="font-bold text-sm">
+                    {viewingProperty.gender === 'girls' ? '👩 Girls only' : viewingProperty.gender === 'boys' ? '👨 Boys only' : '👫 Everyone (mixed)'}
                   </div>
                 </div>
                 <div>
@@ -351,19 +373,23 @@ export default function Properties({
                   </span>
                 </div>
                 <div>
-                  <div className="text-xs text-muted">Total Rooms</div>
-                  <div className="font-bold text-sm">{viewingProperty.totalRooms}</div>
+                  <div className="text-xs text-muted">Rooms</div>
+                  <div className="font-bold text-sm">{viewingProperty.hasRooms ? viewingProperty.roomCount : 'Not listed yet'}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted">Occupied</div>
+                  <div className="text-xs text-muted">Occupied beds</div>
                   <div className="font-bold text-sm">
-                    {viewingProperty.occupiedRooms} ({getOccupancyPercent(viewingProperty.occupiedRooms, viewingProperty.totalRooms)}%)
+                    {viewingProperty.hasRooms
+                      ? `${viewingProperty.occupiedBeds}/${viewingProperty.totalBeds} (${getOccupancyPercent(viewingProperty.occupiedBeds, viewingProperty.totalBeds)}%)`
+                      : '—'}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted">Monthly Rent</div>
+                  <div className="text-xs text-muted">Rent per bed</div>
                   <div className="font-bold text-sm text-primary-cost">
-                    {formatCurrency(viewingProperty.monthlyRent)}
+                    {SHARING_TYPES.filter(({ key }) => viewingProperty.rentBySharing?.[key])
+                      .map(({ key, short }) => `${short} ${formatCurrency(viewingProperty.rentBySharing[key])}`)
+                      .join(' · ') || 'Not set'}
                   </div>
                 </div>
                 <div>
@@ -389,16 +415,29 @@ export default function Properties({
                 <div className="occupancy-bar-label">
                   <span>Occupancy</span>
                   <span>
-                    {getOccupancyPercent(viewingProperty.occupiedRooms, viewingProperty.totalRooms)}%
+                    {getOccupancyPercent(viewingProperty.occupiedBeds, viewingProperty.totalBeds)}%
                   </span>
                 </div>
                 <div className="occupancy-bar">
                   <div
-                    className={`occupancy-fill ${getOccupancyClass(getOccupancyPercent(viewingProperty.occupiedRooms, viewingProperty.totalRooms))}`}
+                    className={`occupancy-fill ${getOccupancyClass(getOccupancyPercent(viewingProperty.occupiedBeds, viewingProperty.totalBeds))}`}
+                    style={{ width: `${getOccupancyPercent(viewingProperty.occupiedBeds, viewingProperty.totalBeds)}%` }}
                   ></div>
                 </div>
               </div>
             </div>
+
+            {liveViewing && (
+              <div style={{ marginTop: 16 }}>
+                <PropertyPhotos property={liveViewing} onAdd={onAddPhotos} onRemove={onRemovePhoto} />
+              </div>
+            )}
+
+            {liveViewing?.docs && (
+              <div style={{ marginTop: 16 }}>
+                <PropertyDocuments property={liveViewing} onUpload={onUploadDocument} onDelete={onDeleteDocument} />
+              </div>
+            )}
 
             <div className="modal-footer">
               <button
@@ -476,25 +515,9 @@ export default function Properties({
                         setEditingProperty((prev) => Object.assign({}, prev, update));
                       }}
                     >
-                      <option value="Mixed">Mixed</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Gender Policy</label>
-                    <select
-                      className="form-input"
-                      value={editingProperty.gender || 'unisex'}
-                      onChange={(e) => {
-                        const update = { gender: e.target.value };
-                        setEditingProperty((prev) => Object.assign({}, prev, update));
-                      }}
-                    >
-                      <option value="unisex">Co-ed (All Welcome)</option>
-                      <option value="boys">Boys Only</option>
-                      <option value="girls">Girls Only</option>
+                      <option value="Mixed">Mixed (everyone can book)</option>
+                      <option value="Male">Male only (boys PG)</option>
+                      <option value="Female">Female only (girls PG)</option>
                     </select>
                   </div>
 
@@ -507,21 +530,6 @@ export default function Properties({
                         const update = { city: e.target.value };
                         setEditingProperty((prev) => Object.assign({}, prev, update));
                       }}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Monthly Rent (₹)</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={editingProperty.monthlyRent}
-                      onChange={(e) => {
-                        const update = { monthlyRent: Number(e.target.value) };
-                        setEditingProperty((prev) => Object.assign({}, prev, update));
-                      }}
-                      min="0"
                       required
                     />
                   </div>
@@ -542,54 +550,50 @@ export default function Properties({
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Occupied Rooms</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={editingProperty.occupiedRooms}
-                      onChange={(e) => {
-                        const update = { occupiedRooms: Number(e.target.value) };
-                        setEditingProperty((prev) => Object.assign({}, prev, update));
-                      }}
-                      min="0"
-                      required
-                    />
+                    <span className="form-label">Occupancy</span>
+                    <p className="text-muted">
+                      {editingProperty.hasRooms ? `${editingProperty.occupiedBeds}/${editingProperty.totalBeds} beds filled (from bookings)` : 'Add rooms on the Rooms page to track occupancy'}
+                    </p>
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Status</label>
-                    <select
-                      className="form-input"
-                      value={editingProperty.status}
-                      onChange={(e) => {
-                        const update = { status: e.target.value };
-                        setEditingProperty((prev) => Object.assign({}, prev, update));
-                      }}
-                    >
-                      <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
-                    </select>
+                    <span className="form-label">Status</span>
+                    <p className="text-muted">{editingProperty.status} (set by the admin review)</p>
                   </div>
                 </div>
 
+                <fieldset style={{ border: 0, padding: 0, margin: '12px 0' }}>
+                  <legend className="form-label mb-8">Monthly rent per bed, by room size</legend>
+                  <div className="form-grid-3">
+                    {SHARING_TYPES.map(({ key, label }) => (
+                      <div className="form-group" key={key}>
+                        <label className="form-label" htmlFor={`edit_rent_${key}`}>
+                          {label} (₹)
+                        </label>
+                        <input
+                          id={`edit_rent_${key}`}
+                          type="number"
+                          min="1"
+                          className="form-input"
+                          placeholder="Not offered"
+                          value={editingProperty.sharingRents?.[key] ?? ''}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setEditingProperty((prev) => ({ ...prev, sharingRents: { ...(prev.sharingRents || {}), [key]: value } }));
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </fieldset>
+
                 <div>
                   <div className="form-label mb-8">Amenities</div>
-                  <div className="amenities-grid">
-                    {AMENITY_OPTIONS.map((a) => {
-                      const isSelected = (editingProperty.amenities || []).includes(a);
-                      return (
-                        <div
-                          key={a}
-                          className={`amenity-toggle ${isSelected ? 'selected' : ''}`}
-                          onClick={() => handleToggleAmenity(a)}
-                        >
-                          {a}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <AmenityPicker value={editingProperty.amenities || []} onChange={(amenities) => setEditingProperty((prev) => ({ ...prev, amenities }))} />
                 </div>
               </div>
+
+              <div className="modal-footer">              </div>
 
               <div className="modal-footer">
                 <button

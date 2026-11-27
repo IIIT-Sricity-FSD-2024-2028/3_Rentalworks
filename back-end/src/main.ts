@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -8,17 +9,26 @@ import helmet from 'helmet';
 import { HttpErrorFilter } from './middleware/http-error.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Apply Helmet for security headers
-  app.use(helmet());
+  // Images are loaded by the frontend from another port, so allow cross-origin reads.
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+  // Property / room photos uploaded through /properties/:id/upload-image.
+  app.useStaticAssets(path.join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
 
   // Apply Global Exception Filter for error handling and logging
   app.useGlobalFilters(new HttpErrorFilter());
 
   // Enable CORS for frontend integration
+  // Only our own frontend may call the API from a browser. Set CORS_ORIGINS
+  // (comma-separated) for other hosts, e.g. the deployed site's URL.
+  const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
   app.enableCors({
-    origin: '*', // For development
+    origin: allowedOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     preflightContinue: false,
     optionsSuccessStatus: 204,
@@ -69,6 +79,6 @@ async function bootstrap() {
   );
 
   // Note: user specifically asked to use port 3000
-  await app.listen(3000);
+  await app.listen(Number(process.env.PORT) || 3000);
 }
 bootstrap();

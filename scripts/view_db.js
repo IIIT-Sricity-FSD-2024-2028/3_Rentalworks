@@ -10,7 +10,7 @@ const { Client } = require(path.join(backendDir, 'node_modules', 'pg'));
 async function viewDb() {
   const connectionString =
     process.env.DATABASE_URL ||
-    'postgresql://postgres:Sanjay%402023@localhost:5433/rentalworks_db';
+    'postgresql://postgres@localhost:5433/rentalworks_db'; // set DATABASE_URL (with password) in .env
 
   const client = new Client({ connectionString });
   await client.connect();

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectCurrentUser } from '../features/auth/authSlice';
@@ -8,33 +8,24 @@ import {
   selectBooking,
   selectCheckout,
   selectTotals,
-  setPaymentMethod,
   submitCheckout,
+  loadPaymentConfig,
+  selectPaymentMode,
 } from '../features/booking/bookingSlice';
 import { toastSuccess } from '../features/ui/uiSlice';
-
-const cardExpired = (exp) => {
-  const [m, y] = exp.split('/').map(Number);
-  if (!(m >= 1 && m <= 12)) return true;
-  return new Date(2000 + y, m, 1) <= new Date(); // valid until the end of the month
-};
 
 export default function PaymentGateway() {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const currentUser = useSelector(selectCurrentUser);
-  const { selectedPG: pg, selectedRoom, paymentMethod } = useSelector(selectBooking);
+  const { selectedPG: pg, selectedRoom } = useSelector(selectBooking);
   const { rent, deposit, fee, total } = useSelector(selectTotals);
   const checkout = useSelector(selectCheckout);
+  const paymentMode = useSelector(selectPaymentMode);
   const isProcessing = checkout.status === 'loading';
   const isSingleRoom = isSingle(selectedRoom);
-
-  const [upiId, setUpiId] = useState('');
-  const [cardData, setCardData] = useState({ number: '', exp: '', cvv: '', name: '' });
-  const [selectedBank, setSelectedBank] = useState('HDFC Bank');
-  const [formError, setFormError] = useState('');
-  const error = formError || checkout.error;
+  const error = checkout.error;
 
   // Guard: needs a PG + room and a signed-in user. `/payment` links without a
   // booking in progress go to My Bookings, which can resume an unpaid one.
@@ -46,53 +37,18 @@ export default function PaymentGateway() {
 
   useEffect(() => {
     dispatch(clearCheckoutError());
+    dispatch(loadPaymentConfig());
   }, [dispatch]);
 
   if (invalid || !currentUser) return null;
 
-  const pickMethod = (method) => {
-    dispatch(setPaymentMethod(method));
-    dispatch(clearCheckoutError());
-    setFormError('');
-  };
-  const upiHandle = String(currentUser.name || '').toLowerCase().replace(/[^a-z0-9]/g, '') || 'resident';
-
-  const formatCardNumber = (val) => {
-    const cleaned = val.replace(/\D/g, '').slice(0, 16);
-    return cleaned.replace(/(\d{4})/g, '$1 ').trim();
-  };
-
-  const formatExp = (val) => {
-    const cleaned = val.replace(/\D/g, '').slice(0, 4);
-    if (cleaned.length >= 2) {
-      return `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
-    }
-    return cleaned;
-  };
-
-  const validate = () => {
-    if (paymentMethod === 'upi') {
-      if (!/^[a-zA-Z0-9._-]{2,}@[a-zA-Z]{2,}$/.test(upiId.trim())) return 'Please enter a valid UPI ID (e.g., yourname@okhdfcbank)';
-    } else if (paymentMethod === 'card') {
-      if (cardData.number.replace(/\s/g, '').length < 16) return 'Please enter a valid 16-digit card number';
-      if (!/^\d{2}\/\d{2}$/.test(cardData.exp)) return 'Please enter expiry in MM/YY format';
-      if (cardExpired(cardData.exp)) return 'This card has expired or the expiry month is invalid';
-      if (cardData.cvv.length < 3) return 'Please enter a valid 3-digit CVV';
-      if (!cardData.name.trim()) return 'Please enter the cardholder name';
-    } else if (!selectedBank) {
-      return 'Please select your banking institution';
-    }
-    return '';
-  };
-
+  // Card / UPI / netbanking details are entered in the gateway's own window,
+  // never on this page. The server sets and verifies the amount.
   const handleProcessPayment = async () => {
     if (isProcessing) return;
-    const problem = validate();
-    setFormError(problem);
-    if (problem) return;
-    const result = await dispatch(submitCheckout({ paymentMethod, upiId: upiId.trim() }));
+    const result = await dispatch(submitCheckout());
     if (submitCheckout.fulfilled.match(result)) {
-      dispatch(toastSuccess('Payment received. Your bed is booked.'));
+      dispatch(toastSuccess(paymentMode === 'test' ? 'Test payment recorded. Your bed is booked.' : 'Payment received. Your bed is booked.'));
       navigate(`/book/${pg.id}/confirmed`, { replace: true });
     }
   };
@@ -139,146 +95,28 @@ export default function PaymentGateway() {
             </div>
           )}
 
-          {/* METHOD SELECTION TABS */}
-          <div className="payment-method-selector">
-            <button
-              className={`pm-tab-btn ${paymentMethod === 'upi' ? 'active' : ''}`}
-              onClick={() => pickMethod('upi')}
-              type="button"
-            >
-              <span className="material-icons-outlined">qr_code_2</span>
-              <span>UPI / QR</span>
-            </button>
-            <button
-              className={`pm-tab-btn ${paymentMethod === 'card' ? 'active' : ''}`}
-              onClick={() => pickMethod('card')}
-              type="button"
-            >
-              <span className="material-icons-outlined">credit_card</span>
-              <span>Credit / Debit Card</span>
-            </button>
-            <button
-              className={`pm-tab-btn ${paymentMethod === 'net' ? 'active' : ''}`}
-              onClick={() => pickMethod('net')}
-              type="button"
-            >
-              <span className="material-icons-outlined">account_balance</span>
-              <span>Net Banking</span>
-            </button>
-          </div>
-
-          {/* PAYMENT INPUT FORM */}
-          <div className="payment-form-box">
-            {paymentMethod === 'upi' && (
-              <div className="upi-form">
-                <div className="quick-upi-apps">
-                  <span className="quick-upi-chip" onClick={() => setUpiId(`${upiHandle}@okaxis`)}>
-                    GPay (Auto-fill)
-                  </span>
-                  <span className="quick-upi-chip" onClick={() => setUpiId(`${upiHandle}@ybl`)}>
-                    PhonePe
-                  </span>
-                  <span className="quick-upi-chip" onClick={() => setUpiId(`${upiHandle}@paytm`)}>
-                    Paytm
-                  </span>
-                </div>
-
-                <div className="form-field" style={{ marginTop: '16px' }}>
-                  <label>Enter UPI ID (Virtual Payment Address) *</label>
-                  <div className="input-box">
-                    <span className="material-icons-outlined">alternate_email</span>
-                    <input
-                      type="text"
-                      placeholder="e.g. resident@okhdfcbank"
-                      value={upiId}
-                      onChange={(e) => setUpiId(e.target.value)}
-                    />
-                  </div>
-                  <span className="input-helper">Test mode: no real payment request is sent.</span>
-                </div>
+          {/* PAYMENT: gateway window (Razorpay) or clearly labelled test mode */}
+          {paymentMode === 'test' && (
+            <div role="note" style={{ background: '#fef3c7', border: '1px solid #f59e0b', color: '#92400e', borderRadius: 12, padding: '14px 16px', marginBottom: 16 }}>
+              <strong>Test mode — no real money is charged.</strong> Online payments are not connected yet (the server has no
+              Razorpay keys), so this booking is recorded as a test payment.
+            </div>
+          )}
+          <div className="payment-form-box" style={{ display: 'grid', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              <span className="material-icons-outlined" style={{ fontSize: 32, color: '#4f46e5' }}>verified_user</span>
+              <div>
+                <strong>{paymentMode === 'test' ? 'Test payment' : 'Secure payment by Razorpay'}</strong>
+                <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: 14 }}>
+                  {paymentMode === 'test'
+                    ? 'Click Pay to record a test payment and confirm your bed.'
+                    : 'Click Pay to open the Razorpay window, then pay by UPI, card or netbanking. Your card details are entered with Razorpay and never reach RentBro.'}
+                </p>
               </div>
-            )}
-
-            {paymentMethod === 'card' && (
-              <div className="card-form">
-                <div className="form-field">
-                  <label>Card Number *</label>
-                  <div className="input-box">
-                    <span className="material-icons-outlined">credit_card</span>
-                    <input
-                      type="text"
-                      placeholder="1234 5678 9012 3456"
-                      value={cardData.number}
-                      onChange={(e) => setCardData({ ...cardData, number: formatCardNumber(e.target.value) })}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-grid-2">
-                  <div className="form-field">
-                    <label>Valid Thru (MM/YY) *</label>
-                    <div className="input-box">
-                      <span className="material-icons-outlined">event</span>
-                      <input
-                        type="text"
-                        placeholder="MM/YY"
-                        value={cardData.exp}
-                        onChange={(e) => setCardData({ ...cardData, exp: formatExp(e.target.value) })}
-                      />
-                    </div>
-                  </div>
-                  <div className="form-field">
-                    <label>CVV / CVC *</label>
-                    <div className="input-box">
-                      <span className="material-icons-outlined">lock</span>
-                      <input
-                        type="password"
-                        placeholder="123"
-                        maxLength={4}
-                        value={cardData.cvv}
-                        onChange={(e) => setCardData({ ...cardData, cvv: e.target.value.replace(/\D/g, '') })}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="form-field">
-                  <label>Cardholder Name *</label>
-                  <div className="input-box">
-                    <span className="material-icons-outlined">person</span>
-                    <input
-                      type="text"
-                      placeholder="Name printed on card"
-                      value={cardData.name}
-                      onChange={(e) => setCardData({ ...cardData, name: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {paymentMethod === 'net' && (
-              <div className="net-banking-form">
-                <div className="form-field">
-                  <label>Select Your Bank *</label>
-                  <div className="input-box">
-                    <span className="material-icons-outlined">account_balance</span>
-                    <select value={selectedBank} onChange={(e) => setSelectedBank(e.target.value)}>
-                      <option value="HDFC Bank">HDFC Bank</option>
-                      <option value="State Bank of India">State Bank of India (SBI)</option>
-                      <option value="ICICI Bank">ICICI Bank</option>
-                      <option value="Axis Bank">Axis Bank</option>
-                      <option value="Kotak Mahindra Bank">Kotak Mahindra Bank</option>
-                      <option value="Punjab National Bank">Punjab National Bank</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="bank-security-notice">
-                  <span className="material-icons-outlined">info</span>
-                  Test mode: you won't be sent to a real bank.
-                </div>
-              </div>
-            )}
+            </div>
+            <p style={{ margin: 0, color: '#64748b', fontSize: 13 }}>
+              The amount is taken from the room's current rent. If the price changed since you chose the room, the payment window shows the correct amount.
+            </p>
           </div>
 
           <div className="step-bottom-actions">
@@ -293,12 +131,12 @@ export default function PaymentGateway() {
               {isProcessing ? (
                 <>
                   <span className="btn-spinner" />
-                  Processing payment...
+                  {paymentMode === 'test' ? 'Recording test payment...' : 'Waiting for payment...'}
                 </>
               ) : (
                 <>
                   <span className="material-icons-outlined" style={{ fontSize: '20px' }}>lock</span>
-                  Pay ₹{total.toLocaleString()} &amp; Confirm Booking
+                  {paymentMode === 'test' ? 'Record test payment' : 'Pay'} ₹{total.toLocaleString()} &amp; Confirm Booking
                 </>
               )}
             </button>

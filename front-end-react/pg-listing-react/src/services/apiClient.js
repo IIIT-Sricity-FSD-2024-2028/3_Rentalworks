@@ -118,3 +118,32 @@ export function asArray(data) {
   if (data && Array.isArray(data.items)) return data.items;
   return [];
 }
+
+/**
+ * Open a login-protected file (e.g. a property document) in a new tab.
+ * A plain <a href> cannot send the session token, so the file is fetched
+ * with it and shown from a temporary blob URL.
+ */
+export async function openProtectedFile(path) {
+  // Open the tab first (inside the click) so popup blockers allow it.
+  const tab = window.open('', '_blank');
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, { headers: authHeaders() });
+    if (!response.ok) {
+      let data = null;
+      try {
+        data = await response.json();
+      } catch {
+        // not JSON
+      }
+      throw new ApiError(extractMessage(data, response.status), response.status, data);
+    }
+    const url = URL.createObjectURL(await response.blob());
+    if (tab) tab.location.href = url;
+    else window.location.assign(url);
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  } catch (err) {
+    if (tab) tab.close();
+    throw err;
+  }
+}

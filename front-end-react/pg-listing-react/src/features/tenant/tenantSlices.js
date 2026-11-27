@@ -1,80 +1,27 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import { http, qs, asArray } from '../../services/apiClient';
-import { createResourceSlice } from '../shared/createResourceSlice';
+import { payOnline } from '../../services/paymentGateway';
 
-// Tenant endpoints such as /issues/my derive identity from the x-user-id header.
+import {
+  issuesRepo,
+  complaintsRepo,
+  serviceRequestsRepo,
+  servicesRepo,
+  paymentsRepo,
+  notificationsRepo,
+} from '../repositories';
+import { markNotificationRead, markAllNotificationsRead } from '../repositories/notificationsSlice';
 
-// ====================================================================
-//  Resource slices (list / create / update / delete)
-// ====================================================================
-
-export const tenantIssues = createResourceSlice({
-  name: 'tenantIssues',
-  api: {
-    list: () => http.get('/issues/my'),
-    create: (data) => http.post('/issues', data),
-    update: (id, changes) => http.patch(`/issues/${id}`, changes),
-    remove: (id) => http.delete(`/issues/${id}`),
-  },
-});
-
-export const tenantComplaints = createResourceSlice({
-  name: 'tenantComplaints',
-  api: {
-    list: () => http.get('/complaints/my'),
-    create: (data) => http.post('/complaints', data),
-    remove: (id) => http.delete(`/complaints/${id}`),
-  },
-});
-
-export const tenantServiceRequests = createResourceSlice({
-  name: 'tenantServiceRequests',
-  api: {
-    list: () => http.get('/service-requests/my'),
-    create: (data) => http.post('/service-requests', data),
-    update: (id, changes) => http.patch(`/service-requests/${id}`, changes),
-    remove: (id) => http.delete(`/service-requests/${id}`),
-  },
-});
-
-/** Catalogue of services offered at the tenant's property. */
-export const tenantServicesCatalog = createResourceSlice({
-  name: 'tenantServicesCatalog',
-  api: { list: (propertyId) => http.get(`/services${qs({ propertyId })}`) },
-});
-
-export const tenantPayments = createResourceSlice({
-  name: 'tenantPayments',
-  api: {
-    list: (tenantId) => http.get(`/payments${qs({ tenantId })}`),
-    create: (data) => http.post('/payments', data),
-  },
-});
-
-export const tenantNotifications = createResourceSlice({
-  name: 'tenantNotifications',
-  api: { list: () => http.get('/notifications') },
-  mapItem: (n) => ({ ...n, read: Boolean(n.read || n.isRead) }),
-});
-
-// ---- notification actions (mark read / mark all read)
-export const markTenantNotificationRead = createAsyncThunk('tenantNotifications/markRead', async (id, { rejectWithValue }) => {
-  try {
-    await http.patch(`/notifications/${id}/read`);
-    return id;
-  } catch (err) {
-    return rejectWithValue(err.message);
-  }
-});
-
-export const markAllTenantNotificationsRead = createAsyncThunk('tenantNotifications/markAllRead', async (_, { rejectWithValue }) => {
-  try {
-    await http.patch('/notifications/read-all');
-    return true;
-  } catch (err) {
-    return rejectWithValue(err.message);
-  }
-});
+// The tenant portal reads the shared repository slices. The backend scopes
+// every list to the signed-in tenant (identity comes from the session token).
+export const tenantIssues = issuesRepo;
+export const tenantComplaints = complaintsRepo;
+export const tenantServiceRequests = serviceRequestsRepo;
+export const tenantServicesCatalog = servicesRepo;
+export const tenantPayments = paymentsRepo;
+export const tenantNotifications = notificationsRepo;
+export const markTenantNotificationRead = markNotificationRead;
+export const markAllTenantNotificationsRead = markAllNotificationsRead;
 
 // ====================================================================
 //  Rent ledger (dues + pay)
@@ -88,12 +35,31 @@ export const fetchMyRentDues = createAsyncThunk('tenantRent/fetchMyRentDues', as
   }
 });
 
-export const payRentDue = createAsyncThunk('tenantRent/payRentDue', async ({ dueId, method, transactionId }, { rejectWithValue }) => {
+/**
+ * Pay one rent due online. The server sets the amount from the ledger, the
+ * gateway (Razorpay, or test mode) collects it, and the server verifies the
+ * payment before marking the due paid.
+ */
+export const payRentDue = createAsyncThunk('tenantRent/payRentDue', async ({ dueId, description }, { getState, rejectWithValue }) => {
+  const user = getState().auth.user || {};
+  let proof;
   try {
-    const result = await http.post(`/rent-dues/${dueId}/pay`, { method, transactionId });
-    return { dueId, result };
+    proof = await payOnline({ purpose: 'rent', rentDueId: dueId }, { description: description || 'Monthly rent', name: user.name, email: user.email, phone: user.phone });
   } catch (err) {
     return rejectWithValue(err.message);
+  }
+  try {
+    const result = await http.post(`/rent-dues/${dueId}/pay`, {
+      method: proof.mode === 'test' ? 'TEST' : 'ONLINE',
+      gatewayOrderId: proof.gatewayOrderId,
+      gatewayPaymentId: proof.gatewayPaymentId,
+      gatewaySignature: proof.gatewaySignature,
+    });
+    return { dueId, result, transactionId: proof.gatewayPaymentId, mode: proof.mode };
+  } catch (err) {
+    return rejectWithValue(
+      proof.mode === 'razorpay' ? `${err.message} Your payment (${proof.gatewayPaymentId}) was received; contact your warden with this ID.` : err.message,
+    );
   }
 });
 
@@ -170,29 +136,8 @@ const tenantStaySlice = createSlice({
   },
 });
 
-// Patch notifications reducer with read actions.
-const notificationsReducer = (state, action) => {
-  const next = tenantNotifications.reducer(state, action);
-  if (action.type === markTenantNotificationRead.fulfilled.type) {
-    return { ...next, items: next.items.map((n) => (String(n.id) === String(action.payload) ? { ...n, read: true, isRead: true } : n)) };
-  }
-  if (action.type === markAllTenantNotificationsRead.fulfilled.type) {
-    return { ...next, items: next.items.map((n) => ({ ...n, read: true, isRead: true })) };
-  }
-  return next;
-};
-
-// ====================================================================
-//  Store wiring + selectors
-// ====================================================================
-
+// Tenant-only workflow state (not a repository copy): rent ledger and active stay.
 export const tenantReducers = {
-  tenantIssues: tenantIssues.reducer,
-  tenantComplaints: tenantComplaints.reducer,
-  tenantServiceRequests: tenantServiceRequests.reducer,
-  tenantServicesCatalog: tenantServicesCatalog.reducer,
-  tenantPayments: tenantPayments.reducer,
-  tenantNotifications: notificationsReducer,
   tenantRent: tenantRentSlice.reducer,
   tenantStay: tenantStaySlice.reducer,
 };

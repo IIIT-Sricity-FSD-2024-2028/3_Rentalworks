@@ -11,75 +11,82 @@ import {
   mapStayFromDb,
 } from './wardenMappers';
 import { fetchListings } from '../listings/listingsSlice';
+import { roomsRepo, complaintsRepo, issuesRepo, wardenNotificationsRepo, ruleViolationsRepo, tenantStaysRepo } from '../repositories';
+import { markWardenNotificationRead as markReadThunk, markAllWardenNotificationsRead as markAllReadThunk } from '../repositories/wardenNotificationsSlice';
+
+// =====================================================================
+//  Warden portal
+//  - rooms / complaints / issues / warden notifications / rule violations /
+//    tenant stays: shared repository slices (features/repositories).
+//  - this slice: only warden-specific views — the enriched tenants list
+//    (/tenants joins users + bookings + stays + payments), the rent ledger
+//    views, session timeline notes and the bed-sync flag.
+//  Pages read everything through selectWarden / useWardenData.
+// =====================================================================
 
 const msg = (err) => err?.message || 'Request failed';
-const sameId = (a, b) => String(a) === String(b);
 
-// ====================================================================
-//  Load everything the warden portal needs in one round trip
-// ====================================================================
-
-export const fetchWardenData = createAsyncThunk('warden/fetchAll', async () => {
-  const [rooms, tenants, complaints, issues, notifications, violations, stays] = await Promise.allSettled([
-    api.getRoomsApi(),
-    api.getTenantsApi(),
-    api.getComplaintsApi(),
-    api.getIssuesApi(),
-    api.getWardenNotificationsApi(),
-    api.getRuleViolationsApi(),
-    api.getStaysApi(),
-  ]);
-  const ok = (r) => (r.status === 'fulfilled' ? asArray(r.value) : []);
-  const mappedTenants = ok(tenants).map(mapTenantFromDb);
-  const failures = [rooms, tenants, complaints, issues, notifications, violations, stays].filter((r) => r.status === 'rejected');
-  return {
-    rooms: ok(rooms).map(mapRoomFromDb),
-    tenants: mappedTenants,
-    complaints: [
-      ...ok(complaints).map((c) => ({ ...mapComplaintFromDb(c, mappedTenants), entityType: 'complaint' })),
-      ...ok(issues).map(mapIssueFromDb),
-    ],
-    notifications: ok(notifications).map(mapWardenNotificationFromDb),
-    violations: ok(violations).map(mapRuleViolationFromDb),
-    stays: ok(stays).map(mapStayFromDb).filter((s) => s.status === 'active'),
-    staysLoaded: stays.status === 'fulfilled',
-    error: failures.length ? msg(failures[0].reason) : null,
-  };
-});
-
-// ====================================================================
-//  Mutations (each refreshes the affected collection in the slice)
-// ====================================================================
+/** Run a repository thunk inside a warden thunk; throw its error message. */
+const viaRepo = async (dispatch, action) => {
+  const result = await dispatch(action);
+  if (result.error) throw new Error(result.payload || result.error.message || 'Request failed');
+  return result.payload;
+};
 
 const thunk = (type, fn) =>
-  createAsyncThunk(`warden/${type}`, async (arg, { rejectWithValue }) => {
+  createAsyncThunk(`warden/${type}`, async (arg, thunkApi) => {
     try {
-      return await fn(arg);
+      return await fn(arg, thunkApi);
     } catch (err) {
-      return rejectWithValue(msg(err));
+      return thunkApi.rejectWithValue(msg(err));
     }
   });
 
-// Rooms
-export const createRoom = thunk('createRoom', async (data) => mapRoomFromDb(await api.createRoomApi(data)));
-export const updateRoom = thunk('updateRoom', async ({ id, changes }) => mapRoomFromDb(await api.updateRoomApi(id, changes)));
-export const deleteRoom = thunk('deleteRoom', async (id) => {
-  await api.deleteRoomApi(id);
-  return id;
+// ====================================================================
+//  Load everything the warden portal needs in one round
+// ====================================================================
+
+export const fetchWardenTenants = createAsyncThunk('warden/fetchTenants', async (_, { rejectWithValue }) => {
+  try {
+    return asArray(await api.getTenantsApi());
+  } catch (err) {
+    return rejectWithValue(msg(err));
+  }
 });
+
+export const fetchWardenData = createAsyncThunk('warden/fetchAll', async (_, { dispatch }) => {
+  const results = await Promise.all([
+    dispatch(roomsRepo.thunks.fetchAll()),
+    dispatch(fetchWardenTenants()),
+    dispatch(complaintsRepo.thunks.fetchAll()),
+    dispatch(issuesRepo.thunks.fetchAll()),
+    dispatch(wardenNotificationsRepo.thunks.fetchAll()),
+    dispatch(ruleViolationsRepo.thunks.fetchAll()),
+    dispatch(tenantStaysRepo.thunks.fetchAll()),
+  ]);
+  const failed = results.find((r) => r.error);
+  return { error: failed ? failed.payload || 'Some warden data could not be loaded' : null };
+});
+
+// ====================================================================
+//  Mutations: CRUD goes through the repository slices; workflow actions
+//  (warnings, eviction, offline payment …) call their endpoints and then
+//  refresh the affected repository.
+// ====================================================================
+
+// Rooms
+export const createRoom = thunk('createRoom', (data, { dispatch }) => viaRepo(dispatch, roomsRepo.thunks.createItem(data)));
+export const updateRoom = thunk('updateRoom', ({ id, changes }, { dispatch }) => viaRepo(dispatch, roomsRepo.thunks.updateItem({ id, changes })));
+export const deleteRoom = thunk('deleteRoom', (id, { dispatch }) => viaRepo(dispatch, roomsRepo.thunks.removeItem(id)));
 
 // Tenant changes move people in and out of beds, so afterwards reload the
 // warden data and the public listings so bed counts agree everywhere.
 const occupancyThunk = (type, fn) =>
-  createAsyncThunk(`warden/${type}`, async (arg, { dispatch, rejectWithValue }) => {
-    try {
-      const result = await fn(arg);
-      dispatch(fetchWardenData());
-      dispatch(fetchListings());
-      return result;
-    } catch (err) {
-      return rejectWithValue(msg(err));
-    }
+  thunk(type, async (arg, { dispatch }) => {
+    const result = await fn(arg);
+    dispatch(fetchWardenData());
+    dispatch(fetchListings());
+    return result;
   });
 
 // Tenants (server keeps booking / stay / payment in sync)
@@ -90,45 +97,39 @@ export const deleteTenant = occupancyThunk('deleteTenant', async (id) => {
   return id;
 });
 
-// Complaints & issues
-export const updateComplaintStatus = thunk('updateComplaintStatus', async ({ id, entityType, changes }) => {
-  if (entityType === 'issue') await api.updateIssueApi(id, changes);
-  else await api.updateComplaintApi(id, changes);
+// Complaints & issues (the API notifies the tenant about status changes)
+export const updateComplaintStatus = thunk('updateComplaintStatus', async ({ id, entityType, changes }, { dispatch }) => {
+  const repo = entityType === 'issue' ? issuesRepo : complaintsRepo;
+  await viaRepo(dispatch, repo.thunks.updateItem({ id, changes }));
   return { id, entityType, changes };
 });
 export const notifyTenantMessage = thunk('notifyTenantMessage', (data) => api.sendTenantNotificationApi(data));
 
 // Warden notifications
-export const markWardenNotificationRead = thunk('markNotificationRead', async (id) => {
-  await api.markWardenNotificationReadApi(id);
-  return id;
-});
-export const markAllWardenNotificationsRead = thunk('markAllNotificationsRead', async () => {
-  await api.markAllWardenNotificationsReadApi();
-  return true;
-});
-export const deleteWardenNotification = thunk('deleteNotification', async (id) => {
-  await api.deleteWardenNotificationApi(id);
-  return id;
-});
+export const markWardenNotificationRead = thunk('markNotificationRead', (id, { dispatch }) => viaRepo(dispatch, markReadThunk(id)));
+export const markAllWardenNotificationsRead = thunk('markAllNotificationsRead', (_, { dispatch }) => viaRepo(dispatch, markAllReadThunk()));
+export const deleteWardenNotification = thunk('deleteNotification', (id, { dispatch }) => viaRepo(dispatch, wardenNotificationsRepo.thunks.removeItem(id)));
 
 // Rule violations
-export const createViolation = thunk('createViolation', async (data) => mapRuleViolationFromDb(await api.createRuleViolationApi(data)));
-export const issueViolationWarning = thunk('issueViolationWarning', async (id) => mapRuleViolationFromDb(await api.issueRuleViolationWarningApi(id)));
-export const escalateViolation = thunk('escalateViolation', async (id) => mapRuleViolationFromDb(await api.escalateRuleViolationApi(id)));
-export const updateViolation = thunk('updateViolation', async ({ id, changes }) => mapRuleViolationFromDb(await api.updateRuleViolationApi(id, changes)));
-export const deleteViolation = thunk('deleteViolation', async (id) => {
-  await api.deleteRuleViolationApi(id);
-  return id;
+const refetchViolations = (dispatch) => dispatch(ruleViolationsRepo.thunks.fetchAll());
+export const createViolation = thunk('createViolation', (data, { dispatch }) => viaRepo(dispatch, ruleViolationsRepo.thunks.createItem(data)));
+export const updateViolation = thunk('updateViolation', ({ id, changes }, { dispatch }) => viaRepo(dispatch, ruleViolationsRepo.thunks.updateItem({ id, changes })));
+export const deleteViolation = thunk('deleteViolation', (id, { dispatch }) => viaRepo(dispatch, ruleViolationsRepo.thunks.removeItem(id)));
+export const issueViolationWarning = thunk('issueViolationWarning', async (id, { dispatch }) => {
+  const row = await api.issueRuleViolationWarningApi(id);
+  await refetchViolations(dispatch);
+  return row;
+});
+export const escalateViolation = thunk('escalateViolation', async (id, { dispatch }) => {
+  const row = await api.escalateRuleViolationApi(id);
+  await refetchViolations(dispatch);
+  return row;
 });
 
 // Rent ledger & tenant actions
 export const fetchRentLedger = thunk('fetchRentLedger', ({ month, propertyId }) => api.getRentLedgerApi(month, propertyId));
 export const fetchTenantLedger = thunk('fetchTenantLedger', async (tenantId) => {
-  const [ledger, audit] = await Promise.all([
-    api.getTenantLedgerApi(tenantId),
-    api.getAuditLogsApi({ tenantId }).catch(() => []),
-  ]);
+  const [ledger, audit] = await Promise.all([api.getTenantLedgerApi(tenantId), api.getAuditLogsApi({ tenantId }).catch(() => [])]);
   return { tenantId, ledger, audit: asArray(audit) };
 });
 export const markRentPaidOffline = thunk('markRentPaidOffline', ({ dueId, note }) => api.markRentPaidOfflineApi(dueId, note));
@@ -151,7 +152,7 @@ export const syncBedCounts = createAsyncThunk('warden/syncBedCounts', async (_, 
       const changes = { currentOccupancy: r.actual };
       // Don't let the recount take a room out of maintenance.
       if (r.status === 'maintenance') changes.status = 'maintenance';
-      await api.updateRoomApi(r.id, changes);
+      await viaRepo(dispatch, roomsRepo.thunks.updateItem({ id: r.id, changes }));
       done += 1;
     }
     return done;
@@ -164,19 +165,15 @@ export const syncBedCounts = createAsyncThunk('warden/syncBedCounts', async (_, 
 });
 
 // ====================================================================
-//  Slice
+//  Slice: warden-only state
 // ====================================================================
 
 const wardenSlice = createSlice({
   name: 'warden',
   initialState: {
-    rooms: [],
-    tenants: [],
-    complaints: [],
-    notifications: [],
-    violations: [],
-    stays: [],
-    staysLoaded: false,
+    tenantsRaw: [],
+    // Timeline notes added during this session, keyed "complaint:12" / "issue:4".
+    events: {},
     syncing: false,
     loaded: false,
     status: 'idle',
@@ -187,25 +184,29 @@ const wardenSlice = createSlice({
   reducers: {
     /** Add a line to a complaint's timeline for this session. */
     addComplaintEvent(state, { payload: { id, entityType, event, by } }) {
-      const c = state.complaints.find((x) => sameId(x.id, id) && x.entityType === entityType);
-      if (c) c.timeline = [...(c.timeline || []), { time: new Date().toLocaleString(), event, by }];
+      const key = `${entityType}:${id}`;
+      state.events[key] = [...(state.events[key] || []), { time: new Date().toLocaleString(), event, by }];
     },
   },
   extraReducers: (b) => {
-    b.addCase(fetchWardenData.pending, (s) => {
-      s.status = 'loading';
+    b.addCase(fetchWardenTenants.fulfilled, (s, { payload }) => {
+      s.tenantsRaw = payload;
     })
+      .addCase(fetchWardenData.pending, (s) => {
+        s.status = 'loading';
+      })
       .addCase(fetchWardenData.fulfilled, (s, { payload }) => {
-        const { error, ...data } = payload;
-        Object.assign(s, data);
         s.loaded = true;
         s.status = 'succeeded';
-        s.error = error;
+        s.error = payload.error;
       })
       .addCase(fetchWardenData.rejected, (s, { error }) => {
         s.status = 'failed';
         s.error = error.message;
         s.loaded = true;
+      })
+      .addCase(deleteTenant.fulfilled, (s, { payload }) => {
+        s.tenantsRaw = s.tenantsRaw.filter((t) => String(t.id) !== String(payload));
       })
       .addCase(syncBedCounts.pending, (s) => {
         s.syncing = true;
@@ -216,46 +217,6 @@ const wardenSlice = createSlice({
       .addCase(syncBedCounts.rejected, (s) => {
         s.syncing = false;
       })
-      // rooms
-      .addCase(createRoom.fulfilled, (s, { payload }) => {
-        s.rooms.push(payload);
-      })
-      .addCase(updateRoom.fulfilled, (s, { payload }) => {
-        const i = s.rooms.findIndex((r) => sameId(r.id, payload.id));
-        if (i >= 0) s.rooms[i] = payload;
-      })
-      .addCase(deleteRoom.fulfilled, (s, { payload }) => {
-        s.rooms = s.rooms.filter((r) => !sameId(r.id, payload));
-      })
-      .addCase(deleteTenant.fulfilled, (s, { payload }) => {
-        s.tenants = s.tenants.filter((t) => !sameId(t.id, payload));
-      })
-      // complaints
-      .addCase(updateComplaintStatus.fulfilled, (s, { payload }) => {
-        const c = s.complaints.find((x) => sameId(x.id, payload.id) && x.entityType === payload.entityType);
-        if (c) Object.assign(c, payload.changes);
-      })
-      // notifications
-      .addCase(markWardenNotificationRead.fulfilled, (s, { payload }) => {
-        const n = s.notifications.find((x) => sameId(x.id, payload));
-        if (n) n.read = true;
-      })
-      .addCase(markAllWardenNotificationsRead.fulfilled, (s) => {
-        s.notifications.forEach((n) => {
-          n.read = true;
-        });
-      })
-      .addCase(deleteWardenNotification.fulfilled, (s, { payload }) => {
-        s.notifications = s.notifications.filter((n) => !sameId(n.id, payload));
-      })
-      // violations
-      .addCase(createViolation.fulfilled, (s, { payload }) => {
-        s.violations.unshift(payload);
-      })
-      .addCase(deleteViolation.fulfilled, (s, { payload }) => {
-        s.violations = s.violations.filter((v) => !sameId(v.id, payload));
-      })
-      // ledger
       .addCase(fetchRentLedger.pending, (s, { meta }) => {
         s.ledger = { ...s.ledger, month: meta.arg.month, status: 'loading', error: null };
       })
@@ -277,14 +238,6 @@ const wardenSlice = createSlice({
         s.tenantLedger.status = 'failed';
         s.tenantLedger.error = payload;
       });
-
-    // Violations returned from warning / escalate / update replace the row.
-    [issueViolationWarning, escalateViolation, updateViolation].forEach((t) =>
-      b.addCase(t.fulfilled, (s, { payload }) => {
-        const i = s.violations.findIndex((v) => sameId(v.id, payload.id));
-        if (i >= 0) s.violations[i] = { ...s.violations[i], ...payload };
-      }),
-    );
   },
 });
 
@@ -292,9 +245,43 @@ export const { addComplaintEvent } = wardenSlice.actions;
 
 export const wardenReducers = { warden: wardenSlice.reducer };
 
-// ---- selectors
-export const selectWarden = (s) => s.warden;
-export const selectWardenUnreadCount = createSelector([(s) => s.warden.notifications], (list) => list.filter((n) => !n.read).length);
+// ---- selectors: repository rows mapped into the shapes warden pages use
+
+const selectWardenTenants = createSelector([(s) => s.warden.tenantsRaw], (rows) => rows.map(mapTenantFromDb));
+const selectWardenRooms = createSelector([roomsRepo.selectors.selectItems], (rows) => rows.map(mapRoomFromDb));
+const selectWardenStays = createSelector([tenantStaysRepo.selectors.selectItems], (rows) => rows.map(mapStayFromDb).filter((s) => s.status === 'active'));
+const selectStaysLoaded = (s) => s.tenantStays.status === 'succeeded';
+const selectWardenComplaints = createSelector(
+  [complaintsRepo.selectors.selectItems, issuesRepo.selectors.selectItems, selectWardenTenants, (s) => s.warden.events],
+  (complaints, issues, tenants, events) =>
+    [...complaints.map((c) => ({ ...mapComplaintFromDb(c, tenants), entityType: 'complaint' })), ...issues.map(mapIssueFromDb)].map((c) => {
+      const extra = events[`${c.entityType}:${c.id}`];
+      return extra ? { ...c, timeline: [...(c.timeline || []), ...extra] } : c;
+    }),
+);
+const selectWardenNotifications = createSelector([wardenNotificationsRepo.selectors.selectItems], (rows) => rows.map(mapWardenNotificationFromDb));
+const selectWardenViolations = createSelector([ruleViolationsRepo.selectors.selectItems], (rows) => rows.map(mapRuleViolationFromDb));
+
+/** Everything the warden pages render, read from the store. */
+export const selectWarden = createSelector(
+  [selectWardenRooms, selectWardenTenants, selectWardenComplaints, selectWardenNotifications, selectWardenViolations, selectWardenStays, selectStaysLoaded, (s) => s.warden],
+  (rooms, tenants, complaints, notifications, violations, stays, staysLoaded, w) => ({
+    rooms,
+    tenants,
+    complaints,
+    notifications,
+    violations,
+    stays,
+    staysLoaded,
+    syncing: w.syncing,
+    loaded: w.loaded,
+    status: w.status,
+    error: w.error,
+    ledger: w.ledger,
+    tenantLedger: w.tenantLedger,
+  }),
+);
+export const selectWardenUnreadCount = createSelector([selectWardenNotifications], (list) => list.filter((n) => !n.read).length);
 export const selectWardenLedger = (s) => s.warden.ledger;
 export const selectWardenTenantLedger = (s) => s.warden.tenantLedger;
 
@@ -305,69 +292,64 @@ export const selectWardenTenantLedger = (s) => s.warden.tenantLedger;
  *  - rooms[].outOfSync   the two differ, fixed by syncBedCounts
  *  - rooms[].overbooked  more people than beds, someone has to move
  */
-export const selectOccupancyReport = createSelector(
-  [(s) => s.warden.rooms, (s) => s.warden.stays, (s) => s.warden.tenants, (s) => s.warden.staysLoaded],
-  (rooms, stays, tenants, staysLoaded) => {
-    const byRoom = new Map();
-    stays.forEach((st) => {
-      const key = String(st.roomId);
-      if (!byRoom.has(key)) byRoom.set(key, []);
-      byRoom.get(key).push(st);
-    });
+export const selectOccupancyReport = createSelector([selectWardenRooms, selectWardenStays, selectWardenTenants, selectStaysLoaded], (rooms, stays, tenants, staysLoaded) => {
+  const byRoom = new Map();
+  stays.forEach((st) => {
+    const key = String(st.roomId);
+    if (!byRoom.has(key)) byRoom.set(key, []);
+    byRoom.get(key).push(st);
+  });
 
-    const roomRows = rooms.map((r) => {
-      const occupants = byRoom.get(String(r.id)) || [];
-      const capacity = Number(r.capacity) || 0;
-      const actual = occupants.length;
-      const stored = Number(r.currentOccupancy) || 0;
-      return {
-        id: r.id,
-        roomNumber: r.roomNumber,
-        propertyId: r.propertyId,
-        propertyName: r.property,
-        capacity,
-        status: r.status,
-        actual,
-        stored,
-        free: Math.max(0, capacity - actual),
-        occupants,
-        outOfSync: staysLoaded && actual !== stored,
-        overbooked: actual > capacity,
-      };
-    });
-
-    const props = new Map();
-    roomRows.forEach((r) => {
-      const key = String(r.propertyId);
-      if (!props.has(key)) props.set(key, { propertyId: r.propertyId, name: r.propertyName || `PG #${r.propertyId}`, rooms: 0, beds: 0, residents: 0, free: 0 });
-      const p = props.get(key);
-      p.rooms += 1;
-      p.beds += r.capacity;
-      p.residents += r.actual;
-      p.free += r.free;
-    });
-
-    const bedsByTenant = new Map();
-    stays.forEach((st) => bedsByTenant.set(String(st.tenantId), [...(bedsByTenant.get(String(st.tenantId)) || []), st]));
-    const activeTenants = tenants.filter((t) => t.status !== 'evicted' && t.stayStatus !== 'evicted');
-
+  const roomRows = rooms.map((r) => {
+    const occupants = byRoom.get(String(r.id)) || [];
+    const capacity = Number(r.capacity) || 0;
+    const actual = occupants.length;
+    const stored = Number(r.currentOccupancy) || 0;
     return {
-      staysLoaded,
-      rooms: roomRows,
-      properties: [...props.values()].sort((a, b) => b.residents - a.residents),
-      residents: stays.length,
-      totalBeds: roomRows.reduce((n, r) => n + r.capacity, 0),
-      freeBeds: roomRows.reduce((n, r) => n + r.free, 0),
-      fullRooms: roomRows.filter((r) => r.capacity > 0 && r.actual >= r.capacity).length,
-      outOfSync: roomRows.filter((r) => r.outOfSync),
-      overbooked: roomRows.filter((r) => r.overbooked),
-      staysWithoutRoom: stays.filter((st) => !st.roomId),
-      bedsByTenant,
-      tenantsWithBed: activeTenants.filter((t) => bedsByTenant.has(String(t.id))).length,
-      tenantsWithoutBed: activeTenants.filter((t) => !bedsByTenant.has(String(t.id))),
-      multiBedTenants: activeTenants
-        .filter((t) => (bedsByTenant.get(String(t.id)) || []).length > 1)
-        .map((t) => ({ ...t, beds: bedsByTenant.get(String(t.id)) })),
+      id: r.id,
+      roomNumber: r.roomNumber,
+      propertyId: r.propertyId,
+      propertyName: r.property,
+      capacity,
+      status: r.status,
+      actual,
+      stored,
+      free: Math.max(0, capacity - actual),
+      occupants,
+      outOfSync: staysLoaded && actual !== stored,
+      overbooked: actual > capacity,
     };
-  },
-);
+  });
+
+  const props = new Map();
+  roomRows.forEach((r) => {
+    const key = String(r.propertyId);
+    if (!props.has(key)) props.set(key, { propertyId: r.propertyId, name: r.propertyName || `PG #${r.propertyId}`, rooms: 0, beds: 0, residents: 0, free: 0 });
+    const p = props.get(key);
+    p.rooms += 1;
+    p.beds += r.capacity;
+    p.residents += r.actual;
+    p.free += r.free;
+  });
+
+  const bedsByTenant = new Map();
+  stays.forEach((st) => bedsByTenant.set(String(st.tenantId), [...(bedsByTenant.get(String(st.tenantId)) || []), st]));
+  const activeTenants = tenants.filter((t) => t.status !== 'evicted' && t.stayStatus !== 'evicted');
+
+  return {
+    staysLoaded,
+    rooms: roomRows,
+    properties: [...props.values()].sort((a, b) => b.residents - a.residents),
+    residents: stays.length,
+    totalBeds: roomRows.reduce((n, r) => n + r.capacity, 0),
+    freeBeds: roomRows.reduce((n, r) => n + r.free, 0),
+    fullRooms: roomRows.filter((r) => r.capacity > 0 && r.actual >= r.capacity).length,
+    outOfSync: roomRows.filter((r) => r.outOfSync),
+    overbooked: roomRows.filter((r) => r.overbooked),
+    staysWithoutRoom: stays.filter((st) => !st.roomId),
+    bedsByTenant,
+    tenantsWithBed: activeTenants.filter((t) => bedsByTenant.has(String(t.id))).length,
+    tenantsWithoutBed: activeTenants.filter((t) => !bedsByTenant.has(String(t.id))),
+    multiBedTenants: activeTenants.filter((t) => (bedsByTenant.get(String(t.id)) || []).length > 1).map((t) => ({ ...t, beds: bedsByTenant.get(String(t.id)) })),
+  };
+});

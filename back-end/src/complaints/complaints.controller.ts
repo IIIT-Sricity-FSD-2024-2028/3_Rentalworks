@@ -15,7 +15,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { createUploadOptions } from '../middleware/file-upload.middleware';
+import { createUploadOptions, IMAGE_OR_PDF_TYPES } from '../middleware/file-upload.middleware';
 import { ComplaintsService } from './complaints.service';
 import { CreateComplaintDto, UpdateComplaintDto } from './complaints.dto';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -31,7 +31,7 @@ export class ComplaintsController {
   @Post(':id/upload-attachment')
   @Roles('admin', 'tenant', 'warden')
   @UseInterceptors(
-    FileInterceptor('file', createUploadOptions('./uploads/complaints')),
+    FileInterceptor('file', createUploadOptions('./uploads/complaints', { types: IMAGE_OR_PDF_TYPES })),
   )
   @ApiOperation({ summary: 'Upload complaint attachment' })
   @ApiConsumes('multipart/form-data')

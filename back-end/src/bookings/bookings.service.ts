@@ -13,6 +13,8 @@ import { TenantStay } from '../tenant-stays/tenant-stay.entity';
 import { WardenNotification } from '../warden-notifications/warden-notification.entity';
 import { Notification } from '../notifications/notification.entity';
 import { createInitialDue, todayIST } from '../rent-dues/rent-dues.helpers';
+import { PaymentGatewayService, checkoutPrice } from '../payments/payment-gateway.service';
+import { checkoutReceipt } from '../payments/payment-gateway.controller';
 
 @Injectable()
 export class BookingsService {
@@ -20,6 +22,7 @@ export class BookingsService {
     @InjectRepository(Booking)
     private bookingsRepository: Repository<Booking>,
     private dataSource: DataSource,
+    private readonly gateway: PaymentGatewayService,
   ) { }
 
   findAll(tenantId?: number, propertyId?: number) {
@@ -93,7 +96,8 @@ export class BookingsService {
     return removed;
   }
 
-  async completeCheckout(dto: CheckoutBookingDto) {
+  /** `bookerId` is the signed-in account paying (the tenant, or the friend booking for them). */
+  async completeCheckout(dto: CheckoutBookingDto, bookerId: number) {
     return this.dataSource.transaction(async (manager) => {
       const userRepo = manager.getRepository(User);
       const bookingRepo = manager.getRepository(Booking);
@@ -217,7 +221,15 @@ export class BookingsService {
 
       // 4. Create Confirmed Booking Record
       const checkInDate = dto.checkIn || todayIST();
-      const monthlyRent = Number(dto.rent) || 8500;
+      // 3d. Price comes from the allocated room, and the gateway payment must be
+      //     for exactly that amount and that room. Nothing is trusted from the form.
+      const price = checkoutPrice(Number(room.rent));
+      const paid = await this.gateway.verify(
+        { orderId: dto.gatewayOrderId, paymentId: dto.gatewayPaymentId, signature: dto.gatewaySignature },
+        price.total,
+        checkoutReceipt(bookerId, propId, roomNum),
+      );
+      const monthlyRent = price.rent;
       const newBooking = bookingRepo.create({
         tenantId: user.id,
         propertyId: propId,
@@ -233,10 +245,10 @@ export class BookingsService {
 
       // 5. Create Payment Record (Verified / Cleared) with the receipt breakdown:
       //    rent + deposit + platform fee = total paid.
-      const txnId = dto.transactionId || `TXN-${timestamp.toString().slice(-6)}`;
-      const depositAmount = Number(dto.deposit ?? 3500);
-      const totalAmount = Number(dto.totalAmount) || monthlyRent + depositAmount + 500;
-      const feeAmount = Math.max(0, totalAmount - monthlyRent - depositAmount);
+      const txnId = paid.transactionId;
+      const depositAmount = price.deposit;
+      const totalAmount = price.total;
+      const feeAmount = price.fee;
       const newPayment = paymentRepo.create({
         tenantId: user.id,
         propertyId: propId,
@@ -248,12 +260,12 @@ export class BookingsService {
         depositAmount,
         feeAmount,
         kind: 'booking',
-        method: dto.paymentMethod || 'UPI',
+        method: paid.mode === 'test' ? 'TEST' : dto.paymentMethod || 'ONLINE',
         transactionId: txnId,
         paidDate: todayIST(),
         status: 'verified',
-        clearance: 'Cleared',
-        platformFee: feeAmount || 500,
+        clearance: paid.mode === 'test' ? 'Test payment' : 'Cleared',
+        platformFee: feeAmount,
       });
       const savedPayment = await paymentRepo.save(newPayment);
 

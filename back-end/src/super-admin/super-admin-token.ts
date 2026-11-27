@@ -22,7 +22,7 @@ export function issueSuperAdminToken(id: number): string {
 }
 
 export function verifySuperAdminToken(header: string | undefined): number {
-  if (!header || !header.startsWith('Bearer ')) throw new UnauthorizedException('Sign in as super admin');
+  if (!header || !header.startsWith('Bearer ')) throw new UnauthorizedException('Please sign in');
   const token = header.slice(7);
   const parts = token.split('.');
   if (parts.length !== 2) throw new UnauthorizedException('Invalid session');
@@ -39,3 +39,8 @@ export function verifySuperAdminToken(header: string | undefined): number {
   }
   return data.id;
 }
+
+// Every role signs in with the same HMAC token; the names above are kept for
+// existing imports.
+export const issueSessionToken = issueSuperAdminToken;
+export const verifySessionToken = verifySuperAdminToken;

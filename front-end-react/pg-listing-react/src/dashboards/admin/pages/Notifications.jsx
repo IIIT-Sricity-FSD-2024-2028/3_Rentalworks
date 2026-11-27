@@ -48,7 +48,7 @@ export default function Notifications() {
 
     const data = { title: title.trim(), message: message.trim(), type: notifType, priority, recipients: recipientCount, targetRole };
     if (targetUser !== 'all') data.userId = Number(targetUser);
-    const { ok } = await runThunk(dispatch, adminNotifications.thunks.createItem({ data, byUserId: me?.id }), {
+    const { ok } = await runThunk(dispatch, adminNotifications.thunks.createItem({ ...data, byUserId: me?.id }), {
       success: `Announcement sent to ${recipientCount} user${recipientCount === 1 ? '' : 's'}`,
     });
     if (!ok) return;

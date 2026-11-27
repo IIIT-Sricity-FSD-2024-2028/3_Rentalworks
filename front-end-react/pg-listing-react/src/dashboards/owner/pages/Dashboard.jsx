@@ -3,19 +3,18 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 // Dashboard: Overview metrics, recent issues, occupancy progress, and quick links
-export default function Dashboard({ properties = [], issues = [], notifications = [] }) {
+export default function Dashboard({ properties = [], issues = [], notifications = [], rent = { collected: 0, billed: 0, overdue: 0 } }) {
   const totalProps = properties.length;
-  const activeProps = properties.filter(
-    (p) => (p.status || '').toLowerCase() === 'active' || (p.status || '').toLowerCase() === 'approved'
-  );
-  const totalRooms = properties.reduce((acc, p) => acc + (p.totalRooms || 0), 0);
-  const occupiedRooms = properties.reduce((acc, p) => acc + (p.occupiedRooms || 0), 0);
-  const occupancyPct = totalRooms ? Math.round((occupiedRooms / totalRooms) * 100) : 0;
-  // Rent from beds that are actually taken (see mapOwnerProperty).
-  const monthlyRevenue = properties.reduce((acc, p) => acc + (p.monthlyIncome || 0), 0);
-  const openIssues = issues.filter(
-    (i) => (i.status || '').toLowerCase() === 'open'
-  ).length;
+  // Only approved (live) properties count towards occupancy and income.
+  const activeProps = properties.filter((p) => p.status === 'Active');
+  const pendingProps = properties.filter((p) => p.status === 'Pending').length;
+  const totalBeds = activeProps.reduce((acc, p) => acc + (p.totalBeds || 0), 0);
+  const occupiedBeds = activeProps.reduce((acc, p) => acc + (p.occupiedBeds || 0), 0);
+  const occupancyPct = totalBeds ? Math.round((occupiedBeds / totalBeds) * 100) : 0;
+  // Rent due from beds that are actually taken (see mapOwnerProperty).
+  const expectedRent = activeProps.reduce((acc, p) => acc + (p.monthlyIncome || 0), 0);
+  // Issues still needing work (issues are already sorted newest first).
+  const openIssues = issues.filter((i) => i.status === 'Open' || i.status === 'In Progress').length;
   const unreadNotifs = notifications.filter((n) => !n.read).length;
 
   const recentIssues = issues.slice(0, 4);
@@ -74,7 +73,9 @@ export default function Dashboard({ properties = [], issues = [], notifications 
           <div className="stat-info">
             <div className="stat-value">{totalProps}</div>
             <div className="stat-label">Total Properties</div>
-            <div className="stat-change up">↑ {activeProps.length} active</div>
+            <div className={activeProps.length ? 'stat-change up' : 'stat-change'}>
+              {activeProps.length} live{pendingProps ? ` · ${pendingProps} pending review` : ''}
+            </div>
           </div>
         </div>
 
@@ -86,7 +87,7 @@ export default function Dashboard({ properties = [], issues = [], notifications 
             <div className="stat-value">{occupancyPct}%</div>
             <div className="stat-label">Occupancy Rate</div>
             <div className={occupancyPct >= 70 ? 'stat-change up' : 'stat-change down'}>
-              {occupiedRooms}/{totalRooms} rooms filled
+              {occupiedBeds}/{totalBeds} beds filled
             </div>
           </div>
         </div>
@@ -96,9 +97,12 @@ export default function Dashboard({ properties = [], issues = [], notifications 
             <Icon className="material-icons">payments</Icon>
           </div>
           <div className="stat-info">
-            <div className="stat-value">{formatCurrency(monthlyRevenue)}</div>
-            <div className="stat-label">Monthly Revenue</div>
-            <div className="stat-change up">↑ Estimated this month</div>
+            <div className="stat-value">{formatCurrency(rent.collected)}</div>
+            <div className="stat-label">Rent Collected (this month)</div>
+            <div className="stat-change">
+              of {formatCurrency(rent.billed || expectedRent)} {rent.billed ? 'billed' : 'expected'}
+              {rent.overdue ? ` · ${rent.overdue} overdue` : ''}
+            </div>
           </div>
         </div>
 
@@ -193,14 +197,14 @@ export default function Dashboard({ properties = [], issues = [], notifications 
             </div>
           ) : (
             properties.map((p) => {
-              const pct = p.totalRooms ? Math.round((p.occupiedRooms / p.totalRooms) * 100) : 0;
+              const pct = p.totalBeds ? Math.round((p.occupiedBeds / p.totalBeds) * 100) : 0;
               const cls = getOccupancyClass(pct);
               return (
                 <div key={p.id} className="mb-16">
                   <div className="flex-between mb-4">
                     <div>
                       <div className="prop-title-row">{p.name}</div>
-                      <div className="prop-sub-row">{p.city} • {p.type}</div>
+                      <div className="prop-sub-row">{p.location}</div>
                     </div>
                     <span className={`badge badge-${(p.status || 'active').toLowerCase()}`}>
                       {p.status}
@@ -209,14 +213,17 @@ export default function Dashboard({ properties = [], issues = [], notifications 
 
                   <div className="occupancy-bar-wrap">
                     <div className="occupancy-bar-label">
-                      <span>{p.occupiedRooms}/{p.totalRooms} rooms</span>
-                      <span>{pct}%</span>
+                      <span>{p.hasRooms ? `${p.occupiedBeds}/${p.totalBeds} beds` : 'Rooms not listed yet'}</span>
+                      {p.hasRooms && <span>{pct}%</span>}
                     </div>
-                    <div className="occupancy-bar">
-                      <div
-                        className={`occupancy-fill ${cls} pct-${pct}`}
-                      ></div>
-                    </div>
+                    {p.hasRooms && (
+                      <div className="occupancy-bar">
+                        <div
+                          className={`occupancy-fill ${cls}`}
+                          style={{ width: `${pct}%` }}
+                        ></div>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -293,16 +300,20 @@ export default function Dashboard({ properties = [], issues = [], notifications 
               <Icon className="material-icons icon-16 icon-middle">bar_chart</Icon> Monthly Summary
             </div>
             <div className="monthly-summary-row">
-              <span>Occupied Rooms</span>
-              <strong>{occupiedRooms}</strong>
+              <span>Occupied Beds</span>
+              <strong>{occupiedBeds}</strong>
             </div>
             <div className="monthly-summary-row">
-              <span>Vacant Rooms</span>
-              <strong>{totalRooms - occupiedRooms}</strong>
+              <span>Vacant Beds</span>
+              <strong>{totalBeds - occupiedBeds}</strong>
+            </div>
+            <div className="monthly-summary-row">
+              <span>Expected Rent</span>
+              <strong>{formatCurrency(expectedRent)}</strong>
             </div>
             <div className="monthly-summary-row-last">
-              <span>Est. Revenue</span>
-              <strong className="text-primary-cost">{formatCurrency(monthlyRevenue)}</strong>
+              <span>Collected</span>
+              <strong className="text-primary-cost">{formatCurrency(rent.collected)}</strong>
             </div>
           </div>
         </div>

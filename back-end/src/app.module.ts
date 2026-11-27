@@ -1,3 +1,8 @@
+import { PropertySharingRents1950000000000 } from './migrations/1950000000000-PropertySharingRents';
+import { PaymentGatewayModule } from './payments/payment-gateway.module';
+import { PropertyDocument } from './property-documents/property-document.entity';
+import { PropertyDocumentsModule } from './property-documents/property-documents.module';
+import { PropertyDocuments1940000000000 } from './migrations/1940000000000-PropertyDocuments';
 import { NotificationReceipt } from './owner/notification-receipt.entity';
 import { NotificationReceipts1920000000000 } from './migrations/1920000000000-NotificationReceipts';
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
@@ -93,6 +98,7 @@ import { WardenActionsModule } from './warden-actions/warden-actions.module';
             ServiceRequest,
             RentDue,
             AuditLog,
+            PropertyDocument,
           ],
           synchronize: false,
           migrations: [
@@ -105,6 +111,8 @@ import { WardenActionsModule } from './warden-actions/warden-actions.module';
             RemoveSuperAdminTwoFactor1900000000000,
             DropLegacyAuthenticatorColumns1910000000000,
             RentDuesAndAllotment1930000000000,
+            PropertyDocuments1940000000000,
+            PropertySharingRents1950000000000,
           ],
           migrationsRun: true,
         }) as any,
@@ -112,6 +120,8 @@ import { WardenActionsModule } from './warden-actions/warden-actions.module';
     }),
     UsersModule,
     PropertiesModule,
+    PropertyDocumentsModule,
+    PaymentGatewayModule,
     RoomsModule,
     BookingsModule,
     BookingRequestsModule,

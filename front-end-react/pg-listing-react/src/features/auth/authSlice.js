@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { http } from '../../services/apiClient';
-import { loadSession } from './authStorage';
 
 export const MANAGEMENT_ROLES = ['admin', 'owner', 'warden', 'super_admin'];
 
@@ -112,13 +111,13 @@ export const changeMyPassword = createAsyncThunk('auth/changeMyPassword', async 
 
 // ---------------------------------------------------------------- slice
 
-const initial = loadSession();
-
+// Session lives only in the Redux store (no localStorage): a full page
+// reload signs the user out.
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
-    user: initial.user,
-    token: initial.token,
+    user: null,
+    token: null,
     status: 'idle', // idle | loading | succeeded | failed
     error: null,
     profileStatus: 'idle',
@@ -149,11 +148,6 @@ const authSlice = createSlice({
     },
     clearAuthError(state) {
       state.error = null;
-    },
-    /** Sync from another tab's storage event. */
-    syncFromStorage(state, { payload }) {
-      state.user = payload.user;
-      state.token = payload.token;
     },
   },
   extraReducers: (builder) => {
@@ -204,7 +198,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { setSession, patchUser, logout, sessionExpired, clearAuthError, syncFromStorage } = authSlice.actions;
+export const { setSession, patchUser, logout, sessionExpired, clearAuthError } = authSlice.actions;
 export default authSlice.reducer;
 
 // ---------------------------------------------------------------- selectors

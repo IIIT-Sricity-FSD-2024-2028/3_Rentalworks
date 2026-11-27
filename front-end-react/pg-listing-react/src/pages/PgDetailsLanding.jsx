@@ -3,6 +3,8 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { buildFaqs } from '../data/faqs';
 import { fetchListingById, selectListingDetail } from '../features/listings/listingsSlice';
+import HouseRules from '../components/HouseRules';
+import SharingRents from '../components/SharingRents';
 import { startBooking, checkGenderEligibility, isSingleRoom } from '../features/booking/bookingSlice';
 import { selectCurrentUser, updateMyProfile, MANAGEMENT_ROLES } from '../features/auth/authSlice';
 import { toastError } from '../features/ui/uiSlice';
@@ -221,15 +223,29 @@ export default function PgDetailsLanding() {
           <h2 className="section-title">Amenities</h2>
           <div className="amenities-grid">
             {pg.amenities.length === 0 && <p style={{ color: '#64748b' }}>The owner hasn't listed any amenities yet.</p>}
-            {pg.amenities.map((key) => (
+            {pg.amenities.map((key, i) => (
               <div key={key} className="amenity-card">
                 <div className="amenity-icon">
                   <span className="material-icons-outlined">{amenityIcon(key)}</span>
                 </div>
-                <strong>{amenityLabel(key)}</strong>
+                <strong>{pg.amenityLabels[i] || amenityLabel(key)}</strong>
               </div>
             ))}
           </div>
+        </section>
+
+        {/* RENT BY ROOM SIZE */}
+        {Object.values(pg.rentBySharing || {}).some(Boolean) && (
+          <section className="detail-section" id="RentBySize" style={{ marginTop: '50px' }}>
+            <h2 className="section-title">Rent by room size</h2>
+            <SharingRents rents={pg.rentBySharing} />
+          </section>
+        )}
+
+        {/* HOUSE RULES (from the owner's Policy page) */}
+        <section className="detail-section" id="HouseRules" style={{ marginTop: '50px' }}>
+          <h2 className="section-title">House rules</h2>
+          <HouseRules rules={pg.houseRules} />
         </section>
 
         {/* AVAILABLE ROOMS SECTION (CORE BOOKING GATEWAY) */}

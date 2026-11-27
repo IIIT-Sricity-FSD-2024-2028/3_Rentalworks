@@ -1,4 +1,5 @@
 import React from 'react';
+import SharingRents from './SharingRents';
 import { useNavigate } from 'react-router-dom';
 import { formatINR } from '../utils/normalize';
 
@@ -10,7 +11,7 @@ const AVAILABILITY_STYLE = {
 
 export default function ListingCard({ listing }) {
   const navigate = useNavigate();
-  const { id, title, location, price, rentMax, features, image, availability, availabilityText, genderLabel, amenityLabels } = listing;
+  const { id, title, location, price, rentMax, rentBySharing, features, image, availability, availabilityText, genderLabel, amenityLabels } = listing;
 
   // Fully booked PGs stay viewable; only booking is blocked on the details page.
   const open = () => navigate(`/pg/${id}`);
@@ -49,6 +50,7 @@ export default function ListingCard({ listing }) {
             <span>Rent not listed</span>
           )}
         </div>
+        <SharingRents rents={rentBySharing} compact />
         <div className="features">
           <span className="tag">
             <span className="material-icons-outlined" style={{ fontSize: '18px' }}>wc</span>

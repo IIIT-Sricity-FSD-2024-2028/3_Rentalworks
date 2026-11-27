@@ -89,7 +89,7 @@ const Services = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (propertyId) dispatch(tenantServicesCatalog.thunks.fetchAll(propertyId));
+    if (propertyId) dispatch(tenantServicesCatalog.thunks.fetchAll({ propertyId }));
   }, [dispatch, propertyId]);
 
   const handleOpenModal = (service) => {

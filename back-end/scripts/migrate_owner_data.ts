@@ -8,7 +8,7 @@ config();
 async function runMigration() {
   const databaseUrl =
     process.env.DATABASE_URL ||
-    'postgresql://postgres:Sanjay%402023@localhost:5433/rentalworks_db';
+    'postgresql://postgres@localhost:5433/rentalworks_db'; // set DATABASE_URL (with password) in .env
 
   console.log('Connecting to database...');
   const client = new Client({ connectionString: databaseUrl });

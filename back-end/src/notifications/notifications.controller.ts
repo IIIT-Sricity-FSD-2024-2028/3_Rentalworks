@@ -45,18 +45,6 @@ export class NotificationsController {
     return this.notificationsService.findAll(parsedId, role);
   }
 
-  @Put('read-all')
-  @Roles('admin', 'warden', 'tenant', 'owner', 'super_admin')
-  @ApiOperation({ summary: 'Mark all notifications as read (PUT)' })
-  markAllAsReadPut(@Headers('x-user-id') headerUserId?: string) {
-    const num = headerUserId ? Number(headerUserId) : NaN;
-    const parsedId =
-      !isNaN(num) && Number.isInteger(num) && num > 0 && num <= 2147483647
-        ? num
-        : undefined;
-    return this.notificationsService.markAllAsRead(parsedId);
-  }
-
   @Patch('read-all')
   @Roles('admin', 'warden', 'tenant', 'owner', 'super_admin')
   @ApiOperation({ summary: 'Mark all notifications as read (PATCH)' })
@@ -67,13 +55,6 @@ export class NotificationsController {
         ? num
         : undefined;
     return this.notificationsService.markAllAsRead(parsedId);
-  }
-
-  @Put(':id/read')
-  @Roles('admin', 'warden', 'tenant', 'owner', 'super_admin')
-  @ApiOperation({ summary: 'Mark a notification as read (PUT)' })
-  markAsReadPut(@Param('id') id: string) {
-    return this.notificationsService.markAsRead(+id);
   }
 
   @Patch(':id/read')
@@ -95,20 +76,6 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Create new notification' })
   create(@Body() createNotificationDto: CreateNotificationDto) {
     return this.notificationsService.create(createNotificationDto);
-  }
-
-  @Put('mark-all-read')
-  @Roles('admin', 'warden', 'tenant', 'owner')
-  @ApiOperation({ summary: 'Mark all notifications as read' })
-  markAllRead() {
-    return this.notificationsService.markAllRead();
-  }
-
-  @Put(':id/read')
-  @Roles('admin', 'warden', 'tenant', 'owner')
-  @ApiOperation({ summary: 'Mark a notification as read' })
-  markRead(@Param('id') id: string) {
-    return this.notificationsService.markRead(+id);
   }
 
   @Put(':id')

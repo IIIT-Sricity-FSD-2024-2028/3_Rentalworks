@@ -11,6 +11,8 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  Req,
+  ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { createUploadOptions } from '../middleware/file-upload.middleware';
@@ -30,9 +32,15 @@ import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
 @Controller('users')
 @UseGuards(RolesGuard)
 export class UsersController {
+  /** Roles that may read other users' profiles. */
+  private static readonly STAFF = ['admin', 'super_admin', 'warden'];
+  /** Fields a user may not change on their own account. */
+  private static readonly SELF_LOCKED = ['role', 'status', 'username', 'paymentStatus', 'rent', 'room', 'checkIn', 'region'];
+
   constructor(private readonly usersService: UsersService) { }
 
   @Post('upload-avatar')
+  @Roles('admin', 'warden', 'tenant', 'owner', 'guest', 'super_admin')
   @UseInterceptors(
     FileInterceptor('file', createUploadOptions('./uploads/avatars')),
   )
@@ -49,14 +57,10 @@ export class UsersController {
       },
     },
   })
-  async uploadAvatar(
-    @UploadedFile() file: Express.Multer.File,
-    @Headers('x-user-id') headerUserId?: string,
-  ) {
+  async uploadAvatar(@Req() req: any, @UploadedFile() file: Express.Multer.File) {
     const filePath = file.path.replace(/\\/g, '/');
-    if (headerUserId && !isNaN(+headerUserId)) {
-      await this.usersService.update(+headerUserId, { avatar: filePath });
-    }
+    // Always the signed-in user's own avatar.
+    await this.usersService.update(req.user.id, { avatar: filePath });
     return {
       message: 'File uploaded successfully',
       filename: file.filename,
@@ -135,16 +139,34 @@ export class UsersController {
   }
 
   @Get(':id')
-  @Roles('admin', 'warden', 'tenant', 'owner', 'super_admin')
+  @Roles('admin', 'warden', 'tenant', 'owner', 'guest', 'super_admin')
   @ApiOperation({ summary: 'Get a user by ID' })
-  findOne(@Param('id') id: string) {
+  findOne(@Req() req: any, @Param('id') id: string) {
+    // Tenants, guests and owners may only read their own account.
+    if (!UsersController.STAFF.includes(req.user.role) && Number(id) !== req.user.id) {
+      throw new ForbiddenException('You can only view your own profile');
+    }
     return this.usersService.findOne(+id);
   }
 
   @Put(':id')
-  @Roles('admin', 'tenant', 'owner', 'warden', 'super_admin')
+  @Roles('admin', 'tenant', 'owner', 'warden', 'guest', 'super_admin')
   @ApiOperation({ summary: 'Update a user' })
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  async update(@Req() req: any, @Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    const role = req.user.role;
+    const isAdmin = role === 'admin' || role === 'super_admin';
+    if (!isAdmin) {
+      if (role === 'warden') {
+        // Wardens manage tenant records, never staff accounts or roles.
+        const target = await this.usersService.findOne(+id);
+        if (Number(id) !== req.user.id && !['tenant', 'guest'].includes(target.role)) throw new ForbiddenException('Wardens can only update tenant accounts');
+        delete (updateUserDto as any).role;
+      } else {
+        // Everyone else edits only their own profile, and not account-level fields.
+        if (Number(id) !== req.user.id) throw new ForbiddenException('You can only update your own profile');
+        UsersController.SELF_LOCKED.forEach((k) => delete (updateUserDto as any)[k]);
+      }
+    }
     return this.usersService.update(+id, updateUserDto);
   }
 

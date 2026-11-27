@@ -15,6 +15,7 @@ import {
   setMoveInDate,
 } from '../features/booking/bookingSlice';
 import { toastError } from '../features/ui/uiSlice';
+import HouseRules from '../components/HouseRules';
 
 const today = () => new Date().toISOString().split('T')[0];
 
@@ -27,6 +28,9 @@ export default function BookingReview() {
   const currentUser = useSelector(selectCurrentUser);
 
   const [agreeTerms, setAgreeTerms] = useState(false);
+  // The owner's house rules, from the properties repository slice.
+  const houseRules = useSelector((s) => s.properties.items.find((p) => String(p.id) === String(id))?.houseRules || null);
+  const noticeDays = houseRules?.noticePeriodDays;
   const [error, setError] = useState('');
 
   // Guard: the flow needs a PG + room (deep links / new tabs) and a signed-in user.
@@ -305,6 +309,12 @@ export default function BookingReview() {
               )}
             </div>
 
+            {/* HOUSE RULES the tenant is agreeing to */}
+            <div style={{ margin: '20px 0 12px' }}>
+              <h3 style={{ fontSize: 16, marginBottom: 10 }}>House rules at {pg.title}</h3>
+              <HouseRules rules={houseRules} compact />
+            </div>
+
             {/* TERMS & RULES CHECKBOX */}
             <div className="terms-checkbox-wrap">
               <label>
@@ -314,7 +324,8 @@ export default function BookingReview() {
                   onChange={(e) => setAgreeTerms(e.target.checked)}
                 />
                 <span>
-                  I agree to the <strong>PG House Rules</strong>, 30-day move-out notice policy, and consent to automatic tenant onboarding upon successful payment.
+                  I agree to the <strong>house rules above</strong>
+                  {noticeDays ? `, including the ${noticeDays}-day move-out notice,` : ','} and consent to automatic tenant onboarding upon successful payment.
                 </span>
               </label>
             </div>

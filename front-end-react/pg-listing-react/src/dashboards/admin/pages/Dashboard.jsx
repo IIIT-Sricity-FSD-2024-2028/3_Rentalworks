@@ -32,8 +32,8 @@ export default function Dashboard() {
   const payments = useSelector(adminPayments.selectors.selectItems);
   const complaints = useSelector(adminComplaints.selectors.selectItems);
   const subs = useSelector(selectAdminSubscriptionStats);
-  const lastSync = useSelector((s) => s.adminPayments.lastFetched);
-  const loadError = useSelector((s) => [s.adminUsers, s.adminProperties, s.adminBookings, s.adminPayments].find((x) => x.error)?.error);
+  const lastSync = useSelector((s) => s.payments.lastFetched);
+  const loadError = useSelector((s) => [s.users, s.properties, s.bookings, s.payments].find((x) => x.error)?.error);
 
   useEffect(() => {
     [adminUsers, adminProperties, adminBookings, adminPayments, adminComplaints].forEach((r) => dispatch(r.thunks.fetchAll()));

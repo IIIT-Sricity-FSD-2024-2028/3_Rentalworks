@@ -1,4 +1,4 @@
-import { normalizeStatus, toNumber, normalizeAmenities, amenityLabel, parseList, titleCaseWords, cityFromLocation } from '../../utils/normalize';
+import { normalizeStatus, toNumber, normalizeAmenities, amenityLabel, amenityKey, AMENITIES, parseList, titleCaseWords, cityFromLocation } from '../../utils/normalize';
 
 // Pure functions that turn backend Property / Room rows into the shapes the
 // public pages render. Listings, the details page and the booking flow all
@@ -21,6 +21,23 @@ export const DEFAULT_IMAGES = [
   '/room_images/8h.jpg',
   '/room_images/9h.webp',
 ];
+
+/**
+ * One rule for every image on every screen:
+ *  - full URLs (https://…) are used as they are;
+ *  - files uploaded to the backend ("uploads/properties/x.jpg") are served by the API;
+ *  - anything else starting with "/" is a frontend asset (e.g. /room_images/1h.jpg).
+ */
+export function resolveImageUrl(src) {
+  if (!src) return '';
+  const value = String(src).trim();
+  if (/^(https?:|data:|blob:)/i.test(value)) return value;
+  if (/^\/?uploads\//i.test(value)) {
+    const api = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/$/, '');
+    return `${api}/${value.replace(/^\//, '')}`;
+  }
+  return value.startsWith('/') ? value : `/${value}`;
+}
 
 /** Statuses that make a property visible to the public. */
 export const PUBLIC_STATUSES = ['approved', 'verified', 'active'];
@@ -59,7 +76,7 @@ export function mapRoom(r) {
   const bedsLeft = available ? capacity - occupied : 0;
   const rent = toNumber(r.rent);
   const sharing = sharingOf(capacity);
-  const images = parseList(r.images).filter(Boolean);
+  const images = parseList(r.images).filter(Boolean).map(resolveImageUrl);
   return {
     id: r.id,
     propertyId: r.propertyId ?? r.property?.id ?? null,
@@ -91,6 +108,17 @@ export function mapProperty(prop, rooms = [], idx = 0) {
     || toNumber(prop.rentMin) || toNumber(prop.monthlyRent);
   const rentMax = rents.length ? Math.max(...rents) : Math.max(toNumber(prop.rentMax), price);
 
+  // Rent per bed by room size. Real rooms win; otherwise the owner's listed
+  // price for that size (properties.sharingRents). null = size not offered.
+  const listed = prop.sharingRents || {};
+  const rentBySharing = Object.fromEntries(
+    [['single', 1], ['double', 2], ['triple', 3]].map(([key, cap]) => {
+      const roomRents = propRooms.filter((r) => r.capacity === cap).map((r) => r.rent).filter((n) => n > 0);
+      const value = roomRents.length ? Math.min(...roomRents) : toNumber(listed[key]) || null;
+      return [key, value];
+    }),
+  );
+
   const totalBeds = propRooms.reduce((n, r) => n + r.capacity, 0);
   const occupiedBeds = propRooms.reduce((n, r) => n + r.currentOccupancy, 0);
   const freeBeds = propRooms.reduce((n, r) => n + r.bedsLeft, 0);
@@ -101,7 +129,7 @@ export function mapProperty(prop, rooms = [], idx = 0) {
   const gender = normaliseGender(prop.gender || prop.type || (String(prop.name || '').toLowerCase().includes('girls') ? 'girls' : ''));
   const location =
     titleCaseWords(prop.location || [prop.address, prop.city, prop.state].filter(Boolean).join(', ')) || 'Location not specified';
-  const images = parseList(prop.images).filter(Boolean);
+  const images = parseList(prop.images).filter(Boolean).map(resolveImageUrl);
 
   // Verified only when an admin has actually ticked both checks.
   const verification = {
@@ -127,13 +155,16 @@ export function mapProperty(prop, rooms = [], idx = 0) {
     city: titleCaseWords(prop.city) || cityFromLocation(location),
     price,
     rentMax,
+    rentBySharing,
+    sharingRents: prop.sharingRents || null,
     image: images[0] || DEFAULT_IMAGES[(Number(prop.id) || idx) % DEFAULT_IMAGES.length],
     images,
     hasPhotos: images.length > 0,
     gender,
     genderLabel: GENDER_LABEL[gender],
     amenities,
-    amenityLabels: amenities.map(amenityLabel),
+    // Standard amenities get their canonical label; custom ones keep the owner's spelling ("PS5 Lounge").
+    amenityLabels: amenities.map((key) => (AMENITIES[key] ? amenityLabel(key) : parseList(prop.amenities).find((raw) => amenityKey(raw) === key)?.trim() || amenityLabel(key))),
     roomTypes,
     food: amenities.includes('meals') ? 'food' : 'nofood',
     features: [
@@ -144,6 +175,8 @@ export function mapProperty(prop, rooms = [], idx = 0) {
     verified,
     about: prop.description || '',
     rules: prop.rules || '',
+    // The owner's tenant-facing policy (see back-end properties/house-rules.ts).
+    houseRules: prop.houseRules || null,
     owner: prop.owner ? { name: prop.owner.name, email: prop.owner.email, phone: prop.owner.phone } : null,
     rooms: propRooms,
     roomCount: propRooms.length,

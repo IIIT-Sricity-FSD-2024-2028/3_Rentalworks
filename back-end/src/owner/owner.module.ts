@@ -1,7 +1,7 @@
+import { SubscriptionsController } from './subscriptions.controller';
 import { OwnerGuard } from './owner.guard';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { OwnerController } from './owner.controller';
 import { ApiController } from './api.controller';
 import { OwnerService } from './owner.service';
 import { Property } from '../properties/property.entity';
@@ -26,7 +26,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     ComplaintsModule,
     NotificationsModule,
   ],
-  controllers: [OwnerController, ApiController],
+  controllers: [ApiController, SubscriptionsController],
   providers: [OwnerService, OwnerGuard],
   exports: [OwnerService],
 })

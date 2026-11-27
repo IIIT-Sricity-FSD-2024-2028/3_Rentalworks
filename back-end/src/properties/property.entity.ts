@@ -1,3 +1,4 @@
+export type SharingRents = { single?: number | null; double?: number | null; triple?: number | null };
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -108,6 +109,10 @@ export class Property {
 
   @Column({ type: 'jsonb', nullable: true, default: () => "'[]'" })
   images?: string[];
+
+  /** Listed monthly rent per bed by room size, e.g. { single: 12000, double: 8500, triple: 6500 }. */
+  @Column({ type: 'jsonb', nullable: true })
+  sharingRents?: SharingRents | null;
 
   @Column({ type: 'text', nullable: true })
   description?: string;
