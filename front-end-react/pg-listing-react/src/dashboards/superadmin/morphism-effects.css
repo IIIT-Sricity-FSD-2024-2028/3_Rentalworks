@@ -88,7 +88,7 @@
 .page-content,
 #main-content-target,
 #dynamic-page-container {
-  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards; /* not 'both': a kept transform traps position:fixed popups */
 }
 
 /* Active section/page stagger */

@@ -1,16 +1,19 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchMyRentDues,
   payRentDue,
   selectRentState,
   tenantPayments,
-  tenantServiceRequests,
 } from '../../../features/tenant/tenantSlices';
 import { toastError, toastInfo } from '../../../features/ui/uiSlice';
 import { useTenant } from '../hooks/useTenant';
 import { loadPaymentConfig, selectPaymentMode } from '../../../features/booking/bookingSlice';
 import RentLedger from '../components/RentLedger';
+import ServiceUsageList from '../components/ServiceUsageList';
+import useAutoRefresh from '../../../hooks/useAutoRefresh';
+import { formatINR } from '../../../utils/normalize';
 import './Payments.css';
 
 
@@ -19,18 +22,15 @@ const Payments = () => {
   const { tenant, activeBooking } = useTenant();
   const allPayments = useSelector(tenantPayments.selectors.selectItems);
   const paymentsLoading = useSelector(tenantPayments.selectors.selectIsLoading);
-  const services = useSelector(tenantServiceRequests.selectors.selectItems);
-  const { dues, paying: processing } = useSelector(selectRentState);
+  const { dues, pendingCharges, status: rentStatus, error: rentError, paying: processing } = useSelector(selectRentState);
   const payments = useMemo(() => allPayments.filter((p) => Number(p.tenantId) === Number(tenant?.id)), [allPayments, tenant?.id]);
   const loading = paymentsLoading && payments.length === 0;
-  const [isPaying, setIsPaying] = useState(false);
+  const [isPaying, setIsPaying] = useScreenState(false);
   // 'razorpay' (real money) or 'test', reported by the server.
   const paymentMode = useSelector(selectPaymentMode);
 
-  // Receipt Modal State
-  const [receiptData, setReceiptData] = useState(null);
-  const [showReceiptModal, setShowReceiptModal] = useState(false);
-  const [selectedDueId, setSelectedDueId] = useState(null);
+  const [receiptSelection, setReceiptSelection] = useScreenState(null);
+  const [selectedDueId, setSelectedDueId] = useScreenState(null);
 
   useEffect(() => {
     dispatch(loadPaymentConfig());
@@ -39,9 +39,11 @@ const Payments = () => {
   useEffect(() => {
     if (!tenant?.id) return;
     dispatch(tenantPayments.thunks.fetchAll(tenant.id));
-    dispatch(tenantServiceRequests.thunks.fetchAll());
     dispatch(fetchMyRentDues());
   }, [dispatch, tenant?.id]);
+  useAutoRefresh(() => {
+    if (tenant?.id && !processing && rentStatus !== 'loading') dispatch(fetchMyRentDues());
+  }, 15000);
 
   // Determine current cycle and whether current month's rent has been paid
   const currentMonth = new Date().getMonth();
@@ -75,7 +77,8 @@ const Payments = () => {
     .filter((d) => ['upcoming', 'due_soon', 'overdue'].includes(statusOf(d)))
     .sort((x, y) => String(x.dueDate).localeCompare(String(y.dueDate)));
   // The cycle being paid: the one picked in the ledger, else the earliest unpaid
-  const pendingDue = unpaidDues.find((d) => d.id === selectedDueId) || unpaidDues[0] || null;
+  const pendingDue = selectedDueId == null ? unpaidDues[0] || null
+    : unpaidDues.find((d) => d.id === selectedDueId) || null;
   const nextDue = unpaidDues[0] || null;
   // Only cycles that are actually owed now count as "pending"
   const owedNow = unpaidDues.filter((d) => ['due_soon', 'overdue'].includes(statusOf(d)));
@@ -92,7 +95,7 @@ const Payments = () => {
   };
 
   const handleLedgerReceipt = (due) => {
-    const pay = payments.find((p) => p.id === due.paymentId);
+    const pay = due.payment || payments.find((p) => p.id === due.paymentId);
     if (pay) {
       handleViewReceipt(pay, due);
     } else {
@@ -114,26 +117,20 @@ const Payments = () => {
       return;
     }
     // The amount comes from the ledger on the server, never from the browser.
-    const payableAmount = Number(pendingDue.amount);
-    const result = await dispatch(payRentDue({ dueId: pendingDue.id, description: `Rent ${fmtDue(pendingDue.periodStart)} – ${fmtDue(pendingDue.periodEnd)}` }));
+    // The total shown (rent + service usage) is checked again by the server.
+    const result = await dispatch(payRentDue({
+      dueId: pendingDue.id,
+      expectedAmount: Number(pendingDue.amount),
+      description: `Rent ${fmtDue(pendingDue.periodStart)} – ${fmtDue(pendingDue.periodEnd)}`,
+    }));
     if (payRentDue.rejected.match(result)) {
+      dispatch(fetchMyRentDues());
       dispatch(toastError(result.payload || 'Payment failed. Please check your details and try again.'));
       return;
     }
 
-    const now = new Date();
-    setReceiptData({
-      transactionId: result.payload.transactionId,
-      amount: payableAmount,
-      method: result.payload.mode === 'test' ? 'TEST' : 'ONLINE',
-      date: now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-      propertyName: activeBooking?.property?.name || '—',
-      room: roomLabel,
-      tenantName: tenant.name || 'Tenant',
-      status: 'Completed',
-      period: `${fmtDue(pendingDue.periodStart)} – ${fmtDue(pendingDue.periodEnd)}`,
-    });
+    const payment = result.payload.result?.payment;
+    if (payment?.id != null) setReceiptSelection({ paymentId: payment.id, dueId: pendingDue.id });
     setSelectedDueId(null);
 
 
@@ -141,29 +138,31 @@ const Payments = () => {
     dispatch(tenantPayments.thunks.fetchAll(tenant.id));
     dispatch(fetchMyRentDues());
     setIsPaying(false);
-    setShowReceiptModal(true);
   };
 
-  // Open receipt modal for past transaction
-  const handleViewReceipt = (payment, due) => {
-    const d = new Date(payment.paidDate || payment.createdAt);
-    setReceiptData({
-      transactionId: payment.transactionId || `TXN-${payment.id}`,
-      amount: Number(payment.amount),
-      method: (payment.method || 'UPI').toUpperCase(),
-      date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      time: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-      propertyName: activeBooking?.property?.name || '—',
-      room: roomLabel,
-      tenantName: tenant?.name || 'Tenant',
-      status: ['completed', 'success', 'verified'].includes(payment.status) ? 'Completed' : payment.status,
-      period: due ? `${fmtDue(due.periodStart)} – ${fmtDue(due.periodEnd)}` : '',
-      rentAmount: payment.rentAmount != null ? Number(payment.rentAmount) : null,
-      depositAmount: payment.depositAmount != null ? Number(payment.depositAmount) : null,
-      feeAmount: payment.feeAmount != null ? Number(payment.feeAmount) : null,
-    });
-    setShowReceiptModal(true);
-  };
+  // Select a server-confirmed payment and due from Redux by ID.
+  const handleViewReceipt = (payment, due) => setReceiptSelection({
+    paymentId: payment.id, dueId: due?.id ?? dues.find((entry) => String(entry.paymentId) === String(payment.id))?.id,
+  });
+  const due = receiptSelection?.dueId == null ? null : dues.find((entry) => entry.id === receiptSelection.dueId);
+  const payment = payments.find((entry) => entry.id === receiptSelection?.paymentId) || (receiptSelection && due?.payment);
+  const receiptDate = payment ? new Date(due?.paidAt || payment.createdAt || payment.paidDate) : null;
+  const receiptData = payment ? {
+    transactionId: payment.transactionId || `TXN-${payment.id}`,
+    amount: Number(payment.amount),
+    method: (payment.method || 'UPI').toUpperCase(),
+    date: receiptDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    time: receiptDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+    propertyName: payment.property?.name || activeBooking?.property?.name || '—',
+    room: payment.room ? `${payment.room}${payment.bedNumber ? ` / Bed ${payment.bedNumber}` : ''}` : roomLabel,
+    tenantName: tenant?.name || 'Tenant',
+    status: ['completed', 'success', 'verified'].includes(payment.status) ? 'Completed' : payment.status,
+    period: due ? `${fmtDue(due.periodStart)} – ${fmtDue(due.periodEnd)}` : '',
+    rentAmount: payment.rentAmount != null ? Number(payment.rentAmount) : null,
+    depositAmount: payment.depositAmount != null ? Number(payment.depositAmount) : null,
+    feeAmount: payment.feeAmount != null ? Number(payment.feeAmount) : null,
+    serviceCharges: due?.serviceCharges || [],
+  } : null;
 
   // PAYMENT GATEWAY VIEW
   if (isPaying) {
@@ -190,6 +189,7 @@ const Payments = () => {
           className="btn btn-ghost btn-sm mb-16"
           onClick={() => {
             setIsPaying(false);
+            setSelectedDueId(null);
           }}
           style={{ marginBottom: '16px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           disabled={processing}
@@ -238,7 +238,7 @@ const Payments = () => {
 
             <div className="summary-item-row">
               <span>Billing Item</span>
-              <span className="summary-item-val">Monthly Rent</span>
+              <span className="summary-item-val">Rent and service usage</span>
             </div>
             <div className="summary-item-row">
               <span>Property</span>
@@ -250,8 +250,23 @@ const Payments = () => {
             </div>
             <div className="summary-item-row">
               <span>Cycle Due Date</span>
-              <span className="summary-item-val">{rentDueDate}</span>
+              <span className="summary-item-val">{fmtDue(pendingDue?.dueDate)}</span>
             </div>
+            {pendingDue ? (
+              <>
+                <div className="summary-item-row">
+                  <span>Base Rent</span><strong>{formatINR(pendingDue.rentAmount ?? pendingDue.amount)}</strong>
+                </div>
+                {pendingDue.serviceCharges?.length > 0 && (
+                  <>
+                    <div className="summary-item-row">
+                      <span>Service Usage</span><strong>{formatINR(pendingDue.serviceAmount)}</strong>
+                    </div>
+                    <ServiceUsageList charges={pendingDue.serviceCharges} formatDate={fmtDue} />
+                  </>
+                )}
+              </>
+            ) : <p role="status">This bill is no longer payable. Return to the ledger to view the latest status.</p>}
             <div className="summary-item-row">
               <span>Gateway Convenience Fee</span>
               <span className="summary-item-val" style={{ color: 'var(--success)' }}>₹0 (FREE)</span>
@@ -394,7 +409,8 @@ const Payments = () => {
         </div>
       )}
 
-      <RentLedger dues={dues} onPay={handleLedgerPay} onReceipt={handleLedgerReceipt} />
+      {rentError && <p role="alert">{rentError}</p>}
+      <RentLedger dues={dues} pendingCharges={pendingCharges} onPay={handleLedgerPay} onReceipt={handleLedgerReceipt} />
 
       {/* CONDITIONAL RENDER: IF HE PAYS, THE UPCOMING PAYMENT BILL CARD VANISHES! */}
       {isPaidThisMonth ? (
@@ -408,7 +424,7 @@ const Payments = () => {
                 Rent Fully Paid for {new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })}!
               </h3>
               <p className="banner-desc">
-                No pending rent dues for this cycle. The upcoming payment bill has vanished. Next cycle commences on <strong>{rentDueDate}</strong>.
+                {nextDue ? <>Your next rent bill is due <strong>{rentDueDate}</strong>. View its breakdown in the ledger.</> : 'There is no rent bill due right now.'}
               </p>
             </div>
           </div>
@@ -446,13 +462,14 @@ const Payments = () => {
             </div>
             <div className="payment-right" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <div className="payment-amount" style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a' }}>
-                ₹{remainingPending.toLocaleString()}
+                {formatINR(nextDue?.amount)}
               </div>
               <button
                 type="button"
                 className="btn btn-primary btn-sm"
                 style={{ minWidth: '120px', height: '40px', fontSize: '14px', fontWeight: '700' }}
                 onClick={() => {
+                  setSelectedDueId(nextDue?.id ?? null);
                   setIsPaying(true);
                 }}
               >
@@ -489,10 +506,11 @@ const Payments = () => {
         }
         const maxMonthAmount = Math.max(...chartMonths.map(m => m.total), 1);
 
-        const totalRentPaid = completedPayments.reduce((acc, p) => acc + Number(p.amount || 0), 0);
-        const completedServices = services.filter(s => s.status === 'completed');
-        const totalServicesPaid = completedServices.reduce((acc, s) => acc + Number(s.amount || 0), 0);
-        const totalExpense = totalRentPaid + totalServicesPaid;
+        const paymentIds = new Set(completedPayments.map((entry) => String(entry.id)));
+        const totalExpense = completedPayments.reduce((acc, p) => acc + Number(p.amount || 0), 0);
+        const totalServicesPaid = dues.filter((entry) => entry.status === 'paid' && paymentIds.has(String(entry.paymentId)))
+          .reduce((acc, entry) => acc + Number(entry.serviceAmount || 0), 0);
+        const totalRentPaid = totalExpense - totalServicesPaid;
 
         const rentPct = totalExpense > 0 ? Math.round((totalRentPaid / totalExpense) * 100) : (totalRentPaid > 0 ? 100 : 0);
         const servPct = totalExpense > 0 ? 100 - rentPct : 0;
@@ -717,8 +735,8 @@ const Payments = () => {
       </div>
 
       {/* RECEIPT MODAL DIALOG */}
-      {showReceiptModal && receiptData && (
-        <div className="gateway-processing-overlay" onClick={() => setShowReceiptModal(false)}>
+      {receiptData && (
+        <div className="gateway-processing-overlay" onClick={() => setReceiptSelection(null)}>
           <div className="payment-receipt-screen" onClick={(e) => e.stopPropagation()}>
             <div className="receipt-success-badge">
               <span className="material-icons-outlined" style={{ fontSize: '38px' }}>check_circle</span>
@@ -761,6 +779,12 @@ const Payments = () => {
                     <td>Rent ₹{receiptData.rentAmount.toLocaleString('en-IN')} + Deposit ₹{receiptData.depositAmount.toLocaleString('en-IN')}{receiptData.feeAmount ? ` + Fees ₹${receiptData.feeAmount.toLocaleString('en-IN')}` : ''}</td>
                   </tr>
                 )}
+                {receiptData.serviceCharges.length > 0 && (
+                  <tr>
+                    <td>Service Usage</td>
+                    <td><ServiceUsageList charges={receiptData.serviceCharges} formatDate={fmtDue} /></td>
+                  </tr>
+                )}
                 <tr>
                   <td>Payment Mode</td>
                   <td>{receiptData.method}</td>
@@ -785,7 +809,7 @@ const Payments = () => {
               <button
                 type="button"
                 className="btn btn-primary btn-sm"
-                onClick={() => setShowReceiptModal(false)}
+                onClick={() => setReceiptSelection(null)}
               >
                 Close Receipt
               </button>

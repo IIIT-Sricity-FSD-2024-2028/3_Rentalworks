@@ -4,6 +4,7 @@ import { setSession } from '../auth/authSlice';
 import { fetchListings, fetchListingById } from '../listings/listingsSlice';
 import { bookingsRepo, paymentsRepo } from '../repositories';
 import { payOnline, fetchGatewayConfig } from '../../services/paymentGateway';
+import { rememberIssuedPassword } from './issuedPassword';
 
 export const PLATFORM_FEE = 500;
 export const DURATIONS = [
@@ -47,9 +48,9 @@ export const calculateRoommateMatches = createAsyncThunk(
   'booking/calculateRoommateMatches',
   async (profile, { rejectWithValue }) => {
     try {
-      await http.post('/roommates/profile', profile, { auth: false }).catch(() => null);
+      const saved = await http.post('/roommates/profile', profile, { auth: false });
       const data = await http.post('/roommates/calculate-matches', profile, { auth: false });
-      return asArray(data)
+      const matches = asArray(data)
         .map((item) => ({
           id: item.id,
           name: item.name,
@@ -67,15 +68,20 @@ export const calculateRoommateMatches = createAsyncThunk(
           matchPercentage: Number(item.matchPercentage || item.compatibility) || 0,
         }))
         .sort((a, b) => b.matchPercentage - a.matchPercentage);
+      return { profile: { ...profile, ...saved }, matches };
     } catch (err) {
       return rejectWithValue(err.message);
     }
   },
 );
 
-export const saveLifestyleProfile = createAsyncThunk('booking/saveLifestyleProfile', async (profile) => {
-  await http.post('/roommates/profile', profile, { auth: false }).catch(() => null);
-  return profile;
+export const saveLifestyleProfile = createAsyncThunk('booking/saveLifestyleProfile', async (profile, { rejectWithValue }) => {
+  try {
+    const saved = await http.post('/roommates/profile', profile, { auth: false });
+    return { ...profile, ...saved };
+  } catch (error) {
+    return rejectWithValue(error.message);
+  }
 });
 
 /**
@@ -87,7 +93,7 @@ export const loadPaymentConfig = createAsyncThunk('booking/loadPaymentConfig', a
 
 export const submitCheckout = createAsyncThunk(
   'booking/submitCheckout',
-  async (_arg, { getState, dispatch, rejectWithValue }) => {
+  async (_arg, { getState, dispatch, rejectWithValue, requestId }) => {
     const { booking, auth } = getState();
     const user = auth.user;
     const { selectedPG: pg, selectedRoom: room, selectedRoommate, lifestyleProfile, bookingFor, friendDetails } = booking;
@@ -132,8 +138,13 @@ export const submitCheckout = createAsyncThunk(
       lifestyleProfile: single ? undefined : lifestyleProfile || undefined,
     };
 
+    const isCurrentCheckout = () => getState().booking.checkout.requestId === requestId;
+    const ended = () => rejectWithValue('Your booking session ended. Sign in to view your bookings.');
     try {
       const result = await http.post('/bookings/checkout', payload);
+      // Availability changed even if the user signed out while checkout was running.
+      dispatch(fetchListings());
+      if (!isCurrentCheckout()) return ended();
       // Booking for yourself promotes your account to tenant. Booking for a
       // friend creates *their* account, so your session stays as it is.
       if (!forFriend && result?.tenant) {
@@ -141,10 +152,11 @@ export const submitCheckout = createAsyncThunk(
       }
       // Checkout creates the confirmed booking, so drop the unpaid request it replaces.
       if (booking.pendingBookingId) await http.delete(`/bookings/${booking.pendingBookingId}`).catch(() => null);
-      // The server just took a bed: reload availability so every page shows the new counts.
-      dispatch(fetchListings());
+      if (!isCurrentCheckout()) return ended();
       dispatch(fetchListingById(pg.id));
-      return result;
+      const { password, ...credentials } = result.credentials ?? {};
+      rememberIssuedPassword(result.booking?.id, password);
+      return { ...result, credentials };
     } catch (err) {
       // 2. Paid but the booking could not be completed (e.g. the bed was just taken).
       return rejectWithValue(
@@ -179,7 +191,7 @@ export const fetchMyTransactions = createAsyncThunk('booking/fetchMyTransactions
 
 // ------------------------------------------------------------------ slice
 
-const initialState = {
+const createInitialState = () => ({
   selectedPG: null,
   selectedRoom: null,
   selectedRoommate: null,
@@ -193,13 +205,14 @@ const initialState = {
   pendingBookingId: null,
 
   matches: { items: [], status: 'idle', error: null },
+  profileSaveRequestId: null,
   checkout: { status: 'idle', error: null },
   paymentMode: null, // 'razorpay' | 'test', from the server
-};
+});
 
 const bookingSlice = createSlice({
   name: 'booking',
-  initialState,
+  initialState: createInitialState,
   reducers: {
     startBooking(state, { payload: { pg, room, pendingBookingId = null } }) {
       state.pendingBookingId = pendingBookingId;
@@ -209,6 +222,7 @@ const bookingSlice = createSlice({
       if (roomChanged || isSingleRoom(room)) {
         state.selectedRoommate = null;
         state.matches = { items: [], status: 'idle', error: null };
+        state.profileSaveRequestId = null;
       }
       state.checkout = { status: 'idle', error: null };
     },
@@ -237,32 +251,41 @@ const bookingSlice = createSlice({
       state.checkout.error = null;
     },
     resetBookingFlow(state) {
-      return { ...initialState, lastConfirmed: state.lastConfirmed, selectedPG: null, selectedRoom: null, selectedRoommate: null, lifestyleProfile: null, moveInDate: defaultMoveIn() };
-    },
-    /** Drop the one-time password once the user has seen it. */
-    forgetIssuedPassword(state) {
-      if (state.lastConfirmed?.credentials) state.lastConfirmed.credentials.password = null;
+      // The issued tenant password never enters Redux (see ./issuedPassword).
+      return { ...createInitialState(), lastConfirmed: state.lastConfirmed, paymentMode: state.paymentMode };
     },
   },
   extraReducers: (builder) => {
     builder
       .addCase(calculateRoommateMatches.pending, (state, { meta }) => {
-        state.matches = { items: [], status: 'loading', error: null };
-        state.lifestyleProfile = meta.arg;
+        state.matches = { items: [], status: 'loading', error: null, requestId: meta.requestId };
       })
-      .addCase(calculateRoommateMatches.fulfilled, (state, { payload }) => {
-        state.matches = { items: payload, status: 'succeeded', error: null };
+      .addCase(calculateRoommateMatches.fulfilled, (state, { payload, meta }) => {
+        if (state.matches.requestId !== meta.requestId) return;
+        state.lifestyleProfile = payload.profile;
+        state.matches = { items: payload.matches, status: 'succeeded', error: null };
       })
-      .addCase(calculateRoommateMatches.rejected, (state, { payload }) => {
+      .addCase(calculateRoommateMatches.rejected, (state, { payload, meta }) => {
+        if (state.matches.requestId !== meta.requestId) return;
         state.matches = { items: [], status: 'failed', error: payload || 'Could not calculate matches' };
       })
       .addCase(saveLifestyleProfile.pending, (state, { meta }) => {
-        state.lifestyleProfile = meta.arg;
+        state.profileSaveRequestId = meta.requestId;
       })
-      .addCase(submitCheckout.pending, (state) => {
-        state.checkout = { status: 'loading', error: null };
+      .addCase(saveLifestyleProfile.fulfilled, (state, { payload, meta }) => {
+        // Only server-confirmed preferences go into the active booking draft.
+        if (state.profileSaveRequestId !== meta.requestId) return;
+        state.profileSaveRequestId = null;
+        state.lifestyleProfile = payload;
       })
-      .addCase(submitCheckout.fulfilled, (state, { payload }) => {
+      .addCase(saveLifestyleProfile.rejected, (state, { meta }) => {
+        if (state.profileSaveRequestId === meta.requestId) state.profileSaveRequestId = null;
+      })
+      .addCase(submitCheckout.pending, (state, { meta }) => {
+        state.checkout = { status: 'loading', error: null, requestId: meta.requestId };
+      })
+      .addCase(submitCheckout.fulfilled, (state, { payload, meta }) => {
+        if (state.checkout.requestId !== meta.requestId) return;
         state.checkout = { status: 'succeeded', error: null };
         state.pendingBookingId = null;
         state.lastConfirmed = {
@@ -280,7 +303,8 @@ const bookingSlice = createSlice({
       .addCase(loadPaymentConfig.fulfilled, (state, { payload }) => {
         state.paymentMode = payload?.mode || 'test';
       })
-      .addCase(submitCheckout.rejected, (state, { payload }) => {
+      .addCase(submitCheckout.rejected, (state, { payload, meta }) => {
+        if (state.checkout.requestId !== meta.requestId) return;
         state.checkout = { status: 'failed', error: payload || 'Payment failed. Please retry.' };
       });
   },
@@ -297,7 +321,6 @@ export const {
   setPaymentMethod,
   clearCheckoutError,
   resetBookingFlow,
-  forgetIssuedPassword,
 } = bookingSlice.actions;
 export default bookingSlice.reducer;
 

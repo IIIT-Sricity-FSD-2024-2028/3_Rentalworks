@@ -2,8 +2,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWardenData } from '../utils/dataStore';
 import { useSelector } from 'react-redux';
-import { selectOccupancyReport } from '../../../features/warden/wardenSlices';
-import BedSyncPanel from '../components/BedSyncPanel';
+import { selectBookedTenants } from '../../../features/warden/wardenSlices';
+import { normalizeStatus } from '../../../utils/normalize';
 
 function StatCard({ color, label, value, sub, materialIcon }) {
   return (
@@ -18,35 +18,52 @@ function StatCard({ color, label, value, sub, materialIcon }) {
   );
 }
 
+// Complaints & issues by status: one bar each for Open, In progress, Resolved.
+const STATUS_BARS = [
+  { key: 'open', label: 'Open', color: '#dc2626' },
+  { key: 'in_progress', label: 'In progress', color: '#f59e0b' },
+  { key: 'resolved', label: 'Resolved', color: '#16a34a' },
+];
+const CHART_HEIGHT = 150;
+
 function ComplaintsChart({ complaints = [] }) {
-  const catCounts = {};
-  complaints.forEach(c => {
-    let cat = c.category || c.type || 'General';
-    cat = cat.charAt(0).toUpperCase() + cat.slice(1);
-    catCounts[cat] = (catCounts[cat] || 0) + 1;
+  const counts = { open: 0, in_progress: 0, resolved: 0 };
+  complaints.forEach((c) => {
+    const st = normalizeStatus(c.status, 'open');
+    if (st === 'resolved' || st === 'closed') counts.resolved++;
+    else if (st === 'in_progress') counts.in_progress++;
+    else counts.open++;
   });
-
-  let data = Object.entries(catCounts).map(([label, val]) => ({ label, val }));
-  if (data.length === 0) {
-    data = [{ label: 'General', val: 0 }];
-  }
-
-  const max = Math.max(...data.map(d => d.val), 1);
+  const total = complaints.length;
+  const max = Math.max(1, ...Object.values(counts));
 
   return (
     <div className="chart-card">
-      <h3>Complaints &amp; Issues by Type</h3>
-      <div className="bar-chart" id="bar-chart-canvas">
-        {data.map(d => (
-          <div key={d.label} className="bar-group">
-            <div className="bar" style={{ height: `${(d.val / max) * 100}px` }} title={d.val}></div>
-            <span className="bar-label">{d.label} ({d.val})</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <h3>Complaints &amp; Issues by Status</h3>
+        <span style={{ fontSize: 12, color: '#64748b' }}>{total} total</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', gap: 16, height: CHART_HEIGHT + 30, borderBottom: '1px solid #e2e8f0', padding: '0 8px', marginTop: 12 }}>
+        {STATUS_BARS.map((b) => {
+          const n = counts[b.key];
+          return (
+            <div key={b.key} style={{ flex: 1, maxWidth: 90, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>{n}</span>
+              <div
+                title={`${b.label}: ${n}`}
+                style={{ width: '100%', height: Math.max(n ? 6 : 2, (n / max) * CHART_HEIGHT), background: b.color, borderRadius: '8px 8px 0 0', transition: 'height .3s' }}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-around', gap: 16, padding: '8px 8px 0' }}>
+        {STATUS_BARS.map((b) => (
+          <div key={b.key} style={{ flex: 1, maxWidth: 90, textAlign: 'center', fontSize: 12, color: '#475569' }}>
+            <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, background: b.color, marginRight: 5 }} />
+            {b.label}
           </div>
         ))}
-      </div>
-      <div className="bar-legend">
-        <div className="bar-legend-dot"></div>
-        <span>Complaints &amp; Issues</span>
       </div>
     </div>
   );
@@ -178,12 +195,12 @@ function RecentActivity({ notifications }) {
 export default function Dashboard() {
   const { data } = useWardenData();
   const navigate = useNavigate();
-  const { tenants, rooms, complaints, violations } = data;
+  const { rooms, complaints, violations } = data;
 
-  // Counts come from active stays (who is actually living here), not the stored room counters.
-  const report = useSelector(selectOccupancyReport);
-  const totalRooms = rooms.length;
-  const occupiedRooms = report.staysLoaded ? report.fullRooms : rooms.filter(r => r.occupancy && r.occupancy.includes('Occupied')).length;
+  // Tenants = people who booked a PG and are still staying.
+  const booked = useSelector(selectBookedTenants);
+  const currentTenants = booked.filter((t) => t.status !== 'evicted' && t.stayStatus !== 'evicted');
+  const pgCount = new Set(rooms.map((r) => r.propertyId).filter(Boolean)).size;
   const activeComplaints = complaints.filter(c => c.status === 'open' || c.status === 'in_progress').length;
   const ruleViolations = violations.length;
 
@@ -195,20 +212,12 @@ export default function Dashboard() {
       </div>
 
       <div className="stats-grid">
-        <StatCard
-          color="blue"
-          materialIcon="group"
-          label="Residents"
-          value={report.staysLoaded ? report.residents : tenants.length}
-          sub={report.staysLoaded ? `${report.tenantsWithBed} tenant accounts · ${report.properties.length} PGs` : 'Tenant accounts'}
-        />
-        <StatCard color="green" materialIcon="home" label="Full Rooms" value={occupiedRooms} sub={`of ${totalRooms} rooms`} />
-        <StatCard color="yellow" materialIcon="bed" label="Free Beds" value={report.staysLoaded ? report.freeBeds : '—'} sub={report.staysLoaded ? `of ${report.totalBeds} beds` : ''} />
+        <StatCard color="blue" materialIcon="group" label="Tenants" value={currentTenants.length} sub="Booked and staying" />
+        <StatCard color="green" materialIcon="home" label="Rooms" value={rooms.length} sub={`across ${pgCount} PG${pgCount === 1 ? '' : 's'}`} />
         <StatCard color="red" materialIcon="schedule" label="Active Complaints" value={activeComplaints} sub={`${complaints.filter(c => c.priority === 'high' && c.status !== 'resolved').length} urgent`} />
         <StatCard color="orange" materialIcon="warning" label="Rule Violations" value={ruleViolations} sub={`${violations.filter(v => v.severity === 'high').length} high severity`} />
       </div>
 
-      <BedSyncPanel />
 
       <div className="charts-row">
         <ComplaintsChart complaints={complaints} />

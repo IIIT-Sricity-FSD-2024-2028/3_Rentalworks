@@ -13,4 +13,6 @@ export const usersRepo = createRepositorySlice({
     ...pick(u, ['password', 'region']),
   }),
   toUpdate: (u) => pick(u, ['name', 'status', 'email', 'phone', 'role', 'region']),
+  // POST/PUT /users echo the saved row including the bcrypt hash; never keep it in the store.
+  mapItem: ({ password: _pw, ...user }) => user,
 });

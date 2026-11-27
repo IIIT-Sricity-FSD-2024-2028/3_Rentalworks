@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { useDispatch } from 'react-redux';
 import { sendAnnouncement } from '../../../features/superadmin/superAdminSlice';
 
@@ -31,19 +31,19 @@ function getActorInfo(item) {
 export default function Notifications({ data, showToast }) {
   const dispatch = useDispatch();
   const { users, properties, notifications } = data;
-  const [activeTab, setActiveTab] = useState('inbox');
-  const [actorFilter, setActorFilter] = useState('all');
+  const [activeTab, setActiveTab] = useScreenState('inbox');
+  const [actorFilter, setActorFilter] = useScreenState('all');
 
   // Compose State
-  const [type, setType] = useState('announcement');
-  const [priority, setPriority] = useState('routine');
-  const [role, setRole] = useState('all');
-  const [property, setProperty] = useState('all');
-  const [targetUser, setTargetUser] = useState('all');
-  const [title, setTitle] = useState('');
-  const [message, setMessage] = useState('');
-  const [scheduleAt, setScheduleAt] = useState('');
-  const [sending, setSending] = useState(false);
+  const [type, setType] = useScreenState('announcement');
+  const [priority, setPriority] = useScreenState('routine');
+  const [role, setRole] = useScreenState('all');
+  const [property, setProperty] = useScreenState('all');
+  const [targetUser, setTargetUser] = useScreenState('all');
+  const [title, setTitle] = useScreenState('');
+  const [message, setMessage] = useScreenState('');
+  const [scheduleAt, setScheduleAt] = useScreenState('');
+  const [sending, setSending] = useScreenState(false);
 
   const activeUsers = users.filter(user => user.status === 'active');
   const recipients = activeUsers.filter(user =>

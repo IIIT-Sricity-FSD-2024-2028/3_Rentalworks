@@ -6,7 +6,9 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as fs from 'fs';
 import * as path from 'path';
 import helmet from 'helmet';
+import type { Request } from 'express';
 import { HttpErrorFilter } from './middleware/http-error.filter';
+import { sessionCorsOptions } from './users/browser-session';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -23,15 +25,21 @@ async function bootstrap() {
   // Enable CORS for frontend integration
   // Only our own frontend may call the API from a browser. Set CORS_ORIGINS
   // (comma-separated) for other hosts, e.g. the deployed site's URL.
+  // /users/session/* uses a credentialed, path-scoped cookie, so those paths
+  // follow the browser-session origin rules instead (SESSION_FRONTEND_ORIGINS).
   const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173')
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean);
-  app.enableCors({
-    origin: allowedOrigins,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
+  app.enableCors((request: Request, callback) => {
+    const session = sessionCorsOptions(request);
+    if (session.credentials) return callback(null, session);
+    callback(null, {
+      origin: allowedOrigins,
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      preflightContinue: false,
+      optionsSuccessStatus: 204,
+    });
   });
 
   // Enable validation globally

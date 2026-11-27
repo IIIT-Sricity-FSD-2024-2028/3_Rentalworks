@@ -195,7 +195,7 @@ export function mapIssueFromDb(i) {
   };
 }
 
-/** tenant_stays row → one occupied bed. */
+/** tenant_stays row → one occupied bed (current or past). */
 export function mapStayFromDb(s) {
   return {
     id: s.id,
@@ -207,6 +207,7 @@ export function mapStayFromDb(s) {
     roomNumber: s.roomEntity?.roomNumber || '',
     bedNumber: s.bedNumber || '',
     moveInDate: s.moveInDate || null,
+    moveOutDate: s.moveOutDate || null,
     status: normalizeStatus(s.status),
   };
 }

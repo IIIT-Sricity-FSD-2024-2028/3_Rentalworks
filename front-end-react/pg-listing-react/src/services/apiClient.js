@@ -4,7 +4,11 @@
 //  base URL, auth headers and error handling live in a single place.
 // ===================================================================
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const localApiHost = typeof window !== 'undefined' && window.location.hostname === '127.0.0.1'
+  ? '127.0.0.1'
+  : 'localhost';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || `http://${localApiHost}:3000`;
+export const browserSessionOptions = { auth: false, credentials: 'include' };
 
 // The Redux store is injected at startup (see app/store.js) so the client can
 // read the signed-in user without a circular import.
@@ -52,7 +56,7 @@ function extractMessage(data, status) {
  * @param {object} options   { method, body, headers, auth = true }
  *   body may be a plain object (sent as JSON) or FormData (sent as multipart).
  */
-export async function apiRequest(path, { method = 'GET', body, headers = {}, auth = true } = {}) {
+export async function apiRequest(path, { method = 'GET', body, headers = {}, auth = true, credentials, responseType } = {}) {
   const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
   const finalHeaders = {
     ...(isForm || body === undefined ? {} : { 'Content-Type': 'application/json' }),
@@ -65,6 +69,7 @@ export async function apiRequest(path, { method = 'GET', body, headers = {}, aut
     response = await fetch(`${API_BASE_URL}${path}`, {
       method,
       headers: finalHeaders,
+      credentials,
       body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
     });
   } catch {
@@ -72,6 +77,7 @@ export async function apiRequest(path, { method = 'GET', body, headers = {}, aut
   }
 
   if (response.status === 204) return null;
+  if (response.ok && responseType === 'blob') return response.blob();
 
   const text = await response.text();
   let data = null;
@@ -84,8 +90,9 @@ export async function apiRequest(path, { method = 'GET', body, headers = {}, aut
   }
 
   if (!response.ok) {
-    if (response.status === 401 && auth && storeRef?.getState()?.auth?.token) {
-      // Signed token rejected/expired: end the session everywhere.
+    const sentAuthorization = finalHeaders.Authorization;
+    if (response.status === 401 && auth && sentAuthorization && sentAuthorization === authHeaders().Authorization) {
+      // A response from an earlier sign-in must not expire the current session.
       storeRef.dispatch({ type: 'auth/sessionExpired' });
     }
     throw new ApiError(extractMessage(data, response.status), response.status, data);

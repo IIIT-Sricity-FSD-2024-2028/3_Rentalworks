@@ -1,5 +1,6 @@
 import Icon from '../components/Icon';
-import React, { useState } from 'react';
+import React from 'react';
+import useScreenState from '../../../app/useScreenState';
 
 // Default policy rules
 const DEFAULT_POLICY = {
@@ -20,11 +21,11 @@ const DEFAULT_POLICY = {
 
 // Policy: Configure PG rules, finances, and guidelines
 export default function Policy({ policy = {}, onSavePolicy, onResetPolicy }) {
-  const [formData, setFormData] = useState(
+  const [formData, setFormData] = useScreenState(
     Object.assign({}, DEFAULT_POLICY, policy)
   );
-  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [isResetModalOpen, setIsResetModalOpen] = useScreenState(false);
+  const [errorMessage, setErrorMessage] = useScreenState('');
 
 
   const handleChange = (e) => {

@@ -104,3 +104,4 @@ export const selectSuperAdminOverview = createSelector(
   (loaded, users, properties, payments, notifications) => (loaded ? { users, properties, payments, notifications } : null),
 );
 export const selectSuperAdmin = createSelector([(s) => s.superAdmin, selectSuperAdminOverview], (state, overview) => ({ ...state, overview }));
+export const selectSuperAdminProfile = (s) => s.superAdmin.profile;

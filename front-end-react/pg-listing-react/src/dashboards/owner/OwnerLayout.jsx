@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
 
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -48,7 +47,7 @@ import {
   addOwnerPhotos,
   removeOwnerPhoto,
 } from '../../features/owner/ownerSlices';
-import { logout } from '../../features/auth/authSlice';
+import { useSignOut } from '../../app/hooks';
 
 import './style.css';
 
@@ -60,22 +59,13 @@ const useAction = (thunk) => {
   return (arg) => dispatch(thunk(arg)).then((a) => !a.error);
 };
 
-const useOwnerLogout = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  return () => {
-    dispatch(logout());
-    navigate('/login', { replace: true });
-  };
-};
-
 export default function OwnerLayout() {
   const dispatch = useDispatch();
   const { status, error } = useSelector(selectOwner);
   const user = useSelector(selectOwnerUser);
   const unreadNotifsCount = useSelector(selectOwnerUnreadCount);
   const openIssuesCount = useSelector(selectOwnerOpenIssues);
-  const handleLogout = useOwnerLogout();
+  const handleLogout = useSignOut();
 
   // Initial load + background refresh (every 30s and when the tab regains focus).
   useEffect(() => {
@@ -198,7 +188,7 @@ export function OwnerPolicyRoute() {
 export function OwnerProfileRoute() {
   const dispatch = useDispatch();
   const owner = useSelector(selectOwner);
-  const handleLogout = useOwnerLogout();
+  const handleLogout = useSignOut();
   return <Profile profile={owner.profile} properties={owner.properties} onSaveProfile={useAction(saveOwnerProfile)} onChangePassword={(arg) => dispatch(changeOwnerPassword(arg)).unwrap()} onLogout={handleLogout} allData={owner} />;
 }
 

@@ -1,5 +1,6 @@
 import Icon from '../components/Icon';
-import React, { useState } from 'react';
+import React from 'react';
+import useScreenState from '../../../app/useScreenState';
 
 // Notifications: View, filter, mark read, send messages, and clear alerts
 export default function Notifications({
@@ -10,17 +11,18 @@ export default function Notifications({
   onClearAllNotifications,
   onSendNotification,
 }) {
-  const [currentFilter, setCurrentFilter] = useState('all');
-  const [isSendModalOpen, setIsSendModalOpen] = useState(false);
-  const [isClearAllModalOpen, setIsClearAllModalOpen] = useState(false);
-  const [deletingNotif, setDeletingNotif] = useState(null);
+  const [currentFilter, setCurrentFilter] = useScreenState('all');
+  const [isSendModalOpen, setIsSendModalOpen] = useScreenState(false);
+  const [isClearAllModalOpen, setIsClearAllModalOpen] = useScreenState(false);
+  const [deletingNotifId, setDeletingNotif] = useScreenState(null);
+  const deletingNotif = notifications.find((notification) => notification.id === deletingNotifId);
 
-  const [sendForm, setSendForm] = useState({
+  const [sendForm, setSendForm] = useScreenState({
     recipient: 'Warden',
     title: '',
     message: '',
   });
-  const [sendError, setSendError] = useState('');
+  const [sendError, setSendError] = useScreenState('');
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -187,7 +189,7 @@ export default function Notifications({
                   title="Delete notification"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setDeletingNotif(n);
+                    setDeletingNotif(n.id);
                   }}
                 >
                   <Icon className="material-icons icon-18">delete</Icon>

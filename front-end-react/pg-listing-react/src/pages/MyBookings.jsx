@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
+import useScreenState from '../app/useScreenState';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { runThunk } from '../app/hooks';
@@ -22,7 +23,8 @@ export default function MyBookings() {
   const currentUser = useSelector(selectCurrentUser);
   const { items: bookings, status, error } = useSelector(selectMyBookings);
   const loading = (status === 'idle' || status === 'loading') && bookings.length === 0;
-  const [pass, setPass] = useState(null);
+  const [passId, setPass] = useScreenState(null);
+  const pass = bookings.find((booking) => booking.id === passId);
 
   useEffect(() => {
     if (currentUser?.id) dispatch(fetchMyBookings());
@@ -155,7 +157,7 @@ export default function MyBookings() {
                     <button
                       className="btn-nav-primary"
                       style={{ padding: '8px 16px', fontSize: '13px' }}
-                      onClick={() => setPass(b)}
+                      onClick={() => setPass(b.id)}
                     >
                       View Move-in Pass
                     </button>

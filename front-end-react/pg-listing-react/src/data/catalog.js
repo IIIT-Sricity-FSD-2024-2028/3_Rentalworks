@@ -80,10 +80,29 @@ export const SUBSCRIPTION_PLANS = [
 export const PLAN_PRICES = Object.fromEntries(SUBSCRIPTION_PLANS.map((p) => [p.name, p.price]));
 
 /** 'Monthly' | 'monthly' | 'MONTHLY' | 'Yearly Plan' → plan object, or null. */
-export function findPlan(value) {
+export function findPlan(value, plans = SUBSCRIPTION_PLANS) {
   const s = String(value || '').toUpperCase().replace(/\s*PLAN$/, '').trim();
-  return SUBSCRIPTION_PLANS.find((p) => p.name === s) || null;
+  return plans.find((p) => p.name === s) || null;
 }
+
+export const DEFAULT_SERVICES = [
+  {
+    name: 'Laundry', type: 'Laundry', price: 50, priceLabel: '₹50 per kg', pricingModel: 'per_kg',
+    icon: 'local_laundry_service', description: 'Washing, drying, and ironing clothes service',
+  },
+  {
+    name: 'Parking', type: 'Parking', price: 500, priceLabel: '₹500/month', pricingModel: 'per_month',
+    icon: 'directions_car', description: 'Reserved slot for two or four wheeler parking',
+  },
+  {
+    name: 'Room Cleaning', type: 'Cleaning', price: 150, priceLabel: '₹150 per session', pricingModel: 'per_session',
+    icon: 'cleaning_services', description: 'Thorough room deep cleaning and floor mop',
+  },
+  {
+    name: 'Pantry & Appliances', type: 'Maintenance', price: 0, priceLabel: 'Included in rent', pricingModel: 'included_in_rent',
+    icon: 'coffee', description: 'Common microwave, toaster, and kettle maintenance',
+  },
+];
 
 /** roommate_profiles lifestyle options, as stored. */
 export const LIFESTYLE_OPTIONS = {

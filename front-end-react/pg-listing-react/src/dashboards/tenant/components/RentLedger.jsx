@@ -1,4 +1,6 @@
 import React from 'react';
+import { formatINR } from '../../../utils/normalize';
+import ServiceUsageList from './ServiceUsageList';
 
 const fmt = (v) => {
   if (!v) return '—';
@@ -15,12 +17,18 @@ const STATUS = {
 };
 
 /** Billing & Rent Ledger: past cycles with receipts, current/next cycle with Pay Now. */
-export default function RentLedger({ dues, onPay, onReceipt }) {
+export default function RentLedger({ dues, pendingCharges = [], onPay, onReceipt }) {
   const rows = [...dues].sort((a, b) => String(a.periodStart).localeCompare(String(b.periodStart)));
   return (
     <div className="card" style={{ marginBottom: 20 }}>
       <div className="card-body">
         <div className="card-title">Billing &amp; Rent Ledger</div>
+        {pendingCharges.length > 0 && (
+          <section className="service-usage-pending" aria-label="Unbilled service usage">
+            <strong>Completed services awaiting a rent bill</strong>
+            <ServiceUsageList charges={pendingCharges} formatDate={fmt} />
+          </section>
+        )}
         {rows.length === 0 ? (
           <p style={{ color: '#64748b', fontSize: 13, marginTop: 10 }}>No billing cycles yet.</p>
         ) : (
@@ -45,7 +53,15 @@ export default function RentLedger({ dues, onPay, onReceipt }) {
                       <td style={{ padding: '10px 6px' }}>#{d.cycleNo}</td>
                       <td>{fmt(d.periodStart)} – {fmt(d.periodEnd)}</td>
                       <td>{fmt(d.dueDate)}</td>
-                      <td>₹{Number(d.amount || 0).toLocaleString('en-IN')}</td>
+                      <td>
+                        {formatINR(d.amount)}
+                        {d.serviceCharges?.length > 0 && (
+                          <details className="service-usage-details">
+                            <summary>Rent {formatINR(d.rentAmount)} + services {formatINR(d.serviceAmount)}</summary>
+                            <ServiceUsageList charges={d.serviceCharges} formatDate={fmt} />
+                          </details>
+                        )}
+                      </td>
                       <td>
                         <span style={{ background: tag.bg, color: tag.fg, padding: '3px 10px', borderRadius: 99, fontWeight: 700, fontSize: 11 }}>
                           {tag.label}

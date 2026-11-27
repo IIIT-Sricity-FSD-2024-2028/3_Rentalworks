@@ -2,6 +2,7 @@ import { PaymentGatewayService } from '../payments/payment-gateway.service';
 import { rentReceipt } from '../payments/payment-gateway.controller';
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   Logger,
@@ -9,7 +10,7 @@ import {
   OnApplicationBootstrap,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { DataSource, EntityManager, In } from 'typeorm';
+import { DataSource, EntityManager, In, IsNull } from 'typeorm';
 import { RentDue } from './rent-due.entity';
 import {
   addDays,
@@ -29,6 +30,9 @@ import { User } from '../users/user.entity';
 import { Notification } from '../notifications/notification.entity';
 import { WardenNotification } from '../warden-notifications/warden-notification.entity';
 import { AuditLog } from '../warden-actions/audit-log.entity';
+import { ServiceRequest } from '../service-requests/service-request.entity';
+import { billedAmountForDue, chargeTotal, lockTenantBilling, serviceBillingForDues, toCents } from './service-billing';
+import type { ServiceCharge } from './service-billing';
 
 const GENERATE_DAYS_BEFORE = 7; // next cycle's due row is created 7 days before its dueDate
 const MAX_CATCH_UP_CYCLES = 6;
@@ -181,7 +185,10 @@ export class RentDuesService implements OnApplicationBootstrap, OnModuleDestroy 
 
   private async advanceStatuses(manager: EntityManager, today: string, summary: { reminders: number; overdue: number }) {
     const dueRepo = manager.getRepository(RentDue);
-    const unpaid = await dueRepo.find({ where: { status: In(['upcoming', 'due_soon', 'overdue']) } });
+    const unpaid = await dueRepo.createQueryBuilder('due')
+      .where('due.status IN (:...statuses)', { statuses: ['upcoming', 'due_soon', 'overdue'] })
+      .setLock('pessimistic_write')
+      .getMany();
 
     for (const due of unpaid) {
       const next = classifyUnpaid(due.dueDate, today);
@@ -265,24 +272,41 @@ export class RentDuesService implements OnApplicationBootstrap, OnModuleDestroy 
   /* ------------------------------ queries ------------------------------ */
 
   /** Adds `effectiveStatus` + countdown so the UI is right even between job runs. */
-  private decorate(due: RentDue, today = todayIST()) {
+  private decorate(due: RentDue, today = todayIST(), serviceCharges: ServiceCharge[] = []) {
     const unpaid = ['upcoming', 'due_soon', 'overdue'].includes(due.status);
     const effectiveStatus = unpaid ? classifyUnpaid(due.dueDate, today) : due.status;
+    const serviceAmount = chargeTotal(serviceCharges);
     return {
       ...due,
-      amount: Number(due.amount),
+      amount: (toCents(due.amount) + toCents(serviceAmount)) / 100,
+      rentAmount: Number(due.amount),
+      serviceAmount,
+      serviceCharges,
       effectiveStatus,
       daysUntilDue: diffDays(due.dueDate, today), // negative = days overdue
     };
   }
 
   async findMine(tenantId: number) {
+    return (await this.findBillingMine(tenantId)).dues;
+  }
+
+  async findBillingMine(tenantId: number) {
     await this.syncIfStale();
-    const dues = await this.dataSource.getRepository(RentDue).find({ where: { tenantId }, order: { cycleNo: 'ASC' } });
-    const payments = dues.length
-      ? await this.dataSource.getRepository(Payment).findBy({ id: In(dues.map((d) => d.paymentId).filter(Boolean) as number[]) })
-      : [];
-    return dues.map((d) => ({ ...this.decorate(d), payment: payments.find((p) => p.id === d.paymentId) || null }));
+    return this.dataSource.transaction('REPEATABLE READ', async (manager) => {
+      const dues = await manager.getRepository(RentDue).find({ where: { tenantId }, order: { periodStart: 'ASC' } });
+      const { byDueId, pendingCharges } = await serviceBillingForDues(manager, tenantId, dues);
+      const paymentIds = dues.flatMap((due) => due.paymentId == null ? [] : [due.paymentId]);
+      const payments = paymentIds.length ? await manager.getRepository(Payment).findBy({ id: In(paymentIds) }) : [];
+      const today = todayIST();
+      return {
+        dues: dues.map((due) => ({
+          ...this.decorate(due, today, byDueId.get(due.id)),
+          payment: payments.find((payment) => payment.id === due.paymentId) ?? null,
+        })),
+        pendingCharges,
+      };
+    });
   }
 
   /** Warden/owner/admin view of one tenant's whole ledger. */
@@ -310,12 +334,13 @@ export class RentDuesService implements OnApplicationBootstrap, OnModuleDestroy 
         .orderBy('b.id', 'DESC')
         .getOne();
       const dues = await dueRepo.find({ where: { tenantId: stay.tenantId }, order: { cycleNo: 'ASC' } });
-      const due = dues.find((d) => d.dueDate.startsWith(month));
+      const due = dues.find((d) => d.propertyId === stay.propertyId && d.dueDate.startsWith(month));
       const anchor = String(booking?.checkIn || stay.moveInDate).slice(0, 10);
 
       let entry: any = null;
       if (due) {
-        entry = this.decorate(due, today);
+        const { byDueId } = await serviceBillingForDues(this.dataSource.manager, stay.tenantId, dues);
+        entry = this.decorate(due, today, byDueId.get(due.id));
       } else if (booking) {
         // Month not generated yet: project it so the warden still sees what is coming.
         const monthStart = `${month}-01`;
@@ -375,7 +400,11 @@ export class RentDuesService implements OnApplicationBootstrap, OnModuleDestroy 
   /* ------------------------------ actions ------------------------------ */
 
   private async loadDueForUpdate(manager: EntityManager, id: number) {
-    const due = await manager.getRepository(RentDue).findOne({ where: { id }, lock: { mode: 'pessimistic_write' } });
+    const repo = manager.getRepository(RentDue);
+    const initial = await repo.findOneBy({ id });
+    if (!initial) throw new NotFoundException(`Rent due ${id} not found`);
+    await lockTenantBilling(manager, initial.tenantId);
+    const due = await repo.findOne({ where: { id }, lock: { mode: 'pessimistic_write' } });
     if (!due) throw new NotFoundException(`Rent due ${id} not found`);
     if (due.status === 'paid' || due.status === 'waived') throw new BadRequestException(`This rent is already ${due.status}`);
     return due;
@@ -384,14 +413,20 @@ export class RentDuesService implements OnApplicationBootstrap, OnModuleDestroy 
   private async recordRentPayment(
     manager: EntityManager,
     due: RentDue,
-    args: { method: string; transactionId?: string; status?: string; clearance?: string },
+    args: { method: string; transactionId?: string; expectedAmount?: number },
   ) {
+    const dues = await manager.getRepository(RentDue).findBy({ tenantId: due.tenantId });
+    const { byDueId } = await serviceBillingForDues(manager, due.tenantId, dues);
+    const charges = byDueId.get(due.id) ?? [];
+    const amount = (toCents(due.amount) + toCents(chargeTotal(charges))) / 100;
+    if (args.expectedAmount != null && toCents(args.expectedAmount) !== toCents(amount)) {
+      throw new ConflictException('Your bill changed. Review the updated total before paying.');
+    }
     const property = await manager.getRepository(Property).findOneBy({ id: due.propertyId });
-    const amount = Number(due.amount);
-    const platformFee = property?.commissionRate ? (amount * Number(property.commissionRate)) / 100 : 0;
+    const platformFee = property?.commissionRate ? (Number(due.amount) * Number(property.commissionRate)) / 100 : 0;
     const stay = await manager.getRepository(TenantStay).findOne({ where: { tenantId: due.tenantId, status: 'active' }, relations: { roomEntity: true } });
     const paymentRepo = manager.getRepository(Payment);
-    return paymentRepo.save(
+    const payment = await paymentRepo.save(
       paymentRepo.create({
         tenantId: due.tenantId,
         propertyId: due.propertyId,
@@ -401,33 +436,51 @@ export class RentDuesService implements OnApplicationBootstrap, OnModuleDestroy 
         method: args.method,
         transactionId: args.transactionId || `TXN-${Date.now()}`,
         paidDate: todayIST(),
-        status: args.status || 'verified',
-        clearance: args.clearance || 'Cleared',
+        status: 'verified',
+        clearance: 'Cleared',
         platformFee,
-        rentAmount: amount,
+        rentAmount: Number(due.amount),
         depositAmount: 0,
         feeAmount: 0,
         kind: 'rent',
         bedNumber: stay?.bedNumber ?? undefined,
       } as any),
     ) as unknown as Payment;
+    if (charges.length) {
+      const linked = await manager.getRepository(ServiceRequest).update(
+        { id: In(charges.map(({ id }) => id)), rentDueId: IsNull() },
+        { rentDueId: due.id },
+      );
+      if (linked.affected !== charges.length) throw new ConflictException('Your service charges changed. Please try again.');
+    }
+    return { payment, charges, amount };
   }
 
   /** Tenant pays their own due. Amount ALWAYS comes from the ledger row, never from the client. */
-  async pay(dueId: number, actor: Actor, body: { method?: string; gatewayOrderId?: string; gatewayPaymentId?: string; gatewaySignature?: string }) {
+  async pay(
+    dueId: number,
+    actor: Actor,
+    body: { method?: string; expectedAmount?: number; gatewayOrderId?: string; gatewayPaymentId?: string; gatewaySignature?: string },
+  ) {
     return this.dataSource.transaction(async (manager) => {
       const due = await this.loadDueForUpdate(manager, dueId);
       if (actor.role === 'tenant' && Number(actor.id) !== due.tenantId) throw new ForbiddenException('This rent belongs to another tenant');
       if (['paid', 'waived'].includes(String(due.status))) throw new BadRequestException('This rent is already settled');
-      // The gateway payment must be for exactly this due and its amount.
+      // Rent plus this month's service usage. The client's total must match it,
+      // and the gateway payment must be for exactly this due and this amount.
+      const total = await billedAmountForDue(manager, due);
+      if (body.expectedAmount != null && toCents(body.expectedAmount) !== toCents(total)) {
+        throw new ConflictException('Your bill changed. Review the updated total before paying.');
+      }
       const paid = await this.gateway.verify(
         { orderId: body.gatewayOrderId, paymentId: body.gatewayPaymentId, signature: body.gatewaySignature },
-        Number(due.amount),
+        total,
         rentReceipt(due.id),
       );
-      const payment = await this.recordRentPayment(manager, due, {
+      const { payment, charges, amount } = await this.recordRentPayment(manager, due, {
         method: paid.mode === 'test' ? 'TEST' : (body.method || 'ONLINE').toUpperCase(),
         transactionId: paid.transactionId,
+        expectedAmount: total,
       });
       due.status = 'paid';
       due.paymentId = payment.id;
@@ -436,11 +489,11 @@ export class RentDuesService implements OnApplicationBootstrap, OnModuleDestroy 
       await manager.getRepository(RentDue).save(due);
       await this.notifyTenant(manager, due, {
         title: 'Rent payment received',
-        message: `We received ${inr(due.amount)} for ${fmtDate(due.periodStart)} – ${fmtDate(due.periodEnd)}. Transaction ${payment.transactionId}.`,
+        message: `We received ${inr(amount)} for ${fmtDate(due.periodStart)} – ${fmtDate(due.periodEnd)}. Transaction ${payment.transactionId}.`,
         type: 'payment_receipt',
         priority: 'normal',
       });
-      return { due: this.decorate(due), payment };
+      return { due: this.decorate(due, todayIST(), charges), payment };
     });
   }
 
@@ -450,7 +503,7 @@ export class RentDuesService implements OnApplicationBootstrap, OnModuleDestroy 
       const due = await this.loadDueForUpdate(manager, dueId);
       const warden = actor.id ? await manager.getRepository(User).findOneBy({ id: actor.id }) : null;
       const tenant = await manager.getRepository(User).findOneBy({ id: due.tenantId });
-      const payment = await this.recordRentPayment(manager, due, { method: 'CASH', transactionId: `CASH-${Date.now()}` });
+      const { payment, charges, amount } = await this.recordRentPayment(manager, due, { method: 'CASH', transactionId: `CASH-${Date.now()}` });
       due.status = 'paid';
       due.paymentId = payment.id;
       due.paidAt = new Date();
@@ -458,7 +511,7 @@ export class RentDuesService implements OnApplicationBootstrap, OnModuleDestroy 
       await manager.getRepository(RentDue).save(due);
       await this.notifyTenant(manager, due, {
         title: 'Cash rent payment recorded',
-        message: `Your warden recorded a cash payment of ${inr(due.amount)} for ${fmtDate(due.periodStart)} – ${fmtDate(due.periodEnd)}.`,
+        message: `Your warden recorded a cash payment of ${inr(amount)} for ${fmtDate(due.periodStart)} – ${fmtDate(due.periodEnd)}.`,
         type: 'payment_receipt',
         priority: 'normal',
         byUserId: actor.id,
@@ -472,9 +525,9 @@ export class RentDuesService implements OnApplicationBootstrap, OnModuleDestroy 
         tenantName: tenant?.name ?? null,
         propertyId: due.propertyId,
         reason: note || null,
-        details: { dueId: due.id, amount: Number(due.amount), period: [due.periodStart, due.periodEnd] },
+        details: { dueId: due.id, amount, period: [due.periodStart, due.periodEnd] },
       });
-      return { due: this.decorate(due), payment };
+      return { due: this.decorate(due, todayIST(), charges), payment };
     });
   }
 

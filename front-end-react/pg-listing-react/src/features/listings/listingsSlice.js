@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
+import { buildFaqs } from '../../data/faqs';
 import { http, asArray } from '../../services/apiClient';
 import { withNormalizedStatus } from '../../utils/normalize';
 import { mapProperty, isPublicProperty } from './listingMappers';
@@ -180,3 +181,6 @@ export const selectListingDetail = createSelector([(s) => s.listings.detail, sel
     listing: property ? mapProperty(property, roomsOf(rooms, property.id)) : null,
   };
 });
+
+// Derive FAQs from the same listing data shown elsewhere on the page.
+export const selectListingFaqs = createSelector([selectListingDetail], ({ listing }) => buildFaqs(listing));

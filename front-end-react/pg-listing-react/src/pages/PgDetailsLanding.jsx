@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import useScreenState from '../app/useScreenState';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { buildFaqs } from '../data/faqs';
-import { fetchListingById, selectListingDetail } from '../features/listings/listingsSlice';
+import { fetchListingById, selectListingDetail, selectListingFaqs } from '../features/listings/listingsSlice';
 import HouseRules from '../components/HouseRules';
 import SharingRents from '../components/SharingRents';
 import { startBooking, checkGenderEligibility, isSingleRoom } from '../features/booking/bookingSlice';
@@ -18,14 +18,15 @@ export default function PgDetailsLanding() {
   const dispatch = useDispatch();
   const currentUser = useSelector(selectCurrentUser);
   const { listing, status, error } = useSelector(selectListingDetail);
+  const faqs = useSelector(selectListingFaqs);
 
-  const [expandedFaq, setExpandedFaq] = useState(null);
-  const [eligibilityError, setEligibilityError] = useState('');
-  const [roleError, setRoleError] = useState('');
-  const [promptGenderModalOpen, setPromptGenderModalOpen] = useState(false);
-  const [selectedGenderChoice, setSelectedGenderChoice] = useState('female');
-  const [genderSaving, setGenderSaving] = useState(false);
-  const [pendingRoom, setPendingRoom] = useState(null);
+  const [expandedFaq, setExpandedFaq] = useScreenState(null);
+  const [eligibilityError, setEligibilityError] = useScreenState('');
+  const [roleError, setRoleError] = useScreenState('');
+  const [promptGenderModalOpen, setPromptGenderModalOpen] = useScreenState(false);
+  const [selectedGenderChoice, setSelectedGenderChoice] = useScreenState('female');
+  const [genderSaving, setGenderSaving] = useScreenState(false);
+  const [pendingRoomId, setPendingRoom] = useScreenState(null);
 
   useEffect(() => {
     dispatch(fetchListingById(id));
@@ -36,7 +37,7 @@ export default function PgDetailsLanding() {
   const loading = status === 'idle' || status === 'loading' || String(listing?.id ?? '') !== String(id) && status !== 'failed';
   const pg = listing;
   const displayRooms = pg?.rooms || [];
-  const faqs = buildFaqs(pg);
+  const pendingRoom = displayRooms.find((room) => room.id === pendingRoomId);
 
   // After signing in, the login page sends the user back here with the room they picked.
   useEffect(() => {
@@ -58,7 +59,7 @@ export default function PgDetailsLanding() {
 
     const eligibility = checkGenderEligibility(pg, user);
     if (eligibility.needsGender) {
-      setPendingRoom(room);
+      setPendingRoom(room.id);
       setSelectedGenderChoice(pg.gender === 'boys' ? 'male' : 'female');
       setPromptGenderModalOpen(true);
       return;

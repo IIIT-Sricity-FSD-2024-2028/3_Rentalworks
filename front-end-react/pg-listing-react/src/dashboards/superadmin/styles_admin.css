@@ -360,7 +360,7 @@ ul { list-style: none; }
 .session-item div { flex: 1; }
 
 /* ===== MODAL ===== */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(203, 213, 225, 0.55); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
 .modal-overlay.show { opacity: 1; pointer-events: all; }
 .modal { background: white; border-radius: var(--radius-lg); padding: 26px; width: 460px; max-width: 95vw; box-shadow: var(--shadow-lg); transform: scale(0.95); transition: transform 0.2s; }
 .modal-overlay.show .modal { transform: scale(1); }

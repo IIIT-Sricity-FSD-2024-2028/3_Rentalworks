@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
+import useScreenState from '../app/useScreenState';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { logout, selectCurrentUser, ROLE_HOME } from '../features/auth/authSlice';
+import { useSelector } from 'react-redux';
+import { selectCurrentUser, ROLE_HOME } from '../features/auth/authSlice';
+import { useSignOut } from '../app/hooks';
 
 const PORTALS = {
   tenant: { label: 'Tenant Portal', icon: 'dashboard' },
@@ -14,16 +16,12 @@ const PORTALS = {
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const dispatch = useDispatch();
+  const handleLogout = useSignOut('/');
   const currentUser = useSelector(selectCurrentUser);
   const portal = currentUser ? PORTALS[currentUser.role] : null;
   const canBook = currentUser && ['guest', 'tenant'].includes(currentUser.role);
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/', { replace: true });
-  };
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useScreenState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useScreenState(false);
 
   const isDetailsPage = location.pathname.startsWith('/pg/') || location.pathname.startsWith('/pgs/');
   const isListingPage = location.pathname === '/listings' || location.pathname === '/pgs';

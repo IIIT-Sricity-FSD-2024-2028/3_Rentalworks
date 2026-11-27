@@ -1,62 +1,75 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { useDispatch, useSelector } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
-import { adminUsers, adminSubscriptions, selectAdminSubscriptions, selectAdminSubscriptionStats } from '../../../features/admin/adminSlices';
+import { adminUsers, adminSubscriptions } from '../../../features/admin/adminSlices';
 import { SUBSCRIPTION_PLANS } from '../../../data/catalog';
+import { fetchSubscriptionReport, selectSubscriptions, selectSubscriptionSummary } from '../../../features/subscriptions/subscriptionReportSlice';
+import useSubscriptionReport from '../../../features/subscriptions/useSubscriptionReport';
+import { formatINR } from '../../../utils/normalize';
+import { formatSubscriptionAmount } from '../../../utils/revenue';
 import Modal from '../components/Modal';
-
-const BILLING = { MONTHLY: 'Monthly', YEARLY: 'Yearly', LIFETIME: 'One-time' };
 
 export default function Subscriptions() {
   const dispatch = useDispatch();
-  const subscriptions = useSelector(selectAdminSubscriptions);
-  const { subscriptions: counts, payments } = useSelector(selectAdminSubscriptionStats);
-  const stats = { ...counts, totalRevenue: payments.totalRevenue };
-  const isLoading = useSelector(adminUsers.selectors.selectIsLoading);
-  const loading = isLoading && subscriptions.length === 0;
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
-  const [planFilter, setPlanFilter] = useState('ALL');
-  const [receiptModal, setReceiptModal] = useState(null);
+  // Plans, amounts and receipts come from the server's subscription report.
+  const { data, status, error } = useSubscriptionReport();
+  const reportRows = useSelector(selectSubscriptions);
+  const owners = useSelector(adminUsers.selectors.selectItems);
+  // The report lists owners who have had a plan; add the others so the admin can activate their first one.
+  const subscriptions = useMemo(() => {
+    const withPlan = new Set(reportRows.map((r) => String(r.ownerId)));
+    const withoutPlan = owners
+      .filter((o) => o.role === 'owner' && !withPlan.has(String(o.id)))
+      .map((o) => ({
+        id: `owner-${o.id}`, ownerId: o.id, ownerName: o.name, ownerEmail: o.email,
+        planType: 'NONE', planName: 'No plan', amount: 0, currency: 'INR',
+        startDate: null, endDate: null, status: 'INACTIVE', receipt: null,
+      }));
+    return [...reportRows, ...withoutPlan];
+  }, [reportRows, owners]);
+  const stats = useSelector(selectSubscriptionSummary);
+  const loading = !data && (status === 'idle' || status === 'loading');
+  const [search, setSearch] = useScreenState('');
+  const [statusFilter, setStatusFilter] = useScreenState('ALL');
+  const [planFilter, setPlanFilter] = useScreenState('ALL');
+  const [receiptId, setReceiptModal] = useScreenState(null);
+  const selectedSubscription = subscriptions.find((subscription) => subscription.id === receiptId);
+  const receipt = selectedSubscription?.receipt;
   // { sub, planType } while assigning / changing a plan; { sub, cancel: true } while cancelling.
-  const [planModal, setPlanModal] = useState(null);
+  const [planModal, setPlanModal] = useScreenState(null);
   const saving = useSelector(adminSubscriptions.selectors.selectMutating);
 
   useEffect(() => {
     dispatch(adminUsers.thunks.fetchAll());
-    dispatch(adminSubscriptions.thunks.fetchAll());
   }, [dispatch]);
 
-  const loadData = async () => {
-    await dispatch(adminUsers.thunks.fetchAll());
-    return runThunk(dispatch, adminSubscriptions.thunks.fetchAll(), { success: 'Subscriptions refreshed' });
-  };
+  const loadData = () => runThunk(dispatch, fetchSubscriptionReport(), { success: 'Subscriptions refreshed' });
 
   /** Activate a new plan (POST) or cancel the current one (PATCH status). The server sets price and dates. */
   const savePlan = async () => {
     const { sub } = planModal;
     const action = planModal.cancel
-      ? adminSubscriptions.thunks.updateItem({ id: sub.subscriptionId, changes: { status: 'cancelled' } })
+      ? adminSubscriptions.thunks.updateItem({ id: sub.id, changes: { status: 'cancelled' } })
       : adminSubscriptions.thunks.createItem({ ownerId: sub.ownerId, planType: planModal.planType });
-    const name = sub.owner?.name || 'owner';
+    const name = sub.ownerName || 'owner';
     const { ok } = await runThunk(dispatch, action, {
       success: planModal.cancel ? `Plan cancelled for ${name}` : `${planModal.planType.charAt(0) + planModal.planType.slice(1).toLowerCase()} plan activated for ${name}`,
     });
     if (ok) {
-      await Promise.all([dispatch(adminSubscriptions.thunks.fetchAll()), dispatch(adminUsers.thunks.fetchAll())]);
+      await dispatch(fetchSubscriptionReport());
       setPlanModal(null);
     }
   };
 
   const filtered = subscriptions.filter(sub => {
-    const ownerName = (sub.owner?.name || '').toLowerCase();
-    const ownerEmail = (sub.owner?.email || '').toLowerCase();
-    const receipt = (sub.receiptNumber || '').toLowerCase();
+    const ownerName = (sub.ownerName || '').toLowerCase();
+    const ownerEmail = (sub.ownerEmail || '').toLowerCase();
+    const receiptNumber = (sub.receipt?.receiptNumber || '').toLowerCase();
     const q = search.toLowerCase().trim();
-    const matchesSearch = !q || ownerName.includes(q) || ownerEmail.includes(q) || receipt.includes(q);
+    const matchesSearch = !q || ownerName.includes(q) || ownerEmail.includes(q) || receiptNumber.includes(q);
 
-    const subStatus = sub.evaluatedStatus || sub.status || 'ACTIVE';
-    const matchesStatus = statusFilter === 'ALL' || subStatus === statusFilter;
+    const matchesStatus = statusFilter === 'ALL' || sub.status === statusFilter;
     const matchesPlan = planFilter === 'ALL' || sub.planType === planFilter;
 
     return matchesSearch && matchesStatus && matchesPlan;
@@ -67,11 +80,6 @@ export default function Subscriptions() {
   const mPct = Math.round(((stats.monthly || 0) / totalActive) * 100);
   const lPct = Math.round(((stats.lifetime || 0) / totalActive) * 100);
 
-  const handleViewReceipt = (ownerId) => {
-    const sub = subscriptions.find(x => x.ownerId === ownerId);
-    if (sub) setReceiptModal({ ...sub, planName: sub.plan.displayName });
-  };
-
   return (
     <>
       <div className="sec-hdr" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -80,11 +88,12 @@ export default function Subscriptions() {
           <p>Manage and monitor all PG owner subscription plans, active tiers, and billing status</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn-add" onClick={loadData}>
+            <button className="btn-add" onClick={loadData} disabled={status === 'loading'}>
             <span className="material-icons-outlined" style={{ fontSize: 18 }}>refresh</span> Refresh
           </button>
         </div>
       </div>
+      {error && <p role="alert">Could not load the subscription report. {error}</p>}
 
       {/* KPI Cards: Glass Morphism matching Payments Tab */}
       <div className="pay-summary">
@@ -160,19 +169,14 @@ export default function Subscriptions() {
 
         <div className="chart-card">
           <h3>Subscription Revenue Overview</h3>
-          <p>Estimated annual subscription run-rate</p>
+          <p>All recorded successful subscription payments in INR</p>
           <div style={{ padding: '14px 0', textAlign: 'center' }}>
             <div style={{ fontSize: 32, fontWeight: 800, color: '#0f172a' }}>
-              ₹{Number(stats.totalRevenue).toLocaleString('en-IN')}
+              {stats.totalRevenue === null ? '—' : formatINR(stats.totalRevenue)}
             </div>
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>Total Current Active Value</div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 16 }}>
-              <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, padding: '6px 12px', background: '#dcfce7', borderRadius: 20 }}>
-                ✓ Real-time Verified
-              </span>
-              <span style={{ fontSize: 12, color: '#2563eb', fontWeight: 600, padding: '6px 12px', background: '#eff6ff', borderRadius: 20 }}>
-                ⚡ 100% Platform Retained
-              </span>
+            <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+              {data?.ledgerAvailable === false ? 'Subscription payment ledger unavailable' :
+                data?.ledgerAvailable ? `${stats.payments.length} successful payments` : null}
             </div>
           </div>
         </div>
@@ -193,6 +197,7 @@ export default function Subscriptions() {
           <select className="sel" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
             <option value="ALL">All Statuses</option>
             <option value="ACTIVE">Active</option>
+            <option value="PENDING">Pending</option>
             <option value="EXPIRED">Expired</option>
             <option value="CANCELLED">Cancelled</option>
           </select>
@@ -213,7 +218,7 @@ export default function Subscriptions() {
             <tr>
               <th>Owner</th>
               <th>Plan Type</th>
-              <th>Amount</th>
+              <th>Configured Fee</th>
               <th>Start Date</th>
               <th>Expiry Date</th>
               <th>Status</th>
@@ -236,7 +241,7 @@ export default function Subscriptions() {
               </tr>
             ) : (
               filtered.map(s => {
-                const subStatus = s.evaluatedStatus || s.status || 'ACTIVE';
+                const subStatus = s.status;
                 let badgeColor = { background: '#ecfdf5', color: '#15803d' };
                 if (subStatus === 'EXPIRED') badgeColor = { background: '#fef2f2', color: '#b91c1c' };
                 if (subStatus === 'CANCELLED') badgeColor = { background: '#f1f5f9', color: '#64748b' };
@@ -251,14 +256,14 @@ export default function Subscriptions() {
                 return (
                   <tr key={s.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '14px 16px' }}>
-                      <div style={{ fontWeight: 600, color: '#0f172a' }}>{s.owner?.name || 'Owner #' + (s.ownerId || s.id)}</div>
-                      <div style={{ fontSize: 12, color: '#94a3b8' }}>{s.owner?.email || ''}</div>
+                      <div style={{ fontWeight: 600, color: '#0f172a' }}>{s.ownerName || 'Owner #' + s.ownerId}</div>
+                      <div style={{ fontSize: 12, color: '#94a3b8' }}>{s.ownerEmail || ''}</div>
                     </td>
                     <td style={{ padding: '14px 16px' }}>
-                      <span style={{ fontWeight: 600, color: '#1e40af' }}>{s.plan?.displayName || s.planType}</span>
+                      <span style={{ fontWeight: 600, color: '#1e40af' }}>{s.planName}</span>
                     </td>
                     <td style={{ padding: '14px 16px', fontWeight: 700, color: '#0f172a' }}>
-                      ₹{Number(s.amount || 0).toLocaleString('en-IN')}
+                      {formatSubscriptionAmount(s)}
                     </td>
                     <td style={{ padding: '14px 16px', color: '#475569', fontSize: 13 }}>{s.startDate || '-'}</td>
                     <td style={{ padding: '14px 16px', fontSize: 13 }}>{expiryText}</td>
@@ -268,7 +273,7 @@ export default function Subscriptions() {
                       </span>
                     </td>
                     <td style={{ padding: '14px 16px', fontFamily: 'monospace', fontSize: 12, color: '#64748b' }}>
-                      {s.receiptNumber || '—'}
+                      {s.receipt?.receiptNumber || '—'}
                     </td>
                     <td style={{ padding: '14px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                       <button
@@ -289,8 +294,8 @@ export default function Subscriptions() {
                       )}
                       <button
                         className="btn-action-small"
-                        disabled={!s.receiptNumber}
-                        onClick={() => handleViewReceipt(s.ownerId)}
+                        disabled={!s.receipt}
+                        onClick={() => setReceiptModal(s.id)}
                         style={{
                           padding: '4px 10px',
                           background: '#eff6ff',
@@ -318,7 +323,7 @@ export default function Subscriptions() {
         show={!!planModal}
         onClose={() => setPlanModal(null)}
         title={planModal?.cancel ? 'Cancel subscription' : planModal?.sub?.status === 'ACTIVE' ? 'Change plan' : 'Activate plan'}
-        subtitle={planModal ? `${planModal.sub.owner?.name || 'Owner'} · ${planModal.sub.owner?.email || ''}` : ''}
+        subtitle={planModal ? `${planModal.sub.ownerName || 'Owner'} · ${planModal.sub.ownerEmail || ''}` : ''}
         footer={
           <>
             <button className="btn-cancel" onClick={() => setPlanModal(null)}>Close</button>
@@ -330,7 +335,7 @@ export default function Subscriptions() {
       >
         {planModal?.cancel ? (
           <p style={{ fontSize: 13, color: '#475569' }}>
-            {planModal.sub.plan?.displayName} will end now. The owner is notified and their portal shows no active plan.
+            {planModal.sub.planName} will end now. The owner is notified and their portal shows no active plan.
           </p>
         ) : (
           planModal && (
@@ -353,34 +358,26 @@ export default function Subscriptions() {
 
       {/* Receipt Modal */}
       <Modal
-        show={!!receiptModal}
+        show={!!receipt}
         onClose={() => setReceiptModal(null)}
         title="🧾 Subscription Receipt"
-        subtitle={`Receipt: ${receiptModal?.receiptNumber || 'N/A'}`}
+        subtitle={receipt?.receiptNumber}
         footer={<button className="btn-cancel" onClick={() => setReceiptModal(null)}>Close</button>}
       >
-        {receiptModal && (
+        {receipt && (
           <div style={{ padding: '10px 0', fontSize: 13, display: 'grid', gap: 12 }}>
             <div style={{ background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                 <span style={{ color: '#64748b' }}>Plan Subscribed:</span>
-                <strong>{receiptModal.planName || receiptModal.planType}</strong>
+                <strong>{receipt.planType}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                 <span style={{ color: '#64748b' }}>Amount Paid:</span>
-                <strong style={{ color: '#16a34a' }}>₹{Number(receiptModal.amount).toLocaleString('en-IN')}</strong>
+                <strong style={{ color: '#16a34a' }}>{formatSubscriptionAmount(receipt)}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ color: '#64748b' }}>Billing Cycle:</span>
-                <span>{BILLING[receiptModal.planType] || '—'}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ color: '#64748b' }}>Start Date:</span>
-                <span>{receiptModal.startDate || '—'}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#64748b' }}>Plan Status:</span>
-                <span style={{ color: '#16a34a', fontWeight: 700 }}>{receiptModal.status}</span>
+                <span style={{ color: '#64748b' }}>Payment Date:</span>
+                <span>{receipt.paymentDate || '—'}</span>
               </div>
             </div>
             <p style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center' }}>

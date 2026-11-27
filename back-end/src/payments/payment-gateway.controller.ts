@@ -7,6 +7,7 @@ import { AuthUser } from '../common/crud';
 import { Room } from '../rooms/room.entity';
 import { Property } from '../properties/property.entity';
 import { RentDue } from '../rent-dues/rent-due.entity';
+import { billedAmountForDue } from '../rent-dues/service-billing';
 import { PaymentGatewayService, checkoutPrice } from './payment-gateway.service';
 
 /** Receipts tie a gateway order to exactly one thing being paid for. */
@@ -38,8 +39,10 @@ export class PaymentGatewayController {
       if (!due) throw new NotFoundException('Rent due not found');
       if (due.tenantId !== req.user.id) throw new ForbiddenException('This rent belongs to another tenant');
       if (['paid', 'waived'].includes(String(due.status))) throw new BadRequestException('This rent is already settled');
-      const order = await this.gateway.createOrder(Number(due.amount), rentReceipt(due.id));
-      return { ...order, breakdown: { rent: Number(due.amount), total: Number(due.amount) } };
+      // Rent plus the completed service usage billed to this due (same total /rent-dues/:id/pay checks).
+      const total = await billedAmountForDue(this.db.manager, due);
+      const order = await this.gateway.createOrder(total, rentReceipt(due.id));
+      return { ...order, breakdown: { rent: Number(due.amount), services: Math.round((total - Number(due.amount)) * 100) / 100, total } };
     }
 
     if (body.purpose === 'checkout') {

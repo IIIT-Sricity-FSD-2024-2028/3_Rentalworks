@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { useDispatch } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
 import { changeMyPassword, updateMyProfile } from '../../../features/auth/authSlice';
@@ -10,11 +11,11 @@ const EMPTY_PASSWORDS = { current: '', next: '', confirm: '' };
 const Profile = () => {
   const dispatch = useDispatch();
   const { tenant, activeBooking, loading } = useTenant();
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useScreenState(false);
+  const [saving, setSaving] = useScreenState(false);
   const [passwords, setPasswords] = useState(EMPTY_PASSWORDS);
   // Only the fields the user has edited; everything else shows the stored value.
-  const [edits, setEdits] = useState({});
+  const [edits, setEdits] = useScreenState({});
   const { name, phone, address } = { name: tenant?.name || '', phone: tenant?.phone || '', address: tenant?.address || '', ...edits };
   const edit = (key) => (e) => setEdits((prev) => ({ ...prev, [key]: e.target.value }));
   const editPassword = (key) => (e) => setPasswords((prev) => ({ ...prev, [key]: e.target.value }));

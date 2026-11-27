@@ -1,5 +1,6 @@
 import Icon from '../components/Icon';
-import React, { useState } from 'react';
+import React from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { normalizeStatus } from '../../../utils/normalize';
 
 // Issues: Track, filter, resolve, report, and delete complaints
@@ -10,15 +11,16 @@ export default function Issues({
   onDeleteIssue,
   onAddIssue,
 }) {
-  const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
-  const [filterPriority, setFilterPriority] = useState('');
-  const [filterCategory, setFilterCategory] = useState('');
+  const [search, setSearch] = useScreenState('');
+  const [filterStatus, setFilterStatus] = useScreenState('');
+  const [filterPriority, setFilterPriority] = useScreenState('');
+  const [filterCategory, setFilterCategory] = useScreenState('');
 
-  const [deletingIssue, setDeletingIssue] = useState(null);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [deletingIssueId, setDeletingIssue] = useScreenState(null);
+  const deletingIssue = issues.find((issue) => issue.id === deletingIssueId);
+  const [isAddModalOpen, setIsAddModalOpen] = useScreenState(false);
 
-  const [newIssue, setNewIssue] = useState({
+  const [newIssue, setNewIssue] = useScreenState({
     propertyId: '',
     title: '',
     category: 'Maintenance',
@@ -26,7 +28,7 @@ export default function Issues({
     reportedBy: 'Owner',
     description: '',
   });
-  const [addError, setAddError] = useState('');
+  const [addError, setAddError] = useScreenState('');
 
   const openCount = issues.filter(
     (i) => normalizeStatus(i.status) === 'open'
@@ -334,7 +336,7 @@ export default function Issues({
 
                 <button
                   className="btn btn-danger btn-sm"
-                  onClick={() => setDeletingIssue(issue)}
+                  onClick={() => setDeletingIssue(issue.id)}
                 >
                   <Icon className="material-icons icon-16 icon-middle">delete</Icon>{' '}
                   Delete

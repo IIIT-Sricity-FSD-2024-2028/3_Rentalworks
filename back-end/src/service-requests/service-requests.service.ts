@@ -2,9 +2,11 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import {
   ServiceRequest,
   ServiceRequestStatus,
@@ -15,6 +17,17 @@ import {
 } from './service-requests.dto';
 import { Notification } from '../notifications/notification.entity';
 import { Service } from '../services/service.entity';
+import { TenantStay } from '../tenant-stays/tenant-stay.entity';
+import { todayIST } from '../rent-dues/rent-dues.helpers';
+import { lockTenantBilling, toCents } from '../rent-dues/service-billing';
+
+// Standard offers used when a property has no configured service catalogue.
+const STANDARD_SERVICES = new Map([
+  ['laundry', { name: 'Laundry', price: 50, pricingModel: 'per_kg' }],
+  ['parking', { name: 'Parking', price: 500, pricingModel: 'per_month' }],
+  ['room cleaning', { name: 'Room Cleaning', price: 150, pricingModel: 'per_session' }],
+  ['pantry & appliances', { name: 'Pantry & Appliances', price: 0, pricingModel: 'included_in_rent' }],
+]);
 
 @Injectable()
 export class ServiceRequestsService {
@@ -25,6 +38,7 @@ export class ServiceRequestsService {
     private readonly notificationsRepository: Repository<Notification>,
     @InjectRepository(Service)
     private readonly servicesRepository: Repository<Service>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(
@@ -36,29 +50,42 @@ export class ServiceRequestsService {
       throw new ForbiddenException('Tenant ID is required to create a service request.');
     }
 
-    let serviceName = createDto.serviceName || createDto.serviceType || 'Service Request';
-    let serviceType = createDto.serviceType || createDto.serviceName || 'General';
-    let amount = createDto.amount || 0;
+    const stay = await this.dataSource.getRepository(TenantStay).findOne({
+      where: { tenantId: finalTenantId, status: 'active', ...(createDto.propertyId ? { propertyId: createDto.propertyId } : {}) },
+      order: { id: 'DESC' },
+    });
+    if (!stay) throw new BadRequestException('An active stay at this PG is required to request a service');
 
-    // If serviceId was provided, resolve service info and price
-    if (createDto.serviceId) {
-      const srv = await this.servicesRepository.findOne({
-        where: { id: createDto.serviceId },
-      });
-      if (srv) {
-        serviceName = srv.name;
-        serviceType = srv.name;
-        if (!amount && srv.price) {
-          amount = Number(srv.price);
-        }
-      }
+    const requestedName = (createDto.serviceName || createDto.serviceType || '').trim().toLowerCase();
+    const catalogue = await this.servicesRepository.find({ where: { propertyId: stay.propertyId } });
+    const offer = createDto.serviceId != null
+      ? catalogue.find((service) => service.id === createDto.serviceId && service.isAvailable)
+      : catalogue.length
+        ? catalogue.find((service) => service.isAvailable && service.name.toLowerCase() === requestedName)
+        : STANDARD_SERVICES.get(requestedName === 'cleaning' ? 'room cleaning' : requestedName);
+    if (!offer) throw new BadRequestException('This service is unavailable at your PG');
+    const pricingModel = offer.pricingModel || 'per_use';
+    const quantity = createDto.quantity ?? 1;
+    if (pricingModel !== 'per_kg' && quantity !== 1) {
+      throw new BadRequestException('This service is billed once per request');
+    }
+    const amount = pricingModel === 'included_in_rent' ? 0 : Math.round(toCents(offer.price) * quantity) / 100;
+    if (!Number.isFinite(amount) || amount < 0 || amount > 99999999.99) {
+      throw new BadRequestException('This service has an invalid price');
+    }
+    if (createDto.amount != null && toCents(createDto.amount) !== toCents(amount)) {
+      throw new ConflictException('The service price changed. Reload the catalogue and review the charge.');
     }
 
     const serviceRequest = this.serviceRequestsRepository.create({
-      ...createDto,
-      serviceName,
-      serviceType,
+      serviceId: 'id' in offer && typeof offer.id === 'number' ? offer.id : undefined,
+      serviceName: offer.name,
+      serviceType: createDto.serviceType || offer.name,
       amount,
+      quantity,
+      pricingModel,
+      propertyId: stay.propertyId,
+      roomId: stay.roomId,
       description: createDto.description || createDto.notes,
       notes: createDto.notes || createDto.description,
       tenantId: finalTenantId,
@@ -121,7 +148,7 @@ export class ServiceRequestsService {
       throw new NotFoundException(`Service request with ID ${id} not found`);
     }
 
-    if (role === 'tenant' && currentUserId && request.tenantId !== currentUserId) {
+    if (role === 'tenant' && request.tenantId !== currentUserId) {
       throw new ForbiddenException('You can only view your own service requests.');
     }
 
@@ -134,33 +161,40 @@ export class ServiceRequestsService {
     currentUserId?: number,
     role?: string,
   ): Promise<ServiceRequest> {
-    const request = await this.findOne(id, currentUserId, role);
-    const oldStatus = request.status;
-
-    if (
-      updateDto.status &&
-      updateDto.status === ServiceRequestStatus.COMPLETED &&
-      !request.completedAt
-    ) {
-      updateDto.completedAt = new Date();
-    }
-
-    Object.assign(request, updateDto);
-    if (updateDto.description) request.notes = updateDto.description;
-    if (updateDto.notes) request.description = updateDto.notes;
-
-    const updated = await this.serviceRequestsRepository.save(request);
+    const original = await this.findOne(id, currentUserId, role);
+    const { updated, oldStatus } = await this.dataSource.transaction(async (manager) => {
+      await lockTenantBilling(manager, original.tenantId);
+      const repo = manager.getRepository(ServiceRequest);
+      const request = await repo.findOne({ where: { id }, lock: { mode: 'pessimistic_write' } });
+      if (!request) throw new NotFoundException(`Service request with ID ${id} not found`);
+      const oldStatus = request.status;
+      if (oldStatus === ServiceRequestStatus.COMPLETED || oldStatus === ServiceRequestStatus.CANCELLED) {
+        if (updateDto.status === oldStatus) return { updated: request, oldStatus };
+        throw new ConflictException('This service request is already closed');
+      }
+      if (updateDto.status) request.status = updateDto.status;
+      const notes = updateDto.notes ?? updateDto.description;
+      if (notes !== undefined) request.notes = request.description = notes;
+      if (updateDto.scheduledAt) request.scheduledAt = updateDto.scheduledAt;
+      if (updateDto.status === ServiceRequestStatus.COMPLETED) {
+        request.completedAt = new Date();
+        if (request.pricingModel && Number(request.amount) > 0) request.billableFrom = todayIST();
+      }
+      return { updated: await repo.save(request), oldStatus };
+    });
 
     // If status changed, notify tenant
     if (updateDto.status && updateDto.status !== oldStatus) {
       try {
         const notif = this.notificationsRepository.create({
           title: 'Service Request Status Updated',
-          message: `Your service request for "${request.serviceName}" is now ${request.status}.`,
+          message: updated.billableFrom
+            ? `Your ${updated.serviceName} request is complete. A ₹${Number(updated.amount).toLocaleString('en-IN')} charge will appear in Payments.`
+            : `Your service request for "${updated.serviceName}" is now ${updated.status}.`,
           type: 'service_request_status',
           priority: 'medium',
           recipients: 1,
-          userId: request.tenantId,
+          userId: updated.tenantId,
           isRead: false,
           sentAt: new Date().toISOString(),
         });
@@ -178,9 +212,16 @@ export class ServiceRequestsService {
     currentUserId?: number,
     role?: string,
   ): Promise<ServiceRequest> {
-    const request = await this.findOne(id, currentUserId, role);
-    const clone = { ...request };
-    await this.serviceRequestsRepository.remove(request);
-    return clone;
+    const original = await this.findOne(id, currentUserId, role);
+    return this.dataSource.transaction(async (manager) => {
+      await lockTenantBilling(manager, original.tenantId);
+      const repo = manager.getRepository(ServiceRequest);
+      const request = await repo.findOneBy({ id });
+      if (!request) throw new NotFoundException(`Service request with ID ${id} not found`);
+      if (request.status === ServiceRequestStatus.COMPLETED) throw new ConflictException('A completed service cannot be cancelled');
+      // Cancellation stays in history so tenants can distinguish it from completed usage.
+      request.status = ServiceRequestStatus.CANCELLED;
+      return repo.save(request);
+    });
   }
 }

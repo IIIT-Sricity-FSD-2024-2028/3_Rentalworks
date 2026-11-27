@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { useDispatch, useSelector } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
 import { adminPayments } from '../../../features/admin/adminSlices';
 import Modal from '../components/Modal';
-import { lastMonths, monthKey } from '../utils/months';
+import { lastMonths, monthKey } from '../../../utils/months';
 
 const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 const isPaid = (p) => ['verified', 'completed', 'success'].includes(p.status);
@@ -14,8 +15,9 @@ export default function Payments() {
   const dispatch = useDispatch();
   const payments = useSelector(adminPayments.selectors.selectItems);
   const loading = useSelector(adminPayments.selectors.selectIsLoading) && payments.length === 0;
-  const [search, setSearch] = useState('');
-  const [modal, setModal] = useState(null);
+  const [search, setSearch] = useScreenState('');
+  const [modal, setModal] = useScreenState(null);
+  const selectedPayment = useSelector((state) => adminPayments.selectors.selectById(state, modal?.paymentId));
 
   useEffect(() => {
     dispatch(adminPayments.thunks.fetchAll());
@@ -66,7 +68,7 @@ export default function Payments() {
   };
 
   const handleView = (p) => {
-    setModal({ type: 'view', payment: p });
+    setModal({ type: 'view', paymentId: p.id });
   };
 
   return (
@@ -255,9 +257,9 @@ export default function Payments() {
                         >
                           {refundDisabled ? '🔒 Refund' : '↩️ Refund'}
                         </button>
-                        <button className="ico-btn" onClick={() => handleView(p)} title="View">👁️</button>
+                        <button className="ico-btn view" onClick={() => handleView(p)} title="View"><span className="material-icons-outlined">visibility</span></button>
                         {!['Approved', 'Cleared', 'Refunded'].includes(clearance) && (
-                          <button className="ico-btn" onClick={() => handleApproveClearance(p)} title="Approve Clearance">✅</button>
+                          <button className="ico-btn ok" onClick={() => handleApproveClearance(p)} title="Approve Clearance"><span className="material-icons-outlined">check</span></button>
                         )}
                       </div>
                     </td>
@@ -274,20 +276,20 @@ export default function Payments() {
         show={!!modal}
         onClose={() => setModal(null)}
         title="Payment Details"
-        subtitle={modal?.payment ? `Transaction: ${modal.payment.transactionId}` : ''}
+        subtitle={selectedPayment ? `Transaction: ${selectedPayment.transactionId}` : ''}
         footer={<button className="btn-cancel" onClick={() => setModal(null)}>Close</button>}
       >
-        {modal?.payment && (
+        {selectedPayment && (
           <div style={{ display: 'grid', gap: 10, fontSize: 13 }}>
-            <div><strong>Tenant:</strong> {getName(modal.payment.tenant)}</div>
-            <div><strong>Property:</strong> {getName(modal.payment.property)}</div>
-            <div><strong>Room:</strong> {modal.payment.room}</div>
-            <div><strong>Amount:</strong> ₹{(Number(modal.payment.amount) || 0).toLocaleString()}</div>
-            <div><strong>Platform Commission (10%):</strong> ₹{Math.round((Number(modal.payment.amount) || 0) * 0.10).toLocaleString()}</div>
-            <div><strong>Method:</strong> {modal.payment.method || 'UPI'}</div>
-            <div><strong>Transaction ID:</strong> {modal.payment.transactionId}</div>
-            <div><strong>Status:</strong> <span className={`badge badge-${modal.payment.status}`}>{cap(modal.payment.status)}</span></div>
-            <div><strong>Clearance:</strong> {modal.payment.clearance || 'Pending'}</div>
+            <div><strong>Tenant:</strong> {getName(selectedPayment.tenant)}</div>
+            <div><strong>Property:</strong> {getName(selectedPayment.property)}</div>
+            <div><strong>Room:</strong> {selectedPayment.room}</div>
+            <div><strong>Amount:</strong> ₹{(Number(selectedPayment.amount) || 0).toLocaleString()}</div>
+            <div><strong>Platform Commission (10%):</strong> ₹{Math.round((Number(selectedPayment.amount) || 0) * 0.10).toLocaleString()}</div>
+            <div><strong>Method:</strong> {selectedPayment.method || 'UPI'}</div>
+            <div><strong>Transaction ID:</strong> {selectedPayment.transactionId}</div>
+            <div><strong>Status:</strong> <span className={`badge badge-${selectedPayment.status}`}>{cap(selectedPayment.status)}</span></div>
+            <div><strong>Clearance:</strong> {selectedPayment.clearance || 'Pending'}</div>
           </div>
         )}
       </Modal>

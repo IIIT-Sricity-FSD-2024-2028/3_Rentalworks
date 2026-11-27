@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import useScreenState from '../app/useScreenState';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectCurrentUser } from '../features/auth/authSlice';
@@ -44,6 +45,7 @@ export default function BookingRoommate() {
   const selectedRoom = useSelector(selectSelectedRoom);
   const selectedRoommate = useSelector(selectSelectedRoommate);
   const savedProfile = useSelector((s) => s.booking.lifestyleProfile);
+  const savingProfile = useSelector((s) => Boolean(s.booking.profileSaveRequestId));
   const { items: matchedRoommates, status: matchStatus, error: matchError } = useSelector(selectMatches);
   const isLoading = matchStatus === 'loading';
   const hasCalculated = matchStatus === 'succeeded' || matchStatus === 'failed';
@@ -66,9 +68,9 @@ export default function BookingRoommate() {
   }, [pg, currentUser, navigate, dispatch]);
 
   // 'yes' = smart match, 'no' = warden auto-assigns
-  const [optInChoice, setOptInChoice] = useState(savedProfile?.optedSmartMatch === false ? 'no' : 'yes');
+  const [optInChoice, setOptInChoice] = useScreenState(savedProfile?.optedSmartMatch === false ? 'no' : 'yes');
 
-  const [form, setForm] = useState(() => ({
+  const [form, setForm] = useScreenState(() => ({
     name: currentUser?.name || '',
     age: 24,
     profession: '',
@@ -82,8 +84,8 @@ export default function BookingRoommate() {
     ...(savedProfile ? pickProfile(savedProfile) : {}),
   }));
 
-  const [customHobby, setCustomHobby] = useState('');
-  const [customHobbies, setCustomHobbies] = useState(() =>
+  const [customHobby, setCustomHobby] = useScreenState('');
+  const [customHobbies, setCustomHobbies] = useScreenState(() =>
     (savedProfile?.interests || []).filter((h) => !AVAILABLE_INTERESTS.includes(h)),
   );
 
@@ -146,8 +148,13 @@ export default function BookingRoommate() {
     navigate(`/book/${pg.id}/review`);
   };
 
-  const handleOptOutAndProceed = () => {
-    dispatch(saveLifestyleProfile(buildProfile(false)));
+  const handleOptOutAndProceed = async () => {
+    if (savingProfile) return;
+    const result = await dispatch(saveLifestyleProfile(buildProfile(false)));
+    if (!saveLifestyleProfile.fulfilled.match(result)) {
+      dispatch(toastError(result.payload || 'Could not save your preferences'));
+      return;
+    }
     dispatch(selectRoommate(null));
     navigate(`/book/${pg.id}/review`);
   };

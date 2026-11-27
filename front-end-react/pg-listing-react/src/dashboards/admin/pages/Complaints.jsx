@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { useDispatch, useSelector } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
 import { adminComplaints } from '../../../features/admin/adminSlices';
@@ -13,9 +14,10 @@ export default function Complaints() {
   const loading = useSelector(adminComplaints.selectors.selectIsLoading) && items.length === 0;
   // Status is normalised to 'open' | 'in_progress' | 'resolved' by the resource slice.
   const complaints = items.map((c) => ({ ...c, status: c.status || 'open' }));
-  const [search, setSearch] = useState('');
-  const [statusF, setStatusF] = useState('all');
-  const [modal, setModal] = useState(null);
+  const [search, setSearch] = useScreenState('');
+  const [statusF, setStatusF] = useScreenState('all');
+  const [modal, setModal] = useScreenState(null);
+  const selectedComplaint = useSelector((state) => adminComplaints.selectors.selectById(state, modal?.complaintId));
 
   useEffect(() => {
     dispatch(adminComplaints.thunks.fetchAll());
@@ -41,14 +43,17 @@ export default function Complaints() {
       type: 'confirm',
       title: 'Delete Complaint',
       message: `Permanently delete complaint #${c.id}?`,
-      action: async () => {
-        const { ok } = await runThunk(dispatch, adminComplaints.thunks.removeItem(c.id), { success: 'Complaint removed' });
-        if (ok) setModal(null);
-      },
+      complaintId: c.id,
     });
   };
 
-  const handleView = (c) => { setModal({ type: 'view', complaint: c }); };
+  const handleView = (c) => { setModal({ type: 'view', complaintId: c.id }); };
+
+  async function confirmDelete() {
+    if (!selectedComplaint) return;
+    const { ok } = await runThunk(dispatch, adminComplaints.thunks.removeItem(selectedComplaint.id), { success: 'Complaint removed' });
+    if (ok) setModal(null);
+  }
 
   return (
     <>
@@ -81,9 +86,9 @@ export default function Complaints() {
                 <td style={{fontSize:12}}>{formatDate(c.reportedAt || c.createdAt, '-')}</td>
                 <td>
                   <div className="act-icons">
-                    <button className="ico-btn" onClick={() => handleView(c)} title="View"><span className="material-icons-outlined" style={{fontSize:14}}>visibility</span></button>
-                    {c.status === 'open' && <button className="ico-btn" onClick={() => handleInProgress(c)} title="Mark In Progress"><span className="material-icons-outlined" style={{fontSize:14}}>autorenew</span></button>}
-                    {c.status !== 'resolved' && <button className="ico-btn" onClick={() => handleResolve(c)} title="Resolve"><span className="material-icons-outlined" style={{fontSize:14}}>check_circle</span></button>}
+                    <button className="ico-btn view" onClick={() => handleView(c)} title="View"><span className="material-icons-outlined" style={{fontSize:14}}>visibility</span></button>
+                    {c.status === 'open' && <button className="ico-btn key" onClick={() => handleInProgress(c)} title="Mark In Progress"><span className="material-icons-outlined" style={{fontSize:14}}>autorenew</span></button>}
+                    {c.status !== 'resolved' && <button className="ico-btn ok" onClick={() => handleResolve(c)} title="Resolve"><span className="material-icons-outlined" style={{fontSize:14}}>check_circle</span></button>}
                     <button className="ico-btn danger" onClick={() => handleDelete(c)} title="Delete"><span className="material-icons-outlined" style={{fontSize:14}}>delete</span></button>
                   </div>
                 </td>
@@ -94,18 +99,18 @@ export default function Complaints() {
         <div className="tbl-footer">Showing {filtered.length} of {complaints.length} complaints</div>
       </div>
 
-      <Modal show={!!modal} onClose={() => setModal(null)} title={modal?.type === 'view' ? 'Complaint Details' : modal?.title || ''} subtitle={modal?.type === 'view' && modal.complaint ? `Issue #${modal.complaint.id}` : ''}
+      <Modal show={!!modal} onClose={() => setModal(null)} title={modal?.type === 'view' ? 'Complaint Details' : modal?.title || ''} subtitle={modal?.type === 'view' && selectedComplaint ? `Issue #${selectedComplaint.id}` : ''}
         footer={modal?.type === 'confirm' ? (
-          <><button className="btn-cancel" onClick={() => setModal(null)}>Cancel</button><button className="btn-confirm-red" onClick={modal.action}>Confirm</button></>
+          <><button className="btn-cancel" onClick={() => setModal(null)}>Cancel</button><button className="btn-confirm-red" onClick={confirmDelete} disabled={!selectedComplaint}>Confirm</button></>
         ) : <button className="btn-cancel" onClick={() => setModal(null)}>Close</button>}>
         {modal?.type === 'confirm' && <p style={{fontSize:13,lineHeight:1.6,color:'#475569'}}>{modal.message}</p>}
-        {modal?.type === 'view' && modal.complaint && (
+        {modal?.type === 'view' && selectedComplaint && (
           <div style={{display:'grid',gap:10,fontSize:13}}>
-            <div><strong>Tenant:</strong> {getName(modal.complaint.tenant)}</div>
-            <div><strong>Property:</strong> {getName(modal.complaint.property)}</div>
-            <div><strong>Description:</strong> {modal.complaint.description}</div>
-            <div><strong>Status:</strong> <span className={`badge badge-${modal.complaint.status === 'resolved' ? 'completed' : 'pending'}`}>{statusLabel(modal.complaint.status)}</span></div>
-            <div><strong>Reported:</strong> {formatDate(modal.complaint.reportedAt || modal.complaint.createdAt, '-')}</div>
+            <div><strong>Tenant:</strong> {getName(selectedComplaint.tenant)}</div>
+            <div><strong>Property:</strong> {getName(selectedComplaint.property)}</div>
+            <div><strong>Description:</strong> {selectedComplaint.description}</div>
+            <div><strong>Status:</strong> <span className={`badge badge-${selectedComplaint.status === 'resolved' ? 'completed' : 'pending'}`}>{statusLabel(selectedComplaint.status)}</span></div>
+            <div><strong>Reported:</strong> {formatDate(selectedComplaint.reportedAt || selectedComplaint.createdAt, '-')}</div>
           </div>
         )}
       </Modal>

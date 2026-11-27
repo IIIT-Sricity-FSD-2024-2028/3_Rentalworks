@@ -1,44 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { useDispatch, useSelector } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
 import { tenantServiceRequests, tenantServicesCatalog } from '../../../features/tenant/tenantSlices';
+import { selectDefaultServices } from '../../../features/shared/catalogSlice';
 import { toastError } from '../../../features/ui/uiSlice';
 import { useTenant } from '../hooks/useTenant';
-
-const defaultCatalog = [
-  {
-    name: 'Laundry',
-    type: 'Laundry',
-    price: 50,
-    priceLabel: '₹50 per kg',
-    icon: 'local_laundry_service',
-    description: 'Washing, drying, and ironing clothes service',
-  },
-  {
-    name: 'Parking',
-    type: 'Parking',
-    price: 500,
-    priceLabel: '₹500/month',
-    icon: 'directions_car',
-    description: 'Reserved slot for two or four wheeler parking',
-  },
-  {
-    name: 'Room Cleaning',
-    type: 'Cleaning',
-    price: 150,
-    priceLabel: '₹150 per session',
-    icon: 'cleaning_services',
-    description: 'Thorough room deep cleaning and floor mop',
-  },
-  {
-    name: 'Pantry & Appliances',
-    type: 'Maintenance',
-    price: 0,
-    priceLabel: 'Included in rent',
-    icon: 'coffee',
-    description: 'Common microwave, toaster, and kettle maintenance',
-  },
-];
+import useAutoRefresh from '../../../hooks/useAutoRefresh';
+import { formatINR } from '../../../utils/normalize';
 
 const PRICING = { per_kg: ' per kg', per_session: ' per session', per_month: '/month', monthly: '/month', per_use: ' per use' };
 const ICONS = [
@@ -50,13 +19,14 @@ const ICONS = [
 
 /** Service row configured by the owner/admin → catalogue card. */
 const mapService = (s) => {
-  const price = Number(s.price) || 0;
+  const price = s.pricingModel === 'included_in_rent' ? 0 : Number(s.price) || 0;
   const [, icon, type] = ICONS.find(([re]) => re.test(s.name)) || [null, 'build', s.name];
   return {
     id: s.id,
     name: s.name,
     type,
     price,
+    pricingModel: s.pricingModel,
     priceLabel: price ? `₹${price}${PRICING[s.pricingModel] || ''}` : 'Included in rent',
     icon,
     description: s.description || [s.timing, s.location].filter(Boolean).join(' • ') || 'Available at your property',
@@ -72,21 +42,36 @@ const Services = () => {
   const requestsLoading = useSelector(tenantServiceRequests.selectors.selectIsLoading);
   const error = useSelector(tenantServiceRequests.selectors.selectError);
   const submitting = useSelector(tenantServiceRequests.selectors.selectMutating);
-  const services = useSelector(tenantServicesCatalog.selectors.selectItems);
+  const propertyServices = useSelector(tenantServicesCatalog.selectors.selectItems);
+  const catalogStatus = useSelector(tenantServicesCatalog.selectors.selectStatus);
+  const catalogError = useSelector(tenantServicesCatalog.selectors.selectError);
+  const defaultCatalog = useSelector(selectDefaultServices);
   const loading = requestsLoading && requests.length === 0;
 
   // Services configured for this property, else the standard catalogue.
-  const available = services.filter((s) => s.isAvailable !== false);
-  const catalog = available.length ? available.map(mapService) : defaultCatalog;
+  const configured = propertyServices.filter((service) => String(service.propertyId) === String(propertyId));
+  const catalog = !propertyId || catalogStatus !== 'succeeded' ? []
+    : configured.length ? configured.filter((service) => service.isAvailable !== false).map(mapService) : defaultCatalog;
 
   // Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedService, setSelectedService] = useState(defaultCatalog[0]);
-  const [notes, setNotes] = useState('');
+  const [selectedServiceKey, setSelectedServiceKey] = useScreenState(null);
+  const selectedService = catalog.find((service) => (service.id ?? service.name) === selectedServiceKey);
+  const [notes, setNotes] = useScreenState('');
+  const [quantity, setQuantity] = useScreenState('1');
+  const byWeight = selectedService?.pricingModel === 'per_kg';
+  const units = byWeight ? Number(quantity) : 1;
+  const validQuantity = units >= 0.01 && units <= 1000 && (!byWeight || /^\d+(\.\d{1,2})?$/.test(quantity));
+  const unitPriceInCents = Math.round((selectedService?.price ?? 0) * 100);
+  const estimate = validQuantity ? Math.round(unitPriceInCents * units) / 100 : null;
 
   useEffect(() => {
     dispatch(tenantServiceRequests.thunks.fetchAll());
   }, [dispatch]);
+
+  // Keep the tenant's status in sync when a warden updates the request.
+  useAutoRefresh(() => {
+    if (!requestsLoading && !submitting) dispatch(tenantServiceRequests.thunks.fetchAll());
+  }, 15000);
 
   useEffect(() => {
     if (propertyId) dispatch(tenantServicesCatalog.thunks.fetchAll({ propertyId }));
@@ -97,20 +82,22 @@ const Services = () => {
       dispatch(toastError('You need an active stay to request services.'));
       return;
     }
-    setSelectedService(service);
+    setSelectedServiceKey(service.id ?? service.name);
     setNotes('');
-    setIsModalOpen(true);
+    setQuantity('1');
   };
 
   const handleCreateRequest = async (e) => {
     if (e) e.preventDefault();
+    if (!selectedService || !validQuantity) return;
     const { ok } = await runThunk(
       dispatch,
       tenantServiceRequests.thunks.createItem({
         serviceType: selectedService.type,
         serviceName: selectedService.name,
         serviceId: selectedService.id,
-        amount: selectedService.price,
+        amount: estimate,
+        quantity: units,
         description: notes.trim() || undefined,
         notes: notes.trim() || undefined,
         propertyId: Number(propertyId),
@@ -118,12 +105,13 @@ const Services = () => {
       }),
       { success: `${selectedService.name} requested` },
     );
-    if (ok) setIsModalOpen(false);
+    if (ok) setSelectedServiceKey(null);
   };
 
-  const handleCancelRequest = (requestId) => {
+  const handleCancelRequest = async (requestId) => {
     if (!window.confirm('Are you sure you want to cancel this service request?')) return;
-    runThunk(dispatch, tenantServiceRequests.thunks.removeItem(requestId), { success: 'Service request cancelled' });
+    const { ok } = await runThunk(dispatch, tenantServiceRequests.thunks.removeItem(requestId), { success: 'Service request cancelled' });
+    if (ok) dispatch(tenantServiceRequests.thunks.fetchAll());
   };
 
   const activeCount = requests.filter(
@@ -135,7 +123,7 @@ const Services = () => {
     <div>
       <div className="page-header">
         <h1>Services</h1>
-        <p>Available amenities and on-demand services</p>
+        <p>Completed paid services are added to your rent bill. Track charges and receipts in Payments.</p>
       </div>
 
       <div className="grid-3 mb-20" style={{ marginBottom: '20px' }}>
@@ -218,7 +206,11 @@ const Services = () => {
                         </div>
                       </td>
                       <td>{req.description || req.notes || '-'}</td>
-                      <td>₹{Number(req.amount || 0).toLocaleString()}</td>
+                      <td>
+                        {formatINR(req.amount)}
+                        {req.pricingModel === 'per_kg' && <small> · {Number(req.quantity)} kg</small>}
+                        {req.billableFrom && <div><small>{req.rentDueId ? 'Paid with rent' : 'Awaiting rent payment'}</small></div>}
+                      </td>
                       <td>
                         <span
                           className={`badge-${
@@ -239,7 +231,7 @@ const Services = () => {
                           : req.requestedDate || 'N/A'}
                       </td>
                       <td>
-                        {req.status !== 'completed' && (
+                        {['pending', 'scheduled', 'in_progress'].includes(req.status) && (
                           <button
                             className="btn btn-ghost btn-sm"
                             style={{ color: 'var(--danger)' }}
@@ -265,6 +257,10 @@ const Services = () => {
       </div>
 
       <h3 style={{ marginBottom: '14px' }}>Available Property Services</h3>
+      {catalogError && <p role="alert">{catalogError}</p>}
+      {catalog.length === 0 && !catalogError && (
+        <p>{propertyId ? (catalogStatus === 'loading' ? 'Loading services…' : 'No services currently available.') : 'An active stay is required to request services.'}</p>
+      )}
       <div className="grid-2">
         {catalog.map((service) => (
           <div className="service-card" key={service.name}>
@@ -304,7 +300,7 @@ const Services = () => {
         ))}
       </div>
 
-      {isModalOpen && (
+      {selectedService && (
         <div className="modal-overlay active">
           <div className="modal">
             <div className="modal-header">
@@ -319,7 +315,7 @@ const Services = () => {
               </div>
               <button
                 className="modal-close"
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => setSelectedServiceKey(null)}
               >
                 <span className="material-icons-outlined" style={{ fontSize: '24px' }}>
                   close
@@ -336,11 +332,17 @@ const Services = () => {
                   style={{ background: 'var(--bg-main)' }}
                 />
               </div>
+              {byWeight && (
+                <div className="form-group">
+                  <label htmlFor="service-weight">Weight (kg)</label>
+                  <input id="service-weight" type="number" min="0.01" max="1000" step="0.01" value={quantity} onChange={(event) => setQuantity(event.target.value)} />
+                </div>
+              )}
               <div className="form-group">
                 <label>Estimated Charge</label>
                 <input
                   type="text"
-                  value={selectedService.priceLabel}
+                  value={estimate == null ? 'Enter a valid weight' : formatINR(estimate)}
                   disabled
                   style={{ background: 'var(--bg-main)' }}
                 />
@@ -358,7 +360,7 @@ const Services = () => {
             <div className="modal-footer">
               <button
                 className="btn btn-ghost"
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => setSelectedServiceKey(null)}
                 disabled={submitting}
               >
                 Cancel
@@ -366,7 +368,7 @@ const Services = () => {
               <button
                 className="btn btn-primary"
                 onClick={handleCreateRequest}
-                disabled={submitting}
+                disabled={submitting || !validQuantity}
               >
                 {submitting ? 'Submitting...' : 'Confirm Request'}
               </button>

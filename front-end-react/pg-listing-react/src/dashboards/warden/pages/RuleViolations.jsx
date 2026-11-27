@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { useWardenData, useWardenRun, useWardenToast } from '../utils/dataStore';
 import Modal from '../components/Modal';
 import {
@@ -11,11 +12,11 @@ import {
 export default function RuleViolations() {
   const { data } = useWardenData();
   const run = useWardenRun();
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useScreenState('all');
 
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [formData, setFormData] = useState({});
-  const [errors, setErrors] = useState({});
+  const [isAddModalOpen, setIsAddModalOpen] = useScreenState(false);
+  const [formData, setFormData] = useScreenState({});
+  const [errors, setErrors] = useScreenState({});
 
   const violations = data.violations || [];
   const tenants = data.tenants || [];

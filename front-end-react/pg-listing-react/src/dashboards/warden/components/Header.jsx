@@ -1,19 +1,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { logout, selectCurrentUser } from '../../../features/auth/authSlice';
+import { useSelector } from 'react-redux';
+import { selectCurrentUser } from '../../../features/auth/authSlice';
+import { useSignOut } from '../../../app/hooks';
 import { selectWardenUnreadCount } from '../../../features/warden/wardenSlices';
 
 export default function Header() {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const handleLogout = useSignOut();
   const currentUser = useSelector(selectCurrentUser);
   const unreadCount = useSelector(selectWardenUnreadCount);
-
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login', { replace: true });
-  };
 
   if (!currentUser) return null;
 

@@ -1,5 +1,5 @@
 import { OwnerRegistrationDto } from '../owner/owner-registration.dto';
-import { Property } from '../properties/property.entity';
+import { Property, PropertyDetailsDocument } from '../properties/property.entity';
 import { Notification } from '../notifications/notification.entity';
 import {
   Injectable,
@@ -25,6 +25,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { issueSuperAdminToken } from '../super-admin/super-admin-token';
 import { ensureSharedColumns } from '../migrations/ensure-shared-columns';
+import { readSubscriptionReport } from '../owner/subscription-report';
 
 @Injectable()
 export class UsersService {
@@ -110,17 +111,48 @@ export class UsersService {
     );
     if (!isMatch) throw new UnauthorizedException('Invalid credentials');
 
-    const result = Object.assign({}, user);
-    delete (result as any).password;
-    // Every active account gets a signed session token; the guard trusts nothing else.
-    return Object.assign(result, { token: issueSuperAdminToken(user.id) });
+    return this.sessionUser(user);
   }
 
-  async registerOwner(dto: OwnerRegistrationDto) {
+  async restoreSession(id: number, expiresAt: number) {
+    const user = await this.usersRepository.findOneBy({ id, status: 'active' });
+    return user ? this.sessionUser(user, expiresAt) : null;
+  }
+
+  async getSubscriptionReport(userId: number) {
+    const user = await this.usersRepository.findOneBy({ id: userId, status: 'active' });
+    if (!user || !['admin', 'super_admin'].includes(user.role)) {
+      throw new ForbiddenException('Only an administrator can view subscription reports');
+    }
+    return readSubscriptionReport(this.dataSource);
+  }
+
+  async getPropertyDetailsDocument(userId: number, propertyId: number) {
+    const user = await this.usersRepository.findOneBy({ id: userId, status: 'active' });
+    if (!user || !['admin', 'super_admin'].includes(user.role)) {
+      throw new ForbiddenException('Only an administrator can review property documents');
+    }
+    const property = await this.dataSource.getRepository(Property).createQueryBuilder('property')
+      .select('property.id')
+      .addSelect('property.detailsDocument')
+      .where('property.id = :propertyId', { propertyId })
+      .getOne();
+    if (!property) throw new NotFoundException('Property not found');
+    return property.detailsDocument ?? null;
+  }
+
+  /** Every active account gets a signed session token; RolesGuard trusts nothing else. */
+  private sessionUser(user: User, expiresAt?: number) {
+    const { password, ...result } = user;
+    return { ...result, token: issueSuperAdminToken(user.id, expiresAt) };
+  }
+
+  async registerOwner(dto: OwnerRegistrationDto, detailsDocument: PropertyDetailsDocument) {
     if (await this.usersRepository.existsBy({ email: dto.email.trim().toLowerCase() })) throw new BadRequestException('An account with this email already exists');
     return this.dataSource.transaction(async manager => {
       const user = await manager.getRepository(User).save({ name: dto.name.trim(), email: dto.email.trim().toLowerCase(), username: dto.email.trim().toLowerCase(), phone: dto.phone, role: 'owner', status: 'pending', city: dto.city, state: dto.state });
-      const property = await manager.getRepository(Property).save({ name: dto.propertyName, address: dto.propertyAddress, city: dto.city, state: dto.state, location: dto.city + ', ' + dto.state, totalRooms: dto.totalRooms, totalCapacity: dto.totalCapacity, occupiedRooms: 0, rooms: '0/' + dto.totalRooms, ownerId: user.id, rentMin: 0, rentMax: 0, amenities: dto.amenities, status: 'pending', docsVerified: false, inspectionPassed: false, compliance: 'Pending', fireSafety: 'Unverified', safetyScore: 0, images: [] });
+      // Store the application and its single private document in the same transaction.
+      const property = await manager.getRepository(Property).save({ name: dto.propertyName, address: dto.propertyAddress, city: dto.city, state: dto.state, location: dto.city + ', ' + dto.state, totalRooms: dto.totalRooms, totalCapacity: dto.totalCapacity, occupiedRooms: 0, rooms: '0/' + dto.totalRooms, ownerId: user.id, rentMin: 0, rentMax: 0, amenities: dto.amenities, status: 'pending', docsVerified: false, inspectionPassed: false, compliance: 'Pending', fireSafety: 'Unverified', safetyScore: 0, images: [], detailsDocument });
       const admins = await manager.getRepository(User).findBy({ role: 'admin', status: 'active' });
       for (const admin of admins) await manager.getRepository(Notification).save({ title: 'New owner application', message: user.name + ' submitted ' + property.name + ' for review.', type: 'info', priority: 'normal', userId: admin.id, byUserId: user.id, sentAt: new Date().toISOString() });
       return { id: user.id, propertyId: property.id, status: 'pending' };

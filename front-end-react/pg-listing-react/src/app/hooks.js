@@ -1,9 +1,25 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { logout } from '../features/auth/authSlice';
 import { toastSuccess, toastError } from '../features/ui/uiSlice';
 
 export const useAppDispatch = useDispatch;
 export const useAppSelector = useSelector;
+
+export function useSignOut(destination = '/login') {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  return async () => {
+    const result = await dispatch(logout());
+    if (logout.fulfilled.match(result)) {
+      if (destination) navigate(destination, { replace: true });
+      else dispatch(toastSuccess('You have been signed out'));
+    } else if (!result.meta.condition) {
+      dispatch(toastError('Could not sign out. Please try again.'));
+    }
+  };
+}
 
 /**
  * Dispatch a fetch thunk on mount (and whenever `deps` change).

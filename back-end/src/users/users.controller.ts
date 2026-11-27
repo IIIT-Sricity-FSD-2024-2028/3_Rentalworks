@@ -11,11 +11,24 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  HttpCode,
+  Query,
   Req,
+  Res,
+  BadRequestException,
   ForbiddenException,
+  InternalServerErrorException,
+  UnauthorizedException,
+  NotFoundException,
+  ParseIntPipe,
+  StreamableFile,
+  ValidationPipe,
 } from '@nestjs/common';
+import type { Request, Response } from 'express';
+import { QueryFailedError } from 'typeorm';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { createUploadOptions } from '../middleware/file-upload.middleware';
+import { PROPERTY_DOCUMENT_LIMIT, readPropertyDetailsUpload } from '../owner/property-details-document';
 import { UsersService } from './users.service';
 import {
   CreateUserDto,
@@ -27,6 +40,24 @@ import {
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import {
+  browserCookieOptions,
+  checkSessionOrigin,
+  readBrowserSession,
+  SESSION_COOKIE,
+  SESSION_DURATION_MS,
+  signBrowserSession,
+} from './browser-session';
+import { verifySessionToken } from '../super-admin/super-admin-token';
+
+/** Signed-in user id from the Bearer token, or from the browser-session cookie when no token is sent. */
+function sessionUserId(request: Request): number | null {
+  if (request.headers.authorization) return verifySessionToken(request.headers.authorization);
+  checkSessionOrigin(request);
+  return readBrowserSession(request)?.userId ?? null;
+}
+
+const ownerRegistrationPipe = new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true });
 
 @ApiTags('users')
 @Controller('users')
@@ -80,8 +111,104 @@ export class UsersController {
     return this.usersService.guestLogin(loginDto);
   }
 
+  @Post('session')
+  @HttpCode(200)
+  async startSession(
+    @Body() loginDto: LoginDto,
+    @Query('guestOnly') guestOnly: string | undefined,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    checkSessionOrigin(request);
+    response.setHeader('Cache-Control', 'no-store');
+    const user = guestOnly === 'true'
+      ? await this.usersService.guestLogin(loginDto)
+      : await this.usersService.login(loginDto);
+    const expiresAt = Date.now() + SESSION_DURATION_MS;
+    response.cookie(SESSION_COOKIE, signBrowserSession(user.id, expiresAt), browserCookieOptions(request));
+    return user;
+  }
+
+  @Get('session')
+  async restoreSession(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
+    checkSessionOrigin(request);
+    response.setHeader('Cache-Control', 'no-store');
+    const session = readBrowserSession(request);
+    const user = session && await this.usersService.restoreSession(session.userId, session.expiresAt);
+    return user;
+  }
+
+  @Delete('session')
+  @HttpCode(204)
+  endSession(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
+    checkSessionOrigin(request);
+    response.setHeader('Cache-Control', 'no-store');
+    response.clearCookie(SESSION_COOKIE, browserCookieOptions(request));
+  }
+
+  @Get('session/subscription-report')
+  subscriptionReport(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
+    response.setHeader('Cache-Control', 'no-store');
+    const userId = sessionUserId(request);
+    if (!userId) throw new UnauthorizedException('Sign in to view subscription reports');
+    return this.usersService.getSubscriptionReport(userId);
+  }
+
+  @Get('session/property-documents/:id')
+  async propertyDocument(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('download') download: string | undefined,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const userId = sessionUserId(request);
+    if (!userId) throw new UnauthorizedException('Sign in to review property documents');
+    response.setHeader('Cache-Control', 'no-store');
+    const document = await this.usersService.getPropertyDetailsDocument(userId, id);
+    if (!document) {
+      if (download === 'true') throw new NotFoundException('No document was uploaded for this property');
+      return null;
+    }
+    const { data, ...metadata } = document;
+    if (download !== 'true') return metadata;
+
+    const filename = encodeURIComponent(document.name).replace(/['()*]/g, (char) =>
+      `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
+    return new StreamableFile(Buffer.from(data, 'base64'), {
+      type: document.contentType,
+      disposition: `attachment; filename*=UTF-8''${filename}`,
+      length: document.size,
+    });
+  }
+
   @Post('owner-register')
-  registerOwner(@Body() dto: OwnerRegistrationDto) { return this.usersService.registerOwner(dto); }
+  @UseInterceptors(FileInterceptor('document', {
+    limits: { fileSize: PROPERTY_DOCUMENT_LIMIT, files: 1, fields: 1, fieldSize: 32768 },
+  }))
+  @ApiConsumes('multipart/form-data')
+  async registerOwner(@Body('details') details: string, @UploadedFile() file?: Express.Multer.File) {
+    const document = readPropertyDetailsUpload(file);
+    // A JSON field preserves numeric and array types inside the multipart request.
+    let application: unknown;
+    try {
+      application = JSON.parse(details);
+    } catch {
+      throw new BadRequestException('Invalid owner registration details');
+    }
+    if (!application || typeof application !== 'object' || Array.isArray(application)) {
+      throw new BadRequestException('Invalid owner registration details');
+    }
+    const dto = await ownerRegistrationPipe.transform(application, { type: 'body', metatype: OwnerRegistrationDto });
+    try {
+      return await this.usersService.registerOwner(dto, document);
+    } catch (error) {
+      // The generic exception filter logs query parameters. Strip private upload bytes from database errors.
+      if (error instanceof QueryFailedError) {
+        throw new InternalServerErrorException('Could not save the property application');
+      }
+      throw error;
+    }
+  }
 
   @Post('guest-register')
   @ApiOperation({ summary: 'Register or authenticate guest user' })

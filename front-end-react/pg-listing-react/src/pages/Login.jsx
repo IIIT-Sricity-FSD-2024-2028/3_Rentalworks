@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import useScreenState from '../app/useScreenState';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -19,25 +20,25 @@ export default function Login({ initialMode = 'login' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
-  const { user: currentUser, status: authStatus, sessionExpired } = useSelector(selectAuth);
+  const { user: currentUser, status: authStatus, sessionExpired, ownerApplication } = useSelector(selectAuth);
   const loading = authStatus === 'loading';
 
   // View states: 'login' | 'signup' | 'owner_reg' | 'success'
-  const [viewMode, setViewMode] = useState(location.state?.mode === 'owner' ? 'owner_reg' : initialMode);
+  const [viewMode, setViewMode] = useScreenState(location.state?.mode === 'owner' ? 'owner_reg' : initialMode);
 
   // Login form fields
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useScreenState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [usernameErr, setUsernameErr] = useState('');
-  const [passwordErr, setPasswordErr] = useState('');
-  const [banner, setBanner] = useState(
+  const [showPassword, setShowPassword] = useScreenState(false);
+  const [usernameErr, setUsernameErr] = useScreenState('');
+  const [passwordErr, setPasswordErr] = useScreenState('');
+  const [banner, setBanner] = useScreenState(
     sessionExpired ? { text: 'Your session has expired. Please sign in again.', type: 'warning' } : { text: '', type: '' },
   );
 
   // Guest multi-step signup state
-  const [guestStep, setGuestStep] = useState(1);
-  const [guestData, setGuestData] = useState({
+  const [guestStep, setGuestStep] = useScreenState(1);
+  const [guestData, setGuestData] = useScreenState({
     name: '',
     email: '',
     phone: '',
@@ -45,14 +46,14 @@ export default function Login({ initialMode = 'login' }) {
     dob: '',
     city: '',
     address: '',
-    password: '',
-    confirm: '',
   });
-  const [guestErr, setGuestErr] = useState({});
-  const [pwStrength, setPwStrength] = useState(0);
+  const [guestPassword, setGuestPassword] = useState('');
+  const [guestConfirm, setGuestConfirm] = useState('');
+  const [guestErr, setGuestErr] = useScreenState({});
+  const [pwStrength, setPwStrength] = useScreenState(0);
 
   // Owner registration state
-  const [ownerData, setOwnerData] = useState({
+  const [ownerData, setOwnerData] = useScreenState({
     name: '',
     email: '',
     phone: '',
@@ -65,13 +66,9 @@ export default function Login({ initialMode = 'login' }) {
     amenities: ['WiFi', 'Food'],
     commission: false,
   });
-  const [ownerErr, setOwnerErr] = useState({});
+  const [ownerErr, setOwnerErr] = useScreenState({});
 
-  // Success screen state
-  const [successInfo, setSuccessInfo] = useState({
-    title: 'Success',
-    message: 'Operation completed successfully.',
-  });
+  const [propertyDocument, setPropertyDocument] = useState(null);
 
   // After signing in: return to where the user was going, else their portal.
   const continueAs = (user) => {
@@ -89,7 +86,7 @@ export default function Login({ initialMode = 'login' }) {
     navigate(home, { replace: true });
   };
 
-  // Already signed in (or signed in just now, in this or another tab).
+  // Continue when the current app session signs in.
   useEffect(() => {
     if (currentUser?.id) continueAs(currentUser);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -171,10 +168,10 @@ export default function Login({ initialMode = 'login' }) {
 
   const handleGuestSignupSubmit = async () => {
     const errs = {};
-    if (!guestData.password || guestData.password.length < 8) {
+    if (!guestPassword || guestPassword.length < 8) {
       errs.password = 'Password must be at least 8 characters';
     }
-    if (guestData.password !== guestData.confirm) {
+    if (guestPassword !== guestConfirm) {
       errs.confirm = 'Passwords do not match';
     }
     if (Object.keys(errs).length > 0) {
@@ -188,7 +185,7 @@ export default function Login({ initialMode = 'login' }) {
         email: guestData.email.trim().toLowerCase(),
         phone: guestData.phone.trim(),
         gender: guestData.gender || 'male',
-        password: guestData.password,
+        password: guestPassword,
       }),
     );
     if (registerGuest.fulfilled.match(result)) {
@@ -213,6 +210,8 @@ export default function Login({ initialMode = 'login' }) {
     if (!ownerData.state.trim()) errs.state = 'State is required';
     if (!ownerData.rooms || parseInt(ownerData.rooms) < 1) errs.rooms = 'Enter a valid room count';
     if (!ownerData.capacity || parseInt(ownerData.capacity) < 1) errs.capacity = 'Enter a valid capacity';
+    if (!propertyDocument) errs.document = 'Choose one property details document';
+    else if (propertyDocument.size > 5 * 1024 * 1024) errs.document = 'The document must be 5 MB or less';
     if (!ownerData.commission) errs.commission = 'You must agree to the commission terms';
 
     if (Object.keys(errs).length > 0) {
@@ -234,16 +233,13 @@ export default function Login({ initialMode = 'login' }) {
       commissionAgreed: true,
     };
 
-    const result = await dispatch(registerOwner(newOwner));
+    const result = await dispatch(registerOwner({ details: newOwner, document: propertyDocument }));
     if (registerOwner.rejected.match(result)) {
-      setOwnerErr({ commission: result.payload || 'Registration failed. Please try again.' });
+      setOwnerErr({ submit: result.payload || 'Registration failed. Please try again.' });
       return;
     }
 
-    setSuccessInfo({
-      title: 'Registration Submitted',
-      message: `Thank you, ${ownerData.name}. Your property "${ownerData.propname}" has been submitted for admin review. You will be notified once documents are verified.`,
-    });
+    setPropertyDocument(null);
     setViewMode('success');
   };
 
@@ -673,9 +669,9 @@ export default function Login({ initialMode = 'login' }) {
                             type="password"
                             id="g-password"
                             placeholder="Create a strong password"
-                            value={guestData.password}
+                            value={guestPassword}
                             onChange={(e) => {
-                              setGuestData({ ...guestData, password: e.target.value });
+                              setGuestPassword(e.target.value);
                               checkPasswordStrength(e.target.value);
                             }}
                           />
@@ -715,8 +711,8 @@ export default function Login({ initialMode = 'login' }) {
                             type="password"
                             id="g-confirm"
                             placeholder="Re-enter your password"
-                            value={guestData.confirm}
-                            onChange={(e) => setGuestData({ ...guestData, confirm: e.target.value })}
+                            value={guestConfirm}
+                            onChange={(e) => setGuestConfirm(e.target.value)}
                           />
                         </div>
                         {guestErr.confirm && <div className="reg-err" style={{ display: 'block' }}>{guestErr.confirm}</div>}
@@ -889,7 +885,14 @@ export default function Login({ initialMode = 'login' }) {
                     </div>
                   </div>
 
-                  <p className="doc-note">The administrator will arrange document verification after reviewing your application. File upload is not available on this form.</p>
+                  <div className="reg-field full">
+                    <label htmlFor="property-details-document">Property details document *</label>
+                    <input id="property-details-document" type="file" accept=".pdf,.jpg,.jpeg,.png" required
+                      onChange={(event) => setPropertyDocument(event.target.files[0] || null)} />
+                    <p className="doc-note">Upload one PDF, JPG, or PNG up to 5 MB for admin verification.</p>
+                    {ownerErr.document && <p className="reg-err" role="alert" style={{ display: 'block' }}>{ownerErr.document}</p>}
+                    {ownerErr.submit && <p className="reg-err" role="alert" style={{ display: 'block' }}>{ownerErr.submit}</p>}
+                  </div>
 
                   <div className="reg-field full" style={{ marginTop: '8px' }}>
                     <label className="amenity-check commission-check">
@@ -936,10 +939,10 @@ export default function Login({ initialMode = 'login' }) {
                   </span>
                 </div>
                 <h2 className="card-title" id="success-title">
-                  {successInfo.title}
+                  Registration Submitted
                 </h2>
                 <p className="card-sub" id="success-message">
-                  {successInfo.message}
+                  {ownerApplication && `Thank you, ${ownerApplication.applicantName}. "${ownerApplication.propertyName}" and its document have been submitted for admin review.`}
                 </p>
 
                 <button className="btn-login" onClick={goBack} id="success-btn">

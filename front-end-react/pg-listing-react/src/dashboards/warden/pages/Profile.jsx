@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { useDispatch, useSelector } from 'react-redux';
 import Modal from '../components/Modal';
 import { changeMyPassword, refreshProfile, selectCurrentUser, updateMyProfile } from '../../../features/auth/authSlice';
@@ -12,10 +13,10 @@ export default function Profile() {
   const loading = useSelector((s) => s.auth.profileStatus === 'loading') && !user.name;
   const { rooms } = useSelector(selectWarden);
   const property = [...new Set(rooms.map((r) => r.property).filter(Boolean))].join(', ') || user.region || 'Not assigned';
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useScreenState(false);
 
   // Only the fields the user has edited; everything else shows the stored value.
-  const [edits, setEdits] = useState({});
+  const [edits, setEdits] = useScreenState({});
   const { name, email, phone, address } = {
     name: user.name || '',
     email: user.email || '',
@@ -30,11 +31,11 @@ export default function Profile() {
   }, [dispatch]);
 
   // Password Modal State
-  const [isPwdModalOpen, setIsPwdModalOpen] = useState(false);
+  const [isPwdModalOpen, setIsPwdModalOpen] = useScreenState(false);
   const [currentPwd, setCurrentPwd] = useState('');
   const [newPwd, setNewPwd] = useState('');
   const [confirmPwd, setConfirmPwd] = useState('');
-  const [pwdErrors, setPwdErrors] = useState({});
+  const [pwdErrors, setPwdErrors] = useScreenState({});
 
   const showToast = useWardenToast();
 

@@ -54,6 +54,8 @@ import { ServiceRequestsModule } from './service-requests/service-requests.modul
 import { RemoveSuperAdminTwoFactor1900000000000 } from './migrations/1900000000000-RemoveSuperAdminTwoFactor';
 import { DropLegacyAuthenticatorColumns1910000000000 } from './migrations/1910000000000-DropLegacyAuthenticatorColumns';
 import { RentDuesAndAllotment1930000000000 } from './migrations/1930000000000-RentDuesAndAllotment';
+import { PropertyDetailsDocument1940000000000 } from './migrations/1940000000000-PropertyDetailsDocument';
+import { ServiceUsageBilling1950000000000 } from './migrations/1950000000000-ServiceUsageBilling';
 import { RentDue } from './rent-dues/rent-due.entity';
 import { RentDuesModule } from './rent-dues/rent-dues.module';
 import { AuditLog } from './warden-actions/audit-log.entity';
@@ -67,6 +69,9 @@ import { WardenActionsModule } from './warden-actions/warden-actions.module';
         if (!config.DATABASE_URL) throw new Error('DATABASE_URL is required in back-end/.env');
         if (!config.SUPER_ADMIN_TOKEN_SECRET || config.SUPER_ADMIN_TOKEN_SECRET.length < 32) {
           throw new Error('SUPER_ADMIN_TOKEN_SECRET must be at least 32 characters in back-end/.env');
+        }
+        if (config.SESSION_COOKIE_SECRET && config.SESSION_COOKIE_SECRET.length < 32) {
+          throw new Error('SESSION_COOKIE_SECRET must be at least 32 characters in back-end/.env');
         }
         return config;
       },
@@ -113,6 +118,8 @@ import { WardenActionsModule } from './warden-actions/warden-actions.module';
             RentDuesAndAllotment1930000000000,
             PropertyDocuments1940000000000,
             PropertySharingRents1950000000000,
+            PropertyDetailsDocument1940000000000,
+            ServiceUsageBilling1950000000000,
           ],
           migrationsRun: true,
         }) as any,

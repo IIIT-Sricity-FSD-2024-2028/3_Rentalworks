@@ -20,6 +20,13 @@ import { Issue } from '../issues/issue.entity';
 import { ServiceRequest } from '../service-requests/service-request.entity';
 import { Service } from '../services/service.entity';
 
+export type PropertyDetailsDocument = {
+  name: string;
+  contentType: string;
+  size: number;
+  data: string;
+};
+
 @Entity('properties')
 export class Property {
   @PrimaryGeneratedColumn()
@@ -61,6 +68,10 @@ export class Property {
 
   @Column({ default: false })
   docsVerified: boolean;
+
+  // Only the authenticated review endpoint explicitly selects the private file.
+  @Column({ type: 'jsonb', nullable: true, select: false })
+  detailsDocument?: PropertyDetailsDocument | null;
 
   @Column({ default: false })
   inspectionPassed: boolean;

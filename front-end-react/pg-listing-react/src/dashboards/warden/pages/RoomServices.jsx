@@ -1,19 +1,22 @@
-import React, { useState } from 'react';
+import React from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { useWardenData, useWardenRun, useWardenToast } from '../utils/dataStore';
 import { createRoom, deleteRoom, updateRoom } from '../../../features/warden/wardenSlices';
 import Modal from '../components/Modal';
+import ServiceRequests from '../components/ServiceRequests';
 
 export default function RoomServices() {
   const { data, loading } = useWardenData();
   const run = useWardenRun();
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useScreenState('all');
 
-  const [activeModal, setActiveModal] = useState(null); // 'add', 'updateStatus'
-  const [selectedRoom, setSelectedRoom] = useState(null);
-  const [formData, setFormData] = useState({});
-  const [submitting, setSubmitting] = useState(false);
+  const [activeModal, setActiveModal] = useScreenState(null); // 'add', 'updateStatus'
+  const [selectedRoomId, setSelectedRoom] = useScreenState(null);
+  const [formData, setFormData] = useScreenState({});
+  const [submitting, setSubmitting] = useScreenState(false);
 
   const rooms = data.rooms || [];
+  const selectedRoom = rooms.find((room) => room.id === selectedRoomId);
   // Properties this warden's rooms belong to (id → name).
   const properties = [...new Map(rooms.filter((r) => r.propertyId).map((r) => [r.propertyId, r.property || `Property ${r.propertyId}`]))];
 
@@ -86,7 +89,7 @@ export default function RoomServices() {
   };
 
   const openUpdateStatusModal = (room) => {
-    setSelectedRoom(room);
+    setSelectedRoom(room.id);
     setFormData({ maintenance: room.maintenance || 'Ready', rent: String(room.rent || '') });
     setActiveModal('updateStatus');
   };
@@ -243,6 +246,8 @@ export default function RoomServices() {
           </tbody>
         </table>
       </div>
+
+      <ServiceRequests />
 
       {/* Add Room Modal */}
       <Modal 

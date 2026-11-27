@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { useDispatch } from 'react-redux';
 import { useWardenData, useWardenRun, useWardenToast } from '../utils/dataStore';
 import {
@@ -14,15 +15,15 @@ export default function Complaints() {
   const dispatch = useDispatch();
   const run = useWardenRun();
   
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useScreenState('all');
+  const [priorityFilter, setPriorityFilter] = useScreenState('all');
   // Complaints and issues share this list, so a row is identified by type + id.
-  const [selectedKey, setSelectedKey] = useState(null);
+  const [selectedKey, setSelectedKey] = useScreenState(null);
   const keyOf = (c) => `${c.entityType}-${c.id}`;
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useScreenState(false);
   
-  const [remarkText, setRemarkText] = useState('');
-  const [isSeverityModalOpen, setIsSeverityModalOpen] = useState(false);
+  const [remarkText, setRemarkText] = useScreenState('');
+  const [isSeverityModalOpen, setIsSeverityModalOpen] = useScreenState(false);
   
 
   const complaints = data.complaints || [];

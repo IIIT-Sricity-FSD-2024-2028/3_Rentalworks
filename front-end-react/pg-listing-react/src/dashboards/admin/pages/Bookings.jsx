@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { useDispatch, useSelector } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
 import { adminBookings } from '../../../features/admin/adminSlices';
 import Modal from '../components/Modal';
+import BookingRequestsPanel from '../components/BookingRequestsPanel';
 import { formatDuration, formatDate, formatINR } from '../../../utils/normalize';
 
 const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
@@ -15,9 +17,10 @@ export default function Bookings() {
   const dispatch = useDispatch();
   const bookings = useSelector(adminBookings.selectors.selectItems);
   const loading = useSelector(adminBookings.selectors.selectIsLoading) && bookings.length === 0;
-  const [search, setSearch] = useState('');
-  const [statusF, setStatusF] = useState('all');
-  const [modal, setModal] = useState(null);
+  const [search, setSearch] = useScreenState('');
+  const [statusF, setStatusF] = useScreenState('all');
+  const [modal, setModal] = useScreenState(null);
+  const selectedBooking = useSelector((state) => adminBookings.selectors.selectById(state, modal?.bookingId));
 
   useEffect(() => {
     dispatch(adminBookings.thunks.fetchAll());
@@ -53,10 +56,8 @@ export default function Bookings() {
       message: `Are you sure you want to reject the booking for "${getName(b.tenant)}" at ${getName(b.property)}?`,
       btnClass: 'btn-confirm-red',
       btnText: 'Reject',
-      action: async () => {
-        const { ok } = await setStatus(b, 'cancelled', `${getName(b.tenant)}'s booking was rejected`);
-        if (ok) setModal(null);
-      }
+      bookingId: b.id,
+      outcome: 'rejected',
     });
   };
 
@@ -67,16 +68,20 @@ export default function Bookings() {
       message: `Are you sure you want to terminate "${getName(b.tenant)}"'s booking? This action cannot be undone.`,
       btnClass: 'btn-confirm-red',
       btnText: 'Terminate',
-      action: async () => {
-        const { ok } = await setStatus(b, 'cancelled', `${getName(b.tenant)}'s booking was terminated`);
-        if (ok) setModal(null);
-      }
+      bookingId: b.id,
+      outcome: 'terminated',
     });
   };
 
   const handleView = (b) => {
-    setModal({ type: 'view', booking: b });
+    setModal({ type: 'view', bookingId: b.id });
   };
+
+  async function confirmCancellation() {
+    if (!selectedBooking) return;
+    const { ok } = await setStatus(selectedBooking, 'cancelled', `${getName(selectedBooking.tenant)}'s booking was ${modal.outcome}`);
+    if (ok) setModal(null);
+  }
 
   return (
     <>
@@ -166,18 +171,18 @@ export default function Bookings() {
                     <div className="act-icons">
                       {b.status === 'pending' && (
                         <>
-                          <button className="ico-btn" onClick={() => handleApprove(b)} title="Approve">✅</button>
-                          <button className="ico-btn danger" onClick={() => handleReject(b)} title="Reject">❌</button>
+                          <button className="ico-btn ok" onClick={() => handleApprove(b)} title="Approve"><span className="material-icons-outlined">check</span></button>
+                          <button className="ico-btn danger" onClick={() => handleReject(b)} title="Reject"><span className="material-icons-outlined">close</span></button>
                         </>
                       )}
                       {(LIVE.includes(b.status) || b.status === 'overdue') && (
                         <>
-                          <button className="ico-btn" onClick={() => handleView(b)} title="View Details">👁️</button>
-                          <button className="ico-btn danger" onClick={() => handleTerminate(b)} title="Force Terminate">🔴</button>
+                          <button className="ico-btn view" onClick={() => handleView(b)} title="View Details"><span className="material-icons-outlined">visibility</span></button>
+                          <button className="ico-btn danger" onClick={() => handleTerminate(b)} title="Force Terminate"><span className="material-icons-outlined">cancel</span></button>
                         </>
                       )}
                       {!LIVE.includes(b.status) && b.status !== 'overdue' && (
-                        <button className="ico-btn" onClick={() => handleView(b)} title="View Details">👁️</button>
+                        <button className="ico-btn view" onClick={() => handleView(b)} title="View Details"><span className="material-icons-outlined">visibility</span></button>
                       )}
                     </div>
                   </td>
@@ -189,17 +194,19 @@ export default function Bookings() {
         <div className="tbl-footer">Showing {filtered.length} of {bookings.length} bookings</div>
       </div>
 
+      <BookingRequestsPanel />
+
       {/* Modal */}
       <Modal
         show={!!modal}
         onClose={() => setModal(null)}
         title={modal?.title || '📅 Booking Details'}
-        subtitle={modal?.type === 'view' && modal.booking ? `Room ${modal.booking.room} at ${getName(modal.booking.property)}` : ''}
+        subtitle={modal?.type === 'view' && selectedBooking ? `Room ${selectedBooking.room} at ${getName(selectedBooking.property)}` : ''}
         footer={
           modal?.type === 'confirm' ? (
             <>
               <button className="btn-cancel" onClick={() => setModal(null)}>Cancel</button>
-              <button className={modal.btnClass || 'btn-confirm-red'} onClick={modal.action}>
+              <button className={modal.btnClass || 'btn-confirm-red'} onClick={confirmCancellation} disabled={!selectedBooking}>
                 {modal.btnText || 'Confirm'}
               </button>
             </>
@@ -211,16 +218,16 @@ export default function Bookings() {
         {modal?.type === 'confirm' && (
           <p style={{ fontSize: 13, lineHeight: 1.6, color: '#475569' }}>{modal.message}</p>
         )}
-        {modal?.type === 'view' && modal.booking && (
+        {modal?.type === 'view' && selectedBooking && (
           <div style={{ display: 'grid', gap: 10, fontSize: 13 }}>
-            <div><strong>Tenant:</strong> {getName(modal.booking.tenant)}</div>
-            <div><strong>Phone:</strong> {modal.booking.phone || getPhone(modal.booking.tenant) || '-'}</div>
-            <div><strong>Property:</strong> {getName(modal.booking.property)}</div>
-            <div><strong>Room:</strong> {modal.booking.room}</div>
-            <div><strong>Check-in:</strong> {modal.booking.checkIn}</div>
-            <div><strong>Duration:</strong> {formatDuration(modal.booking.duration)}</div>
-            <div><strong>Monthly Rent:</strong> ₹{(Number(modal.booking.rent) || 0).toLocaleString('en-IN')}</div>
-            <div><strong>Status:</strong> <span className={`badge badge-${modal.booking.status}`}>{statusLabel(modal.booking.status)}</span></div>
+            <div><strong>Tenant:</strong> {getName(selectedBooking.tenant)}</div>
+            <div><strong>Phone:</strong> {selectedBooking.phone || getPhone(selectedBooking.tenant) || '-'}</div>
+            <div><strong>Property:</strong> {getName(selectedBooking.property)}</div>
+            <div><strong>Room:</strong> {selectedBooking.room}</div>
+            <div><strong>Check-in:</strong> {selectedBooking.checkIn}</div>
+            <div><strong>Duration:</strong> {formatDuration(selectedBooking.duration)}</div>
+            <div><strong>Monthly Rent:</strong> ₹{(Number(selectedBooking.rent) || 0).toLocaleString('en-IN')}</div>
+            <div><strong>Status:</strong> <span className={`badge badge-${selectedBooking.status}`}>{statusLabel(selectedBooking.status)}</span></div>
           </div>
         )}
       </Modal>

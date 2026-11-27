@@ -826,7 +826,7 @@
 .gateway-processing-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.75);
+  background: rgba(203, 213, 225, 0.55);
   backdrop-filter: blur(4px);
   z-index: 9999;
   display: flex;
@@ -950,4 +950,33 @@
   .sidebar {
     display: none !important;
   }
+}
+.service-usage-list {
+  list-style: none;
+  margin: 6px 0 10px;
+  padding: 0;
+}
+.service-usage-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+}
+.service-usage-list small {
+  display: block;
+  color: #64748b;
+}
+.service-usage-pending {
+  padding: 12px;
+  margin: 12px 0;
+  border-radius: 8px;
+  background: #fffbeb;
+}
+.service-usage-details {
+  margin-top: 5px;
+  color: #475569;
+  font-size: 12px;
+}
+.service-usage-details summary {
+  cursor: pointer;
 }

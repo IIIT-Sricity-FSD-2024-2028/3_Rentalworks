@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import useScreenState from '../../../app/useScreenState';
 import { useDispatch, useSelector } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
 import { tenantComplaints } from '../../../features/tenant/tenantSlices';
@@ -77,7 +78,7 @@ const parseComplaint = (c) => {
 };
 
 const Complaints = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useScreenState(false);
   const dispatch = useDispatch();
   const { tenant, activeBooking } = useTenant();
   const complaints = useSelector(tenantComplaints.selectors.selectItems);
@@ -86,15 +87,15 @@ const Complaints = () => {
   const loading = isLoading && complaints.length === 0;
 
   // Filters & View Mode
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
+  const [statusFilter, setStatusFilter] = useScreenState('all');
+  const [searchQuery, setSearchQuery] = useScreenState('');
+  const [viewMode, setViewMode] = useScreenState('grid'); // 'grid' | 'table'
 
   // Form State
-  const [title, setTitle] = useState('');
-  const [priority, setPriority] = useState('medium');
-  const [category, setCategory] = useState('General');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useScreenState('');
+  const [priority, setPriority] = useScreenState('medium');
+  const [category, setCategory] = useScreenState('General');
+  const [description, setDescription] = useScreenState('');
 
   useEffect(() => {
     dispatch(tenantComplaints.thunks.fetchAll());
