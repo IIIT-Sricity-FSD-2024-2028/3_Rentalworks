@@ -3,7 +3,6 @@ import useScreenState from '../../../app/useScreenState';
 import { useDispatch, useSelector } from 'react-redux';
 import { useWardenData, useWardenRun, useWardenToast } from '../utils/dataStore';
 import {
-  createTenant,
   deleteTenant,
   escalateTenant,
   evictTenant,
@@ -79,7 +78,7 @@ export default function TenantRecords() {
   const [template, setTemplate] = useScreenState('rent_reminder');
   
   // Modal states
-  const [activeModal, setActiveModal] = useScreenState(null); // 'add', 'view', 'edit', 'delete'
+  const [activeModal, setActiveModal] = useScreenState(null); // 'edit' | 'delete'
   const [selectedTenantId, setSelectedTenant] = useScreenState(null);
   const [formData, setFormData] = useScreenState({});
   const [errors, setErrors] = useScreenState({});
@@ -217,43 +216,6 @@ export default function TenantRecords() {
     setErrors(prev => ({ ...prev, [field]: null }));
   };
 
-  const handleAdd = async () => {
-    if (submitting) return;
-
-    let valid = true;
-    const newErrors = {};
-    if (!formData.name?.trim()) { newErrors.name = 'Name is required'; valid = false; }
-    if (!formData.room?.trim()) { newErrors.room = 'Room number is required'; valid = false; }
-    if (!formData.phone || !/^\+?[\d\s-]{9,}$/.test(formData.phone)) { newErrors.phone = 'Enter a valid phone number'; valid = false; }
-    if (!formData.checkIn) { newErrors.checkIn = 'Check-in date is required'; valid = false; }
-    if (!formData.rent || isNaN(formData.rent) || Number(formData.rent) <= 0) { newErrors.rent = 'Enter a valid rent amount'; valid = false; }
-    
-    if (!valid) {
-      setErrors(newErrors);
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      await run(createTenant({
-        name: formData.name.trim(),
-        room: formData.room.trim(),
-        phone: formData.phone.trim(),
-        checkIn: formData.checkIn,
-        rent: parseInt(formData.rent),
-        paymentStatus: formData.paymentStatus || 'pending',
-      }));
-
-      await Promise.all([refreshData(), loadLedger()]);
-      setActiveModal(null);
-      showToast('success', 'Tenant records updated');
-    } catch (err) {
-      showToast('error', 'Error Saving Tenant', err.message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const handleEdit = async () => {
     if (submitting || !selectedTenant) return;
 
@@ -307,15 +269,7 @@ export default function TenantRecords() {
   const openModal = (type, tenant = null) => {
     setSelectedTenant(tenant.id);
     setErrors({});
-    if (type === 'add') {
-      setFormData({
-        paymentStatus: 'pending',
-        checkIn: new Date().toISOString().split('T')[0],
-        rent: '8000',
-      });
-    } else if (tenant) {
-      setFormData({ ...tenant });
-    }
+    setFormData({ ...tenant });
     setActiveModal(type);
   };
 
@@ -380,13 +334,6 @@ export default function TenantRecords() {
               <option value="upcoming">Upcoming</option>
               <option value="evicted">Removed</option>
             </select>
-            <button 
-              className="btn-login" 
-              style={{ width: 'auto', padding: '6px 16px', margin: 0, background: 'var(--primary)' }} 
-              onClick={() => openModal('add')}
-            >
-              + Add Tenant
-            </button>
           </div>
         </div>
         
@@ -447,58 +394,6 @@ export default function TenantRecords() {
           </tbody>
         </table>
       </div>
-
-      {/* Add Modal */}
-      <Modal 
-        isOpen={activeModal === 'add'} 
-        title="Add New Tenant"
-        onCancel={() => setActiveModal(null)}
-        onConfirm={handleAdd}
-        confirmText={submitting ? 'Saving...' : 'Add Tenant'}
-      >
-        <div className="form-group">
-          <label>Full Name *</label>
-          <div className="input-wrapper">
-            <input type="text" placeholder="e.g. Rahul Kumar" value={formData.name || ''} onChange={(e) => handleInputChange('name', e.target.value)} />
-          </div>
-          {errors.name && <div className="error-msg show">{errors.name}</div>}
-        </div>
-        <div className="form-group">
-          <label>Room Number *</label>
-          <div className="input-wrapper">
-            <input type="text" placeholder="e.g. 101 or 201" value={formData.room || ''} onChange={(e) => handleInputChange('room', e.target.value)} />
-          </div>
-          {errors.room && <div className="error-msg show">{errors.room}</div>}
-        </div>
-        <div className="form-group">
-          <label>Phone Number *</label>
-          <div className="input-wrapper">
-            <input type="text" placeholder="+91 98765 43210" value={formData.phone || ''} onChange={(e) => handleInputChange('phone', e.target.value)} />
-          </div>
-          {errors.phone && <div className="error-msg show">{errors.phone}</div>}
-        </div>
-        <div className="form-group">
-          <label>Check-In Date *</label>
-          <div className="input-wrapper">
-            <input type="date" value={formData.checkIn || ''} onChange={(e) => handleInputChange('checkIn', e.target.value)} />
-          </div>
-          {errors.checkIn && <div className="error-msg show">{errors.checkIn}</div>}
-        </div>
-        <div className="form-group">
-          <label>Monthly Rent (₹) *</label>
-          <div className="input-wrapper">
-            <input type="number" placeholder="e.g. 8000" min="0" value={formData.rent || ''} onChange={(e) => handleInputChange('rent', e.target.value)} />
-          </div>
-          {errors.rent && <div className="error-msg show">{errors.rent}</div>}
-        </div>
-        <div className="form-group">
-          <label>Payment Status</label>
-          <select className="filter-select" style={{ width: '100%' }} value={formData.paymentStatus || 'pending'} onChange={(e) => handleInputChange('paymentStatus', e.target.value)}>
-            <option value="pending">Pending</option>
-            <option value="paid">Paid</option>
-          </select>
-        </div>
-      </Modal>
 
       {/* Edit Modal */}
       <Modal 

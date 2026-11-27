@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Icon from './Icon';
 import PhotoUploader, { PHOTO_MAX_COUNT } from './PhotoUploader';
+import useScreenState from '../../../app/useScreenState';
+import useFileState from '../../../app/useFileState';
 
 /**
  * Photos of an existing listing (Properties → View): see, add more, remove.
  * A listing must keep at least one photo; the first is the cover.
  */
 export default function PropertyPhotos({ property, onAdd, onRemove }) {
-  const [pending, setPending] = useState([]);
-  const [busy, setBusy] = useState(false);
+  const [pending, setPending] = useFileState([]);
+  const [busy, setBusy] = useScreenState(false);
   const stored = property.rawImages || [];
   const urls = property.photoUrls || [];
 

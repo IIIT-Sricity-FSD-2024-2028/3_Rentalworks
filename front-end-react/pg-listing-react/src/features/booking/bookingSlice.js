@@ -1,10 +1,9 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import { http, asArray } from '../../services/apiClient';
-import { setSession } from '../auth/authSlice';
 import { fetchListings, fetchListingById } from '../listings/listingsSlice';
+import { mapRoom } from '../listings/listingMappers';
 import { bookingsRepo, paymentsRepo } from '../repositories';
 import { payOnline, fetchGatewayConfig } from '../../services/paymentGateway';
-import { rememberIssuedPassword } from './issuedPassword';
 
 export const PLATFORM_FEE = 500;
 export const DURATIONS = [
@@ -102,7 +101,15 @@ export const submitCheckout = createAsyncThunk(
 
     const forFriend = bookingFor === 'friend';
     const single = isSingleRoom(room);
-    const roomNumber = single ? room.roomNumber || undefined : selectedRoommate?.roomNum || room.roomNumber || undefined;
+    // Join the chosen roommate's room only when it is in this PG and still has a
+    // free bed; otherwise book the room the guest picked.
+    const roommateRoom = !single && selectedRoommate?.roomNum
+      ? getState().rooms.items
+        .map(mapRoom)
+        .find((r) => String(r.propertyId) === String(pg.id) && String(r.roomNumber) === String(selectedRoommate.roomNum) && r.available)
+      : null;
+    const roomNumber = roommateRoom?.roomNumber || room.roomNumber || undefined;
+    if (!roomNumber) return rejectWithValue('Please go back and choose a room to book.');
 
     // 1. Pay through the gateway. The server prices the room; this page never sends an amount.
     let proof;
@@ -118,7 +125,8 @@ export const submitCheckout = createAsyncThunk(
     const payload = {
       guestId: forFriend ? undefined : user.id,
       name: forFriend ? friendDetails.name.trim() : user.name,
-      email: forFriend ? friendDetails.email.trim() : user.email,
+      // Per-booking tenant accounts have no login email; they book as their guest.
+      email: forFriend ? friendDetails.email.trim() : user.email || user.preferences?.contactEmail,
       phone: forFriend ? friendDetails.phone.trim() : user.phone || '',
       gender: forFriend ? friendDetails.gender || undefined : user.gender || undefined,
       propertyId: Number(pg.id),
@@ -145,18 +153,17 @@ export const submitCheckout = createAsyncThunk(
       // Availability changed even if the user signed out while checkout was running.
       dispatch(fetchListings());
       if (!isCurrentCheckout()) return ended();
-      // Booking for yourself promotes your account to tenant. Booking for a
-      // friend creates *their* account, so your session stays as it is.
-      if (!forFriend && result?.tenant) {
-        dispatch(setSession({ user: { ...user, ...result.tenant, role: 'tenant', status: 'active' } }));
-      }
+      // The booking gets its own tenant account (new Tenant ID). The signed-in
+      // guest session stays a guest; the tenant dashboard is reached only by
+      // signing in with that Tenant ID.
       // Checkout creates the confirmed booking, so drop the unpaid request it replaces.
       if (booking.pendingBookingId) await http.delete(`/bookings/${booking.pendingBookingId}`).catch(() => null);
       if (!isCurrentCheckout()) return ended();
       dispatch(fetchListingById(pg.id));
+      // The one-time password is kept apart from the receipt credentials; it is
+      // masked in Redux DevTools and cleared on sign-out (root reset).
       const { password, ...credentials } = result.credentials ?? {};
-      rememberIssuedPassword(result.booking?.id, password);
-      return { ...result, credentials };
+      return { ...result, credentials, issuedPassword: password || null };
     } catch (err) {
       // 2. Paid but the booking could not be completed (e.g. the bed was just taken).
       return rejectWithValue(
@@ -202,6 +209,8 @@ const createInitialState = () => ({
   friendDetails: { name: '', phone: '', email: '', gender: '' },
   paymentMethod: 'upi',
   lastConfirmed: null,
+  // { bookingId, password } shown once on the confirmation page.
+  issuedPassword: null,
   pendingBookingId: null,
 
   matches: { items: [], status: 'idle', error: null },
@@ -251,8 +260,7 @@ const bookingSlice = createSlice({
       state.checkout.error = null;
     },
     resetBookingFlow(state) {
-      // The issued tenant password never enters Redux (see ./issuedPassword).
-      return { ...createInitialState(), lastConfirmed: state.lastConfirmed, paymentMode: state.paymentMode };
+      return { ...createInitialState(), lastConfirmed: state.lastConfirmed, issuedPassword: state.issuedPassword, paymentMode: state.paymentMode };
     },
   },
   extraReducers: (builder) => {
@@ -288,6 +296,7 @@ const bookingSlice = createSlice({
         if (state.checkout.requestId !== meta.requestId) return;
         state.checkout = { status: 'succeeded', error: null };
         state.pendingBookingId = null;
+        state.issuedPassword = payload.issuedPassword ? { bookingId: payload.booking?.id, password: payload.issuedPassword } : null;
         state.lastConfirmed = {
           booking: payload.booking,
           payment: payload.payment,
@@ -334,13 +343,25 @@ export const selectMatches = (state) => state.booking.matches;
 export const selectCheckout = (state) => state.booking.checkout;
 export const selectPaymentMode = (state) => state.booking.paymentMode;
 export const selectLastConfirmed = (state) => state.booking.lastConfirmed;
+/** The password issued with this booking, or null (shown once on the receipt page). */
+export const selectIssuedPassword = (state, bookingId) => {
+  const issued = state.booking.issuedPassword;
+  return issued && bookingId != null && String(issued.bookingId) === String(bookingId) ? issued.password : null;
+};
 const listView = (slice, me) => ({
   items: slice.items.filter((x) => Number(x.tenantId ?? x.tenant?.id) === Number(me)).sort((a, b) => b.id - a.id),
   status: slice.status,
   error: slice.error,
 });
 /** The signed-in user's bookings / payments, read from the repository slices. */
-export const selectMyBookings = createSelector([(s) => s.bookings, (s) => s.auth.user?.id], listView);
+// The server already scopes GET /bookings to the signed-in user. A guest also
+// receives the bookings held by their per-booking Tenant IDs (different user
+// ids), so the list is not filtered by the guest's own id here.
+export const selectMyBookings = createSelector([(s) => s.bookings], (slice) => ({
+  items: [...slice.items].sort((a, b) => b.id - a.id),
+  status: slice.status,
+  error: slice.error,
+}));
 export const selectMyTransactions = createSelector([(s) => s.payments, (s) => s.auth.user?.id], listView);
 
 export const selectTotals = createSelector([selectSelectedRoom], (room) => {

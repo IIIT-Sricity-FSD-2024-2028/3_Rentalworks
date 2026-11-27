@@ -8,7 +8,9 @@ const localApiHost = typeof window !== 'undefined' && window.location.hostname =
   ? '127.0.0.1'
   : 'localhost';
 export const API_BASE_URL = import.meta.env.VITE_API_URL || `http://${localApiHost}:3000`;
-export const browserSessionOptions = { auth: false, credentials: 'include' };
+// Session-scoped routes are called with this tab's Bearer token (not the shared
+// cookie), so each tab acts as its own signed-in user.
+export const browserSessionOptions = { auth: true };
 
 // The Redux store is injected at startup (see app/store.js) so the client can
 // read the signed-in user without a circular import.

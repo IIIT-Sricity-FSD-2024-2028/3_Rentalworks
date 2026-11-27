@@ -56,6 +56,7 @@ import { DropLegacyAuthenticatorColumns1910000000000 } from './migrations/191000
 import { RentDuesAndAllotment1930000000000 } from './migrations/1930000000000-RentDuesAndAllotment';
 import { PropertyDetailsDocument1940000000000 } from './migrations/1940000000000-PropertyDetailsDocument';
 import { ServiceUsageBilling1950000000000 } from './migrations/1950000000000-ServiceUsageBilling';
+import { PerBookingTenantAccounts1960000000000 } from './migrations/1960000000000-PerBookingTenantAccounts';
 import { RentDue } from './rent-dues/rent-due.entity';
 import { RentDuesModule } from './rent-dues/rent-dues.module';
 import { AuditLog } from './warden-actions/audit-log.entity';
@@ -120,6 +121,7 @@ import { WardenActionsModule } from './warden-actions/warden-actions.module';
             PropertySharingRents1950000000000,
             PropertyDetailsDocument1940000000000,
             ServiceUsageBilling1950000000000,
+            PerBookingTenantAccounts1960000000000,
           ],
           migrationsRun: true,
         }) as any,

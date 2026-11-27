@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from '../components/Icon';
 import { formatINR } from '../../../utils/normalize';
 import { sharingKeyForCapacity } from '../../../features/repositories/propertiesSlice';
+import useScreenState from '../../../app/useScreenState';
 
 const SHARING = [
   { capacity: 1, label: 'Single' },
@@ -21,11 +22,11 @@ const statusBadge = (room) =>
  * Bed occupancy is set by bookings, never typed in here.
  */
 export default function Rooms({ rooms = [], properties = [], onAddRoom, onUpdateRoom, onDeleteRoom }) {
-  const [filterProperty, setFilterProperty] = useState('');
-  const [editing, setEditing] = useState(null);
-  const [deleting, setDeleting] = useState(null);
-  const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [filterProperty, setFilterProperty] = useScreenState('');
+  const [editing, setEditing] = useScreenState(null);
+  const [deleting, setDeleting] = useScreenState(null);
+  const [error, setError] = useScreenState('');
+  const [saving, setSaving] = useScreenState(false);
 
   const shown = useMemo(() => rooms.filter((r) => !filterProperty || String(r.propertyId) === filterProperty), [rooms, filterProperty]);
   const totals = useMemo(

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import useScreenState from '../../../app/useScreenState';
 import { useDispatch, useSelector } from 'react-redux';
 import Modal from '../components/Modal';
@@ -32,9 +32,9 @@ export default function Profile() {
 
   // Password Modal State
   const [isPwdModalOpen, setIsPwdModalOpen] = useScreenState(false);
-  const [currentPwd, setCurrentPwd] = useState('');
-  const [newPwd, setNewPwd] = useState('');
-  const [confirmPwd, setConfirmPwd] = useState('');
+  const [currentPwd, setCurrentPwd] = useScreenState('', { secret: true });
+  const [newPwd, setNewPwd] = useScreenState('', { secret: true });
+  const [confirmPwd, setConfirmPwd] = useScreenState('', { secret: true });
   const [pwdErrors, setPwdErrors] = useScreenState({});
 
   const showToast = useWardenToast();

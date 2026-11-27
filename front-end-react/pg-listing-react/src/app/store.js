@@ -1,21 +1,40 @@
-import { configureStore, createListenerMiddleware, isAnyOf } from '@reduxjs/toolkit';
+import { configureStore } from '@reduxjs/toolkit';
 import rootReducer from './rootReducer';
 import { injectStore } from '../services/apiClient';
-import { logout, sessionExpired } from '../features/auth/authSlice';
-import { clearIssuedPassword } from '../features/booking/issuedPassword';
+import { persistTabSession } from '../features/auth/tabSession';
+import { setScreenValue } from '../features/ui/screenStateSlice';
 
-const sessionListener = createListenerMiddleware();
-sessionListener.startListening({
-  matcher: isAnyOf(logout.fulfilled, sessionExpired),
-  effect: clearIssuedPassword,
-});
+const MASK = '***';
 
-// All application state lives here, in memory. Nothing is written to
-// localStorage or sessionStorage; thunks keep the store in sync with the API.
+// Redux DevTools (development only) never shows a password: secret screen
+// fields and the one-time issued booking password are masked.
+const stateSanitizer = (state) => {
+  if (!state?.screenState) return state;
+  const screenState = Object.fromEntries(
+    Object.entries(state.screenState).map(([id, entry]) => [id, entry?.secret ? { ...entry, value: MASK } : entry]),
+  );
+  const booking = state.booking?.issuedPassword
+    ? { ...state.booking, issuedPassword: { ...state.booking.issuedPassword, password: MASK } }
+    : state.booking;
+  return { ...state, screenState, booking };
+};
+const actionSanitizer = (action) => {
+  if (action.type === setScreenValue.type && action.payload?.secret) {
+    return { ...action, payload: { ...action.payload, value: MASK } };
+  }
+  if (action.type === 'booking/submitCheckout/fulfilled' && action.payload?.issuedPassword) {
+    return { ...action, payload: { ...action.payload, issuedPassword: MASK } };
+  }
+  return action;
+};
+
+// All application state lives here; thunks keep it in sync with the API. Only
+// the login (user + token) is copied to this tab's sessionStorage. Picked
+// files are referenced by id (see features/ui/fileRegistry.js).
 export const store = configureStore({
   reducer: rootReducer,
-  middleware: (getDefaultMiddleware) => getDefaultMiddleware().prepend(sessionListener.middleware),
-  devTools: import.meta.env.DEV,
+  devTools: import.meta.env.DEV ? { stateSanitizer, actionSanitizer } : false,
 });
 
 injectStore(store);
+persistTabSession(store);

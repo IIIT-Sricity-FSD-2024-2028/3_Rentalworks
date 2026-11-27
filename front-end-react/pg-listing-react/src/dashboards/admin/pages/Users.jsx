@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import useScreenState from '../../../app/useScreenState';
 import { useDispatch, useSelector } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
@@ -44,7 +44,6 @@ function passwordProblem(password, confirm) {
   return '';
 }
 
-const canSignIn = (u) => u.status === 'active';
 
 function passwordStrength(p) {
   if (!p) return { score: 0, label: '' };
@@ -125,7 +124,7 @@ export default function Users() {
   const [statusF, setStatusF] = useScreenState('all');
   const [modal, setModal] = useScreenState(null);
   // The generated or entered password is only needed while this dialog is open.
-  const [passwordFields, setPasswordFields] = useState({ password: '', confirm: '' });
+  const [passwordFields, setPasswordFields] = useScreenState({ password: '', confirm: '' }, { secret: true });
   const modalUser = useSelector((state) => adminUsers.selectors.selectById(state, modal?.userId));
   const toast = useToast();
 
@@ -151,7 +150,6 @@ export default function Users() {
     owners: users.filter((u) => u.role === 'owner').length,
     wardens: users.filter((u) => u.role === 'warden').length,
     admins: users.filter((u) => u.role === 'admin' || u.role === 'super_admin').length,
-    canSignIn: users.filter(canSignIn).length,
   };
 
   const setFields = (patch) => setModal((current) =>
@@ -318,7 +316,7 @@ export default function Users() {
     <>
       <div className="sec-hdr">
         <h2>User Management</h2>
-        <p>Create logins for every role and control who can sign in</p>
+        <p>Create logins for every role and manage user accounts</p>
       </div>
 
       <div className="user-summary">
@@ -341,22 +339,6 @@ export default function Users() {
         <div className="u-sum-card">
           <div className="u-sum-label">Admins</div>
           <div className="u-sum-val red">{counts.admins}</div>
-        </div>
-        <div className="u-sum-card">
-          <div className="u-sum-label">Can Sign In</div>
-          <div className="u-sum-val green">{counts.canSignIn}</div>
-        </div>
-      </div>
-
-      {/* One-click login creation per dashboard */}
-      <div className="tbl-wrap" style={{ marginBottom: 16 }}>
-        <div className="tbl-hdr" style={{ flexWrap: 'wrap', gap: 8 }}>
-          <strong style={{ fontSize: 13, marginRight: 8 }}>Create a login for:</strong>
-          {ROLE_OPTIONS.map((r) => (
-            <button key={r.value} className="btn-cancel" onClick={() => handleAdd(r.value)} title={`Opens: ${r.dashboard}`}>
-              <span className="material-icons-outlined" style={{ fontSize: 14, verticalAlign: 'middle' }}>person_add</span> {r.label}
-            </button>
-          ))}
         </div>
       </div>
 
@@ -420,9 +402,6 @@ export default function Users() {
                     <td><span className={`badge badge-${u.role === 'super_admin' ? 'admin' : u.role}`}>{cap(u.role)}</span></td>
                     <td style={{ fontSize: 12 }}>
                       {DASHBOARD_NAME[u.role] || '-'}
-                      <div style={{ color: canSignIn(u) ? '#15803d' : '#dc2626' }}>
-                        {canSignIn(u) ? 'Can sign in' : 'Login blocked'}
-                      </div>
                     </td>
                     <td><span className={`badge badge-${u.status}`}>{cap(u.status)}</span></td>
                     <td style={{ fontSize: 12 }}>{u.joinDate || '-'}</td>
@@ -472,8 +451,7 @@ export default function Users() {
             <div><strong>Phone:</strong> {modalUser.phone || '-'}</div>
             <div><strong>Role:</strong> <span className={`badge badge-${modalUser.role}`}>{cap(modalUser.role)}</span></div>
             <div><strong>Dashboard:</strong> {DASHBOARD_NAME[modalUser.role] || '-'} ({ROLE_HOME[modalUser.role] || '-'})</div>
-            <div><strong>Status:</strong> <span className={`badge badge-${modalUser.status}`}>{cap(modalUser.status)}</span>{' '}
-              {canSignIn(modalUser) ? 'Can sign in' : 'Login blocked until the account is active'}
+            <div><strong>Status:</strong> <span className={`badge badge-${modalUser.status}`}>{cap(modalUser.status)}</span>
             </div>
             <div><strong>Joined:</strong> {modalUser.joinDate || '-'}</div>
           </div>

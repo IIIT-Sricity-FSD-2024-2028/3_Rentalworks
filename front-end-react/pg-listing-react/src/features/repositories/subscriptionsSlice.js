@@ -1,6 +1,6 @@
 import { createRepositorySlice } from './createRepositorySlice';
 
-// Repository: subscriptions (owner plans; admins activate / change / cancel)
+// Repository: subscriptions (owners choose / change / cancel their own plan; admins view)
 export const subscriptionsRepo = createRepositorySlice({
   name: 'subscriptions',
   base: '/subscriptions',

@@ -159,6 +159,10 @@ export default function Bookings() {
                 <tr key={b.id}>
                   <td>
                     <strong>{getName(b.tenant)}</strong>
+                    {/* Same-named people are different accounts: show the Tenant ID. */}
+                    {b.tenant?.username && (
+                      <div style={{ fontSize: 11, color: '#64748b', fontFamily: 'monospace' }}>{b.tenant.username}</div>
+                    )}
                     <div style={{ fontSize: 11, color: '#94a3b8' }}>{b.phone || getPhone(b.tenant) || '-'}</div>
                   </td>
                   <td style={{ fontSize: 12 }}>{getName(b.property)}</td>

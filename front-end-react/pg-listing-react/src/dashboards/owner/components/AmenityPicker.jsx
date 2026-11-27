@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Icon from './Icon';
 import { AMENITIES, amenityKey } from '../../../utils/normalize';
+import useScreenState from '../../../app/useScreenState';
 
 const STANDARD = Object.values(AMENITIES).map(({ label, icon }) => ({ label, icon }));
 const isStandard = (label) => Boolean(AMENITIES[amenityKey(label)]);
@@ -11,9 +12,9 @@ const MAX_CUSTOM_LENGTH = 40;
  * "Study room") added with the + Custom button. `value` is a list of labels.
  */
 export default function AmenityPicker({ value = [], onChange }) {
-  const [adding, setAdding] = useState(false);
-  const [text, setText] = useState('');
-  const [error, setError] = useState('');
+  const [adding, setAdding] = useScreenState(false);
+  const [text, setText] = useScreenState('');
+  const [error, setError] = useScreenState('');
 
   const has = (label) => value.some((v) => v.toLowerCase() === label.toLowerCase());
   const toggle = (label) => onChange(has(label) ? value.filter((v) => v.toLowerCase() !== label.toLowerCase()) : [...value, label]);

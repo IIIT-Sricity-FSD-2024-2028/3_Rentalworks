@@ -3,18 +3,24 @@ import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 
 const navigation = [
   ['dashboard', 'dashboard', 'Global Dashboard', '/dashboard/superadmin'],
+  ['users', 'manage_accounts', 'Users & Access', '/dashboard/superadmin/users'],
   ['regional_admins', 'admin_panel_settings', 'Regional Admins', '/dashboard/superadmin/regional-admins'],
+  ['payments', 'payments', 'Payments', '/dashboard/superadmin/payments'],
+  ['subscriptions', 'workspace_premium', 'Subscriptions', '/dashboard/superadmin/subscriptions'],
   ['global_reports', 'assessment', 'Global Reports', '/dashboard/superadmin/global-reports'],
   ['notifications', 'notifications', 'Notifications', '/dashboard/superadmin/notifications'],
   ['profile', 'person', 'Profile', '/dashboard/superadmin/profile'],
 ];
 
-export default function Shell({ user, section, setSection, onLogout, toast, children }) {
+export default function Shell({ user, section, setSection, onLogout, children }) {
   const navigate = useNavigate();
   const location = useLocation();
 
   const currentSection = section || (() => {
     if (location.pathname.includes('regional-admins')) return 'regional_admins';
+    if (location.pathname.endsWith('/users')) return 'users';
+    if (location.pathname.endsWith('/payments')) return 'payments';
+    if (location.pathname.endsWith('/subscriptions')) return 'subscriptions';
     if (location.pathname.includes('global-reports')) return 'global_reports';
     if (location.pathname.includes('notifications')) return 'notifications';
     if (location.pathname.includes('profile')) return 'profile';

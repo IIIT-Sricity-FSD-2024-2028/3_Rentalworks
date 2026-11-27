@@ -10,4 +10,10 @@ export const api = {
   updateProfile: (details) => http.put('/super-admin/profile', details),
   changePassword: (details) => http.put('/super-admin/password', details),
   sendNotification: (details) => http.post('/super-admin/announcements', details),
+  // Platform-wide control (the super admin passes every role guard).
+  accounts: () => http.get('/users'),
+  updateAccount: (id, changes) => http.put(`/users/${id}`, changes),
+  deleteAccount: (id) => http.delete(`/users/${id}`),
+  updatePayment: (id, changes) => http.put(`/payments/${id}`, changes),
+  bookings: () => http.get('/bookings'),
 };

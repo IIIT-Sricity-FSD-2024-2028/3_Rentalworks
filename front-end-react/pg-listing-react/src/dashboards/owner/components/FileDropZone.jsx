@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import Icon from './Icon';
+import useScreenState from '../../../app/useScreenState';
 
 /**
  * Upload box for laptop files: drag a file from File Explorer onto it, or
@@ -15,8 +16,8 @@ import Icon from './Icon';
  */
 export default function FileDropZone({ id, accept, file, hint, error, disabled, compact, label = 'Drag a file from your laptop here', onFile, onClear }) {
   const inputRef = useRef(null);
-  const [over, setOver] = useState(false);
-  const [note, setNote] = useState('');
+  const [over, setOver] = useScreenState(false);
+  const [note, setNote] = useScreenState('');
 
   // While an upload box is on screen, a drop anywhere else on the page does nothing.
   useEffect(() => {

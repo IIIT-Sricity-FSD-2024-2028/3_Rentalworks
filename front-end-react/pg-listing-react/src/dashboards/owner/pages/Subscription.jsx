@@ -1,6 +1,10 @@
-import { Link } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import useScreenState from '../../../app/useScreenState';
+import { runThunk } from '../../../app/hooks';
 import { findPlan } from '../../../data/catalog';
+import { subscriptionsRepo } from '../../../features/repositories';
+import { fetchOwnerAccount } from '../../../features/owner/ownerSlices';
 import { selectSubscriptionPlans } from '../../../features/shared/catalogSlice';
 import { formatDate, formatINR, normalizeStatus, statusLabel, toNumber } from '../../../utils/normalize';
 
@@ -15,7 +19,7 @@ const cardStyle = {
   background: 'var(--bg-card, #fff)',
 };
 
-function PlanCard({ plan, isCurrent }) {
+function PlanCard({ plan, isCurrent, hasPlan, busy, onChoose }) {
   const period = plan.durationMonths === 1 ? '/ month' : plan.durationMonths ? `/ ${plan.durationMonths} months` : 'one-time';
   const perMonth = plan.durationMonths > 1 ? Math.round(plan.price / plan.durationMonths) : null;
   return (
@@ -54,17 +58,54 @@ function PlanCard({ plan, isCurrent }) {
           <li key={f}>{f}</li>
         ))}
       </ul>
+      <button
+        type="button"
+        className={isCurrent ? 'btn btn-secondary' : 'btn btn-primary'}
+        style={{ marginTop: 'auto' }}
+        disabled={isCurrent || busy}
+        onClick={() => onChoose(plan)}
+      >
+        {isCurrent ? 'Your current plan' : hasPlan ? `Switch to ${plan.displayName}` : `Choose ${plan.displayName}`}
+      </button>
     </article>
   );
 }
 
 export default function Subscription({ user }) {
+  const dispatch = useDispatch();
   const plans = useSelector(selectSubscriptionPlans);
+  // The owner's own plan rows (the server only returns theirs).
+  const rows = useSelector(subscriptionsRepo.selectors.selectItems);
+  const busy = useSelector(subscriptionsRepo.selectors.selectMutating);
+  const active = rows.find((r) => normalizeStatus(r.status) === 'active') || null;
+  const [confirm, setConfirm] = useScreenState(null); // { plan } | { cancel: true }
+
+  useEffect(() => {
+    dispatch(subscriptionsRepo.thunks.fetchAll());
+  }, [dispatch]);
+
   const sub = user?.subscription || null;
-  const currentName = user?.subscriptionPlan || sub?.currentPlan || null;
+  const currentName = active ? active.planType || active.planName : user?.subscriptionPlan || sub?.currentPlan || null;
   const currentPlan = findPlan(currentName, plans);
-  const status = normalizeStatus(sub?.status, currentName ? 'active' : 'inactive');
-  const fee = toNumber(user?.subscriptionFee ?? sub?.monthlyFee) || currentPlan?.price || 0;
+  const status = normalizeStatus(active?.status || sub?.status, currentName ? 'active' : 'inactive');
+  const fee = toNumber(active?.amount ?? user?.subscriptionFee ?? sub?.monthlyFee) || currentPlan?.price || 0;
+  const renewal = active?.endDate || sub?.renewalDate;
+
+  const refresh = () => Promise.all([dispatch(subscriptionsRepo.thunks.fetchAll()), dispatch(fetchOwnerAccount())]);
+
+  /** Choose / switch (POST: the server closes the old plan and sets price and dates) or cancel (PATCH). */
+  const apply = async () => {
+    const action = confirm.cancel
+      ? subscriptionsRepo.thunks.updateItem({ id: active.id, changes: { status: 'cancelled' } })
+      : subscriptionsRepo.thunks.createItem({ planType: confirm.plan.name });
+    const { ok } = await runThunk(dispatch, action, {
+      success: confirm.cancel ? 'Your plan was cancelled' : `${confirm.plan.displayName} plan activated`,
+    });
+    if (ok) {
+      await refresh();
+      setConfirm(null);
+    }
+  };
 
   return (
     <section style={{ display: 'grid', gap: 24 }}>
@@ -87,10 +128,10 @@ export default function Subscription({ user }) {
             <div style={{ color: 'var(--text-muted)' }}>Status</div>
             <span className={`badge badge-${status === 'active' ? 'active' : 'inactive'}`}>{statusLabel(status)}</span>
           </div>
-          {sub?.renewalDate && (
+          {renewal && (
             <div>
-              <div style={{ color: 'var(--text-muted)' }}>Renews on</div>
-              <strong>{formatDate(sub.renewalDate)}</strong>
+              <div style={{ color: 'var(--text-muted)' }}>{active ? 'Valid until' : 'Renews on'}</div>
+              <strong>{formatDate(renewal)}</strong>
             </div>
           )}
           {sub?.propertiesManaged != null && (
@@ -107,18 +148,48 @@ export default function Subscription({ user }) {
 
       <div style={{ display: 'grid', gap: 20, gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', paddingTop: 8 }}>
         {plans.map((plan) => (
-          <PlanCard key={plan.name} plan={plan} isCurrent={currentPlan?.name === plan.name} />
+          <PlanCard
+            key={plan.name}
+            plan={plan}
+            isCurrent={Boolean(active) && currentPlan?.name === plan.name}
+            hasPlan={Boolean(active)}
+            busy={busy}
+            onChoose={(p) => setConfirm({ plan: p })}
+          />
         ))}
       </div>
 
-      <div className="card" style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center', justifyContent: 'space-between' }}>
-        <p style={{ margin: 0 }}>
-          Online checkout is not enabled yet. To start or change a plan, message your administrator and they will activate it for you.
-        </p>
-        <Link className="btn btn-primary" to="/dashboard/owner/notifications">
-          Contact administrator
-        </Link>
-      </div>
+      {active && (
+        <div className="card" style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center', justifyContent: 'space-between' }}>
+          <p style={{ margin: 0 }}>Switching starts the new plan today. Cancelling ends your current plan now.</p>
+          <button type="button" className="btn btn-danger" disabled={busy} onClick={() => setConfirm({ cancel: true })}>
+            Cancel my plan
+          </button>
+        </div>
+      )}
+
+      {confirm && (
+        <div className="modal-overlay active" onClick={(e) => { if (e.target === e.currentTarget) setConfirm(null); }}>
+          <div className="modal" role="dialog" aria-modal="true" style={{ maxWidth: 440 }}>
+            <div className="modal-header">
+              <h3 style={{ margin: 0 }}>{confirm.cancel ? 'Cancel your plan?' : `${active ? 'Switch to' : 'Choose'} the ${confirm.plan.displayName} plan?`}</h3>
+            </div>
+            <div className="modal-body">
+              <p style={{ margin: 0 }}>
+                {confirm.cancel
+                  ? `Your ${currentPlan?.displayName || currentName} plan ends now and your portal will show no active plan.`
+                  : `${formatINR(confirm.plan.price)} ${confirm.plan.durationMonths === 1 ? 'per month' : confirm.plan.durationMonths ? `for ${confirm.plan.durationMonths} months` : 'one-time'}. It starts today${active ? ' and replaces your current plan' : ''}.`}
+              </p>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setConfirm(null)} disabled={busy}>Back</button>
+              <button type="button" className={confirm.cancel ? 'btn btn-danger' : 'btn btn-primary'} onClick={apply} disabled={busy}>
+                {busy ? 'Saving...' : confirm.cancel ? 'Cancel plan' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

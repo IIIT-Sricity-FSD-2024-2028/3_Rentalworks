@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import useScreenState from '../../../app/useScreenState';
 import { useDispatch } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
@@ -13,7 +13,7 @@ const Profile = () => {
   const { tenant, activeBooking, loading } = useTenant();
   const [isChangingPassword, setIsChangingPassword] = useScreenState(false);
   const [saving, setSaving] = useScreenState(false);
-  const [passwords, setPasswords] = useState(EMPTY_PASSWORDS);
+  const [passwords, setPasswords] = useScreenState(EMPTY_PASSWORDS, { secret: true });
   // Only the fields the user has edited; everything else shows the stored value.
   const [edits, setEdits] = useScreenState({});
   const { name, phone, address } = { name: tenant?.name || '', phone: tenant?.phone || '', address: tenant?.address || '', ...edits };

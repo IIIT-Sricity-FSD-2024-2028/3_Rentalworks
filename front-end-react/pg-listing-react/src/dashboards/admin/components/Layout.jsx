@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import useScreenState from '../../../app/useScreenState';
 import { useDispatch, useSelector } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
@@ -30,9 +30,9 @@ export default function Layout() {
   const [saving, setSaving] = useScreenState(false);
 
   // Password fields
-  const [currPass, setCurrPass] = useState('');
-  const [newPass, setNewPass] = useState('');
-  const [confPass, setConfPass] = useState('');
+  const [currPass, setCurrPass] = useScreenState('', { secret: true });
+  const [newPass, setNewPass] = useScreenState('', { secret: true });
+  const [confPass, setConfPass] = useScreenState('', { secret: true });
 
   useEffect(() => {
     setSidebarOpen(false);

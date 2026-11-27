@@ -7,6 +7,9 @@ import RegionalAdmins from './pages/RegionalAdmins';
 import GlobalReports from './pages/GlobalReports';
 import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
+import UserControl from './pages/UserControl';
+import PaymentsMonitor from './pages/PaymentsMonitor';
+import SubscriptionMonitor from './pages/SubscriptionMonitor';
 import { fetchSuperAdminOverview, selectSuperAdmin, selectSuperAdminOverview } from '../../features/superadmin/superAdminSlice';
 import { selectCurrentUser } from '../../features/auth/authSlice';
 import { useSignOut } from '../../app/hooks';
@@ -66,6 +69,24 @@ export function SuperAdminRegionalAdminsRoute() {
   const refresh = useRefresh();
   const toast = useSuperAdminToast();
   return overview ? <RegionalAdmins users={overview.users || []} refresh={refresh} showToast={toast} /> : null;
+}
+
+export function SuperAdminUsersRoute() {
+  const overview = useSelector(selectSuperAdminOverview);
+  const toast = useSuperAdminToast();
+  return overview ? <UserControl showToast={toast} /> : null;
+}
+
+export function SuperAdminPaymentsRoute() {
+  const overview = useSelector(selectSuperAdminOverview);
+  const toast = useSuperAdminToast();
+  return overview ? <PaymentsMonitor showToast={toast} /> : null;
+}
+
+export function SuperAdminSubscriptionsRoute() {
+  const overview = useSelector(selectSuperAdminOverview);
+  const toast = useSuperAdminToast();
+  return overview ? <SubscriptionMonitor showToast={toast} /> : null;
 }
 
 export function SuperAdminGlobalReportsRoute() {

@@ -62,15 +62,11 @@ export class RoommatesService {
       return [];
     }
 
+    // Only residents of THIS PG: a roommate in another PG cannot share your room
+    // (their room number would not exist here and checkout would fail).
     let tenants = await this.roommateProfileRepo.find({
       where: { propertyId, isTenant: true },
     });
-
-    if (tenants.length === 0) {
-      tenants = await this.roommateProfileRepo.find({
-        where: { isTenant: true },
-      });
-    }
 
     // Filter candidate tenants strictly by sharing type BEFORE calculating compatibility
     if (targetSharing) {

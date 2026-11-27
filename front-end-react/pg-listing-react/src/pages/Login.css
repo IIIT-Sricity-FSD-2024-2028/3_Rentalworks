@@ -189,6 +189,7 @@
   color: var(--muted); 
   margin-bottom: 32px; 
   line-height: 1.5; 
+  text-align: center;
 }
 
 /* ===== ROLE SELECTOR CARD ===== */

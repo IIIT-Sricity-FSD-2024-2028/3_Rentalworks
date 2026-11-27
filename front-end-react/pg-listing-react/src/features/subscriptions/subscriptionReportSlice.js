@@ -8,7 +8,7 @@ export const fetchSubscriptionReport = createAsyncThunk(
   'subscriptionReport/fetch',
   async (_, { rejectWithValue }) => {
     try {
-      return await http.get('/users/session/subscription-report', { auth: false, credentials: 'include' });
+      return await http.get('/users/session/subscription-report', { auth: true });
     } catch (error) {
       return rejectWithValue(error.message);
     }

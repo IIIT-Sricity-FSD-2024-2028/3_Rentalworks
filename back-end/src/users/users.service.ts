@@ -20,8 +20,7 @@ import {
   UpdateUserDto,
   LoginDto,
   CreateTenantDto,
-  UpdateTenantDto,
-} from './users.dto';
+  UpdateTenantDto, GuestRegisterDto } from './users.dto';
 import * as bcrypt from 'bcrypt';
 import { issueSuperAdminToken } from '../super-admin/super-admin-token';
 import { ensureSharedColumns } from '../migrations/ensure-shared-columns';
@@ -97,11 +96,22 @@ export class UsersService {
   async login(loginDto: LoginDto) {
     await ensureSharedColumns(this.dataSource);
     const identifier = (loginDto.username || '').trim();
-    const user = await this.usersRepository
-      .createQueryBuilder('user')
-      .where('user.username = :identifier OR user.email = :identifier OR user.phone = :identifier', { identifier })
-      .addSelect('user.password')
-      .getOne();
+    // A Tenant ID (username) always wins. Email / phone never match a
+    // per-booking tenant account (they share the booker's phone), so those
+    // sign in to the guest account, which only sees booking history.
+    const user =
+      (await this.usersRepository
+        .createQueryBuilder('user')
+        .where('user.username = :identifier', { identifier })
+        .addSelect('user.password')
+        .getOne()) ??
+      (await this.usersRepository
+        .createQueryBuilder('user')
+        .where('(user.email = :identifier OR user.phone = :identifier)', { identifier })
+        .andWhere(`(user.preferences ->> 'guestId') IS NULL`)
+        .addSelect('user.password')
+        .orderBy('user.id', 'ASC')
+        .getOne());
 
     if (!user || user.status !== 'active') throw new UnauthorizedException('Invalid credentials or inactive account');
 
@@ -170,13 +180,34 @@ export class UsersService {
     return user;
   }
 
-  async guestRegister(dto: { name: string; email: string; phone: string; password?: string; gender?: string }) {
+  async guestRegister(dto: GuestRegisterDto) {
+    // Date of birth: no future dates, age 16 to 100 (the DTO only checks the format).
+    if (dto.dob) {
+      const born = new Date(`${dto.dob}T00:00:00Z`);
+      const years = (Date.now() - born.getTime()) / (365.25 * 24 * 3600 * 1000);
+      if (born.getTime() > Date.now()) throw new BadRequestException('Date of birth cannot be in the future');
+      if (years < 16) throw new BadRequestException('You must be at least 16 years old');
+      if (years > 100) throw new BadRequestException('Enter a valid date of birth');
+    }
+    const profile = {
+      ...(dto.address ? { address: dto.address.trim().replace(/\s+/g, ' ') } : {}),
+      ...(dto.city ? { city: dto.city.trim() } : {}),
+      ...(dto.pincode ? { pincode: dto.pincode.trim().toUpperCase() } : {}),
+    };
+    const extras = {
+      ...(dto.dob ? { dateOfBirth: dto.dob } : {}),
+      ...(dto.country ? { country: dto.country } : {}),
+    };
     const email = (dto.email || '').trim().toLowerCase();
     const phone = (dto.phone || '').trim();
 
-    let user = await this.usersRepository.findOne({
-      where: [{ email }, { phone }],
-    });
+    // Per-booking tenant accounts share the booker's phone; they are never "the" account here.
+    let user = await this.usersRepository
+      .createQueryBuilder('user')
+      .where('(user.email = :email OR user.phone = :phone)', { email, phone })
+      .andWhere(`(user.preferences ->> 'guestId') IS NULL`)
+      .orderBy('user.id', 'ASC')
+      .getOne();
 
     if (user) {
       if (['admin', 'owner', 'warden', 'super_admin'].includes(user.role)) {
@@ -193,10 +224,17 @@ export class UsersService {
         .getOne();
       const ok = await bcrypt.compare(dto.password || '', withPassword?.password || '');
       if (!ok) throw new UnauthorizedException('An account with this email or phone already exists. Please sign in.');
-      if (dto.gender && !user.gender) {
-        user.gender = dto.gender;
-        await this.usersRepository.save(user);
+      // Fill in details the account does not have yet; never overwrite existing ones.
+      let changed = false;
+      if (dto.gender && !user.gender) { user.gender = dto.gender; changed = true; }
+      for (const [key, value] of Object.entries(profile)) {
+        if (!(user as any)[key]) { (user as any)[key] = value; changed = true; }
       }
+      if (Object.keys(extras).length && !user.preferences?.dateOfBirth) {
+        user.preferences = { ...(user.preferences || {}), ...extras };
+        changed = true;
+      }
+      if (changed) await this.usersRepository.save(user);
       const { password, ...result } = user;
       return Object.assign(result, { token: issueSuperAdminToken(user.id) });
     }
@@ -214,6 +252,8 @@ export class UsersService {
       password: passwordHash,
       role: 'guest',
       gender: dto.gender || undefined,
+      ...profile,
+      ...(Object.keys(extras).length ? { preferences: extras } : {}),
       status: 'active',
       joinDate: new Date().toISOString().split('T')[0],
     });
@@ -257,7 +297,7 @@ export class UsersService {
       return {
         id: t.id,
         name: t.name,
-        email: t.email,
+        email: t.email || t.preferences?.contactEmail || null,
         phone: t.phone,
         gender: t.gender,
         role: t.role,

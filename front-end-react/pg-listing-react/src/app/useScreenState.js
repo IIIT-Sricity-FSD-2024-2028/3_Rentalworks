@@ -1,14 +1,20 @@
-import { useCallback, useId, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useId, useLayoutEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import { clearScreenValue, setScreenValue } from '../features/ui/screenStateSlice';
 
-export default function useScreenState(initialValue) {
+/**
+ * Redux-backed replacement for React's useState, scoped to the mounted component.
+ * Pass `{ secret: true }` for passwords: the value is masked in Redux DevTools
+ * and removed from the store when the component unmounts (and on sign-out).
+ */
+export default function useScreenState(initialValue, { secret = false } = {}) {
   const id = useId();
   const dispatch = useDispatch();
   const store = useStore();
   const entry = useSelector((state) => state.screenState[id]);
   // Capture the mount default once, for when this field has no Redux entry.
-  const [initial] = useState(() => ({ value: typeof initialValue === 'function' ? initialValue() : initialValue }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const initial = useMemo(() => ({ value: typeof initialValue === 'function' ? initialValue() : initialValue }), []);
   const mounted = useRef(false);
 
   useLayoutEffect(() => {
@@ -24,8 +30,8 @@ export default function useScreenState(initialValue) {
     const latest = store.getState().screenState[id] ?? initial;
     // Resolve functional updates against the store so fast successive changes compose.
     const value = typeof update === 'function' ? update(latest.value) : update;
-    if (!Object.is(value, latest.value)) dispatch(setScreenValue({ id, value }));
-  }, [dispatch, id, initial, store]);
+    if (!Object.is(value, latest.value)) dispatch(setScreenValue({ id, value, secret }));
+  }, [dispatch, id, initial, store, secret]);
 
   return [(entry ?? initial).value, setValue];
 }

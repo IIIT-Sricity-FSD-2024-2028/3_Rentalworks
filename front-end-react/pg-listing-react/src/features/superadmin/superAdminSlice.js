@@ -47,7 +47,44 @@ export const updateRegionalAdmin = mutate('updateRegionalAdmin', ({ id, changes 
 export const sendAnnouncement = mutate('sendAnnouncement', (details) => api.sendNotification(details));
 export const changeSuperAdminPassword = mutate('changePassword', (details) => api.changePassword(details), { refresh: false });
 
-export const updateSuperAdminProfile = createAsyncThunk('superAdmin/updateProfile', async (details, { dispatch, rejectWithValue }) => {
+/** Every account with its login ID (the overview leaves usernames out). Passwords are never kept. */
+export const fetchSuperAdminAccounts = createAsyncThunk('superAdmin/fetchAccounts', async (_, { rejectWithValue }) => {
+  try {
+    const rows = await api.accounts();
+    return (Array.isArray(rows) ? rows : []).map(({ password: _pw, ...user }) => user);
+  } catch (err) {
+    return rejectWithValue(fail(err));
+  }
+});
+
+/** Bookings across every PG, for user details and the attention panel. */
+export const fetchSuperAdminBookings = createAsyncThunk('superAdmin/fetchBookings', async (_, { rejectWithValue }) => {
+  try {
+    const rows = await api.bookings();
+    return Array.isArray(rows) ? rows : [];
+  } catch (err) {
+    return rejectWithValue(fail(err));
+  }
+});
+
+const mutateAndReload = (type, call) =>
+  createAsyncThunk(`superAdmin/${type}`, async (arg, { dispatch, rejectWithValue }) => {
+    try {
+      const result = await call(arg);
+      await Promise.all([dispatch(fetchSuperAdminOverview()), dispatch(fetchSuperAdminAccounts())]);
+      return result;
+    } catch (err) {
+      return rejectWithValue(fail(err));
+    }
+  });
+
+/** Suspend / activate / edit / reset the password of any non-super-admin account. */
+export const updateAccount = mutateAndReload('updateAccount', ({ id, changes }) => api.updateAccount(id, changes));
+export const deleteAccount = mutateAndReload('deleteAccount', (id) => api.deleteAccount(id));
+/** Change a payment's status (e.g. flag as failed / refunded) or clearance. */
+export const updatePaymentRecord = mutate('updatePayment', ({ id, changes }) => api.updatePayment(id, changes));
+
+export const updateSuperAdminProfile =createAsyncThunk('superAdmin/updateProfile', async (details, { dispatch, rejectWithValue }) => {
   try {
     const profile = await api.updateProfile(details);
     dispatch(patchUser(profile || details)); // keep the header name/email in sync
@@ -60,9 +97,18 @@ export const updateSuperAdminProfile = createAsyncThunk('superAdmin/updateProfil
 const superAdminSlice = createSlice({
   name: 'superAdmin',
   // Platform data lives in the repository slices; this slice keeps load state and the profile.
-  initialState: { loaded: false, status: 'idle', error: null, profile: null, saving: false },
+  initialState: {
+    loaded: false, status: 'idle', error: null, profile: null, saving: false,
+    accounts: [], accountsStatus: 'idle', bookings: [], bookingsStatus: 'idle',
+  },
   reducers: {},
   extraReducers: (b) => {
+    b.addCase(fetchSuperAdminAccounts.pending, (s) => { if (!s.accounts.length) s.accountsStatus = 'loading'; })
+      .addCase(fetchSuperAdminAccounts.fulfilled, (s, { payload }) => { s.accounts = payload; s.accountsStatus = 'ready'; })
+      .addCase(fetchSuperAdminAccounts.rejected, (s) => { s.accountsStatus = 'failed'; })
+      .addCase(fetchSuperAdminBookings.pending, (s) => { if (!s.bookings.length) s.bookingsStatus = 'loading'; })
+      .addCase(fetchSuperAdminBookings.fulfilled, (s, { payload }) => { s.bookings = payload; s.bookingsStatus = 'ready'; })
+      .addCase(fetchSuperAdminBookings.rejected, (s) => { s.bookingsStatus = 'failed'; });
     b.addCase(fetchSuperAdminOverview.pending, (s) => {
       if (!s.loaded) s.status = 'loading';
     })
@@ -82,13 +128,13 @@ const superAdminSlice = createSlice({
         s.profile = { ...s.profile, ...payload };
       })
       .addMatcher(
-        (a) => /^superAdmin\/(create|update|send|change)/.test(a.type) && a.type.endsWith('/pending'),
+        (a) => /^superAdmin\/(create|update|delete|send|change)/.test(a.type) && a.type.endsWith('/pending'),
         (s) => {
           s.saving = true;
         },
       )
       .addMatcher(
-        (a) => /^superAdmin\/(create|update|send|change)/.test(a.type) && (a.type.endsWith('/fulfilled') || a.type.endsWith('/rejected')),
+        (a) => /^superAdmin\/(create|update|delete|send|change)/.test(a.type) && (a.type.endsWith('/fulfilled') || a.type.endsWith('/rejected')),
         (s) => {
           s.saving = false;
         },
@@ -105,3 +151,14 @@ export const selectSuperAdminOverview = createSelector(
 );
 export const selectSuperAdmin = createSelector([(s) => s.superAdmin, selectSuperAdminOverview], (state, overview) => ({ ...state, overview }));
 export const selectSuperAdminProfile = (s) => s.superAdmin.profile;
+export const selectSuperAdminBookings = (s) => s.superAdmin.bookings;
+export const selectSuperAdminSaving = (s) => s.superAdmin.saving;
+
+/** Overview users (with linked property ids) merged with their login IDs and profile fields. */
+export const selectPlatformAccounts = createSelector(
+  [usersRepo.selectors.selectItems, (s) => s.superAdmin.accounts],
+  (users, accounts) => {
+    const byId = new Map(accounts.map((a) => [String(a.id), a]));
+    return users.map((u) => ({ ...byId.get(String(u.id)), ...u, username: byId.get(String(u.id))?.username || u.username }));
+  },
+);

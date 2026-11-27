@@ -36,7 +36,8 @@ export default function Payments() {
     const tName = getName(p.tenant).toLowerCase();
     const pName = getName(p.property).toLowerCase();
     const txn = (p.transactionId || '').toLowerCase();
-    return !search || tName.includes(q) || pName.includes(q) || txn.includes(q);
+    const who = `${p.tenant?.username || ''} ${p.tenant?.phone || ''}`.toLowerCase();
+    return !search || tName.includes(q) || pName.includes(q) || txn.includes(q) || who.includes(q);
   });
 
   // Top Earning Properties Calculation matching traditional
@@ -182,7 +183,7 @@ export default function Payments() {
             <span className="s-ico"><span className="material-icons-outlined" style={{ fontSize: 20 }}>search</span></span>
             <input
               type="text"
-              placeholder="Search by tenant, property, or transaction ID..."
+              placeholder="Search by tenant, Tenant ID, phone, property, or transaction ID..."
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -219,7 +220,15 @@ export default function Payments() {
                 const refundDisabled = !isCleared(p) || !isPaid(p);
                 return (
                   <tr key={p.id}>
-                    <td><strong>{getName(p.tenant) || 'Guest'}</strong></td>
+                    <td>
+                      <strong>{getName(p.tenant) || 'Guest'}</strong>
+                      {/* Same-named people are different accounts: show who exactly. */}
+                      {(p.tenant?.username || p.tenant?.phone) && (
+                        <div style={{ fontSize: 11, color: '#64748b', fontFamily: 'monospace' }}>
+                          {[p.tenant?.username, p.tenant?.phone].filter(Boolean).join(' · ')}
+                        </div>
+                      )}
+                    </td>
                     <td style={{ fontSize: 12 }}>{getName(p.property) || '-'}</td>
                     <td><span className="room-chip">{p.room || '-'}</span></td>
                     <td style={{ fontWeight: 600 }}>₹{(Number(p.amount) || 0).toLocaleString()}</td>

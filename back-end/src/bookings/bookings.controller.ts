@@ -50,8 +50,15 @@ export class BookingsController {
     @Query('tenantId') tenantId?: string,
     @Query('propertyId') propertyId?: string,
   ) {
-    // Tenants and guests only ever see their own bookings.
-    const self = ['tenant', 'guest'].includes(req.user?.role) ? String(req.user.id) : undefined;
+    // A guest sees the history of every booking they made: each booking is
+    // held by its own tenant account (users.preferences.guestId = the guest).
+    if (req.user?.role === 'guest') {
+      const linked = await this.db.query(`SELECT id FROM users WHERE preferences->>'guestId' = $1`, [String(req.user.id)]);
+      const ids = [req.user.id, ...linked.map((r: { id: number }) => r.id)];
+      return this.bookingsService.findAll(ids, propertyId ? +propertyId : undefined);
+    }
+    // Tenants only ever see their own bookings.
+    const self = req.user?.role === 'tenant' ? String(req.user.id) : undefined;
     const effectiveTenantId = self || tenantId || userId;
     // Every role only receives rows it may see (owners: their properties).
     return scopeRows(this.db, req.user, await this.bookingsService.findAll(

@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import Icon from './Icon';
+import useScreenState from '../../../app/useScreenState';
 
 export const PHOTO_ACCEPT = '.jpg,.jpeg,.png,.webp';
 export const PHOTO_MAX_MB = 5;
@@ -22,8 +23,8 @@ const sameFile = (a, b) => a.name === b.name && a.size === b.size && a.lastModif
  */
 export default function PhotoUploader({ id = 'propertyPhotos', files = [], onChange, error, maxCount = PHOTO_MAX_COUNT, existingCount = 0 }) {
   const inputRef = useRef(null);
-  const [over, setOver] = useState(false);
-  const [note, setNote] = useState('');
+  const [over, setOver] = useScreenState(false);
+  const [note, setNote] = useScreenState('');
   const room = Math.max(0, maxCount - existingCount);
 
   // Object URLs for previews, released when files change or the form closes.

@@ -1,10 +1,10 @@
-import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { runThunk } from '../../../app/hooks';
 import { openProtectedFile } from '../../../services/apiClient';
 import { showToast } from '../../../features/ui/uiSlice';
 import { propertiesRepo, propertyDocumentsRepo } from '../../../features/repositories';
 import { REQUIRED_DOCUMENTS, DOCUMENT_LABEL } from '../../../features/repositories/propertyDocumentsSlice';
+import useScreenState from '../../../app/useScreenState';
 
 const STATUS_STYLE = {
   approved: { background: '#dcfce7', color: '#166534', label: 'Approved' },
@@ -26,9 +26,9 @@ export default function DocumentReview({ property }) {
   const allDocs = useSelector(propertyDocumentsRepo.selectors.selectItems);
   const docs = allDocs.filter((d) => String(d.propertyId) === String(property.id));
   const live = useSelector((s) => propertiesRepo.selectors.selectById(s, property.id)) || property;
-  const [rejecting, setRejecting] = useState(null);
-  const [note, setNote] = useState('');
-  const [busyId, setBusyId] = useState(null);
+  const [rejecting, setRejecting] = useScreenState(null);
+  const [note, setNote] = useScreenState('');
+  const [busyId, setBusyId] = useScreenState(null);
 
   const required = REQUIRED_DOCUMENTS.map((r) => ({ ...r, doc: docs.find((d) => d.docType === r.type) || null }));
   const extras = docs.filter((d) => !REQUIRED_DOCUMENTS.some((r) => r.type === d.docType));

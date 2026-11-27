@@ -1,5 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import useScreenState from '../app/useScreenState';
+import {
+  COUNTRIES,
+  DEFAULT_COUNTRY,
+  INDIAN_CITIES,
+  countryOf,
+  cleanPhone,
+  fullPhone,
+  dobMax,
+  dobMin,
+  validateAddress,
+  validateCity,
+  validateDob,
+  validateEmail,
+  validateName,
+  validatePassword,
+  validatePhone,
+  validatePostalCode,
+  validateState,
+} from '../utils/signupValidation';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -12,6 +31,7 @@ import {
 } from '../features/auth/authSlice';
 import { toastSuccess, toastInfo } from '../features/ui/uiSlice';
 import './Login.css';
+import useFileState from '../app/useFileState';
 
 /** Paths that only make sense for people who can book (guests and tenants). */
 const BOOKING_PATH = /^\/(pg|pgs|book|booking|payment|my-bookings|transactions)(\/|$)/;
@@ -28,7 +48,7 @@ export default function Login({ initialMode = 'login' }) {
 
   // Login form fields
   const [username, setUsername] = useScreenState('');
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useScreenState('', { secret: true });
   const [showPassword, setShowPassword] = useScreenState(false);
   const [usernameErr, setUsernameErr] = useScreenState('');
   const [passwordErr, setPasswordErr] = useScreenState('');
@@ -44,11 +64,13 @@ export default function Login({ initialMode = 'login' }) {
     phone: '',
     gender: 'male',
     dob: '',
+    country: DEFAULT_COUNTRY,
     city: '',
     address: '',
+    pincode: '',
   });
-  const [guestPassword, setGuestPassword] = useState('');
-  const [guestConfirm, setGuestConfirm] = useState('');
+  const [guestPassword, setGuestPassword] = useScreenState('', { secret: true });
+  const [guestConfirm, setGuestConfirm] = useScreenState('', { secret: true });
   const [guestErr, setGuestErr] = useScreenState({});
   const [pwStrength, setPwStrength] = useScreenState(0);
 
@@ -68,20 +90,26 @@ export default function Login({ initialMode = 'login' }) {
   });
   const [ownerErr, setOwnerErr] = useScreenState({});
 
-  const [propertyDocument, setPropertyDocument] = useState(null);
+  const [propertyDocument, setPropertyDocument] = useFileState(null);
 
-  // After signing in: return to where the user was going, else their portal.
+  // After signing in: guests return to where they were going; every other role
+  // (tenant, warden, owner, admin) opens its own dashboard straight away.
   const continueAs = (user) => {
     const { from, resumeRoomId } = location.state || {};
     const home = ROLE_HOME[user.role] || '/listings';
-    if (from && from !== '/login') {
-      if (MANAGEMENT_ROLES.includes(user.role) && BOOKING_PATH.test(from)) {
-        dispatch(toastInfo('Management accounts cannot book rooms, so we opened your portal instead.'));
-        navigate(home, { replace: true });
-      } else {
-        navigate(from, { replace: true, state: resumeRoomId != null ? { resumeRoomId } : null });
-      }
+    const cameFrom = from && from !== '/login' ? from : null;
+    if (user.role === 'guest') {
+      if (cameFrom) navigate(cameFrom, { replace: true, state: resumeRoomId != null ? { resumeRoomId } : null });
+      else navigate(home, { replace: true });
       return;
+    }
+    // A deep link inside the user's own dashboard (e.g. a protected page) is kept.
+    if (cameFrom && cameFrom.startsWith(home)) {
+      navigate(cameFrom, { replace: true });
+      return;
+    }
+    if (cameFrom && MANAGEMENT_ROLES.includes(user.role) && BOOKING_PATH.test(cameFrom)) {
+      dispatch(toastInfo('Management accounts cannot book rooms, so we opened your portal instead.'));
     }
     navigate(home, { replace: true });
   };
@@ -130,14 +158,14 @@ export default function Login({ initialMode = 'login' }) {
   // Guest Signup Handlers
   const handleGuestNext = () => {
     const errs = {};
+    const keep = (key, msg) => {
+      if (msg) errs[key] = msg;
+    };
     if (guestStep === 1) {
-      if (!guestData.name.trim()) errs.name = 'Full name is required';
-      if (!guestData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestData.email)) {
-        errs.email = 'Enter a valid email address';
-      }
-      if (!guestData.phone.trim() || !/^\+?[\d\s-]{9,}$/.test(guestData.phone)) {
-        errs.phone = 'Enter a valid phone number (min 9 digits)';
-      }
+      keep('name', validateName(guestData.name));
+      keep('email', validateEmail(guestData.email));
+      keep('phone', validatePhone(guestData.phone, guestData.country));
+      if (!['male', 'female', 'other'].includes(guestData.gender)) errs.gender = 'Select your gender';
       if (Object.keys(errs).length > 0) {
         setGuestErr(errs);
         return;
@@ -145,9 +173,17 @@ export default function Login({ initialMode = 'login' }) {
       setGuestErr({});
       setGuestStep(2);
     } else if (guestStep === 2) {
-      if (!guestData.dob) errs.dob = 'Date of birth is required';
-      if (!guestData.city.trim()) errs.city = 'City is required';
-      if (!guestData.address.trim()) errs.address = 'Address is required';
+      keep('dob', validateDob(guestData.dob));
+      keep('city', validateCity(guestData.city));
+      keep('address', validateAddress(guestData.address));
+      keep('pincode', validatePostalCode(guestData.pincode, guestData.country));
+      // The phone must also match the country picked here.
+      const phoneErr = validatePhone(guestData.phone, guestData.country);
+      if (phoneErr) {
+        setGuestErr({ phone: `${phoneErr}. Please update it.` });
+        setGuestStep(1);
+        return;
+      }
       if (Object.keys(errs).length > 0) {
         setGuestErr(errs);
         return;
@@ -168,9 +204,8 @@ export default function Login({ initialMode = 'login' }) {
 
   const handleGuestSignupSubmit = async () => {
     const errs = {};
-    if (!guestPassword || guestPassword.length < 8) {
-      errs.password = 'Password must be at least 8 characters';
-    }
+    const pwErr = validatePassword(guestPassword);
+    if (pwErr) errs.password = pwErr;
     if (guestPassword !== guestConfirm) {
       errs.confirm = 'Passwords do not match';
     }
@@ -183,8 +218,13 @@ export default function Login({ initialMode = 'login' }) {
       registerGuest({
         name: guestData.name.trim(),
         email: guestData.email.trim().toLowerCase(),
-        phone: guestData.phone.trim(),
-        gender: guestData.gender || 'male',
+        phone: fullPhone(guestData.phone, guestData.country),
+        gender: guestData.gender,
+        dob: guestData.dob,
+        country: guestData.country,
+        city: guestData.city.trim(),
+        address: guestData.address.trim().replace(/\s+/g, ' '),
+        ...(guestData.pincode.trim() ? { pincode: guestData.pincode.trim() } : {}),
         password: guestPassword,
       }),
     );
@@ -199,15 +239,16 @@ export default function Login({ initialMode = 'login' }) {
   const handleOwnerRegSubmit = async (e) => {
     e.preventDefault();
     const errs = {};
-    if (!ownerData.name.trim()) errs.name = 'Full name is required';
-    if (!ownerData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ownerData.email)) {
-      errs.email = 'Enter a valid email address';
-    }
-    if (!ownerData.phone.trim()) errs.phone = 'Enter a valid phone number';
+    const keep = (key, msg) => {
+      if (msg) errs[key] = msg;
+    };
+    keep('name', validateName(ownerData.name));
+    keep('email', validateEmail(ownerData.email));
+    keep('phone', validatePhone(ownerData.phone, DEFAULT_COUNTRY));
     if (!ownerData.propname.trim()) errs.propname = 'Property name is required';
-    if (!ownerData.propaddr.trim()) errs.propaddr = 'Property address is required';
-    if (!ownerData.city.trim()) errs.city = 'City is required';
-    if (!ownerData.state.trim()) errs.state = 'State is required';
+    keep('propaddr', validateAddress(ownerData.propaddr));
+    keep('city', validateCity(ownerData.city));
+    keep('state', validateState(ownerData.state));
     if (!ownerData.rooms || parseInt(ownerData.rooms) < 1) errs.rooms = 'Enter a valid room count';
     if (!ownerData.capacity || parseInt(ownerData.capacity) < 1) errs.capacity = 'Enter a valid capacity';
     if (!propertyDocument) errs.document = 'Choose one property details document';
@@ -222,7 +263,7 @@ export default function Login({ initialMode = 'login' }) {
     const newOwner = {
       name: ownerData.name.trim(),
       email: ownerData.email.trim(),
-      phone: ownerData.phone.trim(),
+      phone: fullPhone(ownerData.phone, DEFAULT_COUNTRY),
       propertyName: ownerData.propname.trim(),
       propertyAddress: ownerData.propaddr.trim(),
       city: ownerData.city.trim(),
@@ -317,7 +358,7 @@ export default function Login({ initialMode = 'login' }) {
             {/* SINGLE COMMON LOGIN FORM VIEW */}
             {viewMode === 'login' && (
               <div id="login-card-area" className="card login-card">
-                <h2 id="login-role-title" className="card-title">
+                <h2 id="login-role-title" style={{ fontSize: "32px" }} >
                   Sign In
                 </h2>
                 <p id="login-role-sub" className="card-sub">
@@ -517,16 +558,32 @@ export default function Login({ initialMode = 'login' }) {
 
                         <div className="reg-field" style={{ marginBottom: 0 }}>
                           <label>Phone Number *</label>
-                          <div className="reg-inp-wrap">
-                            <span className="reg-ico">📞</span>
+                          <div className="reg-inp-wrap" style={{ display: 'flex', gap: 6 }}>
+                            <select
+                              aria-label="Country code"
+                              value={guestData.country}
+                              onChange={(e) => setGuestData({ ...guestData, country: e.target.value, phone: cleanPhone(guestData.phone, e.target.value) })}
+                              style={{ width: 96, flexShrink: 0, height: '44px', cursor: 'pointer', paddingLeft: 8 }}
+                            >
+                              {COUNTRIES.map((c) => (
+                                <option key={c.code} value={c.code}>{c.code} {c.dial}</option>
+                              ))}
+                            </select>
                             <input
                               type="tel"
                               id="g-phone"
-                              placeholder="+91 98765 43210"
+                              inputMode="numeric"
+                              autoComplete="tel-national"
+                              placeholder={guestData.country === 'IN' ? '9876543210' : `${countryOf(guestData.country).phoneLength} digits`}
+                              maxLength={countryOf(guestData.country).phoneLength}
                               value={guestData.phone}
-                              onChange={(e) => setGuestData({ ...guestData, phone: e.target.value })}
+                              onChange={(e) => setGuestData({ ...guestData, phone: cleanPhone(e.target.value, guestData.country) })}
+                              style={{ paddingLeft: 12 }}
                             />
                           </div>
+                          <small style={{ color: 'var(--muted)', fontSize: 12 }}>
+                            {guestData.phone.length}/{countryOf(guestData.country).phoneLength} digits
+                          </small>
                           {guestErr.phone && <div className="reg-err" style={{ display: 'block' }}>{guestErr.phone}</div>}
                         </div>
 
@@ -540,11 +597,12 @@ export default function Login({ initialMode = 'login' }) {
                               onChange={(e) => setGuestData({ ...guestData, gender: e.target.value })}
                               style={{ width: '100%', height: '44px', cursor: 'pointer' }}
                             >
-                              <option value="male">Male (Eligible for Boys &amp; Co-ed PGs)</option>
-                              <option value="female">Female (Eligible for Girls &amp; Co-ed PGs)</option>
-                              <option value="other">Other (Eligible for Co-ed PGs)</option>
+                              <option value="male">Male (Eligible for Boys &amp; Co-living PGs)</option>
+                              <option value="female">Female (Eligible for Girls &amp; Co-living PGs)</option>
+                              <option value="other">Others (Eligible for Co-living PGs only)</option>
                             </select>
                           </div>
+                          {guestErr.gender && <div className="reg-err" style={{ display: 'block' }}>{guestErr.gender}</div>}
                         </div>
                       </div>
 
@@ -582,12 +640,31 @@ export default function Login({ initialMode = 'login' }) {
 
                       <div className="owner-reg-grid" style={{ gap: '20px', marginBottom: '24px' }}>
                         <div className="reg-field" style={{ marginBottom: 0 }}>
+                          <label>Country *</label>
+                          <div className="reg-inp-wrap">
+                            <span className="reg-ico">🌐</span>
+                            <select
+                              id="g-country"
+                              value={guestData.country}
+                              onChange={(e) => setGuestData({ ...guestData, country: e.target.value, city: '', pincode: '' })}
+                              style={{ width: '100%', height: '44px', cursor: 'pointer' }}
+                            >
+                              {COUNTRIES.map((c) => (
+                                <option key={c.code} value={c.code}>{c.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="reg-field" style={{ marginBottom: 0 }}>
                           <label>Date of Birth *</label>
                           <div className="reg-inp-wrap">
                             <span className="reg-ico">📅</span>
                             <input
                               type="date"
                               id="g-dob"
+                              min={dobMin()}
+                              max={dobMax()}
                               value={guestData.dob}
                               onChange={(e) => setGuestData({ ...guestData, dob: e.target.value })}
                             />
@@ -602,10 +679,16 @@ export default function Login({ initialMode = 'login' }) {
                             <input
                               type="text"
                               id="g-city"
-                              placeholder="Enter your city"
+                              placeholder={guestData.country === 'IN' ? 'e.g. Chennai' : 'Enter your city'}
+                              list={guestData.country === 'IN' ? 'g-city-list' : undefined}
+                              maxLength={50}
+                              autoComplete="address-level2"
                               value={guestData.city}
-                              onChange={(e) => setGuestData({ ...guestData, city: e.target.value })}
+                              onChange={(e) => setGuestData({ ...guestData, city: e.target.value.replace(/[^A-Za-z .'-]/g, '') })}
                             />
+                            <datalist id="g-city-list">
+                              {INDIAN_CITIES.map((c) => <option key={c} value={c} />)}
+                            </datalist>
                           </div>
                           {guestErr.city && <div className="reg-err" style={{ display: 'block' }}>{guestErr.city}</div>}
                         </div>
@@ -618,11 +701,34 @@ export default function Login({ initialMode = 'login' }) {
                               id="g-address"
                               placeholder="Enter your current address"
                               rows="2"
+                              maxLength={200}
+                              autoComplete="street-address"
                               value={guestData.address}
                               onChange={(e) => setGuestData({ ...guestData, address: e.target.value })}
                             ></textarea>
                           </div>
                           {guestErr.address && <div className="reg-err" style={{ display: 'block' }}>{guestErr.address}</div>}
+                        </div>
+
+                        <div className="reg-field" style={{ marginBottom: 0 }}>
+                          <label>{guestData.country === 'IN' ? 'PIN Code *' : guestData.country === 'AE' ? 'Postal Code' : 'Postal Code *'}</label>
+                          <div className="reg-inp-wrap">
+                            <span className="reg-ico">📮</span>
+                            <input
+                              type="text"
+                              id="g-pincode"
+                              inputMode={guestData.country === 'IN' ? 'numeric' : 'text'}
+                              maxLength={guestData.country === 'IN' ? 6 : 10}
+                              placeholder={countryOf(guestData.country).postalHint}
+                              autoComplete="postal-code"
+                              value={guestData.pincode}
+                              onChange={(e) => setGuestData({
+                                ...guestData,
+                                pincode: guestData.country === 'IN' ? e.target.value.replace(/\D/g, '') : e.target.value.toUpperCase(),
+                              })}
+                            />
+                          </div>
+                          {guestErr.pincode && <div className="reg-err" style={{ display: 'block' }}>{guestErr.pincode}</div>}
                         </div>
                       </div>
 
@@ -776,7 +882,9 @@ export default function Login({ initialMode = 'login' }) {
                           type="tel"
                           placeholder="Enter your phone number"
                           value={ownerData.phone}
-                          onChange={(e) => setOwnerData({ ...ownerData, phone: e.target.value })}
+                          inputMode="numeric"
+                          maxLength={10}
+                          onChange={(e) => setOwnerData({ ...ownerData, phone: cleanPhone(e.target.value, DEFAULT_COUNTRY) })}
                         />
                       </div>
                       {ownerErr.phone && <div className="reg-err" style={{ display: 'block' }}>{ownerErr.phone}</div>}

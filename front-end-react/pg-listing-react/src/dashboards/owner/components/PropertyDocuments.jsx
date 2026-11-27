@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useDispatch } from 'react-redux';
 import Icon from './Icon';
 import FileDropZone from './FileDropZone';
 import { openProtectedFile } from '../../../services/apiClient';
 import { showToast } from '../../../features/ui/uiSlice';
 import { DOCUMENT_ACCEPT, DOCUMENT_LABEL, DOCUMENT_MAX_MB, documentFileError } from '../../../features/repositories/propertyDocumentsSlice';
+import useScreenState from '../../../app/useScreenState';
 
 const STATUS = {
   approved: ['badge-active', 'Approved'],
@@ -27,7 +28,7 @@ export function DocumentStatusLine({ property }) {
  */
 export default function PropertyDocuments({ property, onUpload, onDelete }) {
   const dispatch = useDispatch();
-  const [busy, setBusy] = useState('');
+  const [busy, setBusy] = useScreenState('');
 
   const open = (doc) =>
     openProtectedFile(`/property-documents/${doc.id}/file`).catch((err) => dispatch(showToast({ message: err.message, type: 'error' })));

@@ -2,11 +2,12 @@ import Icon from '../components/Icon';
 import FileDropZone from '../components/FileDropZone';
 import AmenityPicker from '../components/AmenityPicker';
 import PhotoUploader from '../components/PhotoUploader';
-import React, { useState } from 'react';
+import React from 'react';
 import useScreenState from '../../../app/useScreenState';
 import { Link, useNavigate } from 'react-router-dom';
 import { REQUIRED_DOCUMENTS, OPTIONAL_DOCUMENTS, DOCUMENT_ACCEPT, DOCUMENT_MAX_MB, documentFileError } from '../../../features/repositories/propertyDocumentsSlice';
 import { SHARING_TYPES } from '../../../features/repositories/propertiesSlice';
+import useFileState from '../../../app/useFileState';
 
 const TEXT_FIELDS = [
   { id: 'name', label: 'Property Name', placeholder: 'e.g. Sunrise PG' },
@@ -32,10 +33,10 @@ export default function AddProperty({ onSubmitProperty }) {
   const [formData, setFormData] = useScreenState({ name: '', address: '', city: '', state: '', pincode: '', type: '', capacity: '', rooms: '', description: '' });
   const [rents, setRents] = useScreenState({ single: '', double: '', triple: '' });
   const [amenities, setAmenities] = useScreenState([]);
-  // Photos and verification documents are File objects (not serializable), so
-  // they stay in component state until the property is created.
-  const [photos, setPhotos] = useState([]);
-  const [documents, setDocuments] = useState({});
+  // Photos and verification documents: Redux keeps a reference per file
+  // (name, size, type); the File itself is resolved for previews and upload.
+  const [photos, setPhotos] = useFileState([]);
+  const [documents, setDocuments] = useFileState({});
   const [errors, setErrors] = useScreenState({});
   const [isSubmitting, setIsSubmitting] = useScreenState(false);
 

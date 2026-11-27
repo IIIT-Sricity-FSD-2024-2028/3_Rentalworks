@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import Icon from '../components/Icon';
 import { formatINR, formatDate } from '../../../utils/normalize';
+import useScreenState from '../../../app/useScreenState';
 
 const DUE_BADGE = { paid: 'badge-active', waived: 'badge-active', overdue: 'badge-open', due_soon: 'badge-pending', upcoming: 'badge-pending' };
 
@@ -31,9 +32,9 @@ function Empty({ icon, title, text }) {
  * record offline payments; tenants pay online.
  */
 export default function Tenants({ tenants = [], ledger = [], requests = [], properties = [] }) {
-  const [tab, setTab] = useState('tenants');
-  const [property, setProperty] = useState('');
-  const [query, setQuery] = useState('');
+  const [tab, setTab] = useScreenState('tenants');
+  const [property, setProperty] = useScreenState('');
+  const [query, setQuery] = useScreenState('');
 
   const byProperty = (rows) => rows.filter((r) => !property || String(r.propertyId) === property);
   const q = query.trim().toLowerCase();

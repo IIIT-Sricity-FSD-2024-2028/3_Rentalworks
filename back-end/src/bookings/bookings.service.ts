@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, EntityManager } from 'typeorm';
+import { Repository, DataSource, EntityManager, In } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { randomInt } from 'crypto';
 import { Booking } from './booking.entity';
@@ -25,9 +25,12 @@ export class BookingsService {
     private readonly gateway: PaymentGatewayService,
   ) { }
 
-  findAll(tenantId?: number, propertyId?: number) {
+  findAll(tenantId?: number | number[], propertyId?: number) {
     const where: any = {};
-    if (tenantId && !isNaN(tenantId) && Number.isInteger(tenantId) && tenantId > 0 && tenantId <= 2147483647) {
+    const okId = (n: number) => Number.isInteger(n) && n > 0 && n <= 2147483647;
+    if (Array.isArray(tenantId)) {
+      where.tenantId = In(tenantId.filter(okId));
+    } else if (tenantId && okId(tenantId)) {
       where.tenantId = tenantId;
     }
     if (propertyId && !isNaN(propertyId) && Number.isInteger(propertyId) && propertyId > 0 && propertyId <= 2147483647) {
@@ -164,55 +167,63 @@ export class BookingsService {
         );
       }
 
-      // 3b. Tenant credentials.
-      //     A guest login only exists to browse and book. When a guest books, the
-      //     account becomes a tenant and gets a NEW Tenant ID (TENANT-######) and a
-      //     temporary password, shown once on the booking receipt; the old guest
-      //     username / password stop working.
-      //     Someone who is already a tenant keeps their current login.
-      //     A brand-new person (no account) also gets a Tenant ID + temporary password.
-      const isExistingAccount = !!user;
-      const keepsLogin = !!user && user.role === 'tenant';
-      const upgradedFromGuest = !!user && !keepsLogin;
-      let tenantUsername: string;
-      let issuedPassword: string | null = null;
-      if (keepsLogin && user) {
-        tenantUsername = user.username;
-      } else {
-        tenantUsername = await this.generateTenantUsername(userRepo);
-        issuedPassword = this.generateTempPassword();
+      // 3b. A NEW tenant account for THIS booking.
+      //     Every booking gets its own account with a new, unique Tenant ID
+      //     (TENANT-######, unique index on users.username). Signing in with that
+      //     Tenant ID opens the tenant dashboard for this PG only.
+      //     The booker's guest account stays a guest (browse, book, booking history).
+      //     - Booker has an account: the tenant account gets the SAME password
+      //       (the stored hash is copied; the plain password is never seen).
+      //     - Nobody has an account yet (e.g. booking for a friend): a temporary
+      //       password is issued and shown once on the receipt.
+      //     A per-booking tenant account that books again counts as its guest.
+      let owner: User | null = user;
+      const parentGuestId = Number(owner?.preferences?.guestId);
+      if (owner?.role === 'tenant' && parentGuestId) {
+        owner = (await userRepo.findOne({ where: { id: parentGuestId } })) ?? owner;
       }
-      const passwordHash = issuedPassword ? await bcrypt.hash(issuedPassword, 10) : null;
-      const timestamp = Date.now();
+      const isExistingAccount = !!owner;
+      const tenantUsername = await this.generateTenantUsername(userRepo);
+      let issuedPassword: string | null = null;
+      let passwordHash: string | null = null;
+      if (owner) {
+        const withPassword = await userRepo
+          .createQueryBuilder('u')
+          .addSelect('u.password')
+          .where('u.id = :id', { id: owner.id })
+          .getOne();
+        passwordHash = withPassword?.password || null;
+      }
+      if (!passwordHash) {
+        issuedPassword = this.generateTempPassword();
+        passwordHash = await bcrypt.hash(issuedPassword, 10);
+      }
 
-      if (user) {
-        user.role = 'tenant';
-        user.status = 'active';
-        user.name = dto.name.trim() || user.name;
-        user.phone = dto.phone.trim() || user.phone;
-        user.gender = normalizedGender;
-        if (upgradedFromGuest && passwordHash) {
-          // Guest → tenant: replace the guest login with the issued tenant login.
-          user.username = tenantUsername;
-          user.password = passwordHash;
-        }
-        // A tenant's join date is when they first moved in, not when they made a guest account.
-        user.joinDate = keepsLogin ? user.joinDate : dto.checkIn || todayIST();
-        user = await userRepo.save(user);
-      } else {
-        user = userRepo.create({
-          name: dto.name.trim(),
-          email: dto.email.trim(),
-          phone: dto.phone.trim(),
+      // The guest account keeps its role; remember the gender used for eligibility.
+      if (owner && !owner.gender) {
+        owner.gender = normalizedGender;
+        await userRepo.save(owner);
+      }
+
+      user = await userRepo.save(
+        userRepo.create({
+          name: dto.name.trim() || owner?.name,
+          // Per-booking accounts sign in by Tenant ID only; email stays on the guest account.
+          email: owner ? (null as any) : dto.email.trim().toLowerCase(),
+          phone: dto.phone.trim() || owner?.phone,
           role: 'tenant',
           gender: normalizedGender,
           username: tenantUsername,
-          password: passwordHash as string,
+          password: passwordHash,
           status: 'active',
           joinDate: dto.checkIn || todayIST(),
-        });
-        user = await userRepo.save(user);
-      }
+          preferences: {
+            guestId: owner?.id ?? null,
+            propertyId: propId,
+            contactEmail: owner?.email || dto.email.trim().toLowerCase(),
+          },
+        }),
+      );
 
       // 3c. Resolve room + bed. Rooms are row-locked so two simultaneous checkouts can never
       //     take the same bed; the partial unique index uq_active_stay_bed is the last line of defence.
@@ -364,7 +375,7 @@ export class BookingsService {
         tenant: {
           id: user.id,
           name: user.name,
-          email: user.email,
+          email: user.preferences?.contactEmail || user.email,
           phone: user.phone,
           username: user.username,
           role: user.role,
@@ -375,11 +386,11 @@ export class BookingsService {
         },
         credentials: {
           username: user.username,
-          email: user.email,
-          // null only when the person was already a tenant (their existing password still works)
+          email: user.preferences?.contactEmail || user.email,
+          // null when the tenant account uses the same password as the booker's account
           password: issuedPassword,
+          samePasswordAsAccount: issuedPassword === null,
           existingAccount: isExistingAccount,
-          upgradedFromGuest,
         },
         booking: {
           id: savedBooking.id,

@@ -2,7 +2,8 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { http } from '../../services/apiClient';
 
 const documentPath = (id) => `/users/session/property-documents/${id}`;
-const sessionOptions = { auth: false, credentials: 'include' };
+// This tab's Bearer token identifies the admin (per-tab login).
+const sessionOptions = { auth: true };
 
 export const fetchPropertyDocument = createAsyncThunk('propertyDetailsDocuments/fetch', async (id, { rejectWithValue }) => {
   try {

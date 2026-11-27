@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import useScreenState from '../../../app/useScreenState';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchSuperAdminProfile, updateSuperAdminProfile, changeSuperAdminPassword, selectSuperAdminProfile } from '../../../features/superadmin/superAdminSlice';
@@ -11,7 +11,7 @@ export default function Profile({ user, showToast }) {
   const admin = useSelector(selectSuperAdminProfile) || user || {};
   const [edits, setEdits] = useScreenState({});
   const details = { name: admin.name || '', email: admin.email || '', phone: admin.phone || '', ...edits };
-  const [password, setPassword] = useState({ current: '', next: '', confirm: '' });
+  const [password, setPassword] = useScreenState({ current: '', next: '', confirm: '' }, { secret: true });
   const saving = useSelector((state) => state.superAdmin.saving);
 
   useEffect(() => {

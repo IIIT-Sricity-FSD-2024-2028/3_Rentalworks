@@ -24,7 +24,8 @@ export class User {
   @Column()
   name: string;
 
-  @Column({ unique: true })
+  // NULL for per-booking tenant accounts (they sign in by Tenant ID; see preferences.contactEmail).
+  @Column({ type: 'varchar', unique: true, nullable: true })
   email: string;
 
   @Column()
@@ -80,6 +81,10 @@ export class User {
 
   @Column({ type: 'jsonb', nullable: true })
   policy?: any;
+
+  /** Free-form profile extras (e.g. dateOfBirth, country from guest sign-up). Column added by migration 1710000000000. */
+  @Column({ type: 'jsonb', nullable: true })
+  preferences?: any;
 
   @CreateDateColumn()
   createdAt: Date;

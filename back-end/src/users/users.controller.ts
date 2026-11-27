@@ -36,6 +36,7 @@ import {
   LoginDto,
   CreateTenantDto,
   UpdateTenantDto,
+  GuestRegisterDto,
 } from './users.dto';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -212,7 +213,7 @@ export class UsersController {
 
   @Post('guest-register')
   @ApiOperation({ summary: 'Register or authenticate guest user' })
-  guestRegister(@Body() dto: { name: string; email: string; phone: string; password?: string; gender?: string }) {
+  guestRegister(@Body() dto: GuestRegisterDto) {
     return this.usersService.guestRegister(dto);
   }
 

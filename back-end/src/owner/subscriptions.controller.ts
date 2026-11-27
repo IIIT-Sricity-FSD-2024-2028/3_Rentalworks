@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, Param, ParseIntPipe, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ApiTags } from '@nestjs/swagger';
 import { DataSource, Not, Repository } from 'typeorm';
@@ -14,7 +14,7 @@ const ACTIVE = 'active';
 
 /**
  * CRUD for owner subscriptions — the single source of truth for an owner's plan.
- * Owners read their own; admins activate, change and cancel plans.
+ * Owners choose, change and cancel their OWN plan; admins can only view them.
  * Price and dates always come from the plan catalog, never from the form.
  */
 @ApiTags('subscriptions')
@@ -70,13 +70,14 @@ export class SubscriptionsController {
     return this.repo.find({ where, relations: { owner: true }, order: { id: 'DESC' } });
   }
 
-  /** Activate a plan for an owner. Any earlier active plan is closed as 'replaced'. */
+  /** The signed-in owner activates or switches their plan. Any earlier active plan is closed as 'replaced'. */
   @Post()
-  @Roles('admin')
-  async create(@Req() req: { user: AuthUser }, @Body() body: { ownerId?: number; planType?: string }) {
-    const ownerId = Number(body.ownerId);
-    const owner = ownerId ? await this.db.getRepository(User).findOneBy({ id: ownerId, role: 'owner' }) : null;
-    if (!owner) throw new BadRequestException('Choose an owner account');
+  @Roles('owner')
+  async create(@Req() req: { user: AuthUser }, @Body() body: { planType?: string }) {
+    // Always the caller's own account; an ownerId in the body is ignored.
+    const ownerId = req.user.id;
+    const owner = await this.db.getRepository(User).findOneBy({ id: ownerId, role: 'owner' });
+    if (!owner) throw new BadRequestException('Only an owner account can choose a plan');
     const fields = this.planFields(String(body.planType || ''));
     await this.repo.update({ ownerId, status: ACTIVE }, { status: 'replaced' });
     const saved = await this.repo.save(this.repo.create({ ownerId, status: ACTIVE, currency: 'INR', ...fields } as Partial<Subscription>));
@@ -85,11 +86,12 @@ export class SubscriptionsController {
     return saved;
   }
 
-  /** Change the plan (restarts the period) or the status (active / cancelled). */
+  /** The owner changes their own plan (restarts the period) or cancels it. */
   @Patch(':id')
-  @Roles('admin')
+  @Roles('owner')
   async update(@Req() req: { user: AuthUser }, @Param('id', ParseIntPipe) id: number, @Body() body: { planType?: string; status?: string }) {
     const row = await findOr404(this.repo, id, 'Subscription');
+    if (row.ownerId !== req.user.id) throw new ForbiddenException('You can only change your own plan');
     if (body.planType) Object.assign(row, this.planFields(body.planType));
     if (body.status) {
       const status = String(body.status).toLowerCase();
@@ -102,16 +104,17 @@ export class SubscriptionsController {
     await this.notify(
       row.ownerId,
       saved.status === ACTIVE ? 'Subscription updated' : 'Subscription cancelled',
-      saved.status === ACTIVE ? `Your plan is now ${saved.planName}${saved.endDate ? ` until ${saved.endDate}` : ''}.` : `Your ${saved.planName || saved.planType} plan was cancelled by the administrator.`,
+      saved.status === ACTIVE ? `Your plan is now ${saved.planName}${saved.endDate ? ` until ${saved.endDate}` : ''}.` : `Your ${saved.planName || saved.planType} plan was cancelled.`,
       req.user.id,
     );
     return saved;
   }
 
   @Delete(':id')
-  @Roles('admin')
-  async remove(@Param('id', ParseIntPipe) id: number) {
+  @Roles('owner')
+  async remove(@Req() req: { user: AuthUser }, @Param('id', ParseIntPipe) id: number) {
     const row = await findOr404(this.repo, id, 'Subscription');
+    if (row.ownerId !== req.user.id) throw new ForbiddenException('You can only remove your own plan');
     await this.repo.remove(row);
     await this.syncOwner(row.ownerId);
     return { id };

@@ -79,6 +79,9 @@ import WardenProfile from '../dashboards/warden/pages/Profile';
 import SuperAdminLayout, {
   SuperAdminDashboardRoute,
   SuperAdminRegionalAdminsRoute,
+  SuperAdminUsersRoute,
+  SuperAdminPaymentsRoute,
+  SuperAdminSubscriptionsRoute,
   SuperAdminGlobalReportsRoute,
   SuperAdminNotificationsRoute,
   SuperAdminProfileRoute,
@@ -213,6 +216,9 @@ export default function AppRoutes() {
       >
         <Route index element={<SuperAdminDashboardRoute />} />
         <Route path="regional-admins" element={<SuperAdminRegionalAdminsRoute />} />
+        <Route path="users" element={<SuperAdminUsersRoute />} />
+        <Route path="payments" element={<SuperAdminPaymentsRoute />} />
+        <Route path="subscriptions" element={<SuperAdminSubscriptionsRoute />} />
         <Route path="global-reports" element={<SuperAdminGlobalReportsRoute />} />
         <Route path="notifications" element={<SuperAdminNotificationsRoute />} />
         <Route path="profile" element={<SuperAdminProfileRoute />} />

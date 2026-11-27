@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { http } from '../../services/apiClient';
+import { readTabSession } from './tabSession';
 
 export const MANAGEMENT_ROLES = ['admin', 'owner', 'warden', 'super_admin'];
 
@@ -68,16 +69,12 @@ export const registerGuest = createAsyncThunk('auth/registerGuest', async (detai
   }
 });
 
+// Restores only this tab's own login (sessionStorage), never the shared
+// cookie, so one tab's sign-in never changes who is signed in in another tab.
+// A token that is no longer valid is cleared by the first 401 (sessionExpired).
 export const restoreSession = createAsyncThunk(
   'auth/restoreSession',
-  async (_, { rejectWithValue }) => {
-    try {
-      const user = await http.get(sessionPath, sessionOptions);
-      return user?.id ? splitToken(user) : { user: null, token: null };
-    } catch (err) {
-      return rejectWithValue(toError(err));
-    }
-  },
+  async () => readTabSession() || { user: null, token: null },
   {
     condition: (_, { getState }) => ['idle', 'failed'].includes(getState().auth.sessionStatus),
   },
@@ -153,8 +150,8 @@ export const changeMyPassword = createAsyncThunk('auth/changeMyPassword', async 
 
 // ---------------------------------------------------------------- slice
 
-// The session token lives only in the Redux store. A page reload restores it
-// from the signed, http-only browser-session cookie (restoreSession).
+// The session lives in the Redux store and is mirrored into this tab's
+// sessionStorage (tabSession.js), so each tab keeps its own login across reloads.
 const authSlice = createSlice({
   name: 'auth',
   initialState: {

@@ -1,11 +1,9 @@
 import React, { useMemo } from 'react';
 import useScreenState from '../app/useScreenState';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { login, selectCurrentUser } from '../features/auth/authSlice';
-import { selectLastConfirmed } from '../features/booking/bookingSlice';
-import { clearIssuedPassword, readIssuedPassword } from '../features/booking/issuedPassword';
-import { toastError } from '../features/ui/uiSlice';
+import { useSelector } from 'react-redux';
+import { selectCurrentUser } from '../features/auth/authSlice';
+import { selectIssuedPassword, selectLastConfirmed } from '../features/booking/bookingSlice';
 import './BookingConfirmed.css';
 
 const money = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
@@ -117,14 +115,14 @@ ${r.fee ? `<tr class="sub"><td>Platform / maintenance fee</td><td style="text-al
 
 export default function BookingConfirmed() {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const currentUser = useSelector(selectCurrentUser);
   const confirmed = useSelector(selectLastConfirmed);
+  // Hook order: read the issued password before any early return.
+  const issuedPassword = useSelector((state) => selectIssuedPassword(state, state.booking.lastConfirmed?.booking?.id));
 
   const [copied, setCopied] = useScreenState(false);
   const [showPassword, setShowPassword] = useScreenState(true);
   const [showReceipt, setShowReceipt] = useScreenState(false);
-  const [loggingIn, setLoggingIn] = useScreenState(false);
 
   const record = useMemo(
     () =>
@@ -160,36 +158,17 @@ export default function BookingConfirmed() {
     );
   }
 
-  const password = readIssuedPassword(record.id);
+  const password = issuedPassword;
   const hasPassword = Boolean(password);
   const allotment = `Room #${receipt.room}${receipt.bed ? ` • Bed ${receipt.bed}` : ''}`;
 
   const handleCopyCredentials = async () => {
     const lines = [`Tenant ID: ${credentials.username || tenant.username || ''}`];
-    if (hasPassword) lines.push(`Temporary password: ${password}`);
+    lines.push(hasPassword ? `Temporary password: ${password}` : 'Password: same as your guest account password');
     lines.push(`Login: ${window.location.origin}/login`);
     const ok = await copyText(lines.join('\n'));
     setCopied(ok ? 'ok' : 'fail');
     setTimeout(() => setCopied(false), 2500);
-  };
-
-  const handleLoginToDashboard = async () => {
-    // Checkout already promoted the signed-in account to tenant.
-    if (currentUser?.role !== 'tenant' || String(currentUser.id) !== String(tenant.id)) {
-      if (!hasPassword) {
-        navigate('/login');
-        return;
-      }
-      setLoggingIn(true);
-      const result = await dispatch(login({ username: credentials.username, password }));
-      setLoggingIn(false);
-      if (login.rejected.match(result)) {
-        dispatch(toastError(result.payload || 'Could not sign you in. Please use the login page.'));
-        return;
-      }
-    }
-    clearIssuedPassword();
-    navigate('/dashboard/tenant/dashboard');
   };
 
   const handleDownloadReceipt = () => {
@@ -224,11 +203,7 @@ export default function BookingConfirmed() {
           <p>
             {forFriend ? 'The' : 'Your'} bed at <strong>{receipt.propertyName}</strong> is reserved for <strong>{receipt.tenantName}</strong>.
             {' '}
-            {credentials.upgradedFromGuest
-              ? 'Your guest account is now a tenant account with a new Tenant ID and password (below).'
-              : credentials.existingAccount
-                ? 'Your tenant account has been updated with this booking.'
-                : 'A new tenant account has been created.'}
+            A new Tenant ID was created for this PG. Sign in with it to open this PG's tenant dashboard.
           </p>
         </div>
 
@@ -262,7 +237,7 @@ export default function BookingConfirmed() {
               <span className="material-icons-outlined" style={{ color: '#ca8a04', fontSize: '28px' }}>badge</span>
               <div>
                 <h3>{forFriend ? 'Your Friend’s Account Credentials' : 'Your Account Credentials'}</h3>
-                <p>{forFriend ? 'Share these so they can sign in to their Tenant Dashboard' : 'Use these to sign in to your Tenant Dashboard'}</p>
+                <p>{forFriend ? 'Share these so they can sign in to their Tenant Dashboard' : `Sign in with this Tenant ID to open the ${receipt.propertyName} tenant dashboard`}</p>
               </div>
             </div>
             <span className="cred-status-tag">Status: Active Tenant</span>
@@ -294,7 +269,7 @@ export default function BookingConfirmed() {
                   </button>
                 </div>
               ) : (
-                <code className="cred-code">Your current tenant password</code>
+                <code className="cred-code">Same as your guest account password</code>
               )}
             </div>
           </div>
@@ -304,22 +279,14 @@ export default function BookingConfirmed() {
               <span className="material-icons-outlined" style={{ fontSize: '18px' }}>content_copy</span>
               {copied === 'ok' ? 'Copied!' : copied === 'fail' ? 'Copy failed — select & copy manually' : 'Copy Credentials'}
             </button>
-            {!forFriend && (
-              <button type="button" className="btn-tenant-portal-action" onClick={handleLoginToDashboard} disabled={loggingIn}>
-                <span className="material-icons-outlined">login</span>
-                {loggingIn ? 'Signing you in…' : 'Go to Tenant Dashboard'}
-              </button>
-            )}
           </div>
 
           <div className="cred-notice-footer">
             <span className="material-icons-outlined" style={{ fontSize: '18px', color: '#16a34a' }}>check</span>
             <span>
-              {credentials.upgradedFromGuest
-                ? 'Your guest login no longer works. Sign in with this Tenant ID and password from now on. Save them now: the password is shown only on this page, and you can change it later from your Profile.'
-                : hasPassword
-                  ? 'Save these now: the password is shown only on this page. You can change it later from your Profile.'
-                  : 'You were already a tenant, so your current sign-in details still work.'}{' '}
+              {hasPassword
+                ? 'Save these now: the password is shown only on this page. Sign in with the Tenant ID to open the tenant dashboard.'
+                : 'Sign out and sign in with this Tenant ID and your guest account password to open the tenant dashboard. Your guest account only shows booking history and is used to book other PGs.'}{' '}
               Your warden has been notified of your room and bed.
             </span>
           </div>
