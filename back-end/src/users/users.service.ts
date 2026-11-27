@@ -1,3 +1,4 @@
+import { activeStayRooms, recountRooms } from '../common/occupancy';
 import { OwnerRegistrationDto } from '../owner/owner-registration.dto';
 import { Property, PropertyDetailsDocument } from '../properties/property.entity';
 import { Notification } from '../notifications/notification.entity';
@@ -85,11 +86,30 @@ export class UsersService {
     return result;
   }
 
+  /**
+   * Delete an account (admin Users page, super-admin Accounts page).
+   * A tenant's bookings, stays and dues go with them (database cascade), and
+   * the beds they occupied are recounted so they show free everywhere.
+   */
   async remove(id: number) {
     const user = await this.findOne(id);
     if (user.role === 'super_admin') throw new ForbiddenException('Super admin accounts cannot be deleted here');
+    if (user.role === 'owner') {
+      const pgs = await this.dataSource.getRepository(Property).count({ where: { ownerId: id } });
+      if (pgs) throw new BadRequestException(`This owner still has ${pgs} PG${pgs > 1 ? 's' : ''}. Delete or reassign ${pgs > 1 ? 'them' : 'it'} first, or suspend the account instead.`);
+    }
     const removed = Object.assign({}, user);
-    await this.usersRepository.remove(user);
+    try {
+      await this.dataSource.transaction(async (manager) => {
+        const rooms = await activeStayRooms(manager, id);
+        await manager.getRepository(User).remove(user);
+        await recountRooms(manager, rooms);
+      });
+    } catch (err: any) {
+      // Any other record still pointing at this account (e.g. payments it approved).
+      if (err?.code === '23503') throw new BadRequestException('This account has linked records and cannot be deleted. Suspend it instead.');
+      throw err;
+    }
     return removed;
   }
 
@@ -590,21 +610,8 @@ export class UsersService {
         throw new NotFoundException(`Tenant with ID ${id} not found`);
       }
 
-      // Decrement room occupancy
-      const roomRepo = manager.getRepository(Room);
-      const activeBooking = user.bookings?.find((b) => b.status === 'active');
-      if (activeBooking?.room) {
-        const room = await roomRepo.findOne({
-          where: { roomNumber: activeBooking.room },
-        });
-        if (room && room.currentOccupancy > 0) {
-          room.currentOccupancy -= 1;
-          if (room.currentOccupancy < room.capacity) {
-            room.status = 'available';
-          }
-          await roomRepo.save(room);
-        }
-      }
+      // Beds this tenant occupies, by the stay's own room (room numbers repeat across PGs).
+      const rooms = await activeStayRooms(manager, id);
 
       // Remove payments, bookings, stays, then user
       if (user.payments && user.payments.length > 0) {
@@ -619,6 +626,7 @@ export class UsersService {
 
       const removed = { ...user };
       await userRepo.remove(user);
+      await recountRooms(manager, rooms);
       return removed;
     });
   }

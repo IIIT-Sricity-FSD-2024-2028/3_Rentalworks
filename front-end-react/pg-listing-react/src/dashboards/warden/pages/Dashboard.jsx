@@ -139,7 +139,7 @@ function RecentComplaints({ complaints }) {
 
   return (
     <div id="recent-complaints">
-      {recent.map((c, i) => {
+      {recent.map((c) => {
         const tenantDisplayName = typeof c.tenant === 'object' && c.tenant !== null 
           ? (c.tenant.name || 'Tenant') 
           : (c.tenant || 'Tenant');

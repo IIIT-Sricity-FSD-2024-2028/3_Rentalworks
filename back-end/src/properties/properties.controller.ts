@@ -129,8 +129,9 @@ export class PropertiesController {
    * The public catalogue shows approved properties only. Owners also see
    * their own unapproved listings; admins see everything.
    */
-  private static canView(viewer: { id: number; role: string } | null, p: { status: string; ownerId: number }) {
-    if (String(p.status).toLowerCase() === 'approved') return true;
+  private static canView(viewer: { id: number; role: string } | null, p: { status: string; ownerId: number; owner?: { status?: string } | null }) {
+    // Public only when approved AND the owner's account is active (a suspended owner's PGs are hidden).
+    if (String(p.status).toLowerCase() === 'approved' && (!p.owner || p.owner.status === 'active')) return true;
     if (!viewer) return false;
     if (viewer.role === 'admin' || viewer.role === 'super_admin') return true;
     return viewer.role === 'owner' && p.ownerId === viewer.id;

@@ -45,3 +45,5 @@ export const notifyTenantApi = (tenantId, payload) => http.post(`/warden-actions
 export const escalateTenantApi = (tenantId, payload) => http.post(`/warden-actions/tenants/${tenantId}/escalate`, payload);
 export const evictTenantApi = (tenantId, reason) => http.post(`/warden-actions/tenants/${tenantId}/evict`, { reason });
 export const getAuditLogsApi = (params = {}) => http.get(`/warden-actions/audit-logs${qs(params)}`);
+/** Recount occupied beds from active stays (dryRun: preview only). */
+export const recountBedsApi = (dryRun = false) => http.post(`/rooms/recount${dryRun ? '?dryRun=true' : ''}`);

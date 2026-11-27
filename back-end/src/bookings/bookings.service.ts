@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { endStays, recountRooms } from '../common/occupancy';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, EntityManager, In } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -83,20 +89,46 @@ export class BookingsService {
     return this.bookingsRepository.save(newBooking);
   }
 
+  /** Statuses that mean the tenant no longer occupies the bed. */
+  private static readonly ENDED = ['cancelled', 'canceled', 'checked_out', 'checked-out', 'completed', 'rejected', 'evicted'];
+  private static readonly LIVE = ['confirmed', 'active', 'pending'];
+
+  /** End the booking's stay (that tenant, that room), cancel future rent, recount the room. */
+  private async releaseBed(manager: EntityManager, booking: Booking, reason: string, stayStatus: string) {
+    const rooms = await endStays(manager, { tenantId: booking.tenantId, roomId: booking.roomId, bookingId: booking.id, reason, status: stayStatus });
+    await recountRooms(manager, [...rooms, ...(booking.roomId ? [booking.roomId] : [])]);
+  }
+
   async update(id: number, updateBookingDto: UpdateBookingDto) {
-    const booking = await this.findOne(id);
-    const cleanDto = Object.fromEntries(
-      Object.entries(updateBookingDto).filter(([_, v]) => v !== undefined),
-    );
-    Object.assign(booking, cleanDto);
-    return this.bookingsRepository.save(booking);
+    return this.dataSource.transaction(async (manager) => {
+      const booking = await manager.getRepository(Booking).findOne({ where: { id } });
+      if (!booking) throw new NotFoundException(`Booking with ID ${id} not found`);
+      const before = String(booking.status || '').toLowerCase();
+      const cleanDto = Object.fromEntries(
+        Object.entries(updateBookingDto).filter(([_, v]) => v !== undefined),
+      );
+      Object.assign(booking, cleanDto);
+      const saved = await manager.getRepository(Booking).save(booking);
+      const after = String(saved.status || '').toLowerCase();
+      // Cancelled / checked out etc.: the bed is free again everywhere.
+      if (BookingsService.ENDED.includes(after) && !BookingsService.ENDED.includes(before)) {
+        await this.releaseBed(manager, saved, `Booking ${after.replace(/[_-]/g, ' ')}`, after === 'evicted' ? 'evicted' : 'ended');
+      }
+      return saved;
+    });
   }
 
   async remove(id: number) {
-    const booking = await this.findOne(id);
-    const removed = { ...booking };
-    await this.bookingsRepository.remove(booking);
-    return removed;
+    return this.dataSource.transaction(async (manager) => {
+      const booking = await manager.getRepository(Booking).findOne({ where: { id } });
+      if (!booking) throw new NotFoundException(`Booking with ID ${id} not found`);
+      const removed = { ...booking };
+      if (BookingsService.LIVE.includes(String(booking.status || '').toLowerCase())) {
+        await this.releaseBed(manager, booking, 'Booking deleted', 'ended');
+      }
+      await manager.getRepository(Booking).remove(booking);
+      return removed;
+    });
   }
 
   /** `bookerId` is the signed-in account paying (the tenant, or the friend booking for them). */
@@ -117,10 +149,11 @@ export class BookingsService {
       if (!property && dto.propertyName) {
         property = await propertyRepo.findOne({ where: { name: dto.propertyName.trim() } });
       }
-      if (!property) {
-        // Fallback to first available approved property
-        property = (await propertyRepo.findOne({ where: { status: 'approved' }, order: { id: 'ASC' } }))
-          || (await propertyRepo.findOne({ where: { id: 1 } }));
+      // Never book a different PG than the one chosen, and only live listings.
+      if (!property) throw new BadRequestException('This PG could not be found. Please choose it again from the listings.');
+      const listingOwner = await userRepo.findOne({ where: { id: property.ownerId } });
+      if (String(property.status).toLowerCase() !== 'approved' || listingOwner?.status !== 'active') {
+        throw new BadRequestException(`${property.name} is not taking bookings right now.`);
       }
       const propId = property ? property.id : 1;
       const propName = property ? property.name : (dto.propertyName || 'Sunrise PG Residency');

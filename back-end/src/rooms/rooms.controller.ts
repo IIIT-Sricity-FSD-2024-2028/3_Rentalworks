@@ -1,3 +1,4 @@
+import { recountRooms } from '../common/occupancy';
 import {
   BadRequestException,
   Controller,
@@ -47,6 +48,20 @@ export class RoomsController {
   async mine(@Req() req: { user: AuthUser }) {
     const ids = await ownerPropertyIds(this.db, req.user.id);
     return this.db.getRepository(Room).find({ where: { propertyId: In(ids) }, order: { propertyId: 'ASC', roomNumber: 'ASC' } });
+  }
+
+  /**
+   * Recount every room's occupied beds from active tenant stays (repairs any
+   * count left wrong by an older bug or a manual edit). ?dryRun=true only lists
+   * what would change.
+   */
+  @Post('recount')
+  @Roles('admin', 'warden')
+  @ApiOperation({ summary: 'Recount occupied beds from active stays' })
+  async recount(@Query('dryRun') dryRun?: string) {
+    const preview = dryRun === 'true';
+    const changes = await this.db.transaction((manager) => recountRooms(manager, undefined, preview));
+    return { dryRun: preview, changed: changes.length, changes };
   }
 
   @Get(':id')

@@ -596,6 +596,9 @@ export default function Properties() {
                 onChange={e => setModal({ ...modal, fields: { ...modal.fields, rentMax: e.target.value } })}
               />
             </div>
+            <p style={{ gridColumn: '1 / -1', fontSize: 12, color: '#64748b', margin: 0 }}>
+              Once a PG has rooms, tenants see each room's own rent; this range is only used while no rooms are listed. Change room rents on the Rooms page.
+            </p>
           </div>
         )}
       </Modal>

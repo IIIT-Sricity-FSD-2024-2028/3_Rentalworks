@@ -1,7 +1,7 @@
 import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, Param, ParseIntPipe, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ApiTags } from '@nestjs/swagger';
-import { DataSource, Not, Repository } from 'typeorm';
+import { DataSource, Not, Repository, In } from 'typeorm';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { AuthUser, findOr404 } from '../common/crud';
@@ -11,6 +11,8 @@ import { Notification } from '../notifications/notification.entity';
 import { SUBSCRIPTION_PLANS, planPeriod, planTypeOf } from './subscription-plans';
 
 const ACTIVE = 'active';
+// Older rows were saved as 'ACTIVE'; match both spellings when finding or closing the current plan.
+const ANY_ACTIVE = In(['active', 'ACTIVE']);
 
 /**
  * CRUD for owner subscriptions — the single source of truth for an owner's plan.
@@ -25,7 +27,7 @@ export class SubscriptionsController {
 
   /** Keep users.subscriptionPlan / subscriptionFee in step for older screens that read them. */
   private async syncOwner(ownerId: number) {
-    const current = await this.repo.findOne({ where: { ownerId, status: ACTIVE }, order: { id: 'DESC' } });
+    const current = await this.repo.findOne({ where: { ownerId, status: ANY_ACTIVE }, order: { id: 'DESC' } });
     const type = planTypeOf(current?.planType || current?.planName);
     await this.db.getRepository(User).update(
       { id: ownerId },
@@ -79,7 +81,7 @@ export class SubscriptionsController {
     const owner = await this.db.getRepository(User).findOneBy({ id: ownerId, role: 'owner' });
     if (!owner) throw new BadRequestException('Only an owner account can choose a plan');
     const fields = this.planFields(String(body.planType || ''));
-    await this.repo.update({ ownerId, status: ACTIVE }, { status: 'replaced' });
+    await this.repo.update({ ownerId, status: ANY_ACTIVE }, { status: 'replaced' });
     const saved = await this.repo.save(this.repo.create({ ownerId, status: ACTIVE, currency: 'INR', ...fields } as Partial<Subscription>));
     await this.syncOwner(ownerId);
     await this.notify(ownerId, 'Subscription activated', `Your ${fields.planName} plan is active${fields.endDate ? ` until ${fields.endDate}` : ''}.`, req.user.id);
@@ -96,7 +98,7 @@ export class SubscriptionsController {
     if (body.status) {
       const status = String(body.status).toLowerCase();
       if (!['active', 'cancelled'].includes(status)) throw new BadRequestException('status must be active or cancelled');
-      if (status === ACTIVE) await this.repo.update({ ownerId: row.ownerId, status: ACTIVE, id: Not(row.id) }, { status: 'replaced' });
+      if (status === ACTIVE) await this.repo.update({ ownerId: row.ownerId, status: ANY_ACTIVE, id: Not(row.id) }, { status: 'replaced' });
       row.status = status;
     }
     const saved = await this.repo.save(row);

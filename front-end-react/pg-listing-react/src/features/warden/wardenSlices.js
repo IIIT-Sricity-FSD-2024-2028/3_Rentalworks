@@ -136,6 +136,18 @@ export const markRentPaidOffline = thunk('markRentPaidOffline', ({ dueId, note }
 export const waiveRent = thunk('waiveRent', ({ dueId, reason }) => api.waiveRentApi(dueId, reason));
 export const notifyTenant = thunk('notifyTenant', ({ tenantId, payload }) => api.notifyTenantApi(tenantId, payload));
 export const escalateTenant = thunk('escalateTenant', ({ tenantId, payload }) => api.escalateTenantApi(tenantId, payload));
+/**
+ * Repair bed counts: every room's occupied beds are recounted from the tenants
+ * actually staying, then the warden data and public listings are reloaded so
+ * the landing page shows the real free beds.
+ */
+export const recountBeds = thunk('recountBeds', async (_, { dispatch }) => {
+  const result = await api.recountBedsApi(false);
+  await dispatch(fetchWardenData());
+  dispatch(fetchListings());
+  return result;
+});
+
 export const evictTenant = occupancyThunk('evictTenant', ({ tenantId, reason }) => api.evictTenantApi(tenantId, reason));
 
 // ====================================================================

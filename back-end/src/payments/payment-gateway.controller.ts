@@ -47,8 +47,9 @@ export class PaymentGatewayController {
 
     if (body.purpose === 'checkout') {
       const propertyId = Number(body.propertyId);
-      const property = await this.db.getRepository(Property).findOneBy({ id: propertyId });
-      if (!property || String(property.status).toLowerCase() !== 'approved') throw new NotFoundException('This PG is not available for booking');
+      const property = await this.db.getRepository(Property).findOne({ where: { id: propertyId }, relations: { owner: true } });
+      // Only live listings: approved, and the owner's account is active (not suspended).
+      if (!property || String(property.status).toLowerCase() !== 'approved' || property.owner?.status !== 'active') throw new NotFoundException('This PG is not available for booking');
       const roomNumber = String(body.roomNumber || '').trim();
       const room = roomNumber ? await this.db.getRepository(Room).findOneBy({ propertyId, roomNumber }) : null;
       if (!room) throw new BadRequestException('Choose a room to book');

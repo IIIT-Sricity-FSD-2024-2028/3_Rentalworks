@@ -1,7 +1,7 @@
 import React from 'react';
 import useScreenState from '../../../app/useScreenState';
 import { useWardenData, useWardenRun, useWardenToast } from '../utils/dataStore';
-import { createRoom, deleteRoom, updateRoom } from '../../../features/warden/wardenSlices';
+import { createRoom, deleteRoom, updateRoom, recountBeds } from '../../../features/warden/wardenSlices';
 import Modal from '../components/Modal';
 import ServiceRequests from '../components/ServiceRequests';
 
@@ -188,13 +188,30 @@ export default function RoomServices() {
             <option value="cleaned">Cleaned</option>
           </select>
         </div>
-        <button 
-          className="btn-login" 
-          style={{ width: 'auto', padding: '6px 16px', margin: 0, background: 'var(--primary)' }} 
-          onClick={openAddRoomModal}
-        >
-          + Add Room
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            className="btn-login"
+            style={{ width: 'auto', padding: '6px 16px', margin: 0, background: 'var(--bg-card, #fff)', color: 'var(--primary)', border: '1px solid var(--primary)' }}
+            title="Set every room's occupied beds to the tenants actually staying"
+            onClick={async () => {
+              try {
+                const r = await run(recountBeds());
+                showToast('success', r.changed ? `Bed counts fixed in ${r.changed} room${r.changed > 1 ? 's' : ''}` : 'All bed counts are already correct');
+              } catch (err) {
+                showToast('error', 'Recount failed', err.message);
+              }
+            }}
+          >
+            ↻ Recount beds
+          </button>
+          <button
+            className="btn-login"
+            style={{ width: 'auto', padding: '6px 16px', margin: 0, background: 'var(--primary)' }}
+            onClick={openAddRoomModal}
+          >
+            + Add Room
+          </button>
+        </div>
       </div>
 
       <div className="table-wrapper">
