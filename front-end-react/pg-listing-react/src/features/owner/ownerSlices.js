@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import { http } from '../../services/apiClient';
 import { showToast } from '../ui/uiSlice';
-import { propertiesRepo, issuesRepo, notificationsRepo, rentDuesRepo, roomsRepo, propertyDocumentsRepo, tenantStaysRepo, bookingRequestsRepo } from '../repositories';
+import { payOnline } from '../../services/paymentGateway';
+import { subscriptionsRepo, propertiesRepo, issuesRepo, notificationsRepo, rentDuesRepo, roomsRepo, propertyDocumentsRepo, tenantStaysRepo, bookingRequestsRepo } from '../repositories';
 import { REQUIRED_DOCUMENTS } from '../repositories/propertyDocumentsSlice';
 import { uploadPropertyPhoto } from '../repositories/propertiesSlice';
 import { markNotificationRead, markAllNotificationsRead, clearNotifications } from '../repositories/notificationsSlice';
@@ -260,16 +261,89 @@ export const resetOwnerPolicy = withToast('resetPolicy', savePolicyCall, 'Policy
 export const saveOwnerProfile = withToast('saveProfile', saveProfileCall, 'Profile updated', fetchOwnerAccount);
 export const changeOwnerPassword = withToast('changePassword', changePasswordCall, 'Password changed successfully');
 
+/**
+ * Price of switching to a plan, computed by the server: new plan = full price,
+ * upgrade = price minus the unused value of the current plan, downgrade = no
+ * payment and no refund (needs the owner's confirmation).
+ */
+export const fetchPlanQuote = createAsyncThunk('ownerAccount/planQuote', async (planType, { rejectWithValue }) => {
+  try {
+    return await http.get(`/subscriptions/quote?planType=${encodeURIComponent(planType)}`);
+  } catch (err) {
+    return rejectWithValue(err.message);
+  }
+});
+
+/**
+ * Start / change the owner's plan.
+ *  - new plan or upgrade: pay the quoted amount through the gateway (Razorpay,
+ *    or test mode), then the server re-checks the price and the payment.
+ *  - downgrade: no payment; `confirmNoRefund` must be true.
+ * Afterwards the plan list, account summary and notifications are reloaded.
+ */
+export const changeOwnerPlan = createAsyncThunk(
+  'ownerAccount/changePlan',
+  async ({ planType, requiresPayment, confirmNoRefund, description }, { dispatch, getState, rejectWithValue }) => {
+    const user = getState().ownerAccount.profile || {};
+    let proof = null;
+    if (requiresPayment) {
+      try {
+        proof = await payOnline({ purpose: 'subscription', planType }, { description: description || 'RentBro subscription', name: user.name, email: user.email, phone: user.phone });
+      } catch (err) {
+        return rejectWithValue(err.message);
+      }
+    }
+    try {
+      const saved = await dispatch(
+        subscriptionsRepo.thunks.createItem({
+          planType,
+          ...(confirmNoRefund ? { confirmNoRefund: true } : {}),
+          ...(proof ? { quoteDate: proof.quoteDate, gatewayOrderId: proof.gatewayOrderId, gatewayPaymentId: proof.gatewayPaymentId, gatewaySignature: proof.gatewaySignature } : {}),
+        }),
+      ).unwrap();
+      await Promise.all([dispatch(subscriptionsRepo.thunks.fetchAll()), dispatch(fetchOwnerAccount()), dispatch(notificationsRepo.thunks.fetchAll())]);
+      return saved;
+    } catch (err) {
+      const message = typeof err === 'string' ? err : err?.message || 'Could not change the plan';
+      return rejectWithValue(proof?.mode === 'razorpay' ? `${message} Your payment (${proof.gatewayPaymentId}) was received; contact support with this ID.` : message);
+    }
+  },
+);
+
+/** Cancel the running plan (no refund; the owner confirmed). */
+export const cancelOwnerPlan = createAsyncThunk('ownerAccount/cancelPlan', async (id, { dispatch, rejectWithValue }) => {
+  try {
+    const { item } = await dispatch(subscriptionsRepo.thunks.updateItem({ id, changes: { status: 'cancelled', confirmNoRefund: true } })).unwrap();
+    await Promise.all([dispatch(subscriptionsRepo.thunks.fetchAll()), dispatch(fetchOwnerAccount()), dispatch(notificationsRepo.thunks.fetchAll())]);
+    return item;
+  } catch (err) {
+    return rejectWithValue(typeof err === 'string' ? err : err?.message || 'Could not cancel the plan');
+  }
+});
+
 // ------------------------------------------------------------------ slice
 
 const ownerAccountSlice = createSlice({
   name: 'ownerAccount',
-  initialState: { policy: {}, profile: {}, subscription: null, status: 'idle', error: null },
-  reducers: {},
+  initialState: { policy: {}, profile: {}, subscription: null, status: 'idle', error: null, planQuote: { data: null, status: 'idle', error: null } },
+  reducers: {
+    clearPlanQuote: (s) => {
+      s.planQuote = { data: null, status: 'idle', error: null };
+    },
+  },
   extraReducers: (b) => {
     b.addCase(fetchOwnerAccount.fulfilled, (s, { payload }) => {
       Object.assign(s, payload);
     })
+      .addCase(fetchPlanQuote.pending, (s) => {
+        s.planQuote = { data: null, status: 'loading', error: null };
+      })
+      .addCase(fetchPlanQuote.fulfilled, (s, { payload }) => {
+        s.planQuote = { data: payload, status: 'succeeded', error: null };
+      })
+      .addCase(fetchPlanQuote.rejected, (s, { payload, error }) => {
+        s.planQuote = { data: null, status: 'failed', error: payload || error.message };
+      })
       .addCase(loadOwnerData.pending, (s) => {
         if (s.status === 'idle') s.status = 'loading';
       })
@@ -285,10 +359,12 @@ const ownerAccountSlice = createSlice({
 });
 
 export const ownerReducers = { ownerAccount: ownerAccountSlice.reducer };
+export const { clearPlanQuote } = ownerAccountSlice.actions;
 
 // ------------------------------------------------------------------ selectors
 
 const selectAccount = (s) => s.ownerAccount;
+export const selectPlanQuote = (s) => s.ownerAccount.planQuote;
 
 /** Documents per property, with a summary of what is still needed. */
 export const selectOwnerDocumentsByProperty = createSelector([propertyDocumentsRepo.selectors.selectItems], (docs) => {
