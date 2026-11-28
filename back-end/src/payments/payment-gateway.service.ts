@@ -145,7 +145,8 @@ export class PaymentGatewayService {
     }
 
     // One payment can only ever be recorded once.
-    if (await this.db.getRepository(Payment).exists({ where: { transactionId: paymentId } })) {
+    const [usedForPlan]: unknown[] = await this.db.query('SELECT 1 FROM subscription_payments WHERE "transactionId" = $1 LIMIT 1', [paymentId]);
+    if (usedForPlan || (await this.db.getRepository(Payment).exists({ where: { transactionId: paymentId } }))) {
       throw new BadRequestException('This payment has already been used');
     }
     return { transactionId: paymentId, mode: this.mode };

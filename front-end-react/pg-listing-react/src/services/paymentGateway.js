@@ -41,16 +41,16 @@ function loadRazorpay() {
 }
 
 /**
- * @param {object} purpose  { purpose: 'checkout', propertyId, roomNumber } | { purpose: 'rent', rentDueId }
+ * @param {object} purpose  { purpose: 'checkout', propertyId, roomNumber } | { purpose: 'rent', rentDueId } | { purpose: 'subscription', planType }
  * @param {object} details  { description, name, email, phone } shown in the gateway window
- * @returns {Promise<{ gatewayOrderId, gatewayPaymentId, gatewaySignature, mode, amount }>}
+ * @returns {Promise<{ gatewayOrderId, gatewayPaymentId, gatewaySignature, mode, amount, quoteDate? }>}
  */
 export async function payOnline(purpose, details = {}) {
   const order = await http.post('/payment-gateway/order', purpose);
 
   if (order.mode === 'test') {
     const proof = await http.post('/payment-gateway/test-pay', { orderId: order.orderId });
-    return { gatewayOrderId: proof.orderId, gatewayPaymentId: proof.paymentId, gatewaySignature: proof.signature, mode: 'test', amount: order.amount };
+    return { gatewayOrderId: proof.orderId, gatewayPaymentId: proof.paymentId, gatewaySignature: proof.signature, mode: 'test', amount: order.amount, quoteDate: order.quoteDate };
   }
 
   await loadRazorpay();
@@ -77,6 +77,7 @@ export async function payOnline(purpose, details = {}) {
           gatewaySignature: res.razorpay_signature,
           mode: 'razorpay',
           amount: order.amount,
+          quoteDate: order.quoteDate,
         }),
       // Closed without paying: report the last failure reason, if there was one.
       modal: { ondismiss: () => reject(new Error(lastFailure ? `${lastFailure} You have not been charged.` : 'Payment cancelled. You have not been charged.')) },
